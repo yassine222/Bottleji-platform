@@ -1,0 +1,165 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export enum UserRole {
+  HOUSEHOLD = 'household',
+  COLLECTOR = 'collector',
+  SUPPORT_AGENT = 'support_agent',
+  MODERATOR = 'moderator',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
+}
+
+export enum CollectorApplicationStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+@Schema()
+export class CollectorApplication {
+  @Prop({ type: String, enum: CollectorApplicationStatus, default: CollectorApplicationStatus.PENDING })
+  status: CollectorApplicationStatus;
+
+  @Prop()
+  idCardPhoto: string;
+
+  @Prop()
+  selfieWithIdPhoto: string;
+
+  @Prop()
+  rejectionReason?: string;
+
+  @Prop({ default: Date.now })
+  appliedAt: Date;
+
+  @Prop()
+  reviewedAt?: Date;
+}
+
+@Schema()
+export class User extends Document {
+  @Prop({ required: true, unique: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
+
+  @Prop()
+  name?: string;
+
+  @Prop()
+  phoneNumber?: string;
+
+  @Prop({ default: false })
+  isPhoneVerified: boolean;
+
+  @Prop()
+  phoneVerificationId?: string;
+
+  @Prop()
+  address?: string;
+
+  @Prop()
+  profilePhoto?: string;
+
+  @Prop({ type: [String], enum: UserRole, default: [UserRole.HOUSEHOLD] })
+  roles: UserRole[];
+
+  @Prop({ type: CollectorApplication })
+  collectorApplication?: CollectorApplication;
+
+  // Collector application status fields (for real-time updates)
+  @Prop({ type: String, enum: CollectorApplicationStatus })
+  collectorApplicationStatus?: CollectorApplicationStatus;
+
+  @Prop()
+  collectorApplicationId?: string;
+
+  @Prop()
+  collectorApplicationAppliedAt?: Date;
+
+  @Prop()
+  collectorApplicationRejectionReason?: string;
+
+  @Prop({ type: String, enum: ['basic', 'premium'], default: 'basic' })
+  collectorSubscriptionType: string;
+
+  @Prop({ default: false })
+  isProfileComplete: boolean;
+
+  // Verification fields
+  @Prop()
+  verificationOTP?: string;
+
+  @Prop()
+  otpExpiresAt?: Date;
+
+  @Prop({ default: 0 })
+  otpAttempts: number;
+
+  @Prop({ default: false })
+  isVerified: boolean;
+
+  // Password reset fields
+  @Prop()
+  resetPasswordOtp?: string;
+
+  @Prop()
+  resetPasswordOtpExpiry?: Date;
+
+  // Admin password change requirement
+  @Prop({ default: false })
+  mustChangePassword: boolean;
+
+  // Warning fields
+  @Prop({ default: 0 })
+  warningCount: number;
+
+  @Prop({ default: false })
+  isAccountLocked: boolean;
+
+  @Prop()
+  accountLockedUntil?: Date;
+
+  @Prop({ type: [Object], default: [] })
+  warnings: any[];
+
+  // Soft delete fields
+  @Prop({ default: false })
+  isDeleted: boolean;
+
+  @Prop()
+  deletedAt?: Date;
+
+  @Prop()
+  deletedBy?: string;
+
+  // Session invalidation field
+  @Prop()
+  sessionInvalidatedAt?: Date;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+
+  @Prop({ default: Date.now })
+  updatedAt: Date;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// Add virtual id field to convert _id to id
+UserSchema.virtual('id').get(function(this: any) {
+  return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialized
+UserSchema.set('toJSON', {
+  virtuals: true,
+  transform: function(doc: any, ret: any) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+}); 

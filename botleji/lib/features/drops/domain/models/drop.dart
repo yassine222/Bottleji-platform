@@ -1,0 +1,235 @@
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:botleji/core/utils/json_converters.dart';
+
+enum BottleType {
+  plastic,
+  can,
+  mixed,
+}
+
+enum DropStatus {
+  pending,    // Drop is created and waiting for collection
+  accepted,   // A collector has accepted to collect this drop
+  collected,  // Drop has been collected
+  cancelled,  // Drop was cancelled by the household
+  expired,    // Drop expired because it wasn't collected within time limit
+}
+
+enum CancellationReason {
+  noAccess,
+  notFound,
+  alreadyCollected,
+  wrongLocation,
+  unsafe,
+  other;
+
+  String get displayName {
+    switch (this) {
+      case CancellationReason.noAccess:
+        return 'No Access';
+      case CancellationReason.notFound:
+        return 'Not Found';
+      case CancellationReason.alreadyCollected:
+        return 'Already Collected';
+      case CancellationReason.wrongLocation:
+        return 'Wrong Location';
+      case CancellationReason.unsafe:
+        return 'Unsafe Area';
+      case CancellationReason.other:
+        return 'Other';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case CancellationReason.noAccess:
+        return 'Cannot access the drop location';
+      case CancellationReason.notFound:
+        return 'Drop was not found at the specified location';
+      case CancellationReason.alreadyCollected:
+        return 'Drop has already been collected by someone else';
+      case CancellationReason.wrongLocation:
+        return 'Location information was incorrect';
+      case CancellationReason.unsafe:
+        return 'Area is unsafe or dangerous';
+      case CancellationReason.other:
+        return 'Other reason';
+    }
+  }
+}
+
+class Drop {
+  final String id;
+  final String userId;
+  final String imageUrl;
+  final int numberOfBottles;
+  final int numberOfCans;
+  final BottleType bottleType;
+  final String? notes;
+  final bool leaveOutside;
+  final LatLng location;
+  final DropStatus status;
+  final DateTime createdAt;
+  final DateTime modifiedAt;
+  final int cancellationCount;
+  final bool isSuspicious;
+  final CancellationReason? cancellationReason;
+  final List<String> cancelledByCollectorIds;
+
+  const Drop({
+    required this.id,
+    required this.userId,
+    required this.imageUrl,
+    required this.numberOfBottles,
+    required this.numberOfCans,
+    required this.bottleType,
+    this.notes,
+    required this.leaveOutside,
+    required this.location,
+    this.status = DropStatus.pending,
+    required this.createdAt,
+    required this.modifiedAt,
+    this.cancellationCount = 0,
+    this.isSuspicious = false,
+    this.cancellationReason,
+    this.cancelledByCollectorIds = const [],
+  });
+
+  factory Drop.fromJson(Map<String, dynamic> json) {
+    return Drop(
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      numberOfBottles: json['numberOfBottles'] as int? ?? 0,
+      numberOfCans: json['numberOfCans'] as int? ?? 0,
+      bottleType: BottleType.values.firstWhere(
+        (e) => e.name == (json['bottleType']?.toString() ?? 'plastic'),
+        orElse: () => BottleType.plastic,
+      ),
+      notes: json['notes']?.toString(),
+      leaveOutside: json['leaveOutside'] as bool? ?? false,
+      location: LatLngConverter().fromJson(json['location'] ?? {}),
+      status: DropStatus.values.firstWhere(
+        (e) => e.name == (json['status']?.toString() ?? 'pending'),
+        orElse: () => DropStatus.pending,
+      ),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'].toString()) : DateTime.now(),
+      modifiedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'].toString()) : DateTime.now(),
+      cancellationCount: json['cancellationCount'] as int? ?? 0,
+      isSuspicious: json['isSuspicious'] as bool? ?? false,
+      cancellationReason: json['cancellationReason'] != null ? CancellationReason.values.firstWhere(
+        (e) => e.name == json['cancellationReason'].toString(),
+        orElse: () => CancellationReason.other,
+      ) : null,
+      cancelledByCollectorIds: (json['cancelledByCollectorIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'imageUrl': imageUrl,
+      'numberOfBottles': numberOfBottles,
+      'numberOfCans': numberOfCans,
+      'bottleType': bottleType.name,
+      'notes': notes,
+      'leaveOutside': leaveOutside,
+      'location': LatLngConverter().toJson(location),
+      'status': status.name,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': modifiedAt.toIso8601String(),
+      'cancellationCount': cancellationCount,
+      'isSuspicious': isSuspicious,
+      'cancellationReason': cancellationReason?.name,
+      'cancelledByCollectorIds': cancelledByCollectorIds,
+    };
+  }
+
+  Drop copyWith({
+    String? id,
+    String? userId,
+    String? imageUrl,
+    int? numberOfBottles,
+    int? numberOfCans,
+    BottleType? bottleType,
+    String? notes,
+    bool? leaveOutside,
+    LatLng? location,
+    DropStatus? status,
+    DateTime? createdAt,
+    DateTime? modifiedAt,
+    int? cancellationCount,
+    bool? isSuspicious,
+    CancellationReason? cancellationReason,
+    List<String>? cancelledByCollectorIds,
+  }) {
+    return Drop(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      numberOfBottles: numberOfBottles ?? this.numberOfBottles,
+      numberOfCans: numberOfCans ?? this.numberOfCans,
+      bottleType: bottleType ?? this.bottleType,
+      notes: notes ?? this.notes,
+      leaveOutside: leaveOutside ?? this.leaveOutside,
+      location: location ?? this.location,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+      cancellationCount: cancellationCount ?? this.cancellationCount,
+      isSuspicious: isSuspicious ?? this.isSuspicious,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      cancelledByCollectorIds: cancelledByCollectorIds ?? this.cancelledByCollectorIds,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Drop &&
+        other.id == id &&
+        other.userId == userId &&
+        other.imageUrl == imageUrl &&
+        other.numberOfBottles == numberOfBottles &&
+        other.numberOfCans == numberOfCans &&
+        other.bottleType == bottleType &&
+        other.notes == notes &&
+        other.leaveOutside == leaveOutside &&
+        other.location == location &&
+        other.status == status &&
+        other.createdAt == createdAt &&
+        other.modifiedAt == modifiedAt &&
+        other.cancellationCount == cancellationCount &&
+        other.isSuspicious == isSuspicious &&
+        other.cancellationReason == cancellationReason &&
+        other.cancelledByCollectorIds == cancelledByCollectorIds;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      userId,
+      imageUrl,
+      numberOfBottles,
+      numberOfCans,
+      bottleType,
+      notes,
+      leaveOutside,
+      location,
+      status,
+      createdAt,
+      modifiedAt,
+      cancellationCount,
+      isSuspicious,
+      cancellationReason,
+      cancelledByCollectorIds,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Drop(id: $id, userId: $userId, imageUrl: $imageUrl, numberOfBottles: $numberOfBottles, numberOfCans: $numberOfCans, bottleType: $bottleType, notes: $notes, leaveOutside: $leaveOutside, location: $location, status: $status, createdAt: $createdAt, modifiedAt: $modifiedAt, cancellationCount: $cancellationCount, isSuspicious: $isSuspicious, cancellationReason: $cancellationReason, cancelledByCollectorIds: $cancelledByCollectorIds)';
+  }
+} 
