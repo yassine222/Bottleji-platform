@@ -144,6 +144,21 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
     state = const AsyncValue.data([]);
   }
 
+  // Method to get user drops for support without affecting global state
+  Future<List<Drop>> getUserDropsForSupport(String userId) async {
+    if (userId.isEmpty) {
+      return [];
+    }
+    
+    try {
+      final drops = await _repository.getDropsByUser(userId);
+      return drops;
+    } catch (e) {
+      debugPrint('❌ Error loading user drops for support: $e');
+      return [];
+    }
+  }
+
   Future<Drop?> createDrop({
     required String userId,
     required String imagePath,

@@ -72,12 +72,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final controller = ref.read(historyControllerProvider.notifier);
     controller.loadHistory(status: selectedStatus, timeRange: selectedTimeRange);
     
-    // Also load user drops for household users
+    // Only load user drops when in household mode to avoid overwriting collector map state
+    final modeAsync = ref.read(userModeControllerProvider);
     final authState = ref.read(authNotifierProvider);
-    authState.whenData((user) {
-      if (user?.id != null) {
-        final dropsController = ref.read(dropsControllerProvider.notifier);
-        dropsController.loadUserDrops(user!.id!);
+    modeAsync.whenData((mode) {
+      if (mode == UserMode.household) {
+        authState.whenData((user) {
+          if (user?.id != null && user!.id!.isNotEmpty) {
+            final dropsController = ref.read(dropsControllerProvider.notifier);
+            dropsController.loadUserDrops(user.id!);
+          }
+        });
       }
     });
   }

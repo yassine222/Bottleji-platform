@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
+import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/collector/controllers/collector_application_controller.dart';
 import 'package:botleji/features/support/presentation/screens/create_ticket_screen.dart';
+import 'package:botleji/features/stats/data/models/collector_stats.dart';
+import 'package:botleji/features/stats/data/repositories/stats_repository.dart';
+import 'package:botleji/features/stats/data/datasources/stats_api_client.dart';
+import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/core/api/api_client.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -32,11 +38,6 @@ class _SupportItemSelectionScreenState
       authState.whenData((user) async {
         if (user != null) {
           switch (widget.category) {
-            case 'drops':
-              await ref
-                  .read(dropsControllerProvider.notifier)
-                  .loadUserDrops(user.id);
-              break;
             case 'applications':
               await ref
                   .read(collectorApplicationControllerProvider.notifier)
@@ -170,21 +171,104 @@ class _SupportItemSelectionScreenState
   }
 
   Widget _buildDropsList() {
-    final dropsAsync = ref.watch(dropsControllerProvider);
+    final authState = ref.watch(authNotifierProvider);
+    final userMode = ref.watch(userModeControllerProvider);
 
-    return dropsAsync.when(
-      data: (drops) {
-        final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
-        final recentDrops = drops.where((drop) {
-          final dropDate = DateTime.parse(drop.createdAt.toString());
-          return dropDate.isAfter(threeDaysAgo);
-        }).toList();
+    return authState.when(
+      data: (user) {
+        if (user?.id == null) {
+          return _buildEmptyState(
+            icon: Icons.error,
+            title: 'Authentication Error',
+            description: 'Please log in again to view your items.',
+          );
+        }
+
+        return userMode.when(
+          data: (mode) {
+            if (mode == UserMode.collector) {
+              // Show collections for collectors
+              return _buildCollectionsList(user!.id!);
+            } else {
+              // Show drops for households
+              return _buildUserDropsList(user!.id!);
+            }
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+    );
+  }
+
+  Widget _buildCollectionsList(String userId) {
+    return FutureBuilder<CollectorHistory>(
+      future: _getCollectorHistory(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading collections: ${snapshot.error}'));
+        }
+
+        final history = snapshot.data;
+        if (history == null || history.interactions.isEmpty) {
+          return _buildEmptyState(
+            icon: Icons.inventory_2,
+            title: 'No Collections Found',
+            description: 'You don\'t have any collections to report issues for.',
+          );
+        }
+
+        // Group interactions by drop (same logic as history page)
+        final groupedInteractions = _groupInteractionsByDrop(history.interactions);
+        final recentCollections = groupedInteractions.take(5).toList(); // Show last 5 collections
+
+        print('🔍 Support: Showing ${recentCollections.length} collections for support');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your Collections',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: appGreenColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...recentCollections.map((interactions) => _buildCollectionCard(interactions)).toList(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUserDropsList(String userId) {
+    return FutureBuilder<List<Drop>>(
+      future: ref.read(dropsControllerProvider.notifier).getUserDropsForSupport(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading drops: ${snapshot.error}'));
+        }
+
+        final drops = snapshot.data ?? [];
+        final recentDrops = drops.take(5).toList(); // Show last 5 drops
 
         if (recentDrops.isEmpty) {
           return _buildEmptyState(
             icon: Icons.local_drink,
-            title: 'No Recent Drops',
-            description: 'You don\'t have any drops from the last 3 days.',
+            title: 'No Drops Found',
+            description: 'You don\'t have any drops to report issues for.',
           );
         }
 
@@ -192,7 +276,7 @@ class _SupportItemSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Drops (Last 3 Days)',
+              'Your Drops',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -204,9 +288,6 @@ class _SupportItemSelectionScreenState
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          Center(child: Text('Error loading drops: $error')),
     );
   }
 
@@ -601,7 +682,7 @@ Widget _buildGeneralSupportOption() {
   }
 
   Widget _buildDropCard(dynamic drop) {
-    final status = drop.status;
+    final status = drop.status.toString().split('.').last; // Convert enum to string
     final statusColor = _getStatusColor(status);
     final statusText = _getStatusText(status);
     
@@ -668,7 +749,7 @@ Widget _buildGeneralSupportOption() {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${drop.numberOfBottles} bottles, ${drop.numberOfCans} cans • ${_formatDate(drop.createdAt)}',
+                      '${drop.numberOfBottles} bottles, ${drop.numberOfCans} cans • ${_formatDate(drop.createdAt.toString())}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -743,6 +824,176 @@ Widget _buildGeneralSupportOption() {
                       'Get help with ${widget.categoryTitle.toLowerCase()}',
                       style: TextStyle(
                         fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get collector history
+  Future<CollectorHistory> _getCollectorHistory(String userId) async {
+    final repository = StatsRepository(StatsApiClient(ApiClientConfig.createDio()));
+    return await repository.getCollectorHistory(
+      userId,
+      status: null, // Get all statuses
+      timeRange: null, // Get all time ranges
+      page: 1,
+      limit: 20,
+    );
+  }
+
+  // Helper to group interactions by drop (same logic as history page)
+  List<List<CollectorInteraction>> _groupInteractionsByDrop(List<CollectorInteraction> interactions) {
+    final Map<String, List<CollectorInteraction>> grouped = {};
+    
+    for (final interaction in interactions) {
+      String dropKey = '';
+      
+      if (interaction.dropoff?.id.isNotEmpty == true) {
+        dropKey = interaction.dropoff!.id;
+      } else if (interaction.dropoffId.isNotEmpty) {
+        dropKey = interaction.dropoffId;
+      } else {
+        dropKey = interaction.id;
+      }
+      
+      if (dropKey.isNotEmpty) {
+        grouped.putIfAbsent(dropKey, () => []).add(interaction);
+      }
+    }
+    
+    // Sort each group by interaction time
+    for (final group in grouped.values) {
+      group.sort((a, b) => a.interactionTime.compareTo(b.interactionTime));
+    }
+    
+    // Create pairs from each group
+    List<List<CollectorInteraction>> pairs = [];
+    
+    for (final group in grouped.values) {
+      final acceptedInteractions = group.where((i) => i.interactionType == 'accepted').toList();
+      
+      if (acceptedInteractions.isNotEmpty) {
+        for (int i = 0; i < acceptedInteractions.length; i++) {
+          final accepted = acceptedInteractions[i];
+          
+          final subsequentInteractions = group.where((interaction) {
+            return (interaction.interactionType == 'expired' || 
+                    interaction.interactionType == 'collected' || 
+                    interaction.interactionType == 'cancelled') &&
+                   interaction.interactionTime.isAfter(accepted.interactionTime);
+          }).toList();
+          
+          if (subsequentInteractions.isNotEmpty) {
+            subsequentInteractions.sort((a, b) => a.interactionTime.compareTo(b.interactionTime));
+            pairs.add([accepted, subsequentInteractions.first]);
+          } else {
+            pairs.add([accepted]);
+          }
+        }
+      } else {
+        for (final interaction in group) {
+          if (interaction.interactionType == 'cancelled' || 
+              interaction.interactionType == 'collected' || 
+              interaction.interactionType == 'expired') {
+            pairs.add([interaction]);
+          }
+        }
+      }
+    }
+    
+    // Sort pairs by the most recent interaction time (descending order)
+    pairs.sort((a, b) => b.last.interactionTime.compareTo(a.last.interactionTime));
+    
+    return pairs;
+  }
+
+  Widget _buildCollectionCard(List<CollectorInteraction> interactions) {
+    final firstInteraction = interactions.first;
+    final lastInteraction = interactions.last;
+    final dropoff = firstInteraction.dropoff;
+    
+    String status = lastInteraction.interactionType;
+    final statusColor = _getStatusColor(status);
+    final statusText = _getStatusText(status);
+    
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => _navigateToCreateTicket(
+          context: context,
+          category: widget.category,
+          itemId: firstInteraction.id,
+          itemTitle: 'Collection #${firstInteraction.id.substring(0, 8)}',
+          itemDescription: 'Status: $statusText\nDrop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'}',
+          metadata: {
+            'collectionId': firstInteraction.id,
+            'dropoffId': firstInteraction.dropoffId,
+            'status': status,
+            'interactionType': lastInteraction.interactionType,
+            'interactionTime': lastInteraction.interactionTime,
+            'dropoff': dropoff,
+          },
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.inventory_2,
+                  color: statusColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Collection #${firstInteraction.id.substring(0, 8)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Status: $statusText',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Drop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'} • ${_formatDate(lastInteraction.interactionTime.toString())}',
+                      style: TextStyle(
+                        fontSize: 12,
                         color: Colors.grey[600],
                       ),
                     ),

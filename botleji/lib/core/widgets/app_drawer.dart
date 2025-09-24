@@ -14,6 +14,7 @@ import 'package:botleji/features/training/presentation/screens/trainings_screen.
 import 'package:botleji/features/rewards/presentation/screens/refer_earn_screen.dart';
 import 'package:botleji/features/support/presentation/screens/support_screen.dart';
 import 'package:botleji/features/support/presentation/screens/terms_screen.dart';
+import 'package:botleji/core/providers/connectivity_provider.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -792,6 +793,42 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             },
           ),
           const Divider(),
+          // Debug offline toggle (only in debug mode)
+          if (const bool.fromEnvironment('dart.vm.product') == false) ...[
+            const Divider(),
+            Consumer(
+              builder: (context, ref, child) {
+                final connectivityNotifier = ref.read(connectivityProvider.notifier);
+                final isDebugOffline = connectivityNotifier.isDebugOfflineMode;
+                
+                return ListTile(
+                  leading: Icon(
+                    isDebugOffline ? Icons.wifi_off : Icons.wifi,
+                    color: isDebugOffline ? Colors.orange : Colors.green,
+                  ),
+                  title: Text(
+                    isDebugOffline ? 'Debug: Simulate Online' : 'Debug: Simulate Offline',
+                    style: TextStyle(
+                      color: isDebugOffline ? Colors.orange : Colors.green,
+                      fontSize: 12,
+                    ),
+                  ),
+                  onTap: () {
+                    connectivityNotifier.toggleDebugOfflineMode();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isDebugOffline ? 'Debug: Now simulating online' : 'Debug: Now simulating offline',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+          
           ListTile(
             leading: Icon(
               Icons.logout_rounded,

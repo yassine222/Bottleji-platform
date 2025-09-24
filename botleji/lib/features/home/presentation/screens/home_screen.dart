@@ -26,6 +26,8 @@ import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/drops/presentation/screens/drops_list_screen.dart';
 import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
+import 'package:botleji/core/providers/connectivity_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart';
 import 'package:botleji/core/theme/app_typography.dart';
@@ -1774,6 +1776,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                // Hero Image / Preview
+                if ((drop.imageUrl ?? '').isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.network(
+                              drop.imageUrl!,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                                  child: const Center(child: CircularProgressIndicator()),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                                  child: const Center(child: Icon(Icons.image_not_supported_outlined)),
+                                );
+                              },
+                            ),
+                          ),
+                          // Gradient overlay and quick stats
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.5),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.local_drink, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text('${drop.numberOfBottles + drop.numberOfCans} items'),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: _getStatusColor(drop.status),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    drop.status.name.toUpperCase(),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                   
                   // Header
                   Padding(
@@ -1805,25 +1891,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Status Badge
-                          Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(drop.status).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                drop.status.name.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getStatusColor(drop.status),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                          // Status badge removed (now shown on image overlay)
+                          const SizedBox(height: 8),
                           
                           // User Information Section
                           Container(
@@ -1974,12 +2043,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     );
                                   }
                                   
-                                  // For collector mode - show Start Collection button
+                                  // For collector mode - show Start Collection button or resume/disabled state based on active collection
                                   if (mode == UserMode.collector) {
+                                    final activeCollection = ref.watch(navigationControllerProvider);
+                                    // If there's an active collection
+                                    if (activeCollection != null) {
+                                      // If it's the same drop, show Resume Navigation
+                                      if (activeCollection.dropId == drop.id) {
+                                        return SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              if (context.mounted) {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => NavigationScreen(
+                                                      destination: activeCollection.destination,
+                                                      dropId: activeCollection.dropId,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            icon: const Icon(Icons.navigation),
+                                            label: const Text('Resume Navigation'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF00695C),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(vertical: 16),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      // Otherwise, show info and disable starting
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.amber.shade700.withOpacity(0.5)),
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: const [
+                                                Icon(Icons.info_outline, color: Colors.amber),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'You already have an active collection in progress. Complete or cancel it before starting a new one.',
+                                                    style: TextStyle(fontSize: 14),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton.icon(
+                                              onPressed: null,
+                                              icon: const Icon(Icons.directions),
+                                              label: const Text('Start Collection'),
+                                              style: ElevatedButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+
+                                    // No active collection — allow starting a new one
+                                    final isOnline = ref.watch(connectivityProvider);
                                     return SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
                                         onPressed: () async {
+                                          if (!isOnline) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('You are offline. Please check your internet connection.'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                            return;
+                                          }
                                           if (currentUserId == null) return;
                                           
                                           try {
@@ -2008,8 +2167,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             // Close the modal
                                             Navigator.pop(context);
                                             
-                                            // Navigate to navigation screen
-                                            Navigator.pushNamed(context, '/navigation');
+                                            // Navigate to navigation screen with required args
+                                            if (context.mounted) {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (_) => NavigationScreen(
+                                                    destination: drop.location,
+                                                    dropId: drop.id,
+                                                  ),
+                                                ),
+                                              );
+                                            }
                                             
                                             // Show success message
                                             if (context.mounted) {
@@ -2238,6 +2406,101 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             key: _screenKey, // Add key to force rebuild
             child: _getPage(currentIndex),
+          ),
+          // Offline banner just under the app bar - positioned after content so it appears on top
+          Consumer(
+            builder: (context, ref, child) {
+              final isOnline = ref.watch(connectivityProvider);
+              if (isOnline) return const SizedBox.shrink();
+              return Positioned(
+                top: 8, // slight padding below app bar
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.wifi_off_rounded,
+                            color: Theme.of(context).colorScheme.onError,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'No Internet Connection',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onErrorContainer,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                              Text(
+                                'Some features may be unavailable',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onErrorContainer.withOpacity(0.8),
+                                  fontSize: 11,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () async {
+                            final connectivity = Connectivity();
+                            final results = await connectivity.checkConnectivity();
+                            final online = results.any((r) =>
+                                r == ConnectivityResult.wifi ||
+                                r == ConnectivityResult.mobile ||
+                                r == ConnectivityResult.ethernet ||
+                                r == ConnectivityResult.vpn);
+                            if (online) {
+                              ref.read(connectivityProvider.notifier).state = true;
+                            }
+                          },
+                          icon: Icon(
+                            Icons.refresh_rounded,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            size: 20,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: const Size(32, 32),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           // Active collection indicator - will hide when drawer is open
           const ActiveCollectionIndicator(),

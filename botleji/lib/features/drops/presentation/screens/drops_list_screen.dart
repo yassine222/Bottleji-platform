@@ -60,8 +60,12 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Load drops when dependencies change
-    _loadDrops();
+    // Load drops when dependencies change - delay to avoid build cycle issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadDrops();
+      }
+    });
   }
 
   Future<void> _initializeLocation() async {

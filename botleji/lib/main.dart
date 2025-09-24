@@ -14,6 +14,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
+import 'package:botleji/core/providers/connectivity_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/core/widgets/active_collection_indicator.dart';
@@ -153,6 +155,7 @@ class MyApp extends ConsumerWidget {
       navigatorKey: navigatorKey,
       home: Builder(
         builder: (context) {
+          final isOnline = ref.watch(connectivityProvider);
           return Stack(
             children: [
               authState.when(
