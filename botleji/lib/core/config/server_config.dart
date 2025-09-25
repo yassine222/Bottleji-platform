@@ -1,6 +1,6 @@
 class ServerConfig {
   // Development mode: use tunnel for fast connection, local IP for slow WiFi
-  static const bool useTunnel = true; // Set to false if you want to use local IP
+  static const bool useTunnel = false; // Set to false if you want to use local IP
   
   // Cloudflare tunnel URL (fast, reliable)
   static const String tunnelUrl = 'https://circuits-institutions-holds-axis.trycloudflare.com';
