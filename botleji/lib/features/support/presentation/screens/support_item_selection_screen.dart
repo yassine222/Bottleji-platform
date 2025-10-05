@@ -10,6 +10,7 @@ import 'package:botleji/features/stats/data/repositories/stats_repository.dart';
 import 'package:botleji/features/stats/data/datasources/stats_api_client.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/core/api/api_client.dart';
+import 'package:botleji/core/utils/json_converters.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -262,7 +263,12 @@ class _SupportItemSelectionScreenState
         }
 
         final drops = snapshot.data ?? [];
-        final recentDrops = drops.take(5).toList(); // Show last 5 drops
+        // Filter to last 3 days and sort by most recent
+        final cutoff = DateTime.now().subtract(const Duration(days: 3));
+        final recentDrops = drops
+            .where((d) => d.createdAt.isAfter(cutoff))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         if (recentDrops.isEmpty) {
           return _buildEmptyState(
@@ -704,8 +710,8 @@ Widget _buildGeneralSupportOption() {
             'status': status,
             'numberOfBottles': drop.numberOfBottles,
             'numberOfCans': drop.numberOfCans,
-            'bottleType': drop.bottleType,
-            'location': drop.location,
+            'bottleType': drop.bottleType.toString().split('.').last,
+            'location': LatLngConverter().toJson(drop.location),
             'createdAt': drop.createdAt.toString(),
           },
         ),

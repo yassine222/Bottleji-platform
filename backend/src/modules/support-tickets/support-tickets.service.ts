@@ -2,11 +2,17 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { SupportTicket, SupportTicketDocument, TicketStatus, TicketPriority, TicketCategory } from './schemas/support-ticket.schema';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { DropoffsService } from '../dropoffs/dropoffs.service';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class SupportTicketsService {
   constructor(
     @InjectModel(SupportTicket.name) private supportTicketModel: Model<SupportTicketDocument>,
+    private notificationsGateway: NotificationsGateway,
+    private dropoffsService: DropoffsService,
+    private chatGateway: ChatGateway,
   ) {}
 
   async createTicket(
@@ -37,7 +43,7 @@ export class SupportTicketsService {
       relatedApplicationId: relatedApplicationId ? new Types.ObjectId(relatedApplicationId) : undefined,
       location,
       messages: [{
-        message: description,
+        message: this._generateContextualMessage(description, category, contextMetadata, relatedDropId, relatedCollectionId, relatedApplicationId),
         senderId: new Types.ObjectId(userId),
         senderType: 'user',
         sentAt: new Date(),
@@ -45,17 +51,54 @@ export class SupportTicketsService {
       }],
     });
 
-    return ticket.save();
+    const savedTicket = await ticket.save();
+
+    // Send real-time notification for new ticket
+    this.notificationsGateway.sendTicketUpdateToAdmins(
+      (savedTicket._id as any).toString(),
+      'new_ticket',
+      {
+        ticket: {
+          id: (savedTicket._id as any).toString(),
+          title: savedTicket.title,
+          userId: savedTicket.userId.toString(),
+        },
+        ticketTitle: savedTicket.title,
+      },
+    );
+
+    return savedTicket;
+  }
+
+  private _generateContextualMessage(
+    description: string,
+    category: TicketCategory,
+    contextMetadata?: any,
+    relatedDropId?: string,
+    relatedCollectionId?: string,
+    relatedApplicationId?: string,
+  ): string {
+    let contextualMessage = description;
+
+    // Add simple context based on related objects
+    if (relatedDropId) {
+      contextualMessage += `\n\n📦 Related to Drop: ${relatedDropId.substring(0, 8)}...`;
+    }
+
+    if (relatedCollectionId) {
+      contextualMessage += `\n\n🚛 Related to Collection: ${relatedCollectionId.substring(0, 8)}...`;
+    }
+
+    if (relatedApplicationId) {
+      contextualMessage += `\n\n📋 Related to Application: ${relatedApplicationId.substring(0, 8)}...`;
+    }
+
+    return contextualMessage;
   }
 
   async getTicketsByUser(userId: string): Promise<SupportTicket[]> {
     return this.supportTicketModel
       .find({ userId: new Types.ObjectId(userId), isDeleted: false })
-      .populate('userId', 'name email phoneNumber')
-      .populate('assignedTo', 'name email')
-      .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt')
-      .populate('relatedCollectionId', 'status completedAt')
-      .populate('relatedApplicationId', 'status submittedAt')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -80,11 +123,11 @@ export class SupportTicketsService {
     const [tickets, total] = await Promise.all([
       this.supportTicketModel
         .find(query)
-        .populate('userId', 'name email phoneNumber')
+        .populate('userId', '_id name email phoneNumber')
         .populate('assignedTo', 'name email')
         .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt')
         .populate('relatedCollectionId', 'status completedAt')
-        .populate('relatedApplicationId', 'status submittedAt')
+        .populate('relatedApplicationId', 'status appliedAt reviewedAt rejectionReason idCardPhoto selfieWithIdPhoto')
         .sort({ priority: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -92,8 +135,81 @@ export class SupportTicketsService {
       this.supportTicketModel.countDocuments(query),
     ]);
 
+    // Fetch interaction timelines for tickets with related drops or collections
+    const ticketsWithTimelines = await Promise.all(
+      tickets.map(async (ticket) => {
+        if (ticket.relatedDropId) {
+          try {
+            console.log('🔍 Support Tickets: Processing ticket with relatedDropId:', ticket.relatedDropId);
+            
+            // Get the ObjectId string from the populated object or direct ObjectId
+            const dropoffId = typeof ticket.relatedDropId === 'object' && ticket.relatedDropId._id 
+              ? ticket.relatedDropId._id.toString()
+              : ticket.relatedDropId.toString();
+            
+            console.log('🔍 Support Tickets: Extracted dropoffId:', dropoffId);
+            
+            const timeline = await this.dropoffsService.getDropInteractionTimeline(dropoffId);
+            console.log('🔍 Support Tickets: Fetched timeline with', timeline.length, 'interactions');
+            
+            // Add timeline to the related drop object
+            if (ticket.relatedDropId && typeof ticket.relatedDropId === 'object') {
+              (ticket.relatedDropId as any).interactions = timeline;
+              console.log('🔍 Support Tickets: Added interactions to relatedDropId object');
+            }
+          } catch (error) {
+            console.error(`❌ Support Tickets: Error fetching timeline for drop ${ticket.relatedDropId}:`, error);
+          }
+        } else if (ticket.relatedCollectionId) {
+          try {
+            console.log('🔍 Support Tickets: Processing ticket with relatedCollectionId:', ticket.relatedCollectionId);
+            console.log('🔍 Support Tickets: Ticket also has relatedDropId:', ticket.relatedDropId);
+            
+            // Get the ObjectId string from the populated object or direct ObjectId
+            const collectionId = typeof ticket.relatedCollectionId === 'object' && ticket.relatedCollectionId._id 
+              ? ticket.relatedCollectionId._id.toString()
+              : ticket.relatedCollectionId.toString();
+            
+            console.log('🔍 Support Tickets: Extracted collectionId:', collectionId);
+            
+            // Try to fetch interactions by this collection ID
+            // The collection ID might actually be an interaction ID, so let's try to find related interactions
+            const collectionInteractions = await this.dropoffsService.getCollectionInteractionTimeline(collectionId);
+            console.log('🔍 Support Tickets: Fetched collection timeline with', collectionInteractions.length, 'interactions');
+            
+            // Add timeline to the related collection object
+            if (ticket.relatedCollectionId && typeof ticket.relatedCollectionId === 'object') {
+              (ticket.relatedCollectionId as any).interactions = collectionInteractions;
+              console.log('🔍 Support Tickets: Added interactions to relatedCollectionId object');
+            }
+            
+            // If collection interactions are empty but we have a relatedDropId, try to fetch drop interactions instead
+            if (collectionInteractions.length === 0 && ticket.relatedDropId) {
+              console.log('🔍 Support Tickets: No collection interactions found, trying drop interactions instead');
+              const dropoffId = typeof ticket.relatedDropId === 'object' && (ticket.relatedDropId as any)._id 
+                ? (ticket.relatedDropId as any)._id.toString()
+                : (ticket.relatedDropId as any).toString();
+              
+              const dropInteractions = await this.dropoffsService.getDropInteractionTimeline(dropoffId);
+              console.log('🔍 Support Tickets: Fetched drop timeline with', dropInteractions.length, 'interactions');
+              
+              if (ticket.relatedCollectionId && typeof ticket.relatedCollectionId === 'object') {
+                (ticket.relatedCollectionId as any).interactions = dropInteractions;
+                console.log('🔍 Support Tickets: Added drop interactions to relatedCollectionId object');
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Support Tickets: Error fetching timeline for collection ${ticket.relatedCollectionId}:`, error);
+          }
+        } else {
+          console.log('🔍 Support Tickets: Ticket has no relatedDropId or relatedCollectionId');
+        }
+        return ticket;
+      })
+    );
+
     return {
-      tickets,
+      tickets: ticketsWithTimelines,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -110,11 +226,6 @@ export class SupportTicketsService {
 
     const ticket = await this.supportTicketModel
       .findOne(query)
-      .populate('userId', 'name email phoneNumber')
-      .populate('assignedTo', 'name email')
-      .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt')
-      .populate('relatedCollectionId', 'status completedAt')
-      .populate('relatedApplicationId', 'status submittedAt')
       .exec();
 
     if (!ticket) {
@@ -148,12 +259,26 @@ export class SupportTicketsService {
         updateData,
         { new: true }
       )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
+
+    // Send real-time notification for status update
+    this.notificationsGateway.sendTicketUpdateToAdmins(
+      ticketId,
+      'status_update',
+      {
+        ticket: {
+          id: (ticket._id as any).toString(),
+          title: ticket.title,
+          userId: ticket.userId.toString(),
+        },
+        newStatus: status,
+        updatedBy,
+      },
+    );
 
     return ticket;
   }
@@ -169,7 +294,6 @@ export class SupportTicketsService {
         },
         { new: true }
       )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
@@ -203,11 +327,60 @@ export class SupportTicketsService {
         },
         { new: true }
       )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
+    }
+
+    // Create the message object
+    const newMessage = {
+      message,
+      senderId: new Types.ObjectId(senderId),
+      senderType,
+      sentAt: new Date(),
+      isInternal,
+    };
+
+    // Add message to ticket in database
+    ticket.messages.push(newMessage);
+    ticket.markModified('updatedAt');
+    ticket.set('updatedAt', new Date());
+    await ticket.save();
+
+    console.log(`📨 Message saved to database: ${message} from ${senderType} ${senderId} to ticket ${ticketId}`);
+
+    // Send real-time message via chat gateway
+    const chatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      ticketId,
+      message,
+      senderId,
+      senderType,
+      sentAt: newMessage.sentAt,
+      isInternal,
+    };
+
+    console.log(`📨 Sending real-time message via chat gateway: ${message} from ${senderType} ${senderId} to ticket ${ticketId}`);
+    console.log(`📨 Chat message object:`, chatMessage);
+    
+    // Send message through chat gateway for real-time delivery
+    await this.chatGateway.sendMessageToTicket(ticketId, chatMessage);
+
+    // Send push notification if agent sent message
+    if (senderType === 'agent') {
+      console.log('🔔 Sending push notification to user for agent message');
+      this.notificationsGateway.sendTicketMessageUpdate(
+        ticket.userId.toString(),
+        ticketId,
+        {
+          message,
+          senderId,
+          senderType,
+          sentAt: newMessage.sentAt,
+          isInternal,
+        },
+      );
     }
 
     return ticket;
@@ -229,7 +402,6 @@ export class SupportTicketsService {
         },
         { new: true }
       )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
@@ -257,7 +429,6 @@ export class SupportTicketsService {
         },
         { new: true }
       )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
@@ -347,7 +518,6 @@ export class SupportTicketsService {
       },
       { new: true }
     )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {
@@ -367,7 +537,6 @@ export class SupportTicketsService {
       },
       { new: true }
     )
-      .populate('userId', 'name email phoneNumber')
       .exec();
 
     if (!ticket) {

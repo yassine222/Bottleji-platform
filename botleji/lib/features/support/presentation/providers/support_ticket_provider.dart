@@ -3,6 +3,7 @@ import '../../data/models/support_ticket.dart';
 import '../../data/repositories/support_ticket_repository.dart';
 import '../../data/datasources/support_ticket_api_client.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/services/notification_service.dart';
 
 class SupportTicketNotifier
     extends StateNotifier<AsyncValue<List<SupportTicket>>> {
@@ -86,6 +87,48 @@ class SupportTicketNotifier
 
   Future<SupportTicket> getTicketById(String ticketId) async {
     return await _repository.getTicketById(ticketId);
+  }
+
+  /// Handle real-time message updates from WebSocket
+  void handleRealtimeMessage(String ticketId, Map<String, dynamic> messageData) {
+    state.whenData((tickets) {
+      final updatedTickets = tickets.map((ticket) {
+        if (ticket.id == ticketId) {
+          // Add the new message to the ticket
+          final newMessage = TicketMessage(
+            message: messageData['message'] ?? '',
+            senderId: messageData['senderId'] ?? '',
+            senderType: messageData['senderType'] ?? 'agent',
+            sentAt: DateTime.parse(messageData['sentAt'] ?? DateTime.now().toIso8601String()),
+            isInternal: messageData['isInternal'] ?? false,
+          );
+          
+          // Create updated ticket with new message
+          return SupportTicket(
+            id: ticket.id,
+            title: ticket.title,
+            description: ticket.description,
+            status: ticket.status,
+            priority: ticket.priority,
+            category: ticket.category,
+            userId: ticket.userId,
+            messages: [...ticket.messages, newMessage],
+            attachments: ticket.attachments,
+            internalNotes: ticket.internalNotes,
+            createdAt: ticket.createdAt,
+            updatedAt: DateTime.now(),
+            lastUpdatedBy: ticket.lastUpdatedBy,
+            relatedDropId: ticket.relatedDropId,
+            relatedCollectionId: ticket.relatedCollectionId,
+            relatedApplicationId: ticket.relatedApplicationId,
+            contextMetadata: ticket.contextMetadata,
+            location: ticket.location,
+          );
+        }
+        return ticket;
+      }).toList();
+      state = AsyncValue.data(updatedTickets);
+    });
   }
 }
 

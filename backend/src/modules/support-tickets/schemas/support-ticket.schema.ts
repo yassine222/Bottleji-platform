@@ -119,13 +119,13 @@ export class SupportTicket {
   deletedBy: Types.ObjectId;
 
   // Context information for related objects
-  @Prop({ default: null })
+  @Prop({ default: null, type: Types.ObjectId, ref: 'Dropoff' })
   relatedDropId: Types.ObjectId;
 
   @Prop({ default: null })
   relatedCollectionId: Types.ObjectId;
 
-  @Prop({ default: null })
+  @Prop({ default: null, type: Types.ObjectId, ref: 'CollectorApplication' })
   relatedApplicationId: Types.ObjectId;
 
   @Prop({ default: null })

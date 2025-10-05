@@ -333,4 +333,13 @@ export class AdminController {
     const ticket = await this.supportTicketsService.closeTicket(ticketId, adminId);
     return { success: true, ticket };
   }
+
+  @Get('dropoffs/:id/interactions')
+  async getDropInteractions(
+    @Param('id') dropId: string,
+    @Query('excludeUserId') excludeUserId?: string,
+  ) {
+    const result = await this.adminService.getDropInteractions(dropId, excludeUserId);
+    return result;
+  }
 } 

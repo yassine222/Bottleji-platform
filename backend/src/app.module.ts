@@ -12,6 +12,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { CollectorApplicationsModule } from './modules/collector-applications/collector-applications.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module';
+import { TrainingModule } from './modules/training/training.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
     CollectorApplicationsModule,
     NotificationsModule,
     SupportTicketsModule,
+    TrainingModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

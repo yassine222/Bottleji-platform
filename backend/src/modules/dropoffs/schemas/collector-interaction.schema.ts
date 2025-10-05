@@ -19,7 +19,7 @@ export enum CancellationReason {
 
 @Schema({ timestamps: true })
 export class CollectorInteraction extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'User' })
   collectorId: string;
 
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Dropoff' })

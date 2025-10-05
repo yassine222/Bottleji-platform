@@ -84,6 +84,7 @@ class NotificationService extends ChangeNotifier {
   bool get isConnected => _isConnected;
   List<NotificationPayload> get notifications => List.unmodifiable(_notifications);
   int get unreadCount => _notifications.where((n) => !n.data?['read'] ?? false).length;
+  bool get hasSocket => _socket != null;
 
   // Callbacks
   Function(String reason)? onForceLogout;
@@ -91,6 +92,9 @@ class NotificationService extends ChangeNotifier {
   Function()? onConnectionEstablished;
   Function()? onConnectionLost;
   Function(String status, Map<String, dynamic> data)? onApplicationStatusUpdate;
+  Function(String ticketId, Map<String, dynamic> message)? onTicketMessageReceived;
+  Function(String ticketId, bool isTyping, String senderType)? onTypingIndicator;
+  Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -106,6 +110,7 @@ class NotificationService extends ChangeNotifier {
     try {
       debugPrint('🔌 NotificationService: Connecting to WebSocket...');
       debugPrint('🔌 NotificationService: Token provided: ${token.isNotEmpty}');
+      debugPrint('🔌 NotificationService: Token preview: ${token.length > 20 ? token.substring(0, 20) + '...' : token}');
       
       // Disconnect any existing connection first
       if (_socket != null) {
@@ -130,25 +135,77 @@ class NotificationService extends ChangeNotifier {
 
       // Connection events
       _socket!.onConnect((_) {
-        debugPrint('🔌 NotificationService: WebSocket connected successfully!');
+        debugPrint('🔌 WebSocket connected');
         _isConnected = true;
         notifyListeners();
+        _socket!.emit('ping');
       });
 
       _socket!.onDisconnect((_) {
-        debugPrint('🔌 NotificationService: WebSocket disconnected');
+        debugPrint('🔌 WebSocket disconnected');
         _isConnected = false;
         notifyListeners();
       });
 
       _socket!.onConnectError((error) {
-        debugPrint('❌ NotificationService: WebSocket connection error: $error');
+        debugPrint('❌ WebSocket connection error: $error');
         _isConnected = false;
         notifyListeners();
       });
 
+      // Catch-all listener for debugging
+      _socket!.onAny((event, data) {
+        debugPrint('🔍 ===== RECEIVED ANY EVENT =====');
+        debugPrint('🔍 Event name: $event');
+        debugPrint('🔍 Event data: $data');
+        debugPrint('🔍 Event data type: ${data.runtimeType}');
+        debugPrint('🔍 ================================');
+      });
+
+      // Listen for pong responses
+      _socket!.on('pong', (data) {
+        debugPrint('🏓 Pong received: $data');
+      });
+
       // Notification events
       _socket!.on('notification', (data) {
+        debugPrint('🔔 Notification received: ${data['type']}');
+        debugPrint('🔔 Full notification data: $data');
+        
+        // Handle ticket message notifications
+        if (data['type'] == 'ticket_message') {
+          debugPrint('📨 NotificationService: Ticket message notification received!');
+          final ticketId = data['data']?['ticketId'] ?? '';
+          final message = data['message'] ?? 'You have a new message on your support ticket';
+          debugPrint('📨 NotificationService: Ticket ID: $ticketId');
+          debugPrint('📨 NotificationService: Message: $message');
+          debugPrint('📨 NotificationService: Full data: ${data['data']}');
+          debugPrint('📨 NotificationService: Message data: ${data['data']?['message']}');
+          
+          // Show push notification
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'New Support Message',
+            body: message,
+            id: 5000 + ticketId.hashCode % 1000, // Unique ID for each ticket
+            payload: 'ticket:$ticketId',
+          );
+          
+          // Call the ticket message callback for real-time updates
+          debugPrint('📨 NotificationService: Checking callback - onTicketMessageReceived: ${onTicketMessageReceived != null}');
+          debugPrint('📨 NotificationService: Data available: ${data['data'] != null}');
+          if (onTicketMessageReceived != null && data['data'] != null) {
+            debugPrint('📨 NotificationService: Calling ticket message callback for ticket: $ticketId');
+            debugPrint('📨 NotificationService: Callback data: ${data['data']}');
+            onTicketMessageReceived!(ticketId, data['data']);
+            debugPrint('📨 NotificationService: Callback completed');
+          } else {
+            debugPrint('📨 NotificationService: Callback not set or data missing');
+            debugPrint('📨 NotificationService: onTicketMessageReceived is null: ${onTicketMessageReceived == null}');
+            debugPrint('📨 NotificationService: data[data] is null: ${data['data'] == null}');
+          }
+        } else {
+          debugPrint('📨 NotificationService: Received notification of type: ${data['type']} (not ticket_message)');
+        }
         debugPrint('📨 NotificationService: Raw notification data: $data');
         try {
           final notification = NotificationPayload(
@@ -182,6 +239,44 @@ class NotificationService extends ChangeNotifier {
         debugPrint('🚪 NotificationService: Calling onForceLogout callback');
         onForceLogout?.call(reason);
         debugPrint('🚪 NotificationService: onForceLogout callback completed');
+      });
+
+      // Typing indicator event
+      _socket!.on('typing_indicator', (data) {
+        debugPrint('📝 NotificationService: ===== TYPING INDICATOR RECEIVED =====');
+        debugPrint('📝 NotificationService: Typing indicator received: $data');
+        debugPrint('📝 NotificationService: onTypingIndicator callback: ${onTypingIndicator != null}');
+        debugPrint('📝 NotificationService: ticketId: ${data['ticketId']}');
+        if (onTypingIndicator != null && data['ticketId'] != null) {
+          debugPrint('📝 NotificationService: Calling typing indicator callback');
+          onTypingIndicator!(
+            data['ticketId'],
+            data['isTyping'] ?? false,
+            data['senderType'] ?? 'agent'
+          );
+          debugPrint('📝 NotificationService: Typing indicator callback completed');
+        } else {
+          debugPrint('📝 NotificationService: Typing indicator callback not set or ticketId missing');
+        }
+      });
+
+      // Presence indicator event
+      _socket!.on('presence_indicator', (data) {
+        debugPrint('👤 NotificationService: ===== PRESENCE INDICATOR RECEIVED =====');
+        debugPrint('👤 NotificationService: Presence indicator received: $data');
+        debugPrint('👤 NotificationService: onPresenceIndicator callback: ${onPresenceIndicator != null}');
+        debugPrint('👤 NotificationService: ticketId: ${data['ticketId']}');
+        if (onPresenceIndicator != null && data['ticketId'] != null) {
+          debugPrint('👤 NotificationService: Calling presence indicator callback');
+          onPresenceIndicator!(
+            data['ticketId'],
+            data['isPresent'] ?? false,
+            data['senderType'] ?? 'agent'
+          );
+          debugPrint('👤 NotificationService: Presence indicator callback completed');
+        } else {
+          debugPrint('👤 NotificationService: Presence indicator callback not set or ticketId missing');
+        }
       });
 
       // Application approval event
@@ -250,6 +345,12 @@ class NotificationService extends ChangeNotifier {
       // Ping/Pong for connection health
       _socket!.on('pong', (data) {
         debugPrint('🏓 Pong received: ${data['timestamp']}');
+      });
+
+      // Catch-all event listener to see if ANY events are being received
+      _socket!.onAny((eventName, data) {
+        debugPrint('🔍 NotificationService: Received ANY event: $eventName');
+        debugPrint('🔍 NotificationService: Event data: $data');
       });
       
       // Now connect manually
@@ -360,6 +461,53 @@ class NotificationService extends ChangeNotifier {
     }
     _isConnected = false;
     notifyListeners();
+  }
+
+  /// Send typing indicator
+  void sendTypingIndicator(String ticketId, bool isTyping) {
+    if (_socket != null && _isConnected) {
+      debugPrint('📝 NotificationService: Sending typing indicator for ticket $ticketId: $isTyping');
+      _socket!.emit('typing_indicator', {
+        'ticketId': ticketId,
+        'isTyping': isTyping,
+        'senderType': 'user',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  /// Send presence indicator
+  void sendPresenceIndicator(String ticketId, bool isPresent) {
+    if (_socket != null && _isConnected) {
+      debugPrint('👤 NotificationService: Sending presence indicator for ticket $ticketId: $isPresent');
+      _socket!.emit('presence_indicator', {
+        'ticketId': ticketId,
+        'isPresent': isPresent,
+        'senderType': 'user',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  /// Send test notification
+  void sendTestNotification() {
+    if (_socket != null && _isConnected) {
+      debugPrint('🧪 NotificationService: Sending test notification');
+      _socket!.emit('test_notification', {
+        'test': true,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  /// Send ping to test WebSocket connection
+  void sendPing() {
+    if (_socket != null && _isConnected) {
+      debugPrint('🏓 Sending ping...');
+      _socket!.emit('ping');
+    } else {
+      debugPrint('🏓 Cannot send ping - socket not connected');
+    }
   }
 
   /// Clear all notifications

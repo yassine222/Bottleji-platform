@@ -10,6 +10,7 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/core/theme/app_colors.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/config/api_config.dart';
+import 'package:botleji/core/api/api_client.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:botleji/core/services/local_notification_service.dart';
@@ -265,7 +266,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           })}');
           
           // Create expired interaction in the database
-          final dio = Dio();
+          final dio = ApiClientConfig.createDio();
           try {
             final response = await dio.post(
               '${ApiConfig.baseUrl}/dropoffs/interactions',
@@ -670,7 +671,7 @@ void _startLocationStream() {
       debugPrint('Directions API URL: ${url.toString().replaceAll('AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E', 'API_KEY_HIDDEN')}');
       debugPrint('Using API key: AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E');
 
-      final dio = Dio();
+      final dio = ApiClientConfig.createDio();
       debugPrint('Making API call...');
       
       Map<String, dynamic> data;

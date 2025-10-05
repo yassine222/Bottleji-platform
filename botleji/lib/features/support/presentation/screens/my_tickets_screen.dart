@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/support_ticket.dart';
 import '../providers/support_ticket_provider.dart';
-import 'ticket_detail_screen.dart';
+import 'ticket_detail_screen_new.dart';
 import 'create_ticket_screen.dart';
 
 class MyTicketsScreen extends ConsumerStatefulWidget {
@@ -13,6 +13,7 @@ class MyTicketsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
+  String _statusFilter = 'All'; // All | Closed
   @override
   void initState() {
     super.initState();
@@ -32,6 +33,24 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list),
+            onSelected: (value) {
+              setState(() {
+                _statusFilter = value;
+              });
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'All',
+                child: Text('All tickets'),
+              ),
+              PopupMenuItem(
+                value: 'Closed',
+                child: Text('Closed only'),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -42,6 +61,9 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       ),
       body: ticketsState.when(
         data: (tickets) {
+          final filteredTickets = _statusFilter == 'Closed'
+              ? tickets.where((t) => t.status == TicketStatus.closed).toList()
+              : tickets;
           if (tickets.isEmpty) {
             return const Center(
               child: Column(
@@ -77,9 +99,9 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: tickets.length,
+              itemCount: filteredTickets.length,
               itemBuilder: (context, index) {
-                final ticket = tickets[index];
+                final ticket = filteredTickets[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
@@ -100,8 +122,6 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                         Row(
                           children: [
                             _buildStatusChip(ticket.status),
-                            const SizedBox(width: 8),
-                            _buildPriorityChip(ticket.priority),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -120,7 +140,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              TicketDetailScreen(ticket: ticket),
+                              TicketDetailScreenNew(ticket: ticket),
                         ),
                       );
                     },

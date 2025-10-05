@@ -6,6 +6,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { CollectorApplication, CollectorApplicationSchema } from '../collector-applications/schemas/collector-application.schema';
 import { Dropoff, DropoffSchema } from '../dropoffs/schemas/dropoff.schema';
+import { CollectorInteraction, CollectorInteractionSchema } from '../dropoffs/schemas/collector-interaction.schema';
 import { CollectorApplicationsModule } from '../collector-applications/collector-applications.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -18,6 +19,7 @@ import { SupportTicketsModule } from '../support-tickets/support-tickets.module'
       { name: User.name, schema: UserSchema },
       { name: CollectorApplication.name, schema: CollectorApplicationSchema },
       { name: Dropoff.name, schema: DropoffSchema },
+      { name: CollectorInteraction.name, schema: CollectorInteractionSchema },
     ]),
     CollectorApplicationsModule,
     UsersModule,

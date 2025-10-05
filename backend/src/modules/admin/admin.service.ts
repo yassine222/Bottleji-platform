@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { User, UserRole, CollectorApplicationStatus } from '../users/schemas/user.schema';
 import { CollectorApplication } from '../collector-applications/schemas/collector-application.schema';
 import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
+import { CollectorInteraction } from '../dropoffs/schemas/collector-interaction.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CollectorApplicationsService } from '../collector-applications/collector-applications.service';
 import { UsersService } from '../users/users.service';
@@ -16,6 +17,7 @@ export class AdminService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(CollectorApplication.name) private collectorApplicationModel: Model<CollectorApplication>,
     @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
+    @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
     private notificationsService: NotificationsService,
     private collectorApplicationsService: CollectorApplicationsService,
     private usersService: UsersService,
@@ -596,6 +598,91 @@ export class AdminService {
       return { 
         success: true, 
         stats: { total: 0, pending: 0, approved: 0, rejected: 0 } 
+      };
+    }
+  }
+
+  async getDropInteractions(dropId: string, excludeUserId?: string) {
+    try {
+      console.log('🔍 Getting drop interactions for dropId:', dropId, 'excludeUserId:', excludeUserId);
+      
+      // Get all interactions for this drop
+      const interactions = await this.interactionModel
+        .find({ dropoffId: dropId })
+        .populate('collectorId', 'name email')
+        .sort({ interactionTime: 1 }) // Sort by oldest first (chronological order)
+        .exec();
+        
+      console.log('🔍 Found interactions:', interactions.length);
+      interactions.forEach((interaction, index) => {
+        console.log(`Interaction ${index + 1}:`, {
+          id: interaction._id?.toString(),
+          collectorId: interaction.collectorId,
+          collectorIdString: interaction.collectorId.toString(),
+          collectorType: typeof interaction.collectorId,
+          interactionType: interaction.interactionType,
+          notes: interaction.notes
+        });
+      });
+
+      // Filter out interactions by the excluded user
+      // For household tickets: exclude the drop creator (household user)
+      // For collector tickets: exclude the ticket creator (collector)
+      const filteredInteractions = excludeUserId 
+        ? interactions.filter(interaction => {
+            const collectorIdStr = interaction.collectorId.toString();
+            const shouldExclude = collectorIdStr === excludeUserId;
+            console.log(`🔍 Filtering interaction: collectorId=${collectorIdStr}, excludeUserId=${excludeUserId}, shouldExclude=${shouldExclude}`);
+            return !shouldExclude;
+          })
+        : interactions;
+        
+      console.log('🔍 Filtered interactions:', filteredInteractions.length);
+
+      // Format the interactions for the frontend
+      const formattedInteractions = filteredInteractions.map(interaction => {
+        const collector = interaction.collectorId as any;
+        
+        // Handle cases where population failed or collector is null/undefined
+        let actorName = 'Unknown User';
+        let actorEmail = '';
+        let actorId = '';
+        
+        if (collector && typeof collector === 'object') {
+          actorId = collector._id?.toString() || collector.id?.toString() || '';
+          actorName = collector.name || collector.email?.split('@')[0] || 'Unknown User';
+          actorEmail = collector.email || '';
+        } else if (typeof collector === 'string') {
+          // If collectorId is still a string (population failed), use the ID directly
+          actorId = collector;
+          actorName = 'User (ID: ' + collector.substring(0, 8) + '...)';
+        }
+        
+        return {
+          id: interaction._id?.toString(),
+          type: interaction.interactionType,
+          actor: {
+            id: actorId,
+            name: actorName,
+            email: actorEmail
+          },
+          at: interaction.interactionTime,
+          note: interaction.notes,
+          cancellationReason: interaction.cancellationReason,
+          location: interaction.location
+        };
+      });
+
+      return {
+        success: true,
+        interactions: formattedInteractions
+      };
+    } catch (error) {
+      console.error('Error getting drop interactions:', error);
+      return {
+        success: false,
+        interactions: [],
+        error: error.message
       };
     }
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { analyticsAPI } from '../../lib/api';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
-import { supportTicketsAPI } from '@/lib/api';
+import { supportTicketsAPI, trainingAPI } from '@/lib/api';
 import { CollectorApplication } from '@/types';
 import { UserRole } from '@/types';
 
@@ -1936,13 +1936,557 @@ function ApplicationsContent() {
 }
 
 function TrainingContent() {
+  const [trainingContent, setTrainingContent] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingContent, setEditingContent] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+
+  const contentTypes = [
+    { value: 'video', label: 'Video', icon: '🎥' },
+    { value: 'image', label: 'Image', icon: '🖼️' },
+    { value: 'story', label: 'Story', icon: '📖' },
+  ];
+
+  const categories = [
+    { value: 'getting_started', label: 'Getting Started', icon: '🚀' },
+    { value: 'advanced_features', label: 'Advanced Features', icon: '⚡' },
+    { value: 'troubleshooting', label: 'Troubleshooting', icon: '🔧' },
+    { value: 'best_practices', label: 'Best Practices', icon: '💡' },
+    { value: 'collector_application', label: 'Collector Application', icon: '📋' },
+    { value: 'payments', label: 'Payments', icon: '💳' },
+    { value: 'notifications', label: 'Notifications', icon: '🔔' },
+  ];
+
+  const loadTrainingContent = async () => {
+    try {
+      setLoading(true);
+      const response = await trainingAPI.getAllContent();
+      setTrainingContent(response.data.content || []);
+    } catch (err: any) {
+      console.error('Error loading training content:', err);
+      setError('Failed to load training content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await trainingAPI.getStats();
+      setStats(response.data);
+    } catch (err: any) {
+      console.error('Error loading training stats:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadTrainingContent();
+    loadStats();
+  }, []);
+
+  const handleCreate = () => {
+    setEditingContent(null);
+    setShowCreateModal(true);
+  };
+
+  const handleEdit = (content: any) => {
+    setEditingContent(content);
+    setShowCreateModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this training content?')) {
+      try {
+        await trainingAPI.deleteContent(id);
+        await loadTrainingContent();
+      } catch (err: any) {
+        console.error('Error deleting training content:', err);
+        setError('Failed to delete training content');
+      }
+    }
+  };
+
+  const handleSave = () => {
+    setShowCreateModal(false);
+    setEditingContent(null);
+    loadTrainingContent();
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setEditingContent(null);
+  };
+
+  const filteredContent = trainingContent.filter(content => {
+    const matchesCategory = !selectedCategory || content.category === selectedCategory;
+    const matchesType = !selectedType || content.type === selectedType;
+    return matchesCategory && matchesType;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg border border-gray-200">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="bg-surface p-4 rounded-md">
-            <p className="text-text-secondary">Training management functionality will be implemented here.</p>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Training Content</h2>
+        <button
+          onClick={handleCreate}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          + Create Content
+        </button>
+      </div>
+
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Total Content</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalContent || 0}</p>
           </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Videos</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.videoCount || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Images</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.imageCount || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Stories</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.storyCount || 0}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex space-x-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filter by Category
+          </label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Categories</option>
+            {categories.map(category => (
+              <option key={category.value} value={category.value}>
+                {category.icon} {category.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filter by Type
+          </label>
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Types</option>
+            {contentTypes.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.icon} {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Content List */}
+      {filteredContent.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p>No training content found.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredContent.map((content) => (
+            <div key={content._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">
+                      {contentTypes.find(t => t.value === content.type)?.icon || '📄'}
+                    </span>
+                    <h3 className="text-lg font-semibold text-gray-900">{content.title}</h3>
+                    {content.isFeatured && (
+                      <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                        ⭐ Featured
+                      </span>
+                    )}
+                    {!content.isActive && (
+                      <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  
+                  <p className="text-gray-600 mb-3">{content.description}</p>
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>
+                      {categories.find(c => c.value === content.category)?.icon} 
+                      {categories.find(c => c.value === content.category)?.label}
+                    </span>
+                    {content.duration && (
+                      <span>⏱️ {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}</span>
+                    )}
+                    <span>📅 {new Date(content.createdAt).toLocaleDateString()}</span>
+                  </div>
+
+                  {/* Media Display */}
+                  {content.type === 'video' && content.mediaUrl && (
+                    <div className="mt-4">
+                      <div className="relative w-full max-w-md">
+                        {content.thumbnailUrl ? (
+                          <img
+                            src={content.thumbnailUrl}
+                            alt={content.title}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="bg-gray-200 h-48 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                              <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                              <p className="text-gray-500">Video Content</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {content.type === 'image' && content.mediaUrl && (
+                    <div className="mt-4">
+                      <img
+                        src={content.mediaUrl}
+                        alt={content.title}
+                        className="w-full max-w-md h-48 object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex space-x-2 ml-4">
+                  <button
+                    onClick={() => handleEdit(content)}
+                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(content._id)}
+                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showCreateModal && (
+        <TrainingContentModal
+          content={editingContent}
+          onClose={handleCloseModal}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
+}
+
+// Training Content Modal Component
+function TrainingContentModal({ content, onClose, onSave }: {
+  content?: any;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [formData, setFormData] = useState(() => {
+    const safeString = (value: any) => (value && typeof value === 'string') ? value : '';
+    const safeNumber = (value: any) => (value && typeof value === 'number') ? value : 0;
+    const safeBoolean = (value: any) => (value && typeof value === 'boolean') ? value : false;
+    
+    return {
+      title: safeString(content?.title),
+      description: safeString(content?.description),
+      type: safeString(content?.type) || 'video',
+      category: safeString(content?.category) || 'getting_started',
+      mediaUrl: safeString(content?.mediaUrl),
+      thumbnailUrl: safeString(content?.thumbnailUrl),
+      content: safeString(content?.content),
+      duration: safeNumber(content?.duration),
+      order: safeNumber(content?.order),
+      isActive: safeBoolean(content?.isActive ?? true),
+      isFeatured: safeBoolean(content?.isFeatured),
+      tags: Array.isArray(content?.tags) ? content.tags : [],
+    };
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const contentTypes = [
+    { value: 'video', label: 'Video', icon: '🎥' },
+    { value: 'image', label: 'Image', icon: '🖼️' },
+    { value: 'story', label: 'Story', icon: '📖' },
+  ];
+
+  const categories = [
+    { value: 'getting_started', label: 'Getting Started', icon: '🚀' },
+    { value: 'advanced_features', label: 'Advanced Features', icon: '⚡' },
+    { value: 'troubleshooting', label: 'Troubleshooting', icon: '🔧' },
+    { value: 'best_practices', label: 'Best Practices', icon: '💡' },
+    { value: 'collector_application', label: 'Collector Application', icon: '📋' },
+    { value: 'payments', label: 'Payments', icon: '💳' },
+    { value: 'notifications', label: 'Notifications', icon: '🔔' },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (content) {
+        await trainingAPI.updateContent(content._id, formData);
+      } else {
+        await trainingAPI.createContent(formData);
+      }
+      onSave();
+    } catch (err: any) {
+      console.error('Error saving training content:', err);
+      setError(err.response?.data?.message || 'Failed to save training content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              {content ? 'Edit Training Content' : 'Create Training Content'}
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title *
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type *
+                </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {contentTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.icon} {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {categories.map(category => (
+                    <option key={category.value} value={category.value}>
+                      {category.icon} {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Media URL
+              </label>
+              <input
+                type="url"
+                value={formData.mediaUrl}
+                onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com/video.mp4"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Thumbnail URL
+              </label>
+              <input
+                type="url"
+                value={formData.thumbnailUrl}
+                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com/thumbnail.jpg"
+              />
+            </div>
+
+            {formData.type === 'story' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Content
+                </label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={5}
+                  placeholder="Enter story content here..."
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (seconds)
+                </label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Display Order
+                </label>
+                <input
+                  type="number"
+                  value={formData.order}
+                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">Active</span>
+              </label>
+
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.isFeatured}
+                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">Featured</span>
+              </label>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : (content ? 'Update' : 'Create')}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -1957,6 +2501,25 @@ function SupportContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [userTyping, setUserTyping] = useState(false);
+  const [userPresent, setUserPresent] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [socket, setSocket] = useState<any>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll conversation to bottom
+  const scrollToBottom = () => {
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  };
 
   const fetchTickets = async () => {
     try {
@@ -1992,19 +2555,459 @@ function SupportContent() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const response = await supportTicketsAPI.getTicketStats();
+      setStats(response.data);
+    } catch (err: any) {
+      console.error('Error loading support ticket stats:', err);
+    }
+  };
+
   useEffect(() => {
     console.log('🔍 useEffect triggered - fetching tickets');
     fetchTickets();
+    fetchStats();
   }, [selectedStatus, selectedCategory]);
+
+  // Real-time Socket.IO connection for support tickets with retry logic
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      console.log('❌ No admin token found for WebSocket connection');
+      return;
+    }
+
+    let retryCount = 0;
+    const maxRetries = 5;
+    let retryTimeout: NodeJS.Timeout;
+
+    const connectWebSocket = () => {
+      console.log(`🔌 Admin Dashboard: Attempting WebSocket connection (attempt ${retryCount + 1}/${maxRetries})`);
+      console.log('🔌 Connecting to: http://localhost:3000/chat');
+      console.log('🔌 Token length:', token.length);
+
+      // Import Socket.IO client dynamically
+      import('socket.io-client').then(({ io }) => {
+        console.log('🔌 Socket.IO client loaded, creating connection...');
+        const newSocket = io('http://localhost:3000/chat', {
+          auth: { token },
+          transports: ['websocket'],
+          timeout: 10000,
+          forceNew: true,
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000
+        });
+        
+        console.log('🔌 Socket created, setting up event listeners...');
+
+        newSocket.on('connect', () => {
+          console.log('🔌 ✅ Admin Dashboard: Connected to chat Socket.IO');
+          console.log('🔌 Socket ID:', newSocket.id);
+          console.log('🔌 Socket connected:', newSocket.connected);
+          console.log('🔌 Socket auth:', newSocket.auth);
+          retryCount = 0; // Reset retry count on successful connection
+          setSocket(newSocket);
+        });
+
+        newSocket.on('connect_error', (error) => {
+          console.error('❌ Admin Dashboard: WebSocket connection error:', error);
+          console.error('❌ Error details:', error.message);
+          setSocket(null);
+          
+          // Retry connection with exponential backoff
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
+            console.log(`🔄 Admin Dashboard: Retrying connection in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+            retryTimeout = setTimeout(connectWebSocket, delay);
+          } else {
+            console.error('❌ Admin Dashboard: Max retry attempts reached, giving up');
+          }
+        });
+
+        newSocket.on('disconnect', (reason) => {
+          console.log('🔌 Admin Dashboard: WebSocket disconnected:', reason);
+          setSocket(null);
+          
+          // Auto-reconnect on disconnect (unless it's a manual disconnect)
+          if (reason !== 'io client disconnect') {
+            console.log('🔄 Admin Dashboard: Auto-reconnecting after disconnect...');
+            setTimeout(connectWebSocket, 2000);
+          }
+        });
+
+        newSocket.on('reconnect', (attemptNumber) => {
+          console.log(`🔌 ✅ Admin Dashboard: Reconnected after ${attemptNumber} attempts`);
+          setSocket(newSocket);
+        });
+
+        newSocket.on('reconnect_error', (error) => {
+          console.error('❌ Admin Dashboard: Reconnection error:', error);
+        });
+
+        newSocket.on('reconnect_failed', () => {
+          console.error('❌ Admin Dashboard: Reconnection failed, will retry manually');
+          setSocket(null);
+        });
+
+        return () => {
+          if (retryTimeout) {
+            clearTimeout(retryTimeout);
+          }
+          newSocket.disconnect();
+        };
+      }).catch((error) => {
+        console.error('❌ Admin Dashboard: Failed to load Socket.IO client:', error);
+        setSocket(null);
+        
+        // Retry loading Socket.IO client
+        if (retryCount < maxRetries) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`🔄 Admin Dashboard: Retrying Socket.IO client load in ${delay}ms`);
+          retryTimeout = setTimeout(connectWebSocket, delay);
+        }
+      });
+    };
+
+    // Start initial connection
+    connectWebSocket();
+
+    return () => {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
+  }, []); // Empty dependency array to run only once
+
+  // Handle ticket-specific events when selectedTicket changes
+  useEffect(() => {
+    if (!socket || !selectedTicket) return;
+
+    // Handle new messages from chat
+    const handleNewMessage = (data: any) => {
+      console.log('📨 ===== ADMIN DASHBOARD: NEW MESSAGE RECEIVED =====');
+      console.log('📨 Message data:', data);
+      console.log('📨 Current selected ticket ID:', selectedTicket?.id);
+      console.log('📨 Message ticket ID:', data.ticketId);
+      
+      if (selectedTicket && selectedTicket.id === data.ticketId) {
+        console.log('📨 ✅ Message matches current ticket, updating conversation');
+        
+        const newMessage = {
+          message: data.message,
+          senderId: data.senderId,
+          senderType: data.senderType,
+          sentAt: data.sentAt,
+          isInternal: data.isInternal,
+        };
+        
+        setSelectedTicket((prev: any) => {
+          console.log('📨 Current messages count:', prev.messages?.length || 0);
+          console.log('📨 Current messages:', prev.messages);
+          
+          // Check if message already exists to prevent duplicates
+          const messageExists = prev.messages?.some((msg: any) => 
+            msg.message === newMessage.message && 
+            msg.sentAt === newMessage.sentAt
+          );
+          
+          if (messageExists) {
+            console.log('📨 ⚠️ Message already exists, skipping duplicate');
+            return prev;
+          }
+          
+          console.log('📨 ✅ Adding new message to conversation');
+          const updatedTicket = {
+            ...prev,
+            messages: [...(prev.messages || []), newMessage]
+          };
+          console.log('📨 New messages count:', updatedTicket.messages.length);
+          console.log('📨 New messages:', updatedTicket.messages);
+          return updatedTicket;
+        });
+        
+        // Auto-scroll to bottom when receiving new message
+        setTimeout(() => {
+          scrollToBottom();
+          console.log('📨 Auto-scrolled to bottom');
+        }, 100);
+      } else {
+        console.log('📨 ❌ Message does not match current ticket');
+      }
+    };
+
+    // Handle typing indicators
+    const handleTypingIndicator = (data: any) => {
+      console.log('📝 Received typing indicator:', data);
+      if (selectedTicket && selectedTicket.id === data.ticketId) {
+        if (data.senderType === 'user') {
+          setUserTyping(data.isTyping);
+        }
+      }
+    };
+
+    // Handle presence indicators
+    const handlePresenceIndicator = (data: any) => {
+      console.log('👤 Received presence indicator:', data);
+      if (selectedTicket && selectedTicket.id === data.ticketId) {
+        if (data.senderType === 'user') {
+          setUserPresent(data.isPresent);
+        }
+      }
+    };
+
+    // Add the event listeners
+    socket.on('new_message', handleNewMessage);
+    socket.on('typing_indicator', handleTypingIndicator);
+    socket.on('user_joined', handlePresenceIndicator);
+    socket.on('user_left', handlePresenceIndicator);
+    
+    // Add catch-all listener for debugging
+    socket.onAny((event: string, data: any) => {
+      console.log('🔍 Admin Dashboard: Received ANY event:', event);
+      console.log('🔍 Admin Dashboard: Event data:', data);
+    });
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 Admin Dashboard: Cleaning up WebSocket event listeners');
+      socket.off('new_message', handleNewMessage);
+      socket.off('typing_indicator', handleTypingIndicator);
+      socket.off('user_joined', handlePresenceIndicator);
+      socket.off('user_left', handlePresenceIndicator);
+    };
+  }, [socket, selectedTicket]);
+
+  // Cleanup socket on unmount
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [socket]);
+
+  // Auto-dismiss notifications after 5 seconds
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const timer = setTimeout(() => {
+        setNotifications(prev => prev.slice(1));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notifications]);
 
   const handleViewTicket = (ticket: any) => {
     setSelectedTicket(ticket);
     setShowTicketModal(true);
+    
+    // Ensure WebSocket connection is established first
+    const ensureConnectionAndJoin = async () => {
+      // If no socket or not connected, try to establish connection
+      if (!socket || !socket.connected) {
+        console.log('🔌 Admin Dashboard: No active socket connection, establishing connection...');
+        
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+          console.error('❌ Admin Dashboard: No admin token found');
+          return;
+        }
+
+        try {
+          // Import Socket.IO client dynamically
+          const { io } = await import('socket.io-client');
+          const newSocket = io('http://localhost:3000/chat', {
+            auth: { token },
+            transports: ['websocket'],
+            timeout: 10000,
+            forceNew: true,
+            reconnection: true,
+            reconnectionAttempts: 3,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
+          });
+
+          // Wait for connection
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Connection timeout'));
+            }, 10000);
+
+            newSocket.on('connect', () => {
+              clearTimeout(timeout);
+              console.log('🔌 ✅ Admin Dashboard: Connected to chat Socket.IO');
+              setSocket(newSocket);
+              resolve(true);
+            });
+
+            newSocket.on('connect_error', (error) => {
+              clearTimeout(timeout);
+              console.error('❌ Admin Dashboard: WebSocket connection error:', error);
+              reject(error);
+            });
+          });
+        } catch (error) {
+          console.error('❌ Admin Dashboard: Failed to establish WebSocket connection:', error);
+          return;
+        }
+      }
+
+      // Now join the ticket room
+      if (socket && socket.connected) {
+        console.log('👤 Admin Dashboard: Joining ticket room:', ticket.id);
+        console.log('👤 Admin Dashboard: Socket state:', socket.connected);
+        console.log('👤 Admin Dashboard: Socket ID:', socket.id);
+        
+        socket.emit('join_ticket', {
+          ticketId: ticket.id,
+          senderType: 'agent'
+        });
+        
+        // Send presence indicator
+        socket.emit('presence_indicator', {
+          ticketId: ticket.id,
+          isPresent: true,
+          senderType: 'agent'
+        });
+        
+        console.log('👤 Admin Dashboard: Successfully joined ticket room and sent presence indicator');
+      }
+    };
+
+    // Execute connection and room joining
+    ensureConnectionAndJoin();
+
+    // Auto-scroll to bottom when opening ticket
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
   };
 
   const handleCloseModal = () => {
+    // Leave ticket room and send presence indicator
+    if (selectedTicket && socket && socket.connected) {
+      console.log('👋 Admin Dashboard: Leaving ticket room:', selectedTicket.id);
+      
+      socket.emit('leave_ticket', {
+        ticketId: selectedTicket.id,
+        senderType: 'agent'
+      });
+      
+      // Send presence indicator that admin left
+      socket.emit('presence_indicator', {
+        ticketId: selectedTicket.id,
+        isPresent: false,
+        senderType: 'agent'
+      });
+      
+      console.log('👋 Admin Dashboard: Successfully left ticket room and sent presence indicator');
+    }
+    
     setShowTicketModal(false);
     setSelectedTicket(null);
+    setNewMessage('');
+    setUserTyping(false);
+    setUserPresent(false);
+    setIsTyping(false);
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      setTypingTimeout(null);
+    }
+  };
+
+  const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
+    try {
+      setUpdatingStatus(true);
+      await supportTicketsAPI.updateTicketStatus(ticketId, newStatus);
+      
+      // Update the ticket in the local state
+      setTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+        )
+      );
+      
+      // Update selected ticket if it's the same
+      if (selectedTicket && selectedTicket.id === ticketId) {
+        setSelectedTicket((prev: any) => ({ ...prev, status: newStatus }));
+      }
+      
+    } catch (err: any) {
+      console.error('Error updating ticket status:', err);
+      setError('Failed to update ticket status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedTicket) return;
+    
+    try {
+      setSendingMessage(true);
+      console.log('📤 Sending message to ticket:', selectedTicket.id);
+      console.log('📤 Message content:', newMessage.trim());
+      
+      // Send message via API to save to database (this will also trigger real-time updates)
+      const response = await supportTicketsAPI.addMessage(selectedTicket.id, newMessage.trim());
+      
+      console.log('✅ Message sent successfully:', response);
+      
+      // Clear the message input
+      setNewMessage('');
+      
+      // Stop typing indicator
+      setIsTyping(false);
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        setTypingTimeout(null);
+      }
+
+      // The message will be added via WebSocket notification automatically
+    } catch (err: any) {
+      console.error('❌ Error sending message:', err);
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error data:', err.response?.data);
+      setError('Failed to send message');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Send typing start indicator
+    if (!isTyping && socket && selectedTicket) {
+      setIsTyping(true);
+      socket.emit('typing_start', {
+        ticketId: selectedTicket.id,
+        senderType: 'agent'
+      });
+    }
+    
+    // Clear existing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    // Set new timeout to stop typing indicator
+    const timeout = setTimeout(() => {
+      setIsTyping(false);
+      // Send stop typing indicator
+      if (socket && selectedTicket) {
+        socket.emit('typing_stop', {
+          ticketId: selectedTicket.id,
+          senderType: 'agent'
+        });
+      }
+    }, 1000);
+    
+    setTypingTimeout(timeout);
   };
 
   // Debug logging
@@ -2115,10 +3118,45 @@ function SupportContent() {
         </div>
         
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
+            {notifications.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-gray-600 hover:text-gray-900"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.828 7l2.586 2.586a2 2 0 002.828 0L12 7H4.828z" />
+                  </svg>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
+                    <div className="p-3 border-b">
+                      <h3 className="font-semibold">Notifications</h3>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notifications.map(notification => (
+                        <div key={notification.id} className="p-3 border-b hover:bg-gray-50">
+                          <p className="text-sm">{notification.message}</p>
+                          <p className="text-xs text-gray-500">{notification.timestamp.toLocaleTimeString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex space-x-4">
             <button
-              onClick={fetchTickets}
+              onClick={() => {
+                fetchTickets();
+                fetchStats();
+              }}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
               Refresh
@@ -2154,6 +3192,28 @@ function SupportContent() {
             </select>
           </div>
         </div>
+
+        {/* Stats */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-medium text-gray-500">Total Tickets</h3>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalTickets || 0}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-medium text-gray-500">Open</h3>
+              <p className="text-2xl font-bold text-yellow-600">{stats.openTickets || 0}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-medium text-gray-500">In Progress</h3>
+              <p className="text-2xl font-bold text-blue-600">{stats.inProgressTickets || 0}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-medium text-gray-500">Resolved</h3>
+              <p className="text-2xl font-bold text-green-600">{stats.resolvedTickets || 0}</p>
+            </div>
+          </div>
+        )}
 
         {tickets.length === 0 ? (
           <div className="text-center py-12">
@@ -2214,9 +3274,11 @@ function SupportContent() {
             <div className="mt-3">
               {/* Modal Header */}
               <div className="flex items-center justify-between pb-4 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Support Ticket Details
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Support Ticket Details
+                  </h3>
+                </div>
                 <button
                   onClick={handleCloseModal}
                   className="text-gray-400 hover:text-gray-600"
@@ -2239,9 +3301,51 @@ function SupportContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                      {selectedTicket.status.replace('_', ' ')}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+                        {selectedTicket.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    
+                    {/* Status Update Buttons */}
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {selectedTicket.status !== 'open' && (
+                        <button
+                          onClick={() => handleUpdateStatus(selectedTicket.id, 'open')}
+                          disabled={updatingStatus}
+                          className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
+                        >
+                          Mark Open
+                        </button>
+                      )}
+                      {selectedTicket.status !== 'in_progress' && (
+                        <button
+                          onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress')}
+                          disabled={updatingStatus}
+                          className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50"
+                        >
+                          Start Progress
+                        </button>
+                      )}
+                      {selectedTicket.status !== 'resolved' && (
+                        <button
+                          onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved')}
+                          disabled={updatingStatus}
+                          className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50"
+                        >
+                          Mark Resolved
+                        </button>
+                      )}
+                      {selectedTicket.status !== 'closed' && (
+                        <button
+                          onClick={() => handleUpdateStatus(selectedTicket.id, 'closed')}
+                          disabled={updatingStatus}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          Close Ticket
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Priority</label>
@@ -2288,11 +3392,7 @@ function SupportContent() {
                     <div>
                       <span className="text-gray-500">User ID:</span>
                       <span className="ml-2 text-gray-900 font-mono text-xs">
-                        {typeof selectedTicket.userId === 'object' && selectedTicket.userId._id 
-                          ? selectedTicket.userId._id 
-                          : typeof selectedTicket.userId === 'string' 
-                          ? selectedTicket.userId 
-                          : 'N/A'}
+                        {selectedTicket.userId?.id || selectedTicket.userId?._id || (typeof selectedTicket.userId === 'string' ? selectedTicket.userId : 'N/A')}
                       </span>
                     </div>
                   </div>
@@ -2304,53 +3404,498 @@ function SupportContent() {
                     <label className="block text-sm font-medium text-gray-700">Related Context</label>
                     <div className="mt-1 space-y-3">
                       {selectedTicket.relatedDropId && (
-                        <div className="p-3 bg-blue-50 rounded-md">
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span className="font-medium text-blue-900">Related Drop</span>
+                            <span className="font-semibold text-blue-900">Related Drop Details</span>
                           </div>
-                          <div className="mt-2 text-sm text-blue-800">
-                            <p><strong>Bottles:</strong> {selectedTicket.relatedDropId.numberOfBottles || 0}</p>
-                            <p><strong>Cans:</strong> {selectedTicket.relatedDropId.numberOfCans || 0}</p>
-                            <p><strong>Type:</strong> {selectedTicket.relatedDropId.bottleType || 'N/A'}</p>
-                            <p><strong>Status:</strong> {selectedTicket.relatedDropId.status || 'N/A'}</p>
-                            <p><strong>Created:</strong> {selectedTicket.relatedDropId.createdAt ? new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString() : 'N/A'}</p>
-                            {selectedTicket.relatedDropId.notes && (
-                              <p><strong>Notes:</strong> {selectedTicket.relatedDropId.notes}</p>
-                            )}
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Drop Information */}
+                            <div className="space-y-2 text-sm text-blue-800">
+                              <div className="flex justify-between">
+                                <span className="font-medium">Bottles:</span>
+                                <span>{selectedTicket.relatedDropId.numberOfBottles || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Cans:</span>
+                                <span>{selectedTicket.relatedDropId.numberOfCans || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Type:</span>
+                                <span>{selectedTicket.relatedDropId.bottleType || 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Status:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  selectedTicket.relatedDropId.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  selectedTicket.relatedDropId.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                  selectedTicket.relatedDropId.status === 'collected' ? 'bg-green-100 text-green-800' :
+                                  selectedTicket.relatedDropId.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {selectedTicket.relatedDropId.status || 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Created:</span>
+                                <span>{selectedTicket.relatedDropId.createdAt ? new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                              {selectedTicket.relatedDropId.notes && (
+                                <div className="mt-2 p-2 bg-blue-100 rounded">
+                                  <span className="font-medium">Notes:</span>
+                                  <p className="text-xs mt-1">{selectedTicket.relatedDropId.notes}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Drop Image and Map */}
+                            <div className="space-y-3">
+                              {/* Drop Image */}
+                              {selectedTicket.relatedDropId.images && selectedTicket.relatedDropId.images.length > 0 && (
+                                <div>
+                                  <h4 className="font-medium text-blue-900 mb-2">Drop Images</h4>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {selectedTicket.relatedDropId.images.slice(0, 4).map((image: string, index: number) => (
+                                      <img
+                                        key={index}
+                                        src={image}
+                                        alt={`Drop image ${index + 1}`}
+                                        className="w-full h-20 object-cover rounded border"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Location Map */}
+                              {selectedTicket.relatedDropId.location && (
+                                <div>
+                                  <h4 className="font-medium text-blue-900 mb-2">Drop Location</h4>
+                                  <div className="bg-white rounded border p-2">
+                                    <div className="aspect-video bg-gray-100 rounded flex items-center justify-center">
+                                      <div className="text-center">
+                                        <svg className="w-8 h-8 text-blue-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                        </svg>
+                                        <p className="text-xs text-gray-600">
+                                          {selectedTicket.relatedDropId.location.address || 'Location Available'}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {selectedTicket.relatedDropId.location.latitude?.toFixed(4)}, {selectedTicket.relatedDropId.location.longitude?.toFixed(4)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
+
+                          {/* Drop Interaction Timeline */}
+                          {(() => {
+                            console.log('🔍 Debug - selectedTicket:', selectedTicket);
+                            console.log('🔍 Debug - selectedTicket.relatedDropId:', selectedTicket.relatedDropId);
+                            console.log('🔍 Debug - interactions:', selectedTicket.relatedDropId?.interactions);
+                            console.log('🔍 Debug - interactions length:', selectedTicket.relatedDropId?.interactions?.length);
+                            if (selectedTicket.relatedDropId?.interactions?.length > 0) {
+                              console.log('🔍 Debug - first interaction:', selectedTicket.relatedDropId.interactions[0]);
+                            }
+                            return null;
+                          })()}
+                          {selectedTicket.relatedDropId?.interactions && selectedTicket.relatedDropId.interactions.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-blue-200">
+                              <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
+                              <div className="relative">
+                                {/* Timeline line */}
+                                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-200"></div>
+                                
+                                <div className="space-y-4 max-h-60 overflow-y-auto">
+                                  {selectedTicket.relatedDropId.interactions.map((interaction: any, index: number) => {
+                                    const getInteractionIcon = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return '✓';
+                                        case 'COLLECTED':
+                                          return '📦';
+                                        case 'CANCELLED':
+                                          return '✗';
+                                        case 'EXPIRED':
+                                          return '⏰';
+                                        default:
+                                          return '•';
+                                      }
+                                    };
+
+                                    const getInteractionColor = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return 'bg-green-100 text-green-800 border-green-200';
+                                        case 'COLLECTED':
+                                          return 'bg-blue-100 text-blue-800 border-blue-200';
+                                        case 'CANCELLED':
+                                          return 'bg-red-100 text-red-800 border-red-200';
+                                        case 'EXPIRED':
+                                          return 'bg-orange-100 text-orange-800 border-orange-200';
+                                        default:
+                                          return 'bg-gray-100 text-gray-800 border-gray-200';
+                                      }
+                                    };
+
+                                    const getInteractionTitle = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return 'Drop Accepted';
+                                        case 'COLLECTED':
+                                          return 'Successfully Collected';
+                                        case 'CANCELLED':
+                                          return 'Collection Cancelled';
+                                        case 'EXPIRED':
+                                          return 'Collection Expired';
+                                        default:
+                                          return type;
+                                      }
+                                    };
+
+                                    return (
+                                      <div key={interaction.id || index} className="relative flex items-start space-x-4">
+                                        {/* Timeline dot */}
+                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${getInteractionColor(interaction.type)}`}>
+                                          {getInteractionIcon(interaction.type)}
+                                        </div>
+                                        
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-3">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="text-sm font-medium text-gray-900">
+                                              {getInteractionTitle(interaction.type)}
+                                            </h5>
+                                            <span className="text-xs text-gray-500">
+                                              {new Date(interaction.timestamp).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="mt-1 text-sm text-gray-600">
+                                            <p><strong>Collector:</strong> {interaction.collectorName || 'Unknown Collector'}</p>
+                                            {interaction.cancellationReason && (
+                                              <p><strong>Reason:</strong> {interaction.cancellationReason}</p>
+                                            )}
+                                            {interaction.numberOfItems && (
+                                              <p><strong>Items:</strong> {interaction.numberOfItems} ({interaction.bottleType})</p>
+                                            )}
+                                            {interaction.location && (
+                                              <p><strong>Location:</strong> {interaction.location.coordinates?.[0]?.toFixed(4)}, {interaction.location.coordinates?.[1]?.toFixed(4)}</p>
+                                            )}
+                                          </div>
+                                          
+                                          {interaction.notes && (
+                                            <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                                              <strong>Notes:</strong> {interaction.notes}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Show message when no interactions are found */}
+                          {selectedTicket.relatedDropId && (!selectedTicket.relatedDropId.interactions || selectedTicket.relatedDropId.interactions.length === 0) && (
+                            <div className="mt-4 pt-4 border-t border-blue-200">
+                              <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
+                              <div className="text-center py-4 text-gray-500">
+                                <p>No interaction history found for this drop.</p>
+                                <p className="text-xs mt-1">Debug: relatedDropId exists but no interactions</p>
+                                <p className="text-xs mt-1">Drop ID: {selectedTicket.relatedDropId._id?.toString() || (typeof selectedTicket.relatedDropId === 'string' ? selectedTicket.relatedDropId : 'Object')}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Always show debug info for relatedDropId */}
+                          {selectedTicket.relatedDropId && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                              <p><strong>Debug Info:</strong></p>
+                              <p>Drop ID: {selectedTicket.relatedDropId._id?.toString() || (typeof selectedTicket.relatedDropId === 'string' ? selectedTicket.relatedDropId : 'Object')}</p>
+                              <p>Interactions: {selectedTicket.relatedDropId.interactions?.length || 0}</p>
+                              <p>Has interactions: {selectedTicket.relatedDropId.interactions ? 'Yes' : 'No'}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                       
                       {selectedTicket.relatedCollectionId && (
-                        <div className="p-3 bg-green-50 rounded-md">
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="font-medium text-green-900">Related Collection</span>
+                            <span className="font-semibold text-green-900">Related Collection Details</span>
                           </div>
-                          <div className="mt-2 text-sm text-green-800">
-                            <p><strong>Status:</strong> {selectedTicket.relatedCollectionId.status || 'N/A'}</p>
-                            <p><strong>Completed:</strong> {selectedTicket.relatedCollectionId.completedAt ? new Date(selectedTicket.relatedCollectionId.completedAt).toLocaleDateString() : 'N/A'}</p>
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-2 text-sm text-green-800">
+                              <div className="flex justify-between">
+                                <span className="font-medium">Status:</span>
+                                <span>{selectedTicket.relatedCollectionId.status || 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Completed:</span>
+                                <span>{selectedTicket.relatedCollectionId.completedAt ? new Date(selectedTicket.relatedCollectionId.completedAt).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Collection Interaction Timeline */}
+                          {selectedTicket.relatedCollectionId.interactions && selectedTicket.relatedCollectionId.interactions.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-green-200">
+                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline</h4>
+                              <div className="relative">
+                                {/* Timeline line */}
+                                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-green-200"></div>
+                                
+                                <div className="space-y-4 max-h-60 overflow-y-auto">
+                                  {selectedTicket.relatedCollectionId.interactions.map((interaction: any, index: number) => {
+                                    const getInteractionIcon = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return '✓';
+                                        case 'COLLECTED':
+                                          return '📦';
+                                        case 'CANCELLED':
+                                          return '✗';
+                                        case 'EXPIRED':
+                                          return '⏰';
+                                        default:
+                                          return '•';
+                                      }
+                                    };
+
+                                    const getInteractionColor = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return 'bg-green-100 text-green-800 border-green-200';
+                                        case 'COLLECTED':
+                                          return 'bg-blue-100 text-blue-800 border-blue-200';
+                                        case 'CANCELLED':
+                                          return 'bg-red-100 text-red-800 border-red-200';
+                                        case 'EXPIRED':
+                                          return 'bg-orange-100 text-orange-800 border-orange-200';
+                                        default:
+                                          return 'bg-gray-100 text-gray-800 border-gray-200';
+                                      }
+                                    };
+
+                                    const getInteractionTitle = (type: string) => {
+                                      switch (type) {
+                                        case 'ACCEPTED':
+                                          return 'Collection Accepted';
+                                        case 'COLLECTED':
+                                          return 'Successfully Collected';
+                                        case 'CANCELLED':
+                                          return 'Collection Cancelled';
+                                        case 'EXPIRED':
+                                          return 'Collection Expired';
+                                        default:
+                                          return type;
+                                      }
+                                    };
+
+                                    return (
+                                      <div key={interaction.id || index} className="relative flex items-start space-x-4">
+                                        {/* Timeline dot */}
+                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${getInteractionColor(interaction.type)}`}>
+                                          {getInteractionIcon(interaction.type)}
+                                        </div>
+                                        
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-3">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="text-sm font-medium text-gray-900">
+                                              {getInteractionTitle(interaction.type)}
+                                            </h5>
+                                            <span className="text-xs text-gray-500">
+                                              {new Date(interaction.timestamp).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="mt-1 text-sm text-gray-600">
+                                            <p><strong>Collector:</strong> {interaction.collectorName || 'Unknown Collector'}</p>
+                                            {interaction.cancellationReason && (
+                                              <p><strong>Reason:</strong> {interaction.cancellationReason}</p>
+                                            )}
+                                            {interaction.numberOfItems && (
+                                              <p><strong>Items:</strong> {interaction.numberOfItems} ({interaction.bottleType})</p>
+                                            )}
+                                            {interaction.location && (
+                                              <p><strong>Location:</strong> {interaction.location.coordinates?.[0]?.toFixed(4)}, {interaction.location.coordinates?.[1]?.toFixed(4)}</p>
+                                            )}
+                                            {interaction.dropoffInfo && (
+                                              <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                                <p className="text-xs font-medium text-blue-800">Related Drop Information:</p>
+                                                <p className="text-xs text-blue-700"><strong>Drop ID:</strong> {interaction.dropoffInfo.id?.substring(0, 8)}...</p>
+                                                <p className="text-xs text-blue-700"><strong>Items:</strong> {interaction.dropoffInfo.numberOfBottles} bottles, {interaction.dropoffInfo.numberOfCans} cans</p>
+                                                <p className="text-xs text-blue-700"><strong>Type:</strong> {interaction.dropoffInfo.bottleType}</p>
+                                                <p className="text-xs text-blue-700"><strong>Status:</strong> {interaction.dropoffInfo.status}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                          
+                                          {interaction.notes && (
+                                            <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                                              <strong>Notes:</strong> {interaction.notes}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Show message when no interactions are found for collection */}
+                          {selectedTicket.relatedCollectionId && (!selectedTicket.relatedCollectionId.interactions || selectedTicket.relatedCollectionId.interactions.length === 0) && (
+                            <div className="mt-4 pt-4 border-t border-green-200">
+                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline</h4>
+                              <div className="text-center py-4 text-gray-500">
+                                <p>No interaction history found for this collection.</p>
+                                <p className="text-xs mt-1">Debug: relatedCollectionId exists but no interactions</p>
+                                <p className="text-xs mt-1">Collection ID: {selectedTicket.relatedCollectionId._id?.toString() || (typeof selectedTicket.relatedCollectionId === 'string' ? selectedTicket.relatedCollectionId : 'Object')}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Always show debug info for relatedCollectionId */}
+                          {selectedTicket.relatedCollectionId && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                              <p><strong>Debug Info:</strong></p>
+                              <p>Collection ID: {selectedTicket.relatedCollectionId._id?.toString() || (typeof selectedTicket.relatedCollectionId === 'string' ? selectedTicket.relatedCollectionId : 'Object')}</p>
+                              <p>Interactions: {selectedTicket.relatedCollectionId.interactions?.length || 0}</p>
+                              <p>Has interactions: {selectedTicket.relatedCollectionId.interactions ? 'Yes' : 'No'}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                       
                       {selectedTicket.relatedApplicationId && (
-                        <div className="p-3 bg-purple-50 rounded-md">
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span className="font-medium text-purple-900">Related Application</span>
+                            <span className="font-semibold text-purple-900">Collector Application</span>
                           </div>
-                          <div className="mt-2 text-sm text-purple-800">
-                            <p><strong>Status:</strong> {selectedTicket.relatedApplicationId.status || 'N/A'}</p>
-                            <p><strong>Submitted:</strong> {selectedTicket.relatedApplicationId.submittedAt ? new Date(selectedTicket.relatedApplicationId.submittedAt).toLocaleDateString() : 'N/A'}</p>
+                          
+                          {typeof selectedTicket.relatedApplicationId === 'string' ? (
+                            // Application ID is a string (ObjectId) - not populated
+                            <div className="space-y-3">
+                              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                <div className="flex items-center space-x-2">
+                                  <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                  </svg>
+                                  <span className="text-sm font-medium text-yellow-800">Application Not Loaded</span>
+                                </div>
+                                <p className="text-xs text-yellow-700 mt-1">
+                                  Application ID: <span className="font-mono">{selectedTicket.relatedApplicationId}</span>
+                                </p>
+                                <p className="text-xs text-yellow-600 mt-2">
+                                  The application details are not available in this ticket. Please check the Applications tab for full details.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            // Application is populated object
+                            <div className="space-y-3">
+                              {/* Application Information */}
+                              <div className="space-y-2 text-sm text-purple-800">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Status:</span>
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    selectedTicket.relatedApplicationId.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    selectedTicket.relatedApplicationId.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    selectedTicket.relatedApplicationId.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {selectedTicket.relatedApplicationId.status || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Applied:</span>
+                                  <span>{selectedTicket.relatedApplicationId.appliedAt ? new Date(selectedTicket.relatedApplicationId.appliedAt).toLocaleDateString() : 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Reviewed:</span>
+                                  <span>{selectedTicket.relatedApplicationId.reviewedAt ? new Date(selectedTicket.relatedApplicationId.reviewedAt).toLocaleDateString() : 'Not reviewed'}</span>
+                                </div>
+                                {selectedTicket.relatedApplicationId.rejectionReason && (
+                                  <div className="mt-2 p-2 bg-red-100 rounded">
+                                    <span className="font-medium">Rejection Reason:</span>
+                                    <p className="text-xs mt-1">{selectedTicket.relatedApplicationId.rejectionReason}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Step-by-Step Resolution Guide */}
+                          <div className="mt-4 pt-4 border-t border-purple-200">
+                            <h4 className="font-medium text-purple-900 mb-3">How to Resolve This Application Issue</h4>
+                            <div className="space-y-2 text-sm text-purple-800">
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">1</span>
+                                <div>
+                                  <p className="font-medium">Navigate to Applications Tab</p>
+                                  <p className="text-xs text-purple-600">Go to the main dashboard and click on the "Applications" tab to access the dedicated application review interface.</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">2</span>
+                                <div>
+                                  <p className="font-medium">Find This Application</p>
+                                  <p className="text-xs text-purple-600">Search for this user's application using their name ({selectedTicket.userId?.name || 'N/A'}) or email ({selectedTicket.userId?.email || 'N/A'}).</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">3</span>
+                                <div>
+                                  <p className="font-medium">Review Application Details</p>
+                                  <p className="text-xs text-purple-600">Check the ID card photo, selfie with ID, and all submitted documents for authenticity and clarity.</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">4</span>
+                                <div>
+                                  <p className="font-medium">Make Decision</p>
+                                  <p className="text-xs text-purple-600">Approve or reject the application with appropriate notes explaining your decision.</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">5</span>
+                                <div>
+                                  <p className="font-medium">Update Status</p>
+                                  <p className="text-xs text-purple-600">The application status will be automatically updated and the user will be notified of the decision.</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start space-x-2">
+                                <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">6</span>
+                                <div>
+                                  <p className="font-medium">Resolve Support Ticket</p>
+                                  <p className="text-xs text-purple-600">Return to this support ticket and update its status to "Resolved" with a summary of the action taken.</p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -2358,30 +3903,7 @@ function SupportContent() {
                   </div>
                 )}
 
-                {/* Location Information */}
-                {selectedTicket.location && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Location Information</label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                      <div className="text-sm text-gray-900">
-                        <p><strong>Address:</strong> {selectedTicket.location.address}</p>
-                        <p><strong>Coordinates:</strong> {selectedTicket.location.latitude}, {selectedTicket.location.longitude}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-                {/* Context Metadata */}
-                {selectedTicket.contextMetadata && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Additional Context</label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                      <pre className="text-sm text-gray-900 whitespace-pre-wrap">
-                        {JSON.stringify(selectedTicket.contextMetadata, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
 
                 {/* Timestamps */}
                 <div>
@@ -2421,8 +3943,18 @@ function SupportContent() {
 
                 {/* Conversation History */}
                 <div className="border-t pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Conversation History</label>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Conversation History ({selectedTicket.messages?.length || 0} messages)
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${socket ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <span className="text-xs text-gray-500">
+                        {socket ? 'Connected' : 'Connecting...'}
+                      </span>
+                    </div>
+                  </div>
+                  <div ref={conversationRef} className="space-y-4 max-h-96 overflow-y-auto">
                     {selectedTicket.messages && selectedTicket.messages.length > 0 ? (
                       selectedTicket.messages.map((message: any, index: number) => (
                         <div
@@ -2464,10 +3996,29 @@ function SupportContent() {
                   <div className="mt-4 border-t pt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Send Response</label>
                     <textarea
+                      value={newMessage}
+                      onChange={handleTyping}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={3}
                       placeholder="Type your response here..."
+                      disabled={sendingMessage}
                     />
+                    
+                    {/* Typing and Presence Indicators */}
+                    <div className="mt-2 text-sm text-gray-500">
+                      {userPresent && (
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>User is online</span>
+                        </div>
+                      )}
+                      {userTyping && (
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span>User is typing...</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="mt-3 flex justify-end space-x-3">
                       <button
                         onClick={handleCloseModal}
@@ -2475,8 +4026,12 @@ function SupportContent() {
                       >
                         Cancel
                       </button>
-                      <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">
-                        Send Response
+                      <button 
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || sendingMessage}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {sendingMessage ? 'Sending...' : 'Send Response'}
                       </button>
                     </div>
                   </div>
@@ -2526,7 +4081,7 @@ function AdminManagementContent() {
         const response = await usersAPI.getAdminUsers();
         
         // Filter for admin users only
-        const allUsers = response.users || [];
+        const allUsers = response.data.users || [];
         console.log('All users from API:', allUsers);
         
         const adminUsers = allUsers.filter((user: any) => 
@@ -2555,7 +4110,7 @@ function AdminManagementContent() {
       await usersAPI.updateUserRoles(selectedUser.id, newRoles);
       // Refresh the list
       const response = await usersAPI.getAdminUsers();
-      const allUsers = response.users || [];
+      const allUsers = response.data.users || [];
       const adminUsers = allUsers.filter((user: any) => 
         user.roles && user.roles.some((role: string) => 
           ['super_admin', 'admin', 'moderator', 'support_agent'].includes(role)
@@ -2585,7 +4140,7 @@ function AdminManagementContent() {
       
       // Refresh the admin users list
       const usersResponse = await usersAPI.getAdminUsers();
-      const allUsers = usersResponse.users || [];
+      const allUsers = usersResponse.data.users || [];
       const adminUsers = allUsers.filter((user: any) => 
         user.roles && user.roles.some((role: string) => 
           ['super_admin', 'admin', 'moderator', 'support_agent'].includes(role)

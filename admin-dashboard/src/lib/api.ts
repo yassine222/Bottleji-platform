@@ -132,17 +132,21 @@ export const usersAPI = {
 
 // Drops API
 export const dropsAPI = {
+  // Use public dropoffs endpoints; these return imageUrl and location
   getAllDrops: (page = 1, limit = 20, status?: string) =>
-    api.get('/admin/drops', { params: { page, limit, status } }),
+    api.get('/dropoffs', { params: { page, limit, status } }),
   
   getDropById: (dropId: string) =>
-    api.get(`/admin/drops/${dropId}`),
+    api.get(`/dropoffs/${dropId}`),
   
   updateDrop: (dropId: string, updateData: any) =>
-    api.put(`/admin/drops/${dropId}`, updateData),
+    api.put(`/dropoffs/${dropId}`, updateData),
   
   deleteDrop: (dropId: string) =>
-    api.delete(`/admin/drops/${dropId}`),
+    api.delete(`/dropoffs/${dropId}`),
+  
+  getDropInteractions: (dropId: string, excludeUserId?: string) =>
+    api.get(`/admin/dropoffs/${dropId}/interactions`, { params: { excludeUserId } }),
 };
 
 // Applications API
@@ -164,25 +168,25 @@ export const applicationsAPI = {
 // Support Tickets API
 export const supportTicketsAPI = {
   getAllTickets: (page = 1, limit = 20, status?: string, category?: string) =>
-    api.get('/admin/support-tickets', { params: { page, limit, status, category } }),
+    api.get('/support-tickets/admin/all', { params: { page, limit, status, category } }),
   
   getTicketById: (ticketId: string) =>
-    api.get(`/admin/support-tickets/${ticketId}`),
+    api.get(`/support-tickets/${ticketId}`),
   
   updateTicketStatus: (ticketId: string, status: string) =>
-    api.put(`/admin/support-tickets/${ticketId}/status`, { status }),
+    api.put(`/support-tickets/${ticketId}/status`, { status }),
   
   assignTicket: (ticketId: string, assignedTo: string) =>
-    api.put(`/admin/support-tickets/${ticketId}/assign`, { assignedTo }),
+    api.put(`/support-tickets/${ticketId}/assign`, { assignedTo }),
   
   addMessage: (ticketId: string, message: string, isInternal = false) =>
-    api.post(`/admin/support-tickets/${ticketId}/messages`, { message, isInternal }),
+    api.post(`/support-tickets/${ticketId}/messages`, { message, isInternal }),
   
   getTicketStats: () =>
-    api.get('/admin/support-tickets/stats'),
+    api.get('/support-tickets/admin/stats'),
   
   escalateTicket: (ticketId: string, escalatedTo: string, reason: string) =>
-    api.put(`/admin/support-tickets/${ticketId}/escalate`, { escalatedTo, reason }),
+    api.post(`/support-tickets/${ticketId}/escalate`, { escalatedTo, reason }),
   
   resolveTicket: (ticketId: string, resolution: string) =>
     api.put(`/admin/support-tickets/${ticketId}/resolve`, { resolution }),
@@ -198,6 +202,49 @@ export const analyticsAPI = {
   
   getAnalyticsByDateRange: (startDate: string, endDate: string) =>
     api.get('/admin/dashboard', { params: { startDate, endDate } }),
+};
+
+// Training API
+export const trainingAPI = {
+  // Get all training content with filters
+  getAllContent: (params?: {
+    category?: string;
+    type?: string;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    page?: number;
+    limit?: number;
+  }) => api.get('/training', { params }),
+
+  // Get training content by ID
+  getContentById: (id: string) => api.get(`/training/${id}`),
+
+  // Create new training content
+  createContent: (data: any) => api.post('/training', data),
+
+  // Update training content
+  updateContent: (id: string, data: any) => api.patch(`/training/${id}`, data),
+
+  // Delete training content
+  deleteContent: (id: string) => api.delete(`/training/${id}`),
+
+  // Get content by category
+  getContentByCategory: (category: string) => api.get(`/training/category/${category}`),
+
+  // Get featured content
+  getFeaturedContent: () => api.get('/training/featured'),
+
+  // Get categories with counts
+  getCategories: () => api.get('/training/categories'),
+
+  // Get training statistics
+  getStats: () => api.get('/training/stats'),
+
+  // Increment view count
+  incrementViewCount: (id: string) => api.post(`/training/${id}/view`),
+
+  // Toggle like
+  toggleLike: (id: string) => api.post(`/training/${id}/like`),
 };
 
 export default api; 

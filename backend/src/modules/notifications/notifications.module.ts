@@ -18,6 +18,6 @@ import { UsersModule } from '../users/users.module';
     }),
   ],
   providers: [NotificationsGateway, NotificationsService],
-  exports: [NotificationsService],
+  exports: [NotificationsService, NotificationsGateway],
 })
 export class NotificationsModule {} 

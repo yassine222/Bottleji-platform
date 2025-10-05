@@ -39,4 +39,8 @@ export class CreateDropoffDto {
   @ValidateNested()
   @Type(() => LocationDto)
   location: LocationDto;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
 } 

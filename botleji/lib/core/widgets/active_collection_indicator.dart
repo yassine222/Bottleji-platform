@@ -7,6 +7,7 @@ import 'package:botleji/core/theme/app_colors.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:botleji/core/api/api_client.dart';
 import 'package:botleji/core/config/api_config.dart';
 import 'package:botleji/core/services/local_notification_service.dart';
 
@@ -142,7 +143,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       debugPrint('🚀 Collector ID: ${activeCollection.collectorId}');
       
       // Create expired interaction in the database
-      final dio = Dio();
+      final dio = ApiClientConfig.createDio();
       final response = await dio.post(
         '${ApiConfig.baseUrl}/dropoffs/interactions',
         data: {

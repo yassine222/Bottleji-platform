@@ -16,5 +16,6 @@ import { User, UserSchema } from '../users/schemas/user.schema';
   ],
   controllers: [DropoffsController],
   providers: [DropoffsService],
+  exports: [DropoffsService],
 })
 export class DropoffsModule {} 

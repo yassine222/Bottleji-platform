@@ -117,6 +117,12 @@ class SupportTicket {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final String? relatedDropId;
+  final String? relatedCollectionId;
+  final String? relatedApplicationId;
+  final String? relatedUserId;
+  final Map<String, dynamic>? contextMetadata;
+  final Map<String, dynamic>? location;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -147,6 +153,12 @@ class SupportTicket {
     this.isDeleted = false,
     this.deletedAt,
     this.deletedBy,
+    this.relatedDropId,
+    this.relatedCollectionId,
+    this.relatedApplicationId,
+    this.relatedUserId,
+    this.contextMetadata,
+    this.location,
     required this.createdAt,
     required this.updatedAt,
   });

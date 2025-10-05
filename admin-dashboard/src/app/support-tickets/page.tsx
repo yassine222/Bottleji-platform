@@ -24,12 +24,162 @@ interface SupportTicket {
   }>;
 }
 
+interface TicketDetailModalProps {
+  ticket: SupportTicket;
+  onClose: () => void;
+  onMessageSent: () => void;
+}
+
+function TicketDetailModal({ ticket, onClose, onMessageSent }: TicketDetailModalProps) {
+  console.log('🟢 TicketDetailModal rendered with ticket:', ticket.id);
+  
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  console.log('🟢 Current state - newMessage:', newMessage, 'sending:', sending);
+
+  const handleSendMessage = async () => {
+    console.log('🔵 handleSendMessage called');
+    console.log('🔵 newMessage:', newMessage);
+    console.log('🔵 newMessage.trim():', newMessage.trim());
+    
+    if (!newMessage.trim()) {
+      console.log('⚠️ Message is empty, returning');
+      return;
+    }
+
+    try {
+      setSending(true);
+      setError(null);
+      console.log('📤 Sending message to ticket:', ticket.id);
+      console.log('📤 Message content:', newMessage);
+      
+      const response = await supportTicketsAPI.addMessage(ticket.id, newMessage, false);
+      
+      console.log('✅ Message sent successfully');
+      console.log('✅ Response:', response);
+      setNewMessage('');
+      onMessageSent(); // Refresh the ticket data
+    } catch (err: any) {
+      console.error('❌ Error sending message:', err);
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error data:', err.response?.data);
+      setError(err.response?.data?.message || 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={onClose}>
+      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b">
+          <h3 className="text-lg font-medium text-gray-900">{ticket.title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Ticket Info */}
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500">Status:</span>
+            <span className="ml-2 font-medium">{ticket.status}</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Priority:</span>
+            <span className="ml-2 font-medium">{ticket.priority}</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Category:</span>
+            <span className="ml-2 font-medium">{ticket.category}</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Created:</span>
+            <span className="ml-2 font-medium">{new Date(ticket.createdAt).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Messages</h4>
+          <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+            {ticket.messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-lg ${
+                  msg.senderType === 'agent'
+                    ? 'bg-blue-100 ml-8'
+                    : 'bg-white mr-8'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-xs font-medium text-gray-700">
+                    {msg.senderType === 'agent' ? '🎫 Support Agent' : '👤 User'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(msg.sentAt).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.message}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Send Message */}
+        <div className="mt-4">
+          {error && (
+            <div className="mb-2 p-2 bg-red-50 text-red-700 text-sm rounded">
+              {error}
+            </div>
+          )}
+          <div className="flex space-x-2">
+            <textarea
+              value={newMessage}
+              onChange={(e) => {
+                console.log('✏️ Textarea changed:', e.target.value);
+                setNewMessage(e.target.value);
+              }}
+              placeholder="Type your response..."
+              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              rows={3}
+              disabled={sending}
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔴 Button clicked!');
+                handleSendMessage();
+              }}
+              disabled={sending || !newMessage.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+            >
+              {sending ? 'Sending...' : 'Send'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportTicketsPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   const fetchTickets = async () => {
     try {
@@ -208,8 +358,29 @@ export default function SupportTicketsPage() {
     selectedCategory
   });
 
+  const handleMessageSent = async () => {
+    // Refresh the selected ticket to show the new message
+    if (selectedTicket) {
+      try {
+        const response = await supportTicketsAPI.getTicketById(selectedTicket.id);
+        setSelectedTicket(response.data);
+        // Also refresh the tickets list
+        fetchTickets();
+      } catch (err) {
+        console.error('Error refreshing ticket:', err);
+      }
+    }
+  };
+
   return (
     <AdminLayout>
+      {selectedTicket && (
+        <TicketDetailModal
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          onMessageSent={handleMessageSent}
+        />
+      )}
       <div className="space-y-6">
         {/* Debug Info */}
         <div className="bg-gray-100 p-4 rounded-md">
@@ -326,7 +497,10 @@ export default function SupportTicketsPage() {
                         <span className="text-sm text-gray-500">
                           {ticket.messages.length} message{ticket.messages.length !== 1 ? 's' : ''}
                         </span>
-                        <button className="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        <button 
+                          onClick={() => setSelectedTicket(ticket)}
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        >
                           View Details
                         </button>
                       </div>

@@ -63,6 +63,9 @@ export class Dropoff extends Document {
     coordinates: number[];
   };
 
+  @Prop()
+  address?: string;
+
   @Prop({ required: true, enum: DropoffStatus, default: DropoffStatus.PENDING })
   status: DropoffStatus;
 

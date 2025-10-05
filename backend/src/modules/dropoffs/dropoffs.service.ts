@@ -214,6 +214,7 @@ export class DropoffsService {
         type: 'Point',
         coordinates: [createDropoffDto.location.longitude, createDropoffDto.location.latitude],
       },
+      address: createDropoffDto.address,
       createdAt: now,
       updatedAt: now,
     });
@@ -1176,6 +1177,124 @@ export class DropoffsService {
     });
 
     return interactions;
+  }
+
+  async getDropInteractionTimeline(dropoffId: string) {
+    console.log('🔍 Dropoffs Service: Fetching interactions for dropoffId:', dropoffId);
+    
+    const interactions = await this.interactionModel.find({ dropoffId })
+      .populate('collectorId', 'name email')
+      .sort({ interactionTime: 1 }) // Sort chronologically (oldest first)
+      .exec();
+  
+    console.log('🔍 Dropoffs Service: Found', interactions.length, 'interactions for dropoffId:', dropoffId);
+    
+    if (interactions.length > 0) {
+      console.log('🔍 Dropoffs Service: First interaction:', {
+        id: interactions[0]._id,
+        type: interactions[0].interactionType,
+        collectorId: interactions[0].collectorId,
+        timestamp: interactions[0].interactionTime
+      });
+    }
+  
+    // Format interactions for timeline display
+    const timeline = interactions.map(interaction => ({
+      id: (interaction._id as any).toString(),
+      type: interaction.interactionType,
+      collectorId: interaction.collectorId,
+      collectorName: (interaction.collectorId as any)?.name || 'Unknown Collector',
+      timestamp: interaction.interactionTime,
+      notes: interaction.notes,
+      cancellationReason: interaction.cancellationReason,
+      location: interaction.location,
+      dropoffStatus: interaction.dropoffStatus,
+      numberOfItems: interaction.numberOfItems,
+      bottleType: interaction.bottleType,
+      acceptedAt: interaction.acceptedAt,
+      cancelledAt: interaction.cancelledAt,
+      collectedAt: interaction.collectedAt,
+      expiredAt: interaction.expiredAt,
+    }));
+  
+    console.log('🔍 Dropoffs Service: Returning timeline with', timeline.length, 'formatted interactions');
+    return timeline;
+  }
+
+  async getCollectionInteractionTimeline(collectionId: string) {
+    console.log('🔍 Dropoffs Service: Fetching collection interactions for collectionId:', collectionId);
+    
+    // First, try to find if this collectionId is actually an interaction ID
+    const specificInteraction = await this.interactionModel.findById(collectionId)
+      .populate('collectorId', 'name email')
+      .populate('dropoffId', 'numberOfBottles numberOfCans bottleType notes location status')
+      .exec();
+    
+    if (specificInteraction) {
+      console.log('🔍 Dropoffs Service: Found specific interaction:', {
+        id: specificInteraction._id,
+        type: specificInteraction.interactionType,
+        collectorId: specificInteraction.collectorId,
+        dropoffId: specificInteraction.dropoffId,
+        timestamp: specificInteraction.interactionTime
+      });
+      
+      // If we found a specific interaction, get all interactions for that dropoff
+      // Extract the _id from the populated dropoff object
+      let dropoffId: string;
+      if (typeof specificInteraction.dropoffId === 'object' && (specificInteraction.dropoffId as any)._id) {
+        dropoffId = (specificInteraction.dropoffId as any)._id.toString();
+      } else if (typeof specificInteraction.dropoffId === 'string') {
+        dropoffId = specificInteraction.dropoffId;
+      } else {
+        // If it's an ObjectId, convert it to string
+        dropoffId = (specificInteraction.dropoffId as any).toString();
+      }
+      
+      console.log('🔍 Dropoffs Service: Extracted dropoffId for collection timeline:', dropoffId);
+      console.log('🔍 Dropoffs Service: Original dropoffId type:', typeof specificInteraction.dropoffId);
+      console.log('🔍 Dropoffs Service: Original dropoffId value:', specificInteraction.dropoffId);
+      
+      const allInteractions = await this.interactionModel.find({ dropoffId })
+        .populate('collectorId', 'name email')
+        .sort({ interactionTime: 1 })
+        .exec();
+      
+      console.log('🔍 Dropoffs Service: Found', allInteractions.length, 'interactions for related dropoff:', dropoffId);
+      
+      // Format interactions for timeline display
+      const timeline = allInteractions.map(interaction => ({
+        id: (interaction._id as any).toString(),
+        type: interaction.interactionType,
+        collectorId: interaction.collectorId,
+        collectorName: (interaction.collectorId as any)?.name || 'Unknown Collector',
+        timestamp: interaction.interactionTime,
+        notes: interaction.notes,
+        cancellationReason: interaction.cancellationReason,
+        location: interaction.location,
+        dropoffStatus: interaction.dropoffStatus,
+        numberOfItems: interaction.numberOfItems,
+        bottleType: interaction.bottleType,
+        acceptedAt: interaction.acceptedAt,
+        cancelledAt: interaction.cancelledAt,
+        collectedAt: interaction.collectedAt,
+        expiredAt: interaction.expiredAt,
+        dropoffInfo: interaction.dropoffId ? {
+          id: (interaction.dropoffId as any)._id?.toString() || (interaction.dropoffId as any).toString(),
+          numberOfBottles: (interaction.dropoffId as any).numberOfBottles,
+          numberOfCans: (interaction.dropoffId as any).numberOfCans,
+          bottleType: (interaction.dropoffId as any).bottleType,
+          status: (interaction.dropoffId as any).status,
+        } : null,
+      }));
+      
+      console.log('🔍 Dropoffs Service: Returning collection timeline with', timeline.length, 'formatted interactions');
+      return timeline;
+    }
+    
+    // If not found as interaction ID, try to find interactions by collector or other criteria
+    console.log('🔍 Dropoffs Service: Collection ID not found as interaction ID, returning empty timeline');
+    return [];
   }
 
   async debugCollectorInteractions(collectorId: string) {

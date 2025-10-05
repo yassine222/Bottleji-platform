@@ -8,10 +8,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/config/server_config.dart';
+import '../../../core/api/api_client.dart';
 
 class CollectorSubscriptionController extends StateNotifier<AsyncValue<String>> {
   late final SharedPreferences _prefs;
-  final _dio = Dio();
+  final _dio = ApiClientConfig.createDio();
 
   CollectorSubscriptionController() : super(const AsyncValue.loading()) {
     _initialize();

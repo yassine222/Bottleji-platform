@@ -46,7 +46,7 @@ class ApiClientConfig {
               break;
             case DioExceptionType.connectionError:
               errorMessage =
-                  'Unable to connect to server. Please check your internet connection.';
+                  'Cannot reach the server. Please ensure the backend is running and try again.';
               break;
             case DioExceptionType.badResponse:
               final statusCode = error.response?.statusCode ?? 0;
@@ -65,7 +65,14 @@ class ApiClientConfig {
               }
               break;
             default:
-              errorMessage = 'Network error. Please check your connection and try again.';
+              final rawMessage = error.message ?? '';
+              if (rawMessage.contains('Connection refused') ||
+                  rawMessage.contains('Failed host lookup') ||
+                  rawMessage.contains('SocketException')) {
+                errorMessage = 'Cannot reach the server. Please ensure the backend is running and try again.';
+              } else {
+                errorMessage = 'Network error. Please check your connection and try again.';
+              }
           }
 
           // Update the error message

@@ -212,6 +212,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             } catch (e) {
               print('Error setting user mode: $e');
             }
+            
+            // Sync application status from database after login
+            syncApplicationStatusFromDatabase().catchError((e) {
+              print('Error syncing application status after login: $e');
+            });
+            
             return user;
           } else {
             print('Login failed - Missing user or token');
@@ -1145,9 +1151,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       print('🔄 AuthProvider: Current application status in shared preferences: $existingStatus');
       print('🔄 AuthProvider: Current application ID in shared preferences: $existingApplicationId');
 
-      // Only sync if we don't have a valid application status
-      if (existingStatus == null && existingApplicationId == null) {
-        print('🔄 AuthProvider: No existing status, fetching from database...');
+      // Always sync from database to ensure we have the latest status
+      print('🔄 AuthProvider: Fetching latest application status from database...');
         
         // Fetch application status from database
         final collectorApplicationController = _ref.read(collectorApplicationControllerProvider.notifier);
@@ -1173,14 +1178,27 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           
           print('🔄 AuthProvider: Application status synced successfully');
         } else {
-          print('🔄 AuthProvider: No application found in database, keeping existing status if any');
-          // Don't clear existing status if no application found - might be a temporary issue
+          print('🔄 AuthProvider: No application found in database, clearing existing status');
+          // Clear existing status if no application found in database
+          await _clearCollectorApplicationStatus();
         }
-      } else {
-        print('🔄 AuthProvider: Existing application status found, skipping sync to prevent flicker');
-      }
     } catch (e) {
       print('🔄 AuthProvider: Error syncing application status: $e');
+    }
+  }
+
+  // Clear collector application status from shared preferences
+  Future<void> _clearCollectorApplicationStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('collectorApplicationStatus');
+      await prefs.remove('collectorApplicationId');
+      await prefs.remove('collectorApplicationAppliedAt');
+      await prefs.remove('collectorApplicationReviewedAt');
+      await prefs.remove('collectorApplicationRejectionReason');
+      print('🔄 AuthProvider: Cleared collector application status from shared preferences');
+    } catch (e) {
+      print('🔄 AuthProvider: Error clearing collector application status: $e');
     }
   }
   }

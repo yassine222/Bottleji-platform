@@ -164,4 +164,9 @@ export class DropoffsController {
   ) {
     return this.dropoffsService.getUserDropStats(userId, timeRange);
   }
+
+  @Get(':dropoffId/interaction-timeline')
+  getDropInteractionTimeline(@Param('dropoffId') dropoffId: string) {
+    return this.dropoffsService.getDropInteractionTimeline(dropoffId);
+  }
 } 
