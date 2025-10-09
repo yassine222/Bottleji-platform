@@ -2691,10 +2691,11 @@ function SupportContent() {
     const handleNewMessage = (data: any) => {
       console.log('📨 ===== ADMIN DASHBOARD: NEW MESSAGE RECEIVED =====');
       console.log('📨 Message data:', data);
-      console.log('📨 Current selected ticket ID:', selectedTicket?.id);
+      const currentTicketId = selectedTicket?._id || selectedTicket?.id;
+      console.log('📨 Current selected ticket ID:', currentTicketId);
       console.log('📨 Message ticket ID:', data.ticketId);
       
-      if (selectedTicket && selectedTicket.id === data.ticketId) {
+      if (selectedTicket && currentTicketId === data.ticketId) {
         console.log('📨 ✅ Message matches current ticket, updating conversation');
         
         const newMessage = {
