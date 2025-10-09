@@ -729,16 +729,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Load custom marker icon from assets
   Future<void> _loadCustomMarker() async {
     try {
-      // Match default Google Maps marker size (approximately 48x48 actual pixels)
-      // Using width parameter to control final size
+      // Load pre-sized 48x64px marker icon (no scaling needed)
       final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(size: Size(24, 24)), // Much smaller logical size
+        ImageConfiguration.empty,
         'assets/icons/drop-pin.png',
       );
       setState(() {
         _customDropMarker = customIcon;
       });
-      debugPrint('✅ Custom drop marker loaded successfully');
+      debugPrint('✅ Custom drop marker loaded successfully (48x64px)');
     } catch (e) {
       debugPrint('❌ Error loading custom marker: $e');
       // Fallback to default marker if loading fails
