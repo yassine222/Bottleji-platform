@@ -110,8 +110,13 @@ This document outlines what fields are sent to the database when creating suppor
 **Key Points**:
 - ⚠️ `relatedCollectionId` is actually an **interaction ID**, NOT a collection entity ID
 - ✅ `contextMetadata.collectionId` is the interaction ID
-- ✅ `contextMetadata.dropoffId` contains the actual drop ID
+- ✅ `contextMetadata.dropoffId` contains the actual drop ID (extracted from interaction)
 - ✅ `contextMetadata.dropoff` contains full drop details
+
+**Important Fix (v2)**:
+- The Flutter app now properly extracts the `dropoffId` from populated interaction objects
+- Previously, `dropoffId` was empty string when the interaction had a populated dropoff object
+- Now it correctly extracts the ID from either `dropoffId._id`, `dropoffId.id`, or `dropoff.id`
 
 **Backend Processing**:
 1. Uses `relatedCollectionId` (interaction ID) to find the specific interaction

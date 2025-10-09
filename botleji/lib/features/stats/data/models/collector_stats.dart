@@ -103,18 +103,33 @@ class CollectorInteraction {
     try {
       // Check if dropoffId contains the actual dropoff data
       DropoffInfo? dropoffData;
+      String extractedDropoffId = '';
+      
       if (json['dropoffId'] is Map<String, dynamic>) {
-        // dropoffId contains the actual dropoff object
+        // dropoffId contains the actual dropoff object (populated)
         dropoffData = DropoffInfo.fromJson(json['dropoffId'] as Map<String, dynamic>);
-      } else if (json['dropoff'] is Map<String, dynamic>) {
+        // Extract the ID from the populated object
+        extractedDropoffId = (json['dropoffId'] as Map<String, dynamic>)['_id']?.toString() ?? 
+                            (json['dropoffId'] as Map<String, dynamic>)['id']?.toString() ?? 
+                            dropoffData.id;
+      } else if (json['dropoffId'] is String) {
+        // dropoffId is just a string ID
+        extractedDropoffId = json['dropoffId']?.toString() ?? '';
+      }
+      
+      if (json['dropoff'] is Map<String, dynamic>) {
         // dropoff field contains the dropoff object
         dropoffData = DropoffInfo.fromJson(json['dropoff'] as Map<String, dynamic>);
+        // If we don't have a dropoffId yet, use the one from dropoff
+        if (extractedDropoffId.isEmpty) {
+          extractedDropoffId = dropoffData.id;
+        }
       }
 
       return CollectorInteraction(
         id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
         collectorId: json['collectorId']?.toString() ?? '',
-        dropoffId: json['dropoffId'] is String ? json['dropoffId']?.toString() ?? '' : '',
+        dropoffId: extractedDropoffId,
         interactionType: json['interactionType']?.toString() ?? '',
         cancellationReason: json['cancellationReason']?.toString(),
         notes: json['notes']?.toString(),
