@@ -4334,16 +4334,61 @@ function SupportContent() {
                     )}
                   </div>
                   
+                  {/* Status Banners */}
+                  {selectedTicket.status === 'resolved' && (
+                    <div className="mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                      <div className="flex items-start">
+                        <svg className="w-5 h-5 text-green-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="ml-3 flex-1">
+                          <p className="text-sm font-medium text-green-800">
+                            ✅ This ticket is marked as resolved.
+                          </p>
+                          <p className="text-xs text-green-700 mt-1">
+                            You can still reply. If the user responds, the ticket will automatically reopen.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedTicket.status === 'closed' && (
+                    <div className="mt-4 bg-gray-50 border-l-4 border-gray-400 p-4 rounded-r-lg">
+                      <div className="flex items-start">
+                        <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                        <div className="ml-3 flex-1">
+                          <p className="text-sm font-medium text-gray-800">
+                            🔒 This ticket is closed.
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Chat is disabled. Click "Reopen Ticket" above to continue the conversation.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Admin Response Input */}
                   <div className="mt-4 border-t pt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Send Response</label>
                     <textarea
                       value={newMessage}
                       onChange={handleTyping}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                        selectedTicket.status === 'closed' 
+                          ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-400' 
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                       rows={3}
-                      placeholder="Type your response here..."
-                      disabled={sendingMessage}
+                      placeholder={
+                        selectedTicket.status === 'closed' 
+                          ? 'Chat is disabled for closed tickets...' 
+                          : 'Type your response here...'
+                      }
+                      disabled={sendingMessage || selectedTicket.status === 'closed'}
                     />
                     
                     {/* Typing and Presence Indicators */}
@@ -4370,10 +4415,10 @@ function SupportContent() {
                       </button>
                       <button 
                         onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || sendingMessage}
+                        disabled={!newMessage.trim() || sendingMessage || selectedTicket.status === 'closed'}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {sendingMessage ? 'Sending...' : 'Send Response'}
+                        {sendingMessage ? 'Sending...' : selectedTicket.status === 'closed' ? 'Chat Disabled' : 'Send Response'}
                       </button>
                     </div>
                   </div>

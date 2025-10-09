@@ -495,11 +495,92 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
             ),
           ),
           
+          // Status Banners
+          if (_currentTicket.status == 'resolved')
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                border: Border(
+                  left: BorderSide(color: Colors.green[400]!, width: 4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '✅ This ticket is marked as resolved.',
+                          style: TextStyle(
+                            color: Colors.green[800],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'You can still reply. Your message will automatically reopen the ticket.',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          if (_currentTicket.status == 'closed')
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                border: Border(
+                  left: BorderSide(color: Colors.grey[400]!, width: 4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock, color: Colors.grey[600], size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🔒 This ticket is closed.',
+                          style: TextStyle(
+                            color: Colors.grey[800],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Chat is disabled. Please create a new ticket for new issues.',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
           // Message input
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _currentTicket.status == 'closed' ? Colors.grey[200] : Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.2),
@@ -515,29 +596,36 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                   child: TextField(
                     controller: _messageController,
                     onChanged: _onMessageChanged,
+                    enabled: _currentTicket.status != 'closed',
                     decoration: InputDecoration(
-                      hintText: 'Type your message...',
+                      hintText: _currentTicket.status == 'closed' 
+                          ? 'Chat is disabled...' 
+                          : 'Type your message...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: _currentTicket.status == 'closed' 
+                          ? Colors.grey[300] 
+                          : Colors.grey[100],
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
+                    onSubmitted: (_currentTicket.status != 'closed') ? (_) => _sendMessage() : null,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF00695C),
+                  decoration: BoxDecoration(
+                    color: _currentTicket.status == 'closed' 
+                        ? Colors.grey[400] 
+                        : const Color(0xFF00695C),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: _sendMessage,
+                    onPressed: _currentTicket.status == 'closed' ? null : _sendMessage,
                     icon: const Icon(Icons.send, color: Colors.white),
                   ),
                 ),

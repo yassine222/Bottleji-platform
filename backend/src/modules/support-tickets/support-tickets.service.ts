@@ -318,21 +318,43 @@ export class SupportTicketsService {
     senderType: 'user' | 'agent' | 'system',
     isInternal: boolean = false,
   ): Promise<SupportTicket> {
+    // First, get the ticket to check its status
+    const existingTicket = await this.supportTicketModel.findById(new Types.ObjectId(ticketId)).exec();
+    
+    if (!existingTicket) {
+      throw new NotFoundException('Ticket not found');
+    }
+    
+    // Auto-reopen logic: If ticket is resolved and a user sends a message, reopen it
+    const shouldAutoReopen = existingTicket.status === TicketStatus.RESOLVED && senderType === 'user';
+    
+    if (shouldAutoReopen) {
+      console.log(`🔄 Auto-reopening resolved ticket ${ticketId} because user sent a message`);
+    }
+    
+    const updateData: any = {
+      $push: {
+        messages: {
+          message,
+          senderId: new Types.ObjectId(senderId),
+          senderType,
+          sentAt: new Date(),
+          isInternal,
+        },
+      },
+      lastUpdatedBy: new Types.ObjectId(senderId),
+    };
+    
+    // If auto-reopening, update status to open
+    if (shouldAutoReopen) {
+      updateData.status = TicketStatus.OPEN;
+      updateData.resolvedAt = null;
+    }
+    
     const ticket = await this.supportTicketModel
       .findByIdAndUpdate(
         new Types.ObjectId(ticketId),
-        {
-          $push: {
-            messages: {
-              message,
-              senderId: new Types.ObjectId(senderId),
-              senderType,
-              sentAt: new Date(),
-              isInternal,
-            },
-          },
-          lastUpdatedBy: new Types.ObjectId(senderId),
-        },
+        updateData,
         { new: true }
       )
       .exec();
