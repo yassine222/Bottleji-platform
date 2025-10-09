@@ -2858,12 +2858,13 @@ function SupportContent() {
 
       // Now join the ticket room
       if (socket && socket.connected) {
-        console.log('👤 Admin Dashboard: Joining ticket room:', ticket.id);
+        const ticketId = ticket._id || ticket.id;
+        console.log('👤 Admin Dashboard: Joining ticket room:', ticketId);
         console.log('👤 Admin Dashboard: Socket state:', socket.connected);
         console.log('👤 Admin Dashboard: Socket ID:', socket.id);
         
         socket.emit('join_ticket', {
-          ticketId: ticket.id,
+          ticketId: ticketId,
           senderType: 'agent'
         });
         
@@ -2950,13 +2951,20 @@ function SupportContent() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedTicket) return;
     
+    const ticketId = selectedTicket._id || selectedTicket.id;
+    if (!ticketId) {
+      console.error('❌ No ticket ID available');
+      setError('Invalid ticket ID');
+      return;
+    }
+    
     try {
       setSendingMessage(true);
-      console.log('📤 Sending message to ticket:', selectedTicket.id);
+      console.log('📤 Sending message to ticket:', ticketId);
       console.log('📤 Message content:', newMessage.trim());
       
       // Send message via API to save to database (this will also trigger real-time updates)
-      const response = await supportTicketsAPI.addMessage(selectedTicket.id, newMessage.trim());
+      const response = await supportTicketsAPI.addMessage(ticketId, newMessage.trim());
       
       console.log('✅ Message sent successfully:', response);
       
