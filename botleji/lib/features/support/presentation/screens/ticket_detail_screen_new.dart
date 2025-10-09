@@ -246,6 +246,17 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
   }
 
   void _sendMessage() async {
+    // Don't allow sending if ticket is closed
+    if (_currentTicket.status == 'closed') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot send message. This ticket is closed.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     if (_messageController.text.trim().isEmpty) return;
 
     final message = _messageController.text.trim();
@@ -277,6 +288,9 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
   }
 
   void _onMessageChanged(String text) {
+    // Don't send typing indicator if ticket is closed
+    if (_currentTicket.status == 'closed') return;
+    
     if (!_isTyping && text.isNotEmpty) {
       _startTyping();
     } else if (_isTyping && text.isEmpty) {
