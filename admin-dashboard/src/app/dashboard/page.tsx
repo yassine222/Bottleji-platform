@@ -3807,17 +3807,40 @@ function SupportContent() {
                           </div>
 
                           {/* Drop Interaction Timeline - Only show for Drop Issues, NOT Collection Issues */}
-                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId?.interactions && selectedTicket.relatedDropId.interactions.length > 0 && (
+                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId && (
                             <div className="mt-4 pt-4 border-t border-blue-200">
-                              <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
+                              <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline - Complete History</h4>
                               <div className="relative">
                                 {/* Timeline line */}
                                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-200"></div>
                                 
-                                <div className="space-y-4 max-h-60 overflow-y-auto">
-                                  {selectedTicket.relatedDropId.interactions.map((interaction: any, index: number) => {
+                                <div className="space-y-4 max-h-96 overflow-y-auto">
+                                  {/* Drop Created Event - Always first */}
+                                  <div className="relative flex items-start space-x-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 bg-blue-100 text-blue-800 border-blue-200">
+                                      🏠
+                                    </div>
+                                    <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+                                      <div className="flex items-center justify-between">
+                                        <h5 className="text-sm font-medium text-gray-900">Drop Created</h5>
+                                        <span className="text-xs text-gray-500">
+                                          {new Date(selectedTicket.relatedDropId.createdAt).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div className="mt-1 text-sm text-gray-600">
+                                        <p><strong>Items:</strong> {selectedTicket.relatedDropId.numberOfBottles} bottles, {selectedTicket.relatedDropId.numberOfCans} cans</p>
+                                        <p><strong>Type:</strong> {selectedTicket.relatedDropId.bottleType}</p>
+                                        {selectedTicket.relatedDropId.notes && (
+                                          <p><strong>Notes:</strong> {selectedTicket.relatedDropId.notes}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Collector Interactions */}
+                                  {selectedTicket.relatedDropId.interactions?.map((interaction: any, index: number) => {
                                     const getInteractionIcon = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
                                           return '✓';
                                         case 'COLLECTED':
@@ -3832,7 +3855,7 @@ function SupportContent() {
                                     };
 
                                     const getInteractionColor = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
                                           return 'bg-green-100 text-green-800 border-green-200';
                                         case 'COLLECTED':
@@ -3847,17 +3870,17 @@ function SupportContent() {
                                     };
 
                                     const getInteractionTitle = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
-                                          return 'Drop Accepted';
+                                          return 'Collector Accepted Drop';
                                         case 'COLLECTED':
-                                          return 'Successfully Collected';
+                                          return 'Drop Collected Successfully';
                                         case 'CANCELLED':
-                                          return 'Collection Cancelled';
+                                          return 'Collector Cancelled';
                                         case 'EXPIRED':
-                                          return 'Collection Expired';
+                                          return 'Acceptance Expired';
                                         default:
-                                          return type;
+                                          return type.charAt(0).toUpperCase() + type.slice(1);
                                       }
                                     };
 
@@ -3901,17 +3924,21 @@ function SupportContent() {
                                       </div>
                                     );
                                   })}
+                                  
+                                  {/* Show message when no collector interactions yet */}
+                                  {(!selectedTicket.relatedDropId.interactions || selectedTicket.relatedDropId.interactions.length === 0) && (
+                                    <div className="relative flex items-start space-x-4">
+                                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 bg-gray-100 text-gray-600 border-gray-300">
+                                        ⏳
+                                      </div>
+                                      <div className="flex-1 min-w-0 bg-gray-50 rounded-lg border border-dashed border-gray-300 p-3">
+                                        <p className="text-sm text-gray-600 text-center">
+                                          No collector interactions yet. Waiting for collectors to accept this drop.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Show message when no interactions are found - Only for Drop Issues */}
-                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId && (!selectedTicket.relatedDropId.interactions || selectedTicket.relatedDropId.interactions.length === 0) && (
-                            <div className="mt-4 pt-4 border-t border-blue-200">
-                              <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
-                              <div className="text-center py-4 text-gray-500">
-                                <p>No interaction history found for this drop.</p>
                               </div>
                             </div>
                           )}
