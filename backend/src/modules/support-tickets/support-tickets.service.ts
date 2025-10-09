@@ -123,7 +123,7 @@ export class SupportTicketsService {
     const [tickets, total] = await Promise.all([
       this.supportTicketModel
         .find(query)
-        .populate('userId', '_id name email phoneNumber')
+        .populate('userId', '_id name email phoneNumber profilePhoto roles isVerified isPhoneVerified collectorApplicationStatus')
         .populate('assignedTo', 'name email')
         .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt imageUrl')
         // Don't populate relatedCollectionId - it's an interaction ID, not a collection entity

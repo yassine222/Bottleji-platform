@@ -3367,33 +3367,129 @@ function SupportContent() {
                   </div>
                 </div>
 
-                {/* User Information */}
+                {/* User Information - Modern Design */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">User Information</label>
-                  <div className="mt-1 grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Name:</span>
-                      <span className="ml-2 text-gray-900">
-                        {selectedTicket.userId?.name || 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Email:</span>
-                      <span className="ml-2 text-gray-900">
-                        {selectedTicket.userId?.email || 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Phone:</span>
-                      <span className="ml-2 text-gray-900">
-                        {selectedTicket.userId?.phoneNumber || 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">User ID:</span>
-                      <span className="ml-2 text-gray-900 font-mono text-xs">
-                        {selectedTicket.userId?.id || selectedTicket.userId?._id || (typeof selectedTicket.userId === 'string' ? selectedTicket.userId : 'N/A')}
-                      </span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">User Information</label>
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+                    <div className="p-6">
+                      <div className="flex items-start space-x-4">
+                        {/* Profile Photo */}
+                        <div className="flex-shrink-0">
+                          {selectedTicket.userId?.profilePhoto ? (
+                            <img
+                              src={selectedTicket.userId.profilePhoto}
+                              alt={selectedTicket.userId.name || 'User'}
+                              className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%236b7280"/><text x="50" y="50" fill="white" text-anchor="middle" dy=".3em" font-size="40" font-weight="bold">' + (selectedTicket.userId?.name?.[0]?.toUpperCase() || 'U') + '</text></svg>';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
+                              <span className="text-3xl font-bold text-white">
+                                {selectedTicket.userId?.name?.[0]?.toUpperCase() || 'U'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* User Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="text-lg font-bold text-gray-900">
+                                {selectedTicket.userId?.name || 'Unknown User'}
+                              </h4>
+                              <p className="text-sm text-gray-600 mt-0.5">
+                                {selectedTicket.userId?.email || 'No email'}
+                              </p>
+                            </div>
+                            
+                            {/* Verification Badges */}
+                            <div className="flex flex-col items-end space-y-1">
+                              {selectedTicket.userId?.isVerified && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  Verified
+                                </span>
+                              )}
+                              {selectedTicket.userId?.isPhoneVerified && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                  </svg>
+                                  Phone Verified
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Contact Info */}
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                              <div className="flex items-center space-x-2">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs text-gray-500">Phone</p>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {selectedTicket.userId?.phoneNumber || 'Not provided'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                              <div className="flex items-center space-x-2">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs text-gray-500">Role</p>
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {selectedTicket.userId?.roles?.map((role: string, index: number) => (
+                                      <span 
+                                        key={index}
+                                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                          role === 'collector' ? 'bg-purple-100 text-purple-800' :
+                                          role === 'household' ? 'bg-blue-100 text-blue-800' :
+                                          role === 'admin' ? 'bg-red-100 text-red-800' :
+                                          'bg-gray-100 text-gray-800'
+                                        }`}
+                                      >
+                                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                                      </span>
+                                    )) || (
+                                      <span className="text-sm font-medium text-gray-900">Household</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Collector Status */}
+                          {selectedTicket.userId?.collectorApplicationStatus && (
+                            <div className="mt-3 bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">Collector Application</span>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  selectedTicket.userId.collectorApplicationStatus === 'approved' ? 'bg-green-100 text-green-800' :
+                                  selectedTicket.userId.collectorApplicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  selectedTicket.userId.collectorApplicationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {selectedTicket.userId.collectorApplicationStatus.charAt(0).toUpperCase() + selectedTicket.userId.collectorApplicationStatus.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
