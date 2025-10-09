@@ -247,7 +247,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
   void _sendMessage() async {
     // Don't allow sending if ticket is closed
-    if (_currentTicket.status == 'closed') {
+    if (_currentTicket.status == TicketStatus.closed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot send message. This ticket is closed.'),
@@ -289,7 +289,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
   void _onMessageChanged(String text) {
     // Don't send typing indicator if ticket is closed
-    if (_currentTicket.status == 'closed') return;
+    if (_currentTicket.status == TicketStatus.closed) return;
     
     if (!_isTyping && text.isNotEmpty) {
       _startTyping();
@@ -553,7 +553,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
           ),
           
           // Status Banners
-          if (_currentTicket.status == 'resolved')
+          if (_currentTicket.status == TicketStatus.resolved)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -593,7 +593,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
               ),
             ),
           
-          if (_currentTicket.status == 'closed')
+          if (_currentTicket.status == TicketStatus.closed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -637,7 +637,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _currentTicket.status == 'closed' ? Colors.grey[200] : Colors.white,
+              color: _currentTicket.status == TicketStatus.closed ? Colors.grey[200] : Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.2),
@@ -652,10 +652,10 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    onChanged: _currentTicket.status == 'closed' ? null : _onMessageChanged,
-                    readOnly: _currentTicket.status == 'closed',
+                    onChanged: _currentTicket.status == TicketStatus.closed ? null : _onMessageChanged,
+                    readOnly: _currentTicket.status == TicketStatus.closed,
                     decoration: InputDecoration(
-                      hintText: _currentTicket.status == 'closed' 
+                      hintText: _currentTicket.status == TicketStatus.closed 
                           ? 'Chat is disabled...' 
                           : 'Type your message...',
                       border: OutlineInputBorder(
@@ -663,26 +663,26 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: _currentTicket.status == 'closed' 
+                      fillColor: _currentTicket.status == TicketStatus.closed 
                           ? Colors.grey[300] 
                           : Colors.grey[100],
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: _currentTicket.status == 'closed' ? null : (_) => _sendMessage(),
+                    onSubmitted: _currentTicket.status == TicketStatus.closed ? null : (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: _currentTicket.status == 'closed' 
+                    color: _currentTicket.status == TicketStatus.closed 
                         ? Colors.grey[400] 
                         : const Color(0xFF00695C),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: _currentTicket.status == 'closed' ? null : _sendMessage,
+                    onPressed: _currentTicket.status == TicketStatus.closed ? null : _sendMessage,
                     icon: const Icon(Icons.send, color: Colors.white),
                   ),
                 ),
