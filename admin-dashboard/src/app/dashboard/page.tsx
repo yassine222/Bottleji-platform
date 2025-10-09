@@ -3417,7 +3417,15 @@ function SupportContent() {
                               <div>
                                 <h3 className="text-lg font-bold text-blue-900">Related Drop Details</h3>
                                 <p className="text-xs text-blue-600">
-                                  Created {selectedTicket.relatedDropId.createdAt ? new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString() : 'N/A'}
+                                  {selectedTicket.relatedDropId.createdAt ? (
+                                    `Created ${new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric', 
+                                      year: 'numeric' 
+                                    })}`
+                                  ) : (
+                                    'Drop Information'
+                                  )}
                                 </p>
                               </div>
                             </div>
