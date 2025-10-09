@@ -125,7 +125,7 @@ export class SupportTicketsService {
         .find(query)
         .populate('userId', '_id name email phoneNumber')
         .populate('assignedTo', 'name email')
-        .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt')
+        .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt imageUrl')
         // Don't populate relatedCollectionId - it's an interaction ID, not a collection entity
         // We'll manually create an object for it and add interactions later
         .populate('relatedApplicationId', 'status appliedAt reviewedAt rejectionReason idCardPhoto selfieWithIdPhoto')

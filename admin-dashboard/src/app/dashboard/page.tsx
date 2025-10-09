@@ -3428,22 +3428,28 @@ function SupportContent() {
                               {/* Left Column: Drop Image and Info */}
                               <div className="space-y-4">
                                 {/* Drop Image - Large and Prominent */}
-                                {selectedTicket.relatedDropId.images && selectedTicket.relatedDropId.images.length > 0 ? (
+                                {selectedTicket.relatedDropId.imageUrl ? (
                                   <div className="relative group">
                                     <img
-                                      src={selectedTicket.relatedDropId.images[0]}
+                                      src={selectedTicket.relatedDropId.imageUrl}
                                       alt="Drop"
                                       className="w-full h-64 object-cover rounded-lg shadow-lg border-2 border-white"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;
-                                        target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e5e7eb" width="400" height="300"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="20">No Image</text></svg>';
+                                        target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e5e7eb" width="400" height="300"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="20">Image Failed to Load</text></svg>';
                                       }}
                                     />
-                                    {selectedTicket.relatedDropId.images.length > 1 && (
-                                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                                        +{selectedTicket.relatedDropId.images.length - 1} more
-                                      </div>
-                                    )}
+                                    {/* Hover overlay for full view */}
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                      <a
+                                        href={selectedTicket.relatedDropId.imageUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-white"
+                                      >
+                                        View Full Size
+                                      </a>
+                                    </div>
                                   </div>
                                 ) : (
                                   <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center border-2 border-white shadow-lg">
