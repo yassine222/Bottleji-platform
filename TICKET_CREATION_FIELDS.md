@@ -35,24 +35,34 @@ This document outlines what fields are sent to the database when creating suppor
 
 **Category**: `drop_issue`
 
-**Fields Sent**:
+**Context**: Shows drops created by the household user in the **last 3 days**
+
+**Fields Sent** (Improved v2):
 ```json
 {
-  "title": "Drop #68de885c",
-  "description": "Status: Pending\nBottles: 15\nCans: 0",
+  "title": "Drop Issue - #68de885c",
+  "description": "Issue with drop created on Sep 14\nStatus: Pending\nBottles: 15, Cans: 0",
   "category": "drop_issue",
   "priority": "medium",
   "contextMetadata": {
+    "ticketType": "drop_issue",
     "dropId": "68de885caeb246e1806048f3",
-    "status": "pending",
-    "numberOfBottles": 15,
-    "numberOfCans": 0,
-    "bottleType": "plastic",
+    "drop": {
+      "id": "68de885caeb246e1806048f3",
+      "status": "pending",
+      "numberOfBottles": 15,
+      "numberOfCans": 0,
+      "bottleType": "plastic",
+      "notes": "",
+      "leaveOutside": false,
+      "createdAt": "2025-10-02T14:12:44.035Z"
+    },
     "location": {
       "latitude": 52.270787,
       "longitude": 10.512130,
       "address": "..."
     },
+    "issueContext": "household_drop_last_3_days",
     "createdAt": "2025-10-02T14:12:44.035Z"
   },
   "relatedDropId": "68de885caeb246e1806048f3",
@@ -66,9 +76,10 @@ This document outlines what fields are sent to the database when creating suppor
 
 **Key Points**:
 - ✅ `relatedDropId` is populated with the actual drop ObjectId
-- ✅ `contextMetadata.dropId` contains the same drop ID
-- ✅ `location` contains the drop's location
-- ✅ Drop details are stored in `contextMetadata` for reference
+- ✅ `contextMetadata.ticketType` identifies this as a drop issue
+- ✅ `contextMetadata.drop` contains complete drop details (structured)
+- ✅ `contextMetadata.issueContext` indicates this is from "household_drop_last_3_days"
+- ✅ `location` contains the drop's location for mapping
 
 **Backend Processing**:
 - Fetches drop interactions using `relatedDropId`
@@ -81,19 +92,36 @@ This document outlines what fields are sent to the database when creating suppor
 
 **Category**: `collection_issue`
 
-**Fields Sent**:
+**Context**: Shows drops that were **accepted** and then **expired/cancelled/collected** in the **last 3 days**
+
+**Fields Sent** (Improved v2):
 ```json
 {
-  "title": "Collection #68de9e5c",
-  "description": "Status: Accepted\nDrop: 68de885c",
+  "title": "Collection Issue - #68de9e5c",
+  "description": "Issue with collection cancelled on Oct 2\nDrop: 68de885c",
   "category": "collection_issue",
   "priority": "medium",
   "contextMetadata": {
+    "ticketType": "collection_issue",
     "collectionId": "68de9e5cbe72119fb6c86959",
     "dropoffId": "68de885caeb246e1806048f3",
-    "status": "accepted",
-    "interactionType": "accepted",
-    "interactionTime": "2025-10-02T15:46:36.321Z",
+    "interaction": {
+      "id": "68de9e5cbe72119fb6c86959",
+      "acceptedInteraction": {
+        "id": "68de9e5cbe72119fb6c86959",
+        "type": "accepted",
+        "time": "2025-10-02T15:46:36.321Z",
+        "notes": null
+      },
+      "finalInteraction": {
+        "id": "68de9e5d...",
+        "type": "cancelled",
+        "time": "2025-10-02T16:03:12.456Z",
+        "cancellationReason": "Too far away",
+        "notes": null
+      },
+      "status": "cancelled"
+    },
     "dropoff": {
       "id": "68de885caeb246e1806048f3",
       "numberOfBottles": 15,
@@ -101,7 +129,9 @@ This document outlines what fields are sent to the database when creating suppor
       "bottleType": "plastic",
       "location": {...},
       "status": "pending"
-    }
+    },
+    "issueContext": "collector_interaction_last_3_days",
+    "interactionTime": "2025-10-02T16:03:12.456Z"
   },
   "relatedCollectionId": "68de9e5cbe72119fb6c86959"
 }
@@ -109,14 +139,19 @@ This document outlines what fields are sent to the database when creating suppor
 
 **Key Points**:
 - ⚠️ `relatedCollectionId` is actually an **interaction ID**, NOT a collection entity ID
-- ✅ `contextMetadata.collectionId` is the interaction ID
-- ✅ `contextMetadata.dropoffId` contains the actual drop ID (extracted from interaction)
+- ✅ `contextMetadata.ticketType` identifies this as a collection issue
+- ✅ `contextMetadata.interaction` contains **structured interaction data**:
+  - `acceptedInteraction`: The initial ACCEPTED interaction
+  - `finalInteraction`: The final interaction (CANCELLED/EXPIRED/COLLECTED)
+  - `status`: Final status of the collection
+- ✅ `contextMetadata.dropoffId` contains the actual drop ID (properly extracted)
 - ✅ `contextMetadata.dropoff` contains full drop details
+- ✅ `contextMetadata.issueContext` indicates this is from "collector_interaction_last_3_days"
 
-**Important Fix (v2)**:
+**Important Fixes (v2)**:
 - The Flutter app now properly extracts the `dropoffId` from populated interaction objects
-- Previously, `dropoffId` was empty string when the interaction had a populated dropoff object
-- Now it correctly extracts the ID from either `dropoffId._id`, `dropoffId.id`, or `dropoff.id`
+- Structured interaction data shows both ACCEPTED and final interaction (CANCELLED/EXPIRED/COLLECTED)
+- Clear indication that this represents a pair of interactions (accept → final state)
 
 **Backend Processing**:
 1. Uses `relatedCollectionId` (interaction ID) to find the specific interaction
@@ -169,24 +204,27 @@ This document outlines what fields are sent to the database when creating suppor
 
 **Category**: `general_support`
 
-**Fields Sent**:
+**Fields Sent** (Improved v2):
 ```json
 {
-  "title": "General Support Request",
-  "description": "I need help with...",
+  "title": "General Support",
+  "description": "Get help with general support",
   "category": "general_support",
   "priority": "medium",
   "contextMetadata": {
+    "ticketType": "general_support",
     "context": "general",
     "category": "general_support",
-    "categoryTitle": "General Support"
+    "categoryTitle": "General Support",
+    "issueContext": "general_support_request"
   }
 }
 ```
 
 **Key Points**:
 - ❌ No `relatedDropId`, `relatedCollectionId`, or `relatedApplicationId`
-- ✅ Only basic context metadata
+- ✅ `contextMetadata.ticketType` identifies this as general support
+- ✅ `contextMetadata.issueContext` indicates this is a general support request
 - ✅ Used for issues not related to specific drops/collections/applications
 
 ---
@@ -199,6 +237,34 @@ This document outlines what fields are sent to the database when creating suppor
 | **Collection Issue** | `collection_issue` | ❌ | ✅ Interaction ObjectId | ❌ | collectionId (interaction), dropoffId, dropoff details |
 | **Application Issue** | `application_issue` | ❌ | ❌ | ✅ Application ObjectId | applicationId, status |
 | **General Support** | `general_support` | ❌ | ❌ | ❌ | context, category |
+
+---
+
+## Improvements in v2
+
+### **Structured Metadata**
+All tickets now include:
+- `ticketType`: Identifies the ticket category clearly
+- `issueContext`: Explains where/when the ticket was created from
+- Nested objects for better data organization
+
+### **Drop Issue Improvements**
+- Complete drop details in `contextMetadata.drop` object
+- Clear indication this is from "household_drop_last_3_days"
+- Better title and description formatting
+
+### **Collection Issue Improvements**
+- **Structured interaction data** with both:
+  - `acceptedInteraction`: The initial ACCEPTED interaction
+  - `finalInteraction`: The final state (CANCELLED/EXPIRED/COLLECTED)
+- Properly extracted `dropoffId` (no more empty strings!)
+- Clear indication this is from "collector_interaction_last_3_days"
+- Shows the complete interaction pair lifecycle
+
+### **Time Context**
+All tickets now clearly indicate their time context:
+- **Drop Issues**: Drops created in last 3 days
+- **Collection Issues**: Interactions completed in last 3 days (accepted → final state)
 
 ---
 
