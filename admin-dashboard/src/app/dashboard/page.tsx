@@ -3227,7 +3227,7 @@ function SupportContent() {
           <div className="bg-white shadow overflow-hidden sm:rounded-md">
             <ul className="divide-y divide-gray-200">
               {tickets.map((ticket) => (
-                <li key={ticket.id}>
+                <li key={ticket._id || ticket.id}>
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
