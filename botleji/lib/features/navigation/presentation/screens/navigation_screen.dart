@@ -398,7 +398,11 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   // Load custom marker icon from assets
   Future<void> _loadCustomMarker() async {
     try {
-      final ImageConfiguration imageConfig = const ImageConfiguration(size: Size(48, 48));
+      // Use a smaller size for the marker (width in logical pixels)
+      final ImageConfiguration imageConfig = ImageConfiguration(
+        devicePixelRatio: 2.5,
+        size: const Size(40, 40), // Smaller size for better display
+      );
       final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
         imageConfig,
         'assets/icons/drop-pin.png',
