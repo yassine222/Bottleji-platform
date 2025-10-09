@@ -3499,18 +3499,8 @@ function SupportContent() {
                             </div>
                           </div>
 
-                          {/* Drop Interaction Timeline */}
-                          {(() => {
-                            console.log('🔍 Debug - selectedTicket:', selectedTicket);
-                            console.log('🔍 Debug - selectedTicket.relatedDropId:', selectedTicket.relatedDropId);
-                            console.log('🔍 Debug - interactions:', selectedTicket.relatedDropId?.interactions);
-                            console.log('🔍 Debug - interactions length:', selectedTicket.relatedDropId?.interactions?.length);
-                            if (selectedTicket.relatedDropId?.interactions?.length > 0) {
-                              console.log('🔍 Debug - first interaction:', selectedTicket.relatedDropId.interactions[0]);
-                            }
-                            return null;
-                          })()}
-                          {selectedTicket.relatedDropId?.interactions && selectedTicket.relatedDropId.interactions.length > 0 && (
+                          {/* Drop Interaction Timeline - Only show for Drop Issues, NOT Collection Issues */}
+                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId?.interactions && selectedTicket.relatedDropId.interactions.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-blue-200">
                               <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
                               <div className="relative">
@@ -3609,120 +3599,22 @@ function SupportContent() {
                             </div>
                           )}
                           
-                          {/* Show message when no interactions are found */}
-                          {selectedTicket.relatedDropId && (!selectedTicket.relatedDropId.interactions || selectedTicket.relatedDropId.interactions.length === 0) && (
+                          {/* Show message when no interactions are found - Only for Drop Issues */}
+                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId && (!selectedTicket.relatedDropId.interactions || selectedTicket.relatedDropId.interactions.length === 0) && (
                             <div className="mt-4 pt-4 border-t border-blue-200">
                               <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline</h4>
                               <div className="text-center py-4 text-gray-500">
                                 <p>No interaction history found for this drop.</p>
-                                <p className="text-xs mt-1">Debug: relatedDropId exists but no interactions</p>
-                                <p className="text-xs mt-1">Drop ID: {selectedTicket.relatedDropId._id?.toString() || (typeof selectedTicket.relatedDropId === 'string' ? selectedTicket.relatedDropId : 'Object')}</p>
                               </div>
                             </div>
                           )}
                           
-                          {/* Always show debug info for relatedDropId */}
-                          {selectedTicket.relatedDropId && (
-                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                              <p><strong>Debug Info:</strong></p>
-                              <p>Drop ID: {(() => {
-                                const dropId = selectedTicket.relatedDropId;
-                                if (typeof dropId === 'string') return dropId;
-                                if (dropId._id) return dropId._id.toString();
-                                return 'Unknown';
-                              })()}</p>
-                              <p>Interactions: {selectedTicket.relatedDropId.interactions?.length || 0}</p>
-                              <p>Has interactions: {selectedTicket.relatedDropId.interactions ? 'Yes' : 'No'}</p>
-                            </div>
-                          )}
                         </div>
                       )}
                       
+                      {/* Collection Issue - Show only the interaction timeline, no separate drop card */}
                       {selectedTicket.relatedCollectionId && (
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="font-semibold text-green-900">Related Drop Details (Collection Issue)</span>
-                          </div>
-                          
-                          {/* Get drop info from the first interaction */}
-                          {(() => {
-                            const firstInteraction = selectedTicket.relatedCollectionId.interactions?.[0];
-                            const dropInfo = firstInteraction?.dropoffInfo;
-                            
-                            if (!dropInfo) {
-                              return (
-                                <div className="text-center py-4 text-gray-500">
-                                  <p>No drop information available</p>
-                                </div>
-                              );
-                            }
-                            
-                            return (
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Drop Information */}
-                                <div className="space-y-2 text-sm text-green-800">
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">Bottles:</span>
-                                    <span>{dropInfo.numberOfBottles || 0}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">Cans:</span>
-                                    <span>{dropInfo.numberOfCans || 0}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">Type:</span>
-                                    <span>{dropInfo.bottleType || 'N/A'}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">Status:</span>
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                      dropInfo.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                      dropInfo.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                                      dropInfo.status === 'collected' ? 'bg-green-100 text-green-800' :
-                                      dropInfo.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                      'bg-gray-100 text-gray-800'
-                                    }`}>
-                                      {dropInfo.status || 'N/A'}
-                                    </span>
-                                  </div>
-                                  {dropInfo.notes && (
-                                    <div className="mt-2 p-2 bg-green-100 rounded">
-                                      <span className="font-medium">Notes:</span>
-                                      <p className="text-xs mt-1">{dropInfo.notes}</p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Drop Location */}
-                                <div className="space-y-3">
-                                  {dropInfo.location && (
-                                    <div>
-                                      <h4 className="font-medium text-green-900 mb-2">Drop Location</h4>
-                                      <div className="bg-white rounded border p-2">
-                                        <div className="aspect-video bg-gray-100 rounded flex items-center justify-center">
-                                          <div className="text-center">
-                                            <svg className="w-8 h-8 text-green-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                                            </svg>
-                                            <p className="text-xs text-gray-600">
-                                              {dropInfo.location.address || 'Location Available'}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                              {dropInfo.location.coordinates?.[0]?.toFixed(4)}, {dropInfo.location.coordinates?.[1]?.toFixed(4)}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })()}
 
                           {/* Collection Interaction Timeline - Grouped by Pairs */}
                           {selectedTicket.relatedCollectionId.interactions && selectedTicket.relatedCollectionId.interactions.length > 0 && (
@@ -3928,16 +3820,6 @@ function SupportContent() {
                               </div>
                             </div>
                           )}
-                          
-                          {/* Debug info */}
-                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                            <p><strong>Debug Info:</strong></p>
-                            <p>Collection ID (Interaction ID): {selectedTicket.relatedCollectionId._id?.toString() || (typeof selectedTicket.relatedCollectionId === 'string' ? selectedTicket.relatedCollectionId : 'Object')}</p>
-                            <p>Interactions: {selectedTicket.relatedCollectionId.interactions?.length || 0}</p>
-                            {selectedTicket.relatedCollectionId.interactions?.[0]?.dropoffInfo && (
-                              <p>Drop ID: {selectedTicket.relatedCollectionId.interactions[0].dropoffInfo.id}</p>
-                            )}
-                          </div>
                         </div>
                       )}
                       
