@@ -2927,14 +2927,17 @@ function SupportContent() {
       // Update the ticket in the local state
       setTickets(prevTickets => 
         prevTickets.map(ticket => 
-          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+          (ticket._id || ticket.id) === ticketId ? { ...ticket, status: newStatus } : ticket
         )
       );
       
       // Update selected ticket if it's the same
-      if (selectedTicket && selectedTicket.id === ticketId) {
+      if (selectedTicket && (selectedTicket._id || selectedTicket.id) === ticketId) {
         setSelectedTicket((prev: any) => ({ ...prev, status: newStatus }));
       }
+      
+      // Refresh tickets to get updated data
+      await fetchTickets();
       
     } catch (err: any) {
       console.error('Error updating ticket status:', err);
@@ -3430,18 +3433,9 @@ function SupportContent() {
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                   <p className="text-xs font-medium text-gray-500 mb-3">QUICK ACTIONS</p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTicket.status !== 'in_progress' && (
+                    {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
                       <button
-                        onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress')}
-                        disabled={updatingStatus}
-                        className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                      >
-                        ▶️ Start Progress
-                      </button>
-                    )}
-                    {selectedTicket.status !== 'resolved' && (
-                      <button
-                        onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved')}
+                        onClick={() => handleUpdateStatus(selectedTicket._id || selectedTicket.id, 'resolved')}
                         disabled={updatingStatus}
                         className="px-4 py-2 text-sm font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                       >
@@ -3450,20 +3444,20 @@ function SupportContent() {
                     )}
                     {selectedTicket.status !== 'closed' && (
                       <button
-                        onClick={() => handleUpdateStatus(selectedTicket.id, 'closed')}
+                        onClick={() => handleUpdateStatus(selectedTicket._id || selectedTicket.id, 'closed')}
                         disabled={updatingStatus}
-                        className="px-4 py-2 text-sm font-medium bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                       >
                         🔒 Close Ticket
                       </button>
                     )}
-                    {selectedTicket.status !== 'open' && (
+                    {(selectedTicket.status === 'resolved' || selectedTicket.status === 'closed') && (
                       <button
-                        onClick={() => handleUpdateStatus(selectedTicket.id, 'open')}
+                        onClick={() => handleUpdateStatus(selectedTicket._id || selectedTicket.id, 'open')}
                         disabled={updatingStatus}
                         className="px-4 py-2 text-sm font-medium bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                       >
-                        🔄 Reopen
+                        🔄 Reopen Ticket
                       </button>
                     )}
                   </div>
