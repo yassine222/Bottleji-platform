@@ -81,6 +81,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _useCurrentLocation = true;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   
+  // Custom marker icon
+  BitmapDescriptor? _customDropMarker;
+  
   // Form fields
   int _numberOfBottles = 1;
   int _numberOfCans = 0; // Start with 0 cans since default is plastic bottles
@@ -717,9 +720,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _isModeSwitching = isSwitching;
       print('🔍 Home: Restored mode switching flag: $isSwitching');
     });
+    _loadCustomMarker(); // Load custom marker icon
     _initializeLocation();
     _startSessionCheck();
     _checkSessionImmediately();
+  }
+
+  // Load custom marker icon from assets
+  Future<void> _loadCustomMarker() async {
+    try {
+      final ImageConfiguration imageConfig = const ImageConfiguration(size: Size(48, 48));
+      final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        imageConfig,
+        'assets/icons/drop-pin.png',
+      );
+      setState(() {
+        _customDropMarker = customIcon;
+      });
+      debugPrint('✅ Custom drop marker loaded successfully');
+    } catch (e) {
+      debugPrint('❌ Error loading custom marker: $e');
+      // Fallback to default marker if loading fails
+      setState(() {
+        _customDropMarker = BitmapDescriptor.defaultMarker;
+      });
+    }
   }
 
   void _checkSessionImmediately() async {
@@ -1530,8 +1555,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     .map((drop) => Marker(
                           markerId: MarkerId('drop_${drop.id}'),
                           position: drop.location,
-                          icon: BitmapDescriptor.defaultMarkerWithHue(
-                              _getMarkerHue(drop.status)),
+                          icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                           infoWindow: InfoWindow(
                             title: '${drop.numberOfBottles + drop.numberOfCans} items',
                             snippet: '${drop.bottleType.name} - ${drop.status.name}',
@@ -1676,8 +1700,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     .map((drop) => Marker(
                           markerId: MarkerId('drop_${drop.id}'),
                           position: drop.location,
-                          icon: BitmapDescriptor.defaultMarkerWithHue(
-                              _getMarkerHue(drop.status)),
+                          icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                           infoWindow: InfoWindow(
                             title:
                                 '${drop.numberOfBottles + drop.numberOfCans} items',
@@ -2832,7 +2855,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     markerId: const MarkerId('drop_location'),
                     position: _useCurrentLocation ? _currentLocation! : (_selectedDropLocation ?? _currentLocation!),
                     draggable: true,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                    icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                     anchor: const Offset(0.5, 1.0),
                     onDragEnd: (newPosition) async {
                       setModalState(() {

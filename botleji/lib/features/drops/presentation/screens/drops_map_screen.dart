@@ -34,6 +34,9 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   String? _errorMessage;
   bool _isLoading = true;
   
+  // Custom marker icon
+  BitmapDescriptor? _customDropMarker;
+  
   // Form fields
   int _numberOfBottles = 1;
   int _numberOfCans = 1;
@@ -59,6 +62,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCustomMarker(); // Load custom marker icon
     _initializeLocation();
     _loadDropsForMap();
     
@@ -311,7 +315,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                           return Marker(
                             markerId: MarkerId('drop_${drop.id}'),
                             position: drop.location,
-                            icon: BitmapDescriptor.defaultMarkerWithHue(_getMarkerHue(drop.status)),
+                            icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                             infoWindow: InfoWindow(
                               title: '${drop.numberOfBottles + drop.numberOfCans} items',
                               snippet: '${drop.bottleType.name} - ${drop.status.name}',
@@ -1482,7 +1486,27 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
     });
   }
 
-  @override
+  // Load custom marker icon from assets
+  Future<void> _loadCustomMarker() async {
+    try {
+      final ImageConfiguration imageConfig = const ImageConfiguration(size: Size(48, 48));
+      final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        imageConfig,
+        'assets/icons/drop-pin.png',
+      );
+      setState(() {
+        _customDropMarker = customIcon;
+      });
+      debugPrint('✅ Custom drop marker loaded successfully');
+    } catch (e) {
+      debugPrint('❌ Error loading custom marker: $e');
+      // Fallback to default marker if loading fails
+      setState(() {
+        _customDropMarker = BitmapDescriptor.defaultMarker;
+      });
+    }
+  }
+
   void dispose() {
     _bottlesFocusNode.dispose();
     _cansFocusNode.dispose();

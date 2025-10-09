@@ -71,6 +71,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   Timer? _locationTimer;
   StreamSubscription<Position>? _locationSubscription;
   
+  // Custom marker icon
+  BitmapDescriptor? _customDropMarker;
+  
   // Timer variables
   Timer? _timer;
   int _remainingSeconds = 0;
@@ -95,6 +98,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   void initState() {
     super.initState();
     _collectionStartTime = DateTime.now();
+    _loadCustomMarker(); // Load custom marker icon
     
     // Initialize slide button animation
     _slideAnimationController = AnimationController(
@@ -389,6 +393,27 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     _locationSubscription?.cancel();
     _mapController?.dispose();
     super.dispose();
+  }
+
+  // Load custom marker icon from assets
+  Future<void> _loadCustomMarker() async {
+    try {
+      final ImageConfiguration imageConfig = const ImageConfiguration(size: Size(48, 48));
+      final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        imageConfig,
+        'assets/icons/drop-pin.png',
+      );
+      setState(() {
+        _customDropMarker = customIcon;
+      });
+      debugPrint('✅ Custom drop marker loaded successfully');
+    } catch (e) {
+      debugPrint('❌ Error loading custom marker: $e');
+      // Fallback to default marker if loading fails
+      setState(() {
+        _customDropMarker = BitmapDescriptor.defaultMarker;
+      });
+    }
   }
 
   Future<void> _initializeLocation() async {
@@ -1471,7 +1496,7 @@ Widget build(BuildContext context) {
               Marker(
                 markerId: const MarkerId('destination'),
                 position: widget.destination,
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                 infoWindow: const InfoWindow(title: 'Drop Location'),
               ),
             },

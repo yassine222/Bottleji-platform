@@ -49,6 +49,9 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
   // Map controller
   GoogleMapController? _mapController;
   final GlobalKey _mapKey = GlobalKey();
+  
+  // Custom marker icon
+  BitmapDescriptor? _customDropMarker;
 
   // Focus nodes
   final FocusNode _bottlesFocusNode = FocusNode();
@@ -58,6 +61,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCustomMarker(); // Load custom marker icon
     
     // Initialize form with current drop data
     _bottleType = widget.drop.bottleType;
@@ -77,6 +81,27 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
     // Load address for current location
     _loadAddressForLocation(_selectedDropLocation);
+  }
+
+  // Load custom marker icon from assets
+  Future<void> _loadCustomMarker() async {
+    try {
+      final ImageConfiguration imageConfig = const ImageConfiguration(size: Size(48, 48));
+      final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        imageConfig,
+        'assets/icons/drop-pin.png',
+      );
+      setState(() {
+        _customDropMarker = customIcon;
+      });
+      debugPrint('✅ Custom drop marker loaded successfully');
+    } catch (e) {
+      debugPrint('❌ Error loading custom marker: $e');
+      // Fallback to default marker if loading fails
+      setState(() {
+        _customDropMarker = BitmapDescriptor.defaultMarker;
+      });
+    }
   }
 
   @override
@@ -624,6 +649,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                             Marker(
                               markerId: const MarkerId('drop_location'),
                               position: _selectedDropLocation,
+                              icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
                               infoWindow: const InfoWindow(title: 'Drop Location'),
                             ),
                           },
