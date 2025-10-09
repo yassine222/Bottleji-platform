@@ -648,8 +648,8 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    onChanged: _onMessageChanged,
-                    enabled: _currentTicket.status != 'closed',
+                    onChanged: _currentTicket.status == 'closed' ? null : _onMessageChanged,
+                    readOnly: _currentTicket.status == 'closed',
                     decoration: InputDecoration(
                       hintText: _currentTicket.status == 'closed' 
                           ? 'Chat is disabled...' 
@@ -666,7 +666,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_currentTicket.status != 'closed') ? (_) => _sendMessage() : null,
+                    onSubmitted: _currentTicket.status == 'closed' ? null : (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
