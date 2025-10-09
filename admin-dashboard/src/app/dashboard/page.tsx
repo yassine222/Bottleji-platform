@@ -3476,26 +3476,47 @@ function SupportContent() {
                               )}
 
                               {/* Location Map */}
-                              {selectedTicket.relatedDropId.location && (
-                                <div>
-                                  <h4 className="font-medium text-blue-900 mb-2">Drop Location</h4>
-                                  <div className="bg-white rounded border p-2">
-                                    <div className="aspect-video bg-gray-100 rounded flex items-center justify-center">
-                                      <div className="text-center">
-                                        <svg className="w-8 h-8 text-blue-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                                        </svg>
+                              {selectedTicket.relatedDropId.location && (() => {
+                                // Handle both GeoJSON format (coordinates array) and lat/lng format
+                                const location = selectedTicket.relatedDropId.location;
+                                const lat = location.coordinates?.[1] || location.latitude;
+                                const lng = location.coordinates?.[0] || location.longitude;
+                                
+                                if (!lat || !lng) return null;
+                                
+                                return (
+                                  <div>
+                                    <h4 className="font-medium text-blue-900 mb-2">Drop Location</h4>
+                                    <div className="bg-white rounded border p-2">
+                                      <div className="aspect-video bg-gray-100 rounded overflow-hidden">
+                                        <iframe
+                                          width="100%"
+                                          height="100%"
+                                          style={{ border: 0 }}
+                                          loading="lazy"
+                                          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${lat},${lng}&zoom=15`}
+                                        ></iframe>
+                                      </div>
+                                      <div className="mt-2 text-center">
                                         <p className="text-xs text-gray-600">
-                                          {selectedTicket.relatedDropId.location.address || 'Location Available'}
+                                          {location.address || 'Drop Location'}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
-                                          {selectedTicket.relatedDropId.location.latitude?.toFixed(4)}, {selectedTicket.relatedDropId.location.longitude?.toFixed(4)}
+                                          {lat.toFixed(6)}, {lng.toFixed(6)}
                                         </p>
+                                        <a 
+                                          href={`https://www.google.com/maps?q=${lat},${lng}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-block"
+                                        >
+                                          Open in Google Maps →
+                                        </a>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           </div>
 
