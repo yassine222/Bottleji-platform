@@ -347,6 +347,10 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug: Print current ticket status on every build
+    debugPrint('🔍 BUILD: Current ticket status = "${_currentTicket.status}"');
+    debugPrint('🔍 BUILD: Is closed check = ${_currentTicket.status == 'closed'}');
+    
     final chatService = ref.watch(chatServiceProvider);
     
     // Listen to chat service connection changes
