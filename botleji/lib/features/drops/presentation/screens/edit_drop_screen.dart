@@ -86,19 +86,16 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
   // Load custom marker icon from assets
   Future<void> _loadCustomMarker() async {
     try {
-      // Load optimized 256x256px marker icon
-      final ImageConfiguration imageConfig = ImageConfiguration(
-        devicePixelRatio: 2.5,
-        size: const Size(40, 40), // Display size in logical pixels
-      );
+      // Match default Google Maps marker size (approximately 48x48 actual pixels)
+      // Using width parameter to control final size
       final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-        imageConfig,
+        const ImageConfiguration(size: Size(24, 24)), // Much smaller logical size
         'assets/icons/drop-pin.png',
       );
       setState(() {
         _customDropMarker = customIcon;
       });
-      debugPrint('✅ Custom drop marker loaded successfully (256x256px)');
+      debugPrint('✅ Custom drop marker loaded successfully');
     } catch (e) {
       debugPrint('❌ Error loading custom marker: $e');
       // Fallback to default marker if loading fails
