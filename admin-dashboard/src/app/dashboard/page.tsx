@@ -3733,22 +3733,54 @@ function SupportContent() {
                                 {(() => {
                                   // Group interactions into pairs (ACCEPTED + FINAL_STATE)
                                   const interactions = selectedTicket.relatedCollectionId.interactions;
+                                  console.log('🔍 Total interactions:', interactions.length);
+                                  console.log('🔍 All interactions:', interactions.map((i: any) => ({ type: i.type, time: i.timestamp })));
+                                  
                                   const pairs: any[] = [];
                                   const acceptedInteractions = interactions.filter((i: any) => i.type === 'ACCEPTED');
+                                  const usedFinalInteractions = new Set();
+                                  
+                                  console.log('🔍 ACCEPTED interactions:', acceptedInteractions.length);
+                                  
+                                  // Sort interactions by timestamp
+                                  const sortedInteractions = [...interactions].sort((a: any, b: any) => 
+                                    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                                  );
                                   
                                   acceptedInteractions.forEach((accepted: any) => {
                                     // Find the next interaction after this ACCEPTED (CANCELLED, EXPIRED, or COLLECTED)
                                     const acceptedTime = new Date(accepted.timestamp).getTime();
-                                    const finalInteraction = interactions.find((i: any) => 
+                                    const finalInteraction = sortedInteractions.find((i: any) => 
                                       (i.type === 'CANCELLED' || i.type === 'EXPIRED' || i.type === 'COLLECTED') &&
-                                      new Date(i.timestamp).getTime() > acceptedTime
+                                      new Date(i.timestamp).getTime() > acceptedTime &&
+                                      !usedFinalInteractions.has(i.id)
                                     );
+                                    
+                                    if (finalInteraction) {
+                                      usedFinalInteractions.add(finalInteraction.id);
+                                    }
                                     
                                     pairs.push({
                                       accepted,
                                       final: finalInteraction || null
                                     });
                                   });
+                                  
+                                  console.log('🔍 Created pairs:', pairs.length);
+                                  console.log('🔍 Pairs:', pairs.map((p: any) => ({ 
+                                    accepted: p.accepted.type, 
+                                    final: p.final?.type || 'none' 
+                                  })));
+                                  
+                                  if (pairs.length === 0) {
+                                    return (
+                                      <div className="text-center py-4 text-gray-500">
+                                        <p>No interaction pairs found.</p>
+                                        <p className="text-xs mt-2">Total interactions: {interactions.length}</p>
+                                        <p className="text-xs">ACCEPTED: {acceptedInteractions.length}</p>
+                                      </div>
+                                    );
+                                  }
                                   
                                   return pairs.map((pair: any, pairIndex: number) => {
                                     const getInteractionIcon = (type: string) => {
