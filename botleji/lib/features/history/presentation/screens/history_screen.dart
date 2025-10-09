@@ -2444,23 +2444,27 @@ Widget _buildCollectorHistory(BuildContext context) {
       // Try to get a unique identifier for the drop
       String dropKey = '';
       
-      // First try to use the dropoff object's id if available (this is the most reliable)
+      print('  🔎 Processing interaction ${interaction.id} (${interaction.interactionType})');
+      print('    - dropoff?.id: ${interaction.dropoff?.id}');
+      print('    - dropoffId: ${interaction.dropoffId}');
+      
+      // ALWAYS prefer dropoff.id if available (most reliable)
       if (interaction.dropoff?.id.isNotEmpty == true) {
         dropKey = interaction.dropoff!.id;
         print('  📍 Using dropoff.id: $dropKey');
       } else if (interaction.dropoffId.isNotEmpty) {
-        // Check if dropoffId is actually a string ID or if it's an object
+        // Use dropoffId as fallback
         dropKey = interaction.dropoffId;
         print('  📍 Using interaction.dropoffId: $dropKey');
       } else {
-        // If no dropoffId, use the interaction id as fallback
+        // Last resort: use interaction id (this means ungrouped)
         dropKey = interaction.id;
-        print('  📍 Using interaction.id as fallback: $dropKey');
+        print('  ⚠️ Using interaction.id as fallback: $dropKey (UNGROUPED!)');
       }
       
       if (dropKey.isNotEmpty) {
         grouped.putIfAbsent(dropKey, () => []).add(interaction);
-        print('  ✅ Added interaction ${interaction.interactionType} to group $dropKey');
+        print('  ✅ Added ${interaction.interactionType} to group $dropKey');
       } else {
         print('  ❌ No dropKey found for interaction ${interaction.id}');
       }
