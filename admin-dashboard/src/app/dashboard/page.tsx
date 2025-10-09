@@ -3807,7 +3807,12 @@ function SupportContent() {
                           </div>
 
                           {/* Drop Interaction Timeline - Only show for Drop Issues, NOT Collection Issues */}
-                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId && (
+                          {!selectedTicket.relatedCollectionId && selectedTicket.relatedDropId && (() => {
+                            console.log('🔍 Drop Timeline Debug:');
+                            console.log('  - relatedDropId:', selectedTicket.relatedDropId);
+                            console.log('  - interactions:', selectedTicket.relatedDropId.interactions);
+                            console.log('  - interactions length:', selectedTicket.relatedDropId.interactions?.length);
+                            return (
                             <div className="mt-4 pt-4 border-t border-blue-200">
                               <h4 className="font-medium text-blue-900 mb-3">Drop Collection Timeline - Complete History</h4>
                               <div className="relative">
@@ -3941,7 +3946,8 @@ function SupportContent() {
                                 </div>
                               </div>
                             </div>
-                          )}
+                            );
+                          })()}
                           
                         </div>
                       )}
