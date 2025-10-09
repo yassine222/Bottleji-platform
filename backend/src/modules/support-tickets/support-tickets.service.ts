@@ -174,7 +174,7 @@ export class SupportTicketsService {
             
             // Create an object for relatedCollectionId so we can add interactions to it
             const collectionObject = {
-              _id: ticket.relatedCollectionId,
+              _id: ticket.relatedCollectionId.toString(),  // Convert ObjectId to string for JSON serialization
               interactions: [] as any[]
             };
             
@@ -211,7 +211,8 @@ export class SupportTicketsService {
           console.log('🔍 Support Tickets: Ticket has no relatedDropId or relatedCollectionId');
         }
         
-        return ticket;
+        // Convert to plain object for proper JSON serialization
+        return ticket.toObject ? ticket.toObject() : ticket;
       })
     );
 
