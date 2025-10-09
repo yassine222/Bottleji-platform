@@ -116,7 +116,8 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
             category: _selectedCategory,
             priority: _selectedPriority,
             contextMetadata: widget.preFilledData?['metadata'],
-            relatedDropId: widget.preFilledData?['metadata']?['dropId'],
+            relatedDropId: widget.preFilledData?['metadata']?['dropId'] ?? 
+                          widget.preFilledData?['metadata']?['dropoffId'],
             relatedCollectionId:
                 widget.preFilledData?['metadata']?['collectionId'],
             relatedApplicationId:

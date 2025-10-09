@@ -133,6 +133,7 @@ This document outlines what fields are sent to the database when creating suppor
     "issueContext": "collector_interaction_last_3_days",
     "interactionTime": "2025-10-02T16:03:12.456Z"
   },
+  "relatedDropId": "68de885caeb246e1806048f3",
   "relatedCollectionId": "68de9e5cbe72119fb6c86959"
 }
 ```
@@ -152,6 +153,7 @@ This document outlines what fields are sent to the database when creating suppor
 - The Flutter app now properly extracts the `dropoffId` from populated interaction objects
 - Structured interaction data shows both ACCEPTED and final interaction (CANCELLED/EXPIRED/COLLECTED)
 - Clear indication that this represents a pair of interactions (accept → final state)
+- **Fixed**: `relatedDropId` is now properly set for collection issues (uses `dropoffId` from metadata)
 
 **Backend Processing**:
 1. Uses `relatedCollectionId` (interaction ID) to find the specific interaction
@@ -234,7 +236,7 @@ This document outlines what fields are sent to the database when creating suppor
 | Ticket Type | Category | relatedDropId | relatedCollectionId | relatedApplicationId | Key Metadata |
 |------------|----------|---------------|---------------------|---------------------|--------------|
 | **Drop Issue** | `drop_issue` | ✅ Drop ObjectId | ❌ | ❌ | dropId, status, bottles, cans, location |
-| **Collection Issue** | `collection_issue` | ❌ | ✅ Interaction ObjectId | ❌ | collectionId (interaction), dropoffId, dropoff details |
+| **Collection Issue** | `collection_issue` | ✅ Drop ObjectId | ✅ Interaction ObjectId | ❌ | collectionId (interaction), dropoffId, dropoff details, interaction pair |
 | **Application Issue** | `application_issue` | ❌ | ❌ | ✅ Application ObjectId | applicationId, status |
 | **General Support** | `general_support` | ❌ | ❌ | ❌ | context, category |
 
