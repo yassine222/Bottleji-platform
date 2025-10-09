@@ -56,6 +56,45 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     // Ensure connection and join room
     _ensureConnectionAndJoin();
     
+    // Set up status update callback
+    chatService.onStatusUpdate = (statusData) {
+      debugPrint('📊 ===== STATUS UPDATE RECEIVED =====');
+      debugPrint('📊 Status data: $statusData');
+      
+      if (statusData['ticketId'] == widget.ticket.id) {
+        debugPrint('📊 Status update matches current ticket, updating UI');
+        
+        final newStatus = statusData['status'] ?? _currentTicket.status;
+        debugPrint('📊 Updating ticket status to: $newStatus');
+        
+        setState(() {
+          _currentTicket = SupportTicket(
+            id: _currentTicket.id,
+            title: _currentTicket.title,
+            description: _currentTicket.description,
+            status: newStatus,
+            priority: _currentTicket.priority,
+            category: _currentTicket.category,
+            userId: _currentTicket.userId,
+            assignedTo: _currentTicket.assignedTo,
+            messages: _currentTicket.messages,
+            attachments: _currentTicket.attachments,
+            internalNotes: _currentTicket.internalNotes,
+            createdAt: _currentTicket.createdAt,
+            updatedAt: DateTime.now(),
+            lastUpdatedBy: _currentTicket.lastUpdatedBy,
+            relatedDropId: _currentTicket.relatedDropId,
+            relatedCollectionId: _currentTicket.relatedCollectionId,
+            relatedApplicationId: _currentTicket.relatedApplicationId,
+            contextMetadata: _currentTicket.contextMetadata,
+            location: _currentTicket.location,
+          );
+        });
+        
+        debugPrint('📊 Ticket status updated successfully in UI');
+      }
+    };
+    
     // Set up message callback
     chatService.onMessageReceived = (messageData) {
       debugPrint('📨 ===== NEW MESSAGE RECEIVED =====');

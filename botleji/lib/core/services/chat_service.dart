@@ -27,6 +27,7 @@ class ChatService extends ChangeNotifier {
   Function(Map<String, dynamic>)? onTypingIndicator;
   Function(Map<String, dynamic>)? onUserJoined;
   Function(Map<String, dynamic>)? onUserLeft;
+  Function(Map<String, dynamic>)? onStatusUpdate;
   Function(Map<String, dynamic>)? onPresenceIndicator;
 
   // Getters
@@ -189,6 +190,11 @@ class ChatService extends ChangeNotifier {
     _socket!.on('new_message', (data) {
       debugPrint('📨 ChatService: New message received: $data');
       onMessageReceived?.call(data);
+    });
+    
+    _socket!.on('status_update', (data) {
+      debugPrint('📊 ChatService: Status update received: $data');
+      onStatusUpdate?.call(data);
     });
 
     _socket!.on('typing_indicator', (data) {
