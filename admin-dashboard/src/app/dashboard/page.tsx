@@ -3724,16 +3724,33 @@ function SupportContent() {
                             );
                           })()}
 
-                          {/* Collection Interaction Timeline */}
+                          {/* Collection Interaction Timeline - Grouped by Pairs */}
                           {selectedTicket.relatedCollectionId.interactions && selectedTicket.relatedCollectionId.interactions.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-green-200">
-                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline</h4>
-                              <div className="relative">
-                                {/* Timeline line */}
-                                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-green-200"></div>
-                                
-                                <div className="space-y-4 max-h-60 overflow-y-auto">
-                                  {selectedTicket.relatedCollectionId.interactions.map((interaction: any, index: number) => {
+                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline (Paired)</h4>
+                              
+                              <div className="space-y-4 max-h-96 overflow-y-auto">
+                                {(() => {
+                                  // Group interactions into pairs (ACCEPTED + FINAL_STATE)
+                                  const interactions = selectedTicket.relatedCollectionId.interactions;
+                                  const pairs: any[] = [];
+                                  const acceptedInteractions = interactions.filter((i: any) => i.type === 'ACCEPTED');
+                                  
+                                  acceptedInteractions.forEach((accepted: any) => {
+                                    // Find the next interaction after this ACCEPTED (CANCELLED, EXPIRED, or COLLECTED)
+                                    const acceptedTime = new Date(accepted.timestamp).getTime();
+                                    const finalInteraction = interactions.find((i: any) => 
+                                      (i.type === 'CANCELLED' || i.type === 'EXPIRED' || i.type === 'COLLECTED') &&
+                                      new Date(i.timestamp).getTime() > acceptedTime
+                                    );
+                                    
+                                    pairs.push({
+                                      accepted,
+                                      final: finalInteraction || null
+                                    });
+                                  });
+                                  
+                                  return pairs.map((pair: any, pairIndex: number) => {
                                     const getInteractionIcon = (type: string) => {
                                       switch (type) {
                                         case 'ACCEPTED':
@@ -3780,46 +3797,91 @@ function SupportContent() {
                                     };
 
                                     return (
-                                      <div key={interaction.id || index} className="relative flex items-start space-x-4">
-                                        {/* Timeline dot */}
-                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${getInteractionColor(interaction.type)}`}>
-                                          {getInteractionIcon(interaction.type)}
+                                      <div key={pair.accepted.id || pairIndex} className="bg-white rounded-lg border-2 border-green-300 p-4 shadow-sm">
+                                        {/* Pair Header */}
+                                        <div className="flex items-center justify-between mb-3">
+                                          <h5 className="text-sm font-semibold text-green-900">
+                                            Interaction Pair #{pairIndex + 1}
+                                          </h5>
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(pair.accepted.timestamp).toLocaleDateString()}
+                                          </span>
                                         </div>
                                         
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-3">
-                                          <div className="flex items-center justify-between">
-                                            <h5 className="text-sm font-medium text-gray-900">
-                                              {getInteractionTitle(interaction.type)}
-                                            </h5>
-                                            <span className="text-xs text-gray-500">
-                                              {new Date(interaction.timestamp).toLocaleString()}
-                                            </span>
-                                          </div>
-                                          
-                                          <div className="mt-1 text-sm text-gray-600">
-                                            <p><strong>Collector:</strong> {interaction.collectorName || 'Unknown Collector'}</p>
-                                            {interaction.cancellationReason && (
-                                              <p><strong>Reason:</strong> {interaction.cancellationReason}</p>
-                                            )}
-                                            {interaction.numberOfItems && (
-                                              <p><strong>Items:</strong> {interaction.numberOfItems} ({interaction.bottleType})</p>
-                                            )}
-                                            {interaction.location && (
-                                              <p><strong>Location:</strong> {interaction.location.coordinates?.[0]?.toFixed(4)}, {interaction.location.coordinates?.[1]?.toFixed(4)}</p>
-                                            )}
-                                          </div>
-                                          
-                                          {interaction.notes && (
-                                            <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700">
-                                              <strong>Notes:</strong> {interaction.notes}
+                                        {/* ACCEPTED Interaction */}
+                                        <div className={`rounded-lg border-2 ${getInteractionColor(pair.accepted.type)} p-3 mb-2`}>
+                                          <div className="flex items-start space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center text-lg font-bold border-2 border-green-500">
+                                              {getInteractionIcon(pair.accepted.type)}
                                             </div>
-                                          )}
+                                            <div className="flex-1">
+                                              <div className="flex items-center justify-between">
+                                                <h6 className="text-sm font-medium text-gray-900">
+                                                  {getInteractionTitle(pair.accepted.type)}
+                                                </h6>
+                                                <span className="text-xs text-gray-600">
+                                                  {new Date(pair.accepted.timestamp).toLocaleTimeString()}
+                                                </span>
+                                              </div>
+                                              <div className="mt-1 text-xs text-gray-700">
+                                                <p><strong>Collector:</strong> {pair.accepted.collectorName || 'Unknown'}</p>
+                                                {pair.accepted.notes && (
+                                                  <p className="mt-1"><strong>Notes:</strong> {pair.accepted.notes}</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
                                         </div>
+                                        
+                                        {/* Connection Arrow */}
+                                        <div className="flex justify-center my-2">
+                                          <div className="flex flex-col items-center">
+                                            <div className="w-0.5 h-4 bg-green-400"></div>
+                                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" />
+                                            </svg>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* FINAL Interaction (CANCELLED/EXPIRED/COLLECTED) */}
+                                        {pair.final ? (
+                                          <div className={`rounded-lg border-2 ${getInteractionColor(pair.final.type)} p-3`}>
+                                            <div className="flex items-start space-x-3">
+                                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center text-lg font-bold border-2 border-current">
+                                                {getInteractionIcon(pair.final.type)}
+                                              </div>
+                                              <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                  <h6 className="text-sm font-medium text-gray-900">
+                                                    {getInteractionTitle(pair.final.type)}
+                                                  </h6>
+                                                  <span className="text-xs text-gray-600">
+                                                    {new Date(pair.final.timestamp).toLocaleTimeString()}
+                                                  </span>
+                                                </div>
+                                                <div className="mt-1 text-xs text-gray-700">
+                                                  {pair.final.collectorName && (
+                                                    <p><strong>Collector:</strong> {pair.final.collectorName}</p>
+                                                  )}
+                                                  {pair.final.cancellationReason && (
+                                                    <p><strong>Reason:</strong> {pair.final.cancellationReason}</p>
+                                                  )}
+                                                  {pair.final.notes && (
+                                                    <p className="mt-1"><strong>Notes:</strong> {pair.final.notes}</p>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-3 text-center">
+                                            <p className="text-xs text-gray-500">Still pending final action...</p>
+                                          </div>
+                                        )}
                                       </div>
                                     );
-                                  })}
-                                </div>
+                                  });
+                                })()}
                               </div>
                             </div>
                           )}
