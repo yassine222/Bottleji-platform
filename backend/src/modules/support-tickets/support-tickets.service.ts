@@ -160,7 +160,9 @@ export class SupportTicketsService {
           } catch (error) {
             console.error(`❌ Support Tickets: Error fetching timeline for drop ${ticket.relatedDropId}:`, error);
           }
-        } else if (ticket.relatedCollectionId) {
+        }
+        
+        if (ticket.relatedCollectionId) {
           try {
             console.log('🔍 Support Tickets: Processing ticket with relatedCollectionId:', ticket.relatedCollectionId);
             console.log('🔍 Support Tickets: Ticket also has relatedDropId:', ticket.relatedDropId);
@@ -201,9 +203,12 @@ export class SupportTicketsService {
           } catch (error) {
             console.error(`❌ Support Tickets: Error fetching timeline for collection ${ticket.relatedCollectionId}:`, error);
           }
-        } else {
+        }
+        
+        if (!ticket.relatedDropId && !ticket.relatedCollectionId) {
           console.log('🔍 Support Tickets: Ticket has no relatedDropId or relatedCollectionId');
         }
+        
         return ticket;
       })
     );
