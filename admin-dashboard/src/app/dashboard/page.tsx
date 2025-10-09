@@ -3737,7 +3737,7 @@ function SupportContent() {
                                   console.log('🔍 All interactions:', interactions.map((i: any) => ({ type: i.type, time: i.timestamp })));
                                   
                                   const pairs: any[] = [];
-                                  const acceptedInteractions = interactions.filter((i: any) => i.type === 'ACCEPTED');
+                                  const acceptedInteractions = interactions.filter((i: any) => i.type.toUpperCase() === 'ACCEPTED');
                                   const usedFinalInteractions = new Set();
                                   
                                   console.log('🔍 ACCEPTED interactions:', acceptedInteractions.length);
@@ -3750,11 +3750,12 @@ function SupportContent() {
                                   acceptedInteractions.forEach((accepted: any) => {
                                     // Find the next interaction after this ACCEPTED (CANCELLED, EXPIRED, or COLLECTED)
                                     const acceptedTime = new Date(accepted.timestamp).getTime();
-                                    const finalInteraction = sortedInteractions.find((i: any) => 
-                                      (i.type === 'CANCELLED' || i.type === 'EXPIRED' || i.type === 'COLLECTED') &&
-                                      new Date(i.timestamp).getTime() > acceptedTime &&
-                                      !usedFinalInteractions.has(i.id)
-                                    );
+                                    const finalInteraction = sortedInteractions.find((i: any) => {
+                                      const type = i.type.toUpperCase();
+                                      return (type === 'CANCELLED' || type === 'EXPIRED' || type === 'COLLECTED') &&
+                                        new Date(i.timestamp).getTime() > acceptedTime &&
+                                        !usedFinalInteractions.has(i.id);
+                                    });
                                     
                                     if (finalInteraction) {
                                       usedFinalInteractions.add(finalInteraction.id);
@@ -3784,7 +3785,7 @@ function SupportContent() {
                                   
                                   return pairs.map((pair: any, pairIndex: number) => {
                                     const getInteractionIcon = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
                                           return '✓';
                                         case 'COLLECTED':
@@ -3799,7 +3800,7 @@ function SupportContent() {
                                     };
 
                                     const getInteractionColor = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
                                           return 'bg-green-100 text-green-800 border-green-200';
                                         case 'COLLECTED':
@@ -3814,7 +3815,7 @@ function SupportContent() {
                                     };
 
                                     const getInteractionTitle = (type: string) => {
-                                      switch (type) {
+                                      switch (type.toUpperCase()) {
                                         case 'ACCEPTED':
                                           return 'Collection Accepted';
                                         case 'COLLECTED':
@@ -3824,7 +3825,7 @@ function SupportContent() {
                                         case 'EXPIRED':
                                           return 'Collection Expired';
                                         default:
-                                          return type;
+                                          return type.charAt(0).toUpperCase() + type.slice(1);
                                       }
                                     };
 
