@@ -1489,10 +1489,10 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   // Load custom marker icon from assets
   Future<void> _loadCustomMarker() async {
     try {
-      // Use a smaller size for the marker (width in logical pixels)
+      // Load optimized 256x256px marker icon
       final ImageConfiguration imageConfig = ImageConfiguration(
         devicePixelRatio: 2.5,
-        size: const Size(40, 40), // Smaller size for better display
+        size: const Size(40, 40), // Display size in logical pixels
       );
       final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
         imageConfig,
@@ -1501,7 +1501,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
       setState(() {
         _customDropMarker = customIcon;
       });
-      debugPrint('✅ Custom drop marker loaded successfully');
+      debugPrint('✅ Custom drop marker loaded successfully (256x256px)');
     } catch (e) {
       debugPrint('❌ Error loading custom marker: $e');
       // Fallback to default marker if loading fails
