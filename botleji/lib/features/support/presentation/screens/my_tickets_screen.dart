@@ -43,11 +43,53 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: 'All',
-                child: Text('All tickets'),
+                child: Row(
+                  children: [
+                    Icon(Icons.list, size: 18, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('All Tickets'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'Open',
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 12, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Open'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'InProgress',
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 12, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('In Progress'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'Resolved',
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 12, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Resolved'),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'Closed',
-                child: Text('Closed only'),
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 12, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Closed'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -61,9 +103,22 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       ),
       body: ticketsState.when(
         data: (tickets) {
-          final filteredTickets = _statusFilter == 'Closed'
-              ? tickets.where((t) => t.status == TicketStatus.closed).toList()
-              : tickets;
+          final filteredTickets = _statusFilter == 'All'
+              ? tickets
+              : tickets.where((t) {
+                  switch (_statusFilter) {
+                    case 'Open':
+                      return t.status == TicketStatus.open;
+                    case 'InProgress':
+                      return t.status == TicketStatus.inProgress;
+                    case 'Resolved':
+                      return t.status == TicketStatus.resolved;
+                    case 'Closed':
+                      return t.status == TicketStatus.closed;
+                    default:
+                      return true;
+                  }
+                }).toList();
           if (tickets.isEmpty) {
             return const Center(
               child: Column(
