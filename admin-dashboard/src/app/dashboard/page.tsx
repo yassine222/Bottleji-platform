@@ -2871,12 +2871,12 @@ function SupportContent() {
         
         // Send presence indicator
         socket.emit('presence_indicator', {
-          ticketId: ticket.id,
+          ticketId: ticketId,
           isPresent: true,
           senderType: 'agent'
         });
         
-        console.log('👤 Admin Dashboard: Successfully joined ticket room and sent presence indicator');
+        console.log('👤 Admin Dashboard: Successfully joined ticket room and sent presence indicator for ticket:', ticketId);
       }
     };
 
@@ -2892,16 +2892,17 @@ function SupportContent() {
   const handleCloseModal = () => {
     // Leave ticket room and send presence indicator
     if (selectedTicket && socket && socket.connected) {
-      console.log('👋 Admin Dashboard: Leaving ticket room:', selectedTicket.id);
+      const ticketId = selectedTicket._id || selectedTicket.id;
+      console.log('👋 Admin Dashboard: Leaving ticket room:', ticketId);
       
       socket.emit('leave_ticket', {
-        ticketId: selectedTicket.id,
+        ticketId: ticketId,
         senderType: 'agent'
       });
       
       // Send presence indicator that admin left
       socket.emit('presence_indicator', {
-        ticketId: selectedTicket.id,
+        ticketId: ticketId,
         isPresent: false,
         senderType: 'agent'
       });
