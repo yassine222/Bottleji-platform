@@ -360,32 +360,9 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('Support Ticket #${widget.ticket.id.substring(0, 8)}'),
+        title: const Text('Support Ticket'),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
-        actions: [
-          // Connection status indicator
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: Row(
-              children: [
-                Icon(
-                  chatService.isConnected ? Icons.wifi : Icons.wifi_off,
-                  color: chatService.isConnected ? Colors.green : Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  chatService.isConnected ? 'Connected' : 'Disconnected',
-                  style: TextStyle(
-                    color: chatService.isConnected ? Colors.green : Colors.red,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -549,6 +526,42 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                   ),
                 );
               },
+            ),
+          ),
+          
+          // Connection Status Indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: chatService.isConnected ? Colors.green[50] : Colors.red[50],
+              border: Border(
+                bottom: BorderSide(
+                  color: chatService.isConnected ? Colors.green[200]! : Colors.red[200]!,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: chatService.isConnected ? Colors.green : Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  chatService.isConnected ? 'Connected' : 'Connecting...',
+                  style: TextStyle(
+                    color: chatService.isConnected ? Colors.green[800] : Colors.red[800],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           
