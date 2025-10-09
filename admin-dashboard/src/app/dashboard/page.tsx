@@ -3404,91 +3404,136 @@ function SupportContent() {
                     <label className="block text-sm font-medium text-gray-700">Related Context</label>
                     <div className="mt-1 space-y-3">
                       {selectedTicket.relatedDropId && (
-                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="font-semibold text-blue-900">Related Drop Details</span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Drop Information */}
-                            <div className="space-y-2 text-sm text-blue-800">
-                              <div className="flex justify-between">
-                                <span className="font-medium">Bottles:</span>
-                                <span>{selectedTicket.relatedDropId.numberOfBottles || 0}</span>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 overflow-hidden shadow-md">
+                          {/* Header */}
+                          <div className="bg-white/80 backdrop-blur-sm px-6 py-4 border-b border-blue-200">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="font-medium">Cans:</span>
-                                <span>{selectedTicket.relatedDropId.numberOfCans || 0}</span>
+                              <div>
+                                <h3 className="text-lg font-bold text-blue-900">Related Drop Details</h3>
+                                <p className="text-xs text-blue-600">
+                                  Created {selectedTicket.relatedDropId.createdAt ? new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString() : 'N/A'}
+                                </p>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="font-medium">Type:</span>
-                                <span>{selectedTicket.relatedDropId.bottleType || 'N/A'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="font-medium">Status:</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  selectedTicket.relatedDropId.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  selectedTicket.relatedDropId.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                                  selectedTicket.relatedDropId.status === 'collected' ? 'bg-green-100 text-green-800' :
-                                  selectedTicket.relatedDropId.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {selectedTicket.relatedDropId.status || 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="font-medium">Created:</span>
-                                <span>{selectedTicket.relatedDropId.createdAt ? new Date(selectedTicket.relatedDropId.createdAt).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                              {selectedTicket.relatedDropId.notes && (
-                                <div className="mt-2 p-2 bg-blue-100 rounded">
-                                  <span className="font-medium">Notes:</span>
-                                  <p className="text-xs mt-1">{selectedTicket.relatedDropId.notes}</p>
-                                </div>
-                              )}
                             </div>
+                          </div>
 
-                            {/* Drop Image and Map */}
-                            <div className="space-y-3">
-                              {/* Drop Image */}
-                              {selectedTicket.relatedDropId.images && selectedTicket.relatedDropId.images.length > 0 && (
-                                <div>
-                                  <h4 className="font-medium text-blue-900 mb-2">Drop Images</h4>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {selectedTicket.relatedDropId.images.slice(0, 4).map((image: string, index: number) => (
-                                      <img
-                                        key={index}
-                                        src={image}
-                                        alt={`Drop image ${index + 1}`}
-                                        className="w-full h-20 object-cover rounded border"
-                                        onError={(e) => {
-                                          const target = e.target as HTMLImageElement;
-                                          target.style.display = 'none';
-                                        }}
-                                      />
-                                    ))}
+                          <div className="p-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Left Column: Drop Image and Info */}
+                              <div className="space-y-4">
+                                {/* Drop Image - Large and Prominent */}
+                                {selectedTicket.relatedDropId.images && selectedTicket.relatedDropId.images.length > 0 ? (
+                                  <div className="relative group">
+                                    <img
+                                      src={selectedTicket.relatedDropId.images[0]}
+                                      alt="Drop"
+                                      className="w-full h-64 object-cover rounded-lg shadow-lg border-2 border-white"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e5e7eb" width="400" height="300"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="20">No Image</text></svg>';
+                                      }}
+                                    />
+                                    {selectedTicket.relatedDropId.images.length > 1 && (
+                                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                                        +{selectedTicket.relatedDropId.images.length - 1} more
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center border-2 border-white shadow-lg">
+                                    <div className="text-center">
+                                      <svg className="w-16 h-16 text-blue-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <p className="text-sm text-blue-500 font-medium">No Image Available</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Drop Stats Cards */}
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <span className="text-lg">🍾</span>
+                                      </div>
+                                      <div>
+                                        <p className="text-2xl font-bold text-blue-900">{selectedTicket.relatedDropId.numberOfBottles || 0}</p>
+                                        <p className="text-xs text-gray-600">Bottles</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <span className="text-lg">🥫</span>
+                                      </div>
+                                      <div>
+                                        <p className="text-2xl font-bold text-blue-900">{selectedTicket.relatedDropId.numberOfCans || 0}</p>
+                                        <p className="text-xs text-gray-600">Cans</p>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
 
-                              {/* Location Map */}
-                              {selectedTicket.relatedDropId.location && (() => {
-                                // Handle both GeoJSON format (coordinates array) and lat/lng format
-                                const location = selectedTicket.relatedDropId.location;
-                                const lat = location.coordinates?.[1] || location.latitude;
-                                const lng = location.coordinates?.[0] || location.longitude;
-                                
-                                if (!lat || !lng) return null;
-                                
-                                return (
-                                  <div>
-                                    <h4 className="font-medium text-blue-900 mb-2">Drop Location</h4>
-                                    <div className="bg-white rounded border p-2">
-                                      <div className="aspect-video bg-gray-100 rounded overflow-hidden">
+                                {/* Type and Status */}
+                                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-700">Bottle Type</span>
+                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium capitalize">
+                                      {selectedTicket.relatedDropId.bottleType || 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-700">Status</span>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                      selectedTicket.relatedDropId.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      selectedTicket.relatedDropId.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                      selectedTicket.relatedDropId.status === 'collected' ? 'bg-green-100 text-green-800' :
+                                      selectedTicket.relatedDropId.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {selectedTicket.relatedDropId.status || 'N/A'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                {selectedTicket.relatedDropId.notes && (
+                                  <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                                    <div className="flex items-start space-x-2">
+                                      <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                      </svg>
+                                      <div className="flex-1">
+                                        <p className="text-xs font-medium text-gray-700 mb-1">Notes</p>
+                                        <p className="text-sm text-gray-600">{selectedTicket.relatedDropId.notes}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Column: Map */}
+                              <div className="space-y-4">
+                                {/* Location Map */}
+                                {selectedTicket.relatedDropId.location && (() => {
+                                  const location = selectedTicket.relatedDropId.location;
+                                  const lat = location.coordinates?.[1] || location.latitude;
+                                  const lng = location.coordinates?.[0] || location.longitude;
+                                  
+                                  if (!lat || !lng) return null;
+                                  
+                                  return (
+                                    <div className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden">
+                                      <div className="h-80 bg-gray-100 rounded-t-lg overflow-hidden">
                                         <iframe
                                           width="100%"
                                           height="100%"
@@ -3497,26 +3542,36 @@ function SupportContent() {
                                           src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${lat},${lng}&zoom=15`}
                                         ></iframe>
                                       </div>
-                                      <div className="mt-2 text-center">
-                                        <p className="text-xs text-gray-600">
-                                          {location.address || 'Drop Location'}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                          {lat.toFixed(6)}, {lng.toFixed(6)}
-                                        </p>
-                                        <a 
-                                          href={`https://www.google.com/maps?q=${lat},${lng}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-block"
-                                        >
-                                          Open in Google Maps →
-                                        </a>
+                                      <div className="p-4 bg-white">
+                                        <div className="flex items-start space-x-2">
+                                          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                          </svg>
+                                          <div className="flex-1">
+                                            <p className="text-sm font-medium text-gray-900">
+                                              {location.address || 'Drop Location'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                              {lat.toFixed(6)}, {lng.toFixed(6)}
+                                            </p>
+                                            <a 
+                                              href={`https://www.google.com/maps?q=${lat},${lng}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-flex items-center space-x-1"
+                                            >
+                                              <span>Open in Google Maps</span>
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                              </svg>
+                                            </a>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })()}
+                                  );
+                                })()}
+                              </div>
                             </div>
                           </div>
 
