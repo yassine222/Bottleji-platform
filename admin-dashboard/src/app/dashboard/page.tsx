@@ -3037,6 +3037,32 @@ function SupportContent() {
     }
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'authentication':
+        return '🔐';
+      case 'app_technical':
+        return '📱';
+      case 'drop_creation':
+      case 'drop_issue':
+        return '🏠';
+      case 'collection_navigation':
+      case 'collection_issue':
+        return '🚚';
+      case 'collector_application':
+      case 'application_issue':
+        return '👤';
+      case 'payment_rewards':
+        return '💰';
+      case 'statistics_history':
+        return '📊';
+      case 'general_support':
+        return '❓';
+      default:
+        return '📋';
+    }
+  };
+
   const getCategoryDisplayName = (category: string) => {
     switch (category) {
       case 'authentication':
@@ -3045,10 +3071,16 @@ function SupportContent() {
         return '📱 App Technical';
       case 'drop_creation':
         return '🏠 Drop Creation';
+      case 'drop_issue':
+        return '🏠 Drop Issue';
       case 'collection_navigation':
         return '🚚 Collection & Navigation';
+      case 'collection_issue':
+        return '🚚 Collection Issue';
       case 'collector_application':
         return '👤 Collector Application';
+      case 'application_issue':
+        return '👤 Application Issue';
       case 'payment_rewards':
         return '💰 Payment & Rewards';
       case 'statistics_history':
@@ -3290,80 +3322,165 @@ function SupportContent() {
               </div>
 
               {/* Modal Content */}
-              <div className="mt-4 space-y-4">
-                {/* Ticket Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Title</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedTicket.title}</p>
-                </div>
-
-                {/* Ticket Status and Priority */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                        {selectedTicket.status.replace('_', ' ')}
-                      </span>
+              <div className="mt-4 space-y-6">
+                {/* Ticket Header Card */}
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg text-white">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        <h2 className="text-2xl font-bold">{selectedTicket.title}</h2>
+                      </div>
+                      <p className="text-blue-100 text-sm">
+                        Created {new Date(selectedTicket.createdAt).toLocaleString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
                     </div>
                     
-                    {/* Status Update Buttons */}
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {selectedTicket.status !== 'open' && (
-                        <button
-                          onClick={() => handleUpdateStatus(selectedTicket.id, 'open')}
-                          disabled={updatingStatus}
-                          className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
-                        >
-                          Mark Open
-                        </button>
-                      )}
-                      {selectedTicket.status !== 'in_progress' && (
-                        <button
-                          onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress')}
-                          disabled={updatingStatus}
-                          className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50"
-                        >
-                          Start Progress
-                        </button>
-                      )}
-                      {selectedTicket.status !== 'resolved' && (
-                        <button
-                          onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved')}
-                          disabled={updatingStatus}
-                          className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50"
-                        >
-                          Mark Resolved
-                        </button>
-                      )}
-                      {selectedTicket.status !== 'closed' && (
-                        <button
-                          onClick={() => handleUpdateStatus(selectedTicket.id, 'closed')}
-                          disabled={updatingStatus}
-                          className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50"
-                        >
-                          Close Ticket
-                        </button>
-                      )}
+                    {/* Status Badge */}
+                    <div className="flex-shrink-0">
+                      <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
+                        selectedTicket.status === 'open' ? 'bg-yellow-400 text-yellow-900' :
+                        selectedTicket.status === 'in_progress' ? 'bg-blue-400 text-blue-900' :
+                        selectedTicket.status === 'resolved' ? 'bg-green-400 text-green-900' :
+                        selectedTicket.status === 'closed' ? 'bg-gray-400 text-gray-900' :
+                        'bg-white text-gray-900'
+                      }`}>
+                        {selectedTicket.status.replace('_', ' ').toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Priority</label>
-                    <p className="mt-1 text-sm text-gray-900 capitalize">{selectedTicket.priority}</p>
+                </div>
+
+                {/* Quick Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Priority Card */}
+                  <div className="bg-white rounded-lg border-2 border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        selectedTicket.priority === 'high' ? 'bg-red-100' :
+                        selectedTicket.priority === 'medium' ? 'bg-yellow-100' :
+                        'bg-green-100'
+                      }`}>
+                        <svg className={`w-5 h-5 ${
+                          selectedTicket.priority === 'high' ? 'text-red-600' :
+                          selectedTicket.priority === 'medium' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.268 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Priority</p>
+                        <p className={`text-lg font-bold capitalize ${
+                          selectedTicket.priority === 'high' ? 'text-red-600' :
+                          selectedTicket.priority === 'medium' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          {selectedTicket.priority}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category Card */}
+                  <div className="bg-white rounded-lg border-2 border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <span className="text-xl">{getCategoryIcon(selectedTicket.category)}</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Category</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {getCategoryDisplayName(selectedTicket.category)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Created Date Card */}
+                  <div className="bg-white rounded-lg border-2 border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Created</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {new Date(selectedTicket.createdAt).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
-                  <p className="mt-1 text-sm text-gray-900">{getCategoryDisplayName(selectedTicket.category)}</p>
+                {/* Status Action Buttons */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                  <p className="text-xs font-medium text-gray-500 mb-3">QUICK ACTIONS</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTicket.status !== 'in_progress' && (
+                      <button
+                        onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress')}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                      >
+                        ▶️ Start Progress
+                      </button>
+                    )}
+                    {selectedTicket.status !== 'resolved' && (
+                      <button
+                        onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved')}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 text-sm font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                      >
+                        ✓ Mark Resolved
+                      </button>
+                    )}
+                    {selectedTicket.status !== 'closed' && (
+                      <button
+                        onClick={() => handleUpdateStatus(selectedTicket.id, 'closed')}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 text-sm font-medium bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                      >
+                        🔒 Close Ticket
+                      </button>
+                    )}
+                    {selectedTicket.status !== 'open' && (
+                      <button
+                        onClick={() => handleUpdateStatus(selectedTicket.id, 'open')}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 text-sm font-medium bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                      >
+                        🔄 Reopen
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTicket.description}</p>
+                {/* Description Card */}
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Issue Description</span>
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedTicket.description}</p>
                   </div>
                 </div>
 
