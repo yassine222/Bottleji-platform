@@ -2425,6 +2425,8 @@ function TrainingContentModal({ content, onClose, onSave }: {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
 
   const contentTypes = [
     { value: 'video', label: 'Video', icon: '🎥' },
@@ -2562,7 +2564,11 @@ function TrainingContentModal({ content, onClose, onSave }: {
                 label={formData.type === 'video' ? 'Video File' : 'Image File'}
                 accept={formData.type === 'video' ? 'video/mp4,video/webm' : 'image/png,image/jpeg,image/jpg,image/gif'}
                 currentUrl={formData.mediaUrl}
-                onUploadComplete={(url) => setFormData({ ...formData, mediaUrl: url })}
+                onUploadComplete={(url) => {
+                  console.log('🔄 Media upload complete callback:', url);
+                  setFormData({ ...formData, mediaUrl: url });
+                }}
+                onUploadingChange={setUploadingMedia}
                 disabled={loading}
               />
             )}
@@ -2574,7 +2580,11 @@ function TrainingContentModal({ content, onClose, onSave }: {
                 label="Video Thumbnail"
                 accept="image/png,image/jpeg,image/jpg"
                 currentUrl={formData.thumbnailUrl}
-                onUploadComplete={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                onUploadComplete={(url) => {
+                  console.log('🔄 Thumbnail upload complete callback:', url);
+                  setFormData({ ...formData, thumbnailUrl: url });
+                }}
+                onUploadingChange={setUploadingThumbnail}
                 disabled={loading}
               />
             )}
@@ -2604,10 +2614,22 @@ function TrainingContentModal({ content, onClose, onSave }: {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                disabled={
+                  loading || 
+                  uploadingMedia || 
+                  uploadingThumbnail || 
+                  !formData.title || 
+                  !formData.description ||
+                  (formData.type !== 'story' && !formData.mediaUrl) ||
+                  (formData.type === 'video' && !formData.thumbnailUrl)
+                }
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Saving...' : (content ? 'Update' : 'Create')}
+                {uploadingMedia || uploadingThumbnail
+                  ? 'Uploading...'
+                  : loading
+                  ? 'Saving...'
+                  : (content ? 'Update' : 'Create')}
               </button>
             </div>
           </form>

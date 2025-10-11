@@ -9,6 +9,7 @@ interface FileUploadProps {
   accept: string;
   currentUrl?: string;
   onUploadComplete: (url: string) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   disabled?: boolean;
 }
 
@@ -18,6 +19,7 @@ export default function FileUpload({
   accept, 
   currentUrl, 
   onUploadComplete,
+  onUploadingChange,
   disabled = false 
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -29,6 +31,8 @@ export default function FileUpload({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    console.log(`📁 File selected for ${type}:`, file.name, file.type, file.size);
 
     // Validate file size (max 100MB for videos, 10MB for images)
     const maxSize = type === 'video' ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
@@ -49,25 +53,35 @@ export default function FileUpload({
     // Upload to Firebase
     try {
       setUploading(true);
+      onUploadingChange?.(true);
       setError(null);
       setProgress(0);
 
+      console.log(`🔄 Starting Firebase upload for ${type}...`);
+      
       const url = await uploadTrainingMedia(
         file,
         type,
         (progressData: UploadProgress) => {
           setProgress(Math.round(progressData.progress));
+          console.log(`📊 Upload progress for ${type}: ${Math.round(progressData.progress)}%`);
         }
       );
 
+      console.log(`✅ Upload complete for ${type}:`, url);
+      
       onUploadComplete(url);
       setPreview(url);
       setUploading(false);
+      onUploadingChange?.(false);
       setProgress(100);
+      
+      console.log(`✅ Callback fired for ${type} with URL:`, url);
     } catch (err: any) {
-      console.error('Upload error:', err);
+      console.error(`❌ Upload error for ${type}:`, err);
       setError(err.message || 'Upload failed');
       setUploading(false);
+      onUploadingChange?.(false);
       setProgress(0);
     }
   };
