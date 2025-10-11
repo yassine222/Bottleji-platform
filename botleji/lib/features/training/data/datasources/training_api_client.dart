@@ -33,6 +33,7 @@ class TrainingApiClient {
             debugPrint('📄 Parsing content: ${json['title']}');
             debugPrint('   mediaUrl: ${json['mediaUrl']}');
             debugPrint('   thumbnailUrl: ${json['thumbnailUrl']}');
+            debugPrint('   tags: ${json['tags']}');
             return TrainingContent.fromJson(json as Map<String, dynamic>);
           })
           .toList() ?? [];
