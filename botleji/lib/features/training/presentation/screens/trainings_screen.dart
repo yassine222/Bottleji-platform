@@ -56,10 +56,14 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             // Category filter - convert camelCase enum to snake_case for comparison
             final categoryString = content.category.toString().split('.').last;
             final categorySnakeCase = categoryString
-                .replaceAllMapped(RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}')
-                .replaceFirst('_', '');
+                .replaceAllMapped(RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}');
             
-            bool matchesCategory = _selectedCategory == 'all' || categorySnakeCase == _selectedCategory;
+            // Remove leading underscore if present
+            final cleanCategory = categorySnakeCase.startsWith('_') 
+                ? categorySnakeCase.substring(1) 
+                : categorySnakeCase;
+            
+            bool matchesCategory = _selectedCategory == 'all' || cleanCategory == _selectedCategory;
             
             debugPrint('  Content: ${content.title}, Category: $categoryString -> $categorySnakeCase, Selected: $_selectedCategory, Matches: $matchesCategory');
 
