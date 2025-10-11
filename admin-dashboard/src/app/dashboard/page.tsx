@@ -29,6 +29,7 @@ import {
   ApplicationsStatus,
 } from '@/components/dashboard/DashboardCharts';
 import FileUpload from '@/components/training/FileUpload';
+import VideoPlayer from '@/components/training/VideoPlayer';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
@@ -2210,22 +2211,16 @@ function TrainingContent() {
                   {/* Media Display */}
                   {content.type === 'video' && content.mediaUrl && (
                     <div className="mt-4">
-                      <div className="relative w-full max-w-2xl">
-                        <video
-                          controls
-                          poster={content.thumbnailUrl || undefined}
-                          className="w-full rounded-lg shadow-lg"
-                          preload="metadata"
-                          crossOrigin="anonymous"
-                        >
-                          <source src={content.mediaUrl} type="video/mp4" />
-                          <source src={content.mediaUrl} type="video/webm" />
-                          Your browser does not support the video tag.
-                        </video>
+                      <VideoPlayer 
+                        src={content.mediaUrl}
+                        poster={content.thumbnailUrl}
+                        title={content.title}
+                      />
+                      {content.duration && (
                         <p className="text-xs text-gray-500 mt-2">
-                          Duration: {content.duration ? `${content.duration}s` : 'N/A'}
+                          Duration: {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}
                         </p>
-                      </div>
+                      )}
                     </div>
                   )}
 
