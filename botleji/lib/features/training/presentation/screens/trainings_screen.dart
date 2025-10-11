@@ -20,14 +20,8 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
   @override
   Widget build(BuildContext context) {
     final userMode = ref.watch(userModeProvider);
-    final authState = ref.watch(authNotifierProvider);
     final isHousehold = userMode == UserMode.household;
     final isCollector = userMode == UserMode.collector;
-    
-    // Check if user has both roles
-    final user = authState.whenData((data) => data).value;
-    final hasCollectorRole = user?.roles.contains('collector') ?? false;
-    final hasBothModes = hasCollectorRole;
 
     final trainingContentAsync = ref.watch(trainingContentProvider);
 
@@ -50,9 +44,9 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
       body: trainingContentAsync.when(
         data: (allContent) {
           debugPrint('🔍 Filtering ${allContent.length} items with category: $_selectedCategory');
-          debugPrint('   User mode - Household: $isHousehold, Collector: $isCollector, Both: $hasBothModes');
+          debugPrint('   Current mode - Household: $isHousehold, Collector: $isCollector');
           
-          // Filter content based on user mode
+          // Filter content based on CURRENT active mode (not user roles)
           List<TrainingContent> filteredContent = allContent.where((content) {
             // Category filter - convert camelCase enum to snake_case for comparison
             final categoryString = content.category.toString().split('.').last;
@@ -66,33 +60,28 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             
             bool matchesCategory = _selectedCategory == 'all' || cleanCategory == _selectedCategory;
 
-            // Tag-based mode filter (more precise than category-based)
+            // Tag-based mode filter - ONLY check current active mode
             bool matchesMode = false;
             
             // If content has tags, use tag-based filtering
             if (content.tags.isNotEmpty) {
-              if (hasBothModes) {
-                // User with both modes sees everything
-                matchesMode = true;
-              } else if (isHousehold) {
-                // Household users see content tagged with 'household'
+              if (isHousehold) {
+                // Household mode: see content tagged with 'household'
                 matchesMode = content.tags.contains('household');
               } else if (isCollector) {
-                // Collector users see content tagged with 'collector'
+                // Collector mode: see content tagged with 'collector'
                 matchesMode = content.tags.contains('collector');
               }
             } else {
               // Fallback to category-based filtering for content without tags
-              if (hasBothModes) {
-                matchesMode = true;
-              } else if (isHousehold) {
+              if (isHousehold) {
                 matchesMode = content.isRelevantForHousehold();
               } else if (isCollector) {
                 matchesMode = content.isRelevantForCollector();
               }
             }
             
-            debugPrint('  Content: ${content.title}, Tags: ${content.tags}, Category: $cleanCategory, Matches: $matchesCategory && $matchesMode');
+            debugPrint('  Content: ${content.title}, Tags: ${content.tags}, Mode: ${isHousehold ? "household" : "collector"}, Matches: $matchesMode');
 
             return matchesCategory && matchesMode;
           }).toList();
@@ -102,7 +91,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           return Column(
             children: [
               // Category Filter
-              _buildCategoryFilter(context, isHousehold, isCollector, hasBothModes),
+              _buildCategoryFilter(context, isHousehold, isCollector),
               
               // Content List
               Expanded(
@@ -170,13 +159,13 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     );
   }
 
-  Widget _buildCategoryFilter(BuildContext context, bool isHousehold, bool isCollector, bool hasBothModes) {
+  Widget _buildCategoryFilter(BuildContext context, bool isHousehold, bool isCollector) {
     final categories = [
       {'value': 'all', 'label': 'All', 'icon': '📚'},
       {'value': 'getting_started', 'label': 'Getting Started', 'icon': '🚀'},
       {'value': 'best_practices', 'label': 'Best Practices', 'icon': '💡'},
       {'value': 'troubleshooting', 'label': 'Help', 'icon': '🔧'},
-      if (isCollector || hasBothModes) ...[
+      if (isCollector) ...[
         {'value': 'collector_application', 'label': 'Collector', 'icon': '📋'},
         {'value': 'advanced_features', 'label': 'Advanced', 'icon': '⚡'},
       ],
