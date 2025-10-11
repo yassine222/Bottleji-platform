@@ -20,7 +20,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
   @override
   Widget build(BuildContext context) {
     final userMode = ref.watch(userModeProvider);
-    final authState = ref.watch(authStateProvider);
+    final authState = ref.watch(authNotifierProvider);
     final isHousehold = userMode == UserMode.household;
     final isCollector = userMode == UserMode.collector;
     
