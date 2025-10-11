@@ -30,6 +30,7 @@ import {
 } from '@/components/dashboard/DashboardCharts';
 import FileUpload from '@/components/training/FileUpload';
 import VideoPlayer from '@/components/training/VideoPlayer';
+import VideoModal from '@/components/training/VideoModal';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
@@ -1995,6 +1996,8 @@ function TrainingContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingContent, setEditingContent] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<{ url: string; thumbnail?: string; title: string } | null>(null);
 
   const contentTypes = [
     { value: 'video', label: 'Video', icon: '🎥' },
@@ -2070,6 +2073,16 @@ function TrainingContent() {
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setEditingContent(null);
+  };
+
+  const handlePlayVideo = (videoUrl: string, thumbnailUrl: string | undefined, title: string) => {
+    setSelectedVideo({ url: videoUrl, thumbnail: thumbnailUrl, title });
+    setVideoModalOpen(true);
+  };
+
+  const handleCloseVideoModal = () => {
+    setVideoModalOpen(false);
+    setSelectedVideo(null);
   };
 
   const filteredContent = trainingContent.filter(content => {
@@ -2221,11 +2234,11 @@ function TrainingContent() {
           <p className="text-gray-400 text-sm mt-2">Create your first content to get started!</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredContent.map((content) => (
-            <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+            <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 inline-block w-auto max-w-full">
               {/* Card Header */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-4 border-b border-gray-100">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -2237,14 +2250,14 @@ function TrainingContent() {
                       </h3>
                     </div>
                     
-                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{content.description}</p>
+                    <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">{content.description}</p>
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex flex-col gap-2 ml-3">
+                  <div className="flex gap-2 ml-3">
                     <button
                       onClick={() => handleEdit(content)}
-                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                       title="Edit"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2253,7 +2266,7 @@ function TrainingContent() {
                     </button>
                     <button
                       onClick={() => handleDelete(content._id)}
-                      className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                      className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                       title="Delete"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2291,21 +2304,53 @@ function TrainingContent() {
               </div>
 
               {/* Card Body - Media */}
-              <div className="p-4 bg-gray-50">
+              <div className="p-3 bg-gray-50">
                 {content.type === 'video' && content.mediaUrl && (
-                  <VideoPlayer 
-                    src={content.mediaUrl}
-                    poster={content.thumbnailUrl}
-                    title={content.title}
-                  />
+                  <div className="relative group/video cursor-pointer" onClick={() => handlePlayVideo(content.mediaUrl, content.thumbnailUrl, content.title)}>
+                    <div className="relative w-96 h-56 bg-black rounded-lg overflow-hidden">
+                      {content.thumbnailUrl ? (
+                        <img
+                          src={content.thumbnailUrl}
+                          alt={content.title}
+                          className="w-full h-full object-cover"
+                          crossOrigin="anonymous"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                          <svg className="w-20 h-20 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      )}
+                      
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover/video:bg-opacity-30 transition-all">
+                        <div className="transform scale-100 group-hover/video:scale-110 transition-transform">
+                          <div className="bg-blue-600 rounded-full p-4 shadow-2xl">
+                            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Duration Badge */}
+                      {content.duration && (
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                          {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2 text-center">Click to play video</p>
+                  </div>
                 )}
 
                 {content.type === 'image' && content.mediaUrl && (
-                  <div className="relative group/image">
+                  <div className="relative group/image w-96">
                     <img
                       src={content.mediaUrl}
                       alt={content.title}
-                      className="w-full h-64 object-cover rounded-lg shadow-md"
+                      className="w-full h-56 object-cover rounded-lg shadow-md"
                       crossOrigin="anonymous"
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
@@ -2317,28 +2362,28 @@ function TrainingContent() {
                 )}
                 
                 {content.type === 'story' && (
-                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="bg-white p-3 rounded-lg border border-gray-200 w-96 max-w-full">
                     <div className="flex items-center text-gray-500 mb-2">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-sm font-medium">Story Content</span>
+                      <span className="text-xs font-medium">Story Content</span>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-3">{content.content}</p>
+                    <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">{content.content}</p>
                   </div>
                 )}
               </div>
               
               {/* Card Footer */}
-              <div className="px-5 py-3 bg-white border-t border-gray-100">
+              <div className="px-4 py-2 bg-white border-t border-gray-100">
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span className="flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     {new Date(content.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
-                  <span className="font-medium">Order: {content.order || 0}</span>
+                  <span className="font-medium text-gray-600">Order: {content.order || 0}</span>
                 </div>
               </div>
             </div>
@@ -2352,6 +2397,17 @@ function TrainingContent() {
           content={editingContent}
           onClose={handleCloseModal}
           onSave={handleSave}
+        />
+      )}
+
+      {/* Video Modal */}
+      {videoModalOpen && selectedVideo && (
+        <VideoModal
+          isOpen={videoModalOpen}
+          onClose={handleCloseVideoModal}
+          videoUrl={selectedVideo.url}
+          thumbnailUrl={selectedVideo.thumbnail}
+          title={selectedVideo.title}
         />
       )}
     </div>
