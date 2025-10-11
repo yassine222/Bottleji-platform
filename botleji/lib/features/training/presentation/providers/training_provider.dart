@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../data/models/training_content.dart';
 import '../../data/datasources/training_api_client.dart';
-import '../../../../core/providers/providers.dart';
+import '../../../../core/api/api_client.dart';
 
 final trainingApiClientProvider = Provider<TrainingApiClient>((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ApiClientConfig.createDio();
   return TrainingApiClient(dio);
 });
 
