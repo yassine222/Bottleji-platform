@@ -139,6 +139,10 @@ export class SupportTicketsService {
     // Fetch interaction timelines for tickets with related drops or collections
     const ticketsWithTimelines = await Promise.all(
       tickets.map(async (ticket) => {
+        // Store interactions fetched for this ticket
+        let dropInteractionsTimeline = null;
+        let collectionObjectWithInteractions = null;
+        
         if (ticket.relatedDropId) {
           try {
             console.log('🔍 Support Tickets: Processing ticket with relatedDropId:', ticket.relatedDropId);
@@ -153,11 +157,8 @@ export class SupportTicketsService {
             const timeline = await this.dropoffsService.getDropInteractionTimeline(dropoffId);
             console.log('🔍 Support Tickets: Fetched timeline with', timeline.length, 'interactions');
             
-            // Add timeline to the related drop object
-            if (ticket.relatedDropId && typeof ticket.relatedDropId === 'object') {
-              (ticket.relatedDropId as any).interactions = timeline;
-              console.log('🔍 Support Tickets: Added interactions to relatedDropId object');
-            }
+            // Store the timeline to add after converting to plain object
+            dropInteractionsTimeline = timeline;
           } catch (error) {
             console.error(`❌ Support Tickets: Error fetching timeline for drop ${ticket.relatedDropId}:`, error);
           }
@@ -199,9 +200,8 @@ export class SupportTicketsService {
               console.log('🔍 Support Tickets: Added interactions to collection object');
             }
             
-            // Replace the ObjectId with our custom object
-            (ticket as any).relatedCollectionId = collectionObject;
-            console.log('🔍 Support Tickets: Replaced relatedCollectionId with object containing interactions');
+            // Store to add after converting to plain object
+            collectionObjectWithInteractions = collectionObject;
           } catch (error) {
             console.error(`❌ Support Tickets: Error fetching timeline for collection ${ticket.relatedCollectionId}:`, error);
           }
@@ -212,7 +212,20 @@ export class SupportTicketsService {
         }
         
         // Convert to plain object for proper JSON serialization
-        return ticket.toObject ? ticket.toObject() : ticket;
+        const plainTicket = ticket.toObject ? ticket.toObject() : ticket;
+        
+        // Now add the interactions AFTER converting to plain object
+        if (dropInteractionsTimeline && plainTicket.relatedDropId) {
+          plainTicket.relatedDropId.interactions = dropInteractionsTimeline;
+          console.log('🔍 Support Tickets: Added', dropInteractionsTimeline.length, 'interactions to plain ticket relatedDropId');
+        }
+        
+        if (collectionObjectWithInteractions) {
+          plainTicket.relatedCollectionId = collectionObjectWithInteractions;
+          console.log('🔍 Support Tickets: Replaced relatedCollectionId with object containing', collectionObjectWithInteractions.interactions.length, 'interactions');
+        }
+        
+        return plainTicket;
       })
     );
 
