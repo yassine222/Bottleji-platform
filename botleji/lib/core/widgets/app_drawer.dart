@@ -14,6 +14,7 @@ import 'package:botleji/features/training/presentation/screens/trainings_screen.
 import 'package:botleji/features/rewards/presentation/screens/refer_earn_screen.dart';
 import 'package:botleji/features/support/presentation/screens/support_screen.dart';
 import 'package:botleji/features/support/presentation/screens/terms_screen.dart';
+import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -338,208 +339,182 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // User Profile Section
-                            Column(
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    // Profile Photo with Border
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.3),
-                                          width: 3,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.2),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 32,
-                                        backgroundColor: Colors.white,
-                                        backgroundImage: user.profilePhoto != null && user.profilePhoto!.isNotEmpty
-                                            ? NetworkImage(user.profilePhoto!)
-                                            : null,
-                                        child: user.profilePhoto == null || user.profilePhoto!.isEmpty
-                                            ? Text(
-                                                (user.name?.isNotEmpty == true) ? user.name![0].toUpperCase() : 'U',
-                                                style: const TextStyle(
-                                                  color: Color(0xFF00695C),
-                                                  fontSize: 28,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              )
-                                            : null,
-                                      ),
+                                // Profile Photo with Border
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 3,
                                     ),
-                                    const SizedBox(width: 16),
-                                    // User Info
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            user.name ?? 'User',
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 32,
+                                    backgroundColor: Colors.white,
+                                    backgroundImage: user.profilePhoto != null && user.profilePhoto!.isNotEmpty
+                                        ? NetworkImage(user.profilePhoto!)
+                                        : null,
+                                    child: user.profilePhoto == null || user.profilePhoto!.isEmpty
+                                        ? Text(
+                                            (user.name?.isNotEmpty == true) ? user.name![0].toUpperCase() : 'U',
                                             style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
+                                              color: Color(0xFF00695C),
+                                              fontSize: 28,
                                               fontWeight: FontWeight.bold,
-                                              letterSpacing: 0.5,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            user.email,
-                                            style: TextStyle(
-                                              color: Colors.white.withOpacity(0.9),
-                                              fontSize: 12,
-                                              letterSpacing: 0.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                          )
+                                        : null,
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
-                                // Roles/Status Badges in a row
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    if (user.roles.contains('household'))
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(0.3),
-                                            width: 1,
-                                          ),
+                                const SizedBox(width: 16),
+                                // User Info Column
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Name
+                                      Text(
+                                        user.name ?? 'User',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.home_rounded,
-                                              color: Colors.white,
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Household',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    if (user.roles.contains('collector'))
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(0.3),
-                                            width: 1,
-                                          ),
+                                      const SizedBox(height: 4),
+                                      // Email
+                                      Text(
+                                        user.email,
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 12,
+                                          letterSpacing: 0.2,
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.work_rounded,
-                                              color: Colors.white,
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Collector',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    // Subscription Badge
-                                    if (user.roles.contains('collector') && user.collectorSubscriptionType != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          gradient: user.collectorSubscriptionType?.toLowerCase() == 'pro'
-                                              ? const LinearGradient(
-                                                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                )
-                                              : const LinearGradient(
-                                                  colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: user.collectorSubscriptionType?.toLowerCase() == 'pro'
-                                                ? const Color(0xFFFFD700)
-                                                : Colors.blue.shade300,
-                                            width: 1,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: (user.collectorSubscriptionType?.toLowerCase() == 'pro'
-                                                      ? const Color(0xFFFFD700)
-                                                      : Colors.blue)
-                                                  .withOpacity(0.3),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              user.collectorSubscriptionType?.toLowerCase() == 'pro'
-                                                  ? Icons.workspace_premium_rounded
-                                                  : Icons.star_rounded,
-                                              color: Colors.white,
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              user.collectorSubscriptionType?.toUpperCase() ?? 'BASIC',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 12),
+                            // Roles Badges (full width, left-aligned)
+                            Wrap(
+                              alignment: WrapAlignment.start,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (user.roles.contains('household'))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.home_rounded, color: Colors.white, size: 16),
+                                        const SizedBox(width: 6),
+                                        Text('Household', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                  ),
+                                if (user.roles.contains('collector'))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.work_rounded, color: Colors.white, size: 16),
+                                        const SizedBox(width: 6),
+                                        Text('Collector', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            // Subscription Badge (full width, left-aligned)
+                            if (user.roles.contains('collector') && user.collectorSubscriptionType != null) ...[
+                              const SizedBox(height: 10),
+                              GestureDetector(
+                                onTap: user.collectorSubscriptionType?.toLowerCase() == 'basic'
+                                    ? () {
+                                        Navigator.pop(context);
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => const UpgradeToProScreen()));
+                                      }
+                                    : null,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: user.collectorSubscriptionType?.toLowerCase() == 'pro'
+                                        ? const LinearGradient(
+                                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                                          )
+                                        : const LinearGradient(
+                                            colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
+                                          ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        user.collectorSubscriptionType?.toLowerCase() == 'pro' ? Icons.workspace_premium_rounded : Icons.star_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        user.collectorSubscriptionType?.toUpperCase() ?? 'BASIC',
+                                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                      ),
+                                      if (user.collectorSubscriptionType?.toLowerCase() == 'basic') ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 1,
+                                          height: 16,
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 14),
+                                        const SizedBox(width: 4),
+                                        const Text('Upgrade', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         )
                       : const SizedBox.shrink(),
