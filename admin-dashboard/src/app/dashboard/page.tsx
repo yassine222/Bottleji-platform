@@ -2614,15 +2614,30 @@ function TrainingContentModal({ content, onClose, onSave }: {
               </button>
               <button
                 type="submit"
-                disabled={
-                  loading || 
-                  uploadingMedia || 
-                  uploadingThumbnail || 
-                  !formData.title || 
-                  !formData.description ||
-                  (formData.type !== 'story' && !formData.mediaUrl) ||
-                  (formData.type === 'video' && !formData.thumbnailUrl)
-                }
+                disabled={(() => {
+                  const isDisabled = 
+                    loading || 
+                    uploadingMedia || 
+                    uploadingThumbnail || 
+                    !formData.title || 
+                    !formData.description ||
+                    (formData.type !== 'story' && !formData.mediaUrl) ||
+                    (formData.type === 'video' && !formData.thumbnailUrl);
+                  
+                  console.log('🔍 Create button validation:', {
+                    loading,
+                    uploadingMedia,
+                    uploadingThumbnail,
+                    hasTitle: !!formData.title,
+                    hasDescription: !!formData.description,
+                    type: formData.type,
+                    hasMediaUrl: !!formData.mediaUrl,
+                    hasThumbnailUrl: !!formData.thumbnailUrl,
+                    isDisabled
+                  });
+                  
+                  return isDisabled;
+                })()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {uploadingMedia || uploadingThumbnail
