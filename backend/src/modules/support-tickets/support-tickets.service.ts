@@ -140,8 +140,8 @@ export class SupportTicketsService {
     const ticketsWithTimelines = await Promise.all(
       tickets.map(async (ticket) => {
         // Store interactions fetched for this ticket
-        let dropInteractionsTimeline = null;
-        let collectionObjectWithInteractions = null;
+        let dropInteractionsTimeline: any[] | null = null;
+        let collectionObjectWithInteractions: any | null = null;
         
         if (ticket.relatedDropId) {
           try {
@@ -216,12 +216,12 @@ export class SupportTicketsService {
         
         // Now add the interactions AFTER converting to plain object
         if (dropInteractionsTimeline && plainTicket.relatedDropId) {
-          plainTicket.relatedDropId.interactions = dropInteractionsTimeline;
+          (plainTicket.relatedDropId as any).interactions = dropInteractionsTimeline;
           console.log('🔍 Support Tickets: Added', dropInteractionsTimeline.length, 'interactions to plain ticket relatedDropId');
         }
         
         if (collectionObjectWithInteractions) {
-          plainTicket.relatedCollectionId = collectionObjectWithInteractions;
+          (plainTicket as any).relatedCollectionId = collectionObjectWithInteractions;
           console.log('🔍 Support Tickets: Replaced relatedCollectionId with object containing', collectionObjectWithInteractions.interactions.length, 'interactions');
         }
         
