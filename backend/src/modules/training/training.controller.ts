@@ -32,16 +32,12 @@ export class TrainingController {
   async findAll(
     @Query('category') category?: string,
     @Query('type') type?: string,
-    @Query('isActive') isActive?: boolean,
-    @Query('isFeatured') isFeatured?: boolean,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
     return this.trainingService.findAll({
       category,
       type,
-      isActive,
-      isFeatured,
       page,
       limit,
     });
