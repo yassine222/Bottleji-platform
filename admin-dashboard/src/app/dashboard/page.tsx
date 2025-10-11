@@ -2099,64 +2099,108 @@ function TrainingContent() {
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Enhanced */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Total Content</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalContent || 0}</p>
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-blue-100">Total Content</h3>
+                <p className="text-3xl font-bold text-white mt-1">{stats.totalContent || 0}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Videos</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.videoCount || 0}</p>
+          
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-purple-100">Videos</h3>
+                <p className="text-3xl font-bold text-white mt-1">{stats.videoCount || 0}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Images</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.imageCount || 0}</p>
+          
+          <div className="bg-gradient-to-br from-green-500 to-green-600 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-green-100">Images</h3>
+                <p className="text-3xl font-bold text-white mt-1">{stats.imageCount || 0}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Stories</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.storyCount || 0}</p>
+          
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-orange-100">Stories</h3>
+                <p className="text-3xl font-bold text-white mt-1">{stats.storyCount || 0}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex space-x-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Filter by Category
-          </label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.icon} {category.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Filters - Modern Design */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">Filters:</span>
+          </div>
+          
+          <div className="flex-1 flex flex-wrap gap-3">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">📚 All Categories</option>
+              {categories.map(category => (
+                <option key={category.value} value={category.value}>
+                  {category.icon} {category.label}
+                </option>
+              ))}
+            </select>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Filter by Type
-          </label>
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Types</option>
-            {contentTypes.map(type => (
-              <option key={type.value} value={type.value}>
-                {type.icon} {type.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">📁 All Types</option>
+              {contentTypes.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.icon} {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            {filteredContent.length} {filteredContent.length === 1 ? 'item' : 'items'}
+          </div>
         </div>
       </div>
 
@@ -2167,88 +2211,134 @@ function TrainingContent() {
         </div>
       )}
 
-      {/* Content List */}
+      {/* Content Grid - Modern Cards */}
       {filteredContent.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <p>No training content found.</p>
+        <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-gray-500 text-lg">No training content found.</p>
+          <p className="text-gray-400 text-sm mt-2">Create your first content to get started!</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredContent.map((content) => (
-            <div key={content._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">
-                      {contentTypes.find(t => t.value === content.type)?.icon || '📄'}
-                    </span>
-                    <h3 className="text-lg font-semibold text-gray-900">{content.title}</h3>
-                    {content.isFeatured && (
-                      <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                        ⭐ Featured
+            <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+              {/* Card Header */}
+              <div className="p-5 border-b border-gray-100">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">
+                        {contentTypes.find(t => t.value === content.type)?.icon || '📄'}
                       </span>
-                    )}
-                    {!content.isActive && (
-                      <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                        Inactive
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="text-gray-600 mb-3">{content.description}</p>
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>
-                      {categories.find(c => c.value === content.category)?.icon} 
-                      {categories.find(c => c.value === content.category)?.label}
-                    </span>
-                    {content.duration && (
-                      <span>⏱️ {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}</span>
-                    )}
-                    <span>📅 {new Date(content.createdAt).toLocaleDateString()}</span>
-                  </div>
-
-                  {/* Media Display */}
-                  {content.type === 'video' && content.mediaUrl && (
-                    <div className="mt-4">
-                      <VideoPlayer 
-                        src={content.mediaUrl}
-                        poster={content.thumbnailUrl}
-                        title={content.title}
-                      />
-                      {content.duration && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Duration: {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}
-                        </p>
-                      )}
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                        {content.title}
+                      </h3>
                     </div>
+                    
+                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{content.description}</p>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2 ml-3">
+                    <button
+                      onClick={() => handleEdit(content)}
+                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                      title="Edit"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(content._id)}
+                      className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                      title="Delete"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                    {categories.find(c => c.value === content.category)?.icon} 
+                    {categories.find(c => c.value === content.category)?.label}
+                  </span>
+                  
+                  {content.duration && (
+                    <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                      ⏱️ {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}
+                    </span>
                   )}
-
-                  {content.type === 'image' && content.mediaUrl && (
-                    <div className="mt-4">
-                      <img
-                        src={content.mediaUrl}
-                        alt={content.title}
-                        className="w-full max-w-md rounded-lg shadow-lg"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
+                  
+                  {content.isFeatured && (
+                    <span className="px-3 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                      ⭐ Featured
+                    </span>
+                  )}
+                  
+                  {!content.isActive && (
+                    <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                      ⏸️ Inactive
+                    </span>
                   )}
                 </div>
+              </div>
 
-                <div className="flex space-x-2 ml-4">
-                  <button
-                    onClick={() => handleEdit(content)}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(content._id)}
-                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                  >
-                    Delete
-                  </button>
+              {/* Card Body - Media */}
+              <div className="p-4 bg-gray-50">
+                {content.type === 'video' && content.mediaUrl && (
+                  <VideoPlayer 
+                    src={content.mediaUrl}
+                    poster={content.thumbnailUrl}
+                    title={content.title}
+                  />
+                )}
+
+                {content.type === 'image' && content.mediaUrl && (
+                  <div className="relative group/image">
+                    <img
+                      src={content.mediaUrl}
+                      alt={content.title}
+                      className="w-full h-64 object-cover rounded-lg shadow-md"
+                      crossOrigin="anonymous"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                      <svg className="w-12 h-12 text-white opacity-0 group-hover/image:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                
+                {content.type === 'story' && (
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center text-gray-500 mb-2">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-sm font-medium">Story Content</span>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-3">{content.content}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Card Footer */}
+              <div className="px-5 py-3 bg-white border-t border-gray-100">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(content.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <span className="font-medium">Order: {content.order || 0}</span>
                 </div>
               </div>
             </div>
