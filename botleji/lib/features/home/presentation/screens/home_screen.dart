@@ -1766,6 +1766,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+
   void _showDropDetails(Drop drop) {
     showModalBottomSheet(
       context: context,
@@ -1781,7 +1782,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-
   void _showCreateDropSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,

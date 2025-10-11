@@ -155,8 +155,8 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Hero Image with overlay info
-                      if ((widget.drop.imageUrl ?? '').isNotEmpty)
+                                      // Hero Image with overlay info
+                      if (widget.drop.imageUrl?.isNotEmpty == true)
                         _buildHeroImage()
                       else
                         _buildNoImagePlaceholder(),
@@ -215,7 +215,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           height: 220,
           width: double.infinity,
           child: Image.network(
-            widget.drop.imageUrl!,
+            widget.drop.imageUrl ?? '',
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
@@ -1101,16 +1101,24 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 if (currentUserId == null) return;
 
                 try {
-                  // Accept the drop
-                  await ref.read(dropsControllerProvider.notifier).acceptDrop(widget.drop.id);
+                  // Assign collector to the drop
+                  await ref.read(dropsControllerProvider.notifier).assignCollector(
+                    widget.drop.id,
+                    currentUserId,
+                  );
                   
-                  // Save active collection
-                  await ref.read(navigationControllerProvider.notifier).setActiveCollection(
-                    ActiveCollection(
-                      dropId: widget.drop.id,
-                      destination: widget.drop.location,
-                      startTime: DateTime.now(),
-                    ),
+                  // Start collection and save active collection
+                  await ref.read(navigationControllerProvider.notifier).startCollection(
+                    dropId: widget.drop.id,
+                    destination: widget.drop.location,
+                    dropoffId: widget.drop.id,
+                    imageUrl: widget.drop.imageUrl,
+                    numberOfBottles: widget.drop.numberOfBottles,
+                    numberOfCans: widget.drop.numberOfCans,
+                    bottleType: widget.drop.bottleType.name,
+                    notes: widget.drop.notes,
+                    leaveOutside: widget.drop.leaveOutside,
+                    collectorId: currentUserId,
                   );
 
                   // Navigate to navigation screen
