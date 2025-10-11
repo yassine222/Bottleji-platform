@@ -32,11 +32,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _initializePlayer() async {
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-      );
+      debugPrint('🎥 Initializing video player with URL: ${widget.videoUrl}');
+      
+      // Validate URL
+      if (widget.videoUrl.isEmpty) {
+        throw Exception('Video URL is empty');
+      }
+      
+      Uri videoUri;
+      try {
+        videoUri = Uri.parse(widget.videoUrl);
+        if (!videoUri.hasScheme || videoUri.host.isEmpty) {
+          throw Exception('Invalid video URL format');
+        }
+      } catch (e) {
+        throw Exception('Invalid video URL: $e');
+      }
+      
+      debugPrint('✅ Parsed video URI: $videoUri');
+      
+      _videoPlayerController = VideoPlayerController.networkUrl(videoUri);
 
       await _videoPlayerController.initialize();
+      
+      debugPrint('✅ Video player initialized successfully');
 
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,

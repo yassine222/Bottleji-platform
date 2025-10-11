@@ -540,6 +540,10 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     switch (content.type) {
       case TrainingType.video:
         if (content.mediaUrl != null && content.mediaUrl!.isNotEmpty) {
+          debugPrint('🎥 Opening video player for: ${content.title}');
+          debugPrint('   Video URL: ${content.mediaUrl}');
+          debugPrint('   Thumbnail URL: ${content.thumbnailUrl}');
+          
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -548,6 +552,14 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                 title: content.title,
                 thumbnailUrl: content.thumbnailUrl,
               ),
+            ),
+          );
+        } else {
+          debugPrint('❌ Cannot play video: mediaUrl is null or empty');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video URL is not available'),
+              backgroundColor: Colors.red,
             ),
           );
         }
