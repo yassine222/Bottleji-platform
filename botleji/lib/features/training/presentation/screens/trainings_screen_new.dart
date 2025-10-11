@@ -8,14 +8,14 @@ import '../../data/models/training_content.dart';
 import 'video_player_screen.dart';
 import 'training_detail_screen.dart';
 
-class TrainingsScreen extends ConsumerStatefulWidget {
-  const TrainingsScreen({super.key});
+class TrainingsScreenNew extends ConsumerStatefulWidget {
+  const TrainingsScreenNew({super.key});
 
   @override
-  ConsumerState<TrainingsScreen> createState() => _TrainingsScreenState();
+  ConsumerState<TrainingsScreenNew> createState() => _TrainingsScreenNewState();
 }
 
-class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
+class _TrainingsScreenNewState extends ConsumerState<TrainingsScreenNew> {
   String _selectedCategory = 'all';
 
   @override
@@ -28,7 +28,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     // Check if user has both roles
     final user = authState.whenData((data) => data).value;
     final hasCollectorRole = user?.roles.contains('collector') ?? false;
-    final hasBothModes = hasCollectorRole;
+    final hasBothModes = hasCollectorRole; // If they have collector role, they can access both
 
     final trainingContentAsync = ref.watch(trainingContentProvider);
 
@@ -43,7 +43,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
-              _showInfoDialog(context, isHousehold);
+              _showInfoDialog(context);
             },
           ),
         ],
@@ -59,6 +59,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             // Mode filter
             bool matchesMode = false;
             if (hasBothModes) {
+              // Show all content if user has both modes
               matchesMode = true;
             } else if (isHousehold) {
               matchesMode = content.isRelevantForHousehold();
@@ -69,9 +70,15 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             return matchesCategory && matchesMode;
           }).toList();
 
+          // Group by category
+          final groupedContent = <TrainingCategory, List<TrainingContent>>{};
+          for (var content in filteredContent) {
+            groupedContent.putIfAbsent(content.category, () => []).add(content);
+          }
+
           return Column(
             children: [
-              // Category Filter
+              // Category Filter Chips
               _buildCategoryFilter(context, isHousehold, isCollector, hasBothModes),
               
               // Content List
@@ -145,12 +152,13 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
       {'value': 'all', 'label': 'All', 'icon': '📚'},
       {'value': 'getting_started', 'label': 'Getting Started', 'icon': '🚀'},
       {'value': 'best_practices', 'label': 'Best Practices', 'icon': '💡'},
-      {'value': 'troubleshooting', 'label': 'Help', 'icon': '🔧'},
+      {'value': 'troubleshooting', 'label': 'Troubleshooting', 'icon': '🔧'},
       if (isCollector || hasBothModes) ...[
-        {'value': 'collector_application', 'label': 'Collector', 'icon': '📋'},
+        {'value': 'collector_application', 'label': 'Collector Guide', 'icon': '📋'},
         {'value': 'advanced_features', 'label': 'Advanced', 'icon': '⚡'},
       ],
       {'value': 'payments', 'label': 'Payments', 'icon': '💳'},
+      {'value': 'notifications', 'label': 'Notifications', 'icon': '🔔'},
     ];
 
     return Container(
@@ -560,7 +568,10 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     }
   }
 
-  void _showInfoDialog(BuildContext context, bool isHousehold) {
+  void _showInfoDialog(BuildContext context) {
+    final userMode = ref.read(userModeProvider);
+    final isHousehold = userMode == UserMode.household;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -579,9 +590,6 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF00695C),
-            ),
             child: const Text('Got it'),
           ),
         ],
@@ -589,3 +597,4 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     );
   }
 }
+
