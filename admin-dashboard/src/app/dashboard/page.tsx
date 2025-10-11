@@ -28,6 +28,7 @@ import {
   TicketsByCategory,
   ApplicationsStatus,
 } from '@/components/dashboard/DashboardCharts';
+import FileUpload from '@/components/training/FileUpload';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
@@ -2428,31 +2429,29 @@ function TrainingContentModal({ content, onClose, onSave }: {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Media URL
-              </label>
-              <input
-                type="url"
-                value={formData.mediaUrl}
-                onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/video.mp4"
+            {/* Media Upload */}
+            {formData.type !== 'story' && (
+              <FileUpload
+                type={formData.type === 'video' ? 'video' : 'image'}
+                label={formData.type === 'video' ? 'Video File' : 'Image File'}
+                accept={formData.type === 'video' ? 'video/mp4,video/webm' : 'image/png,image/jpeg,image/jpg,image/gif'}
+                currentUrl={formData.mediaUrl}
+                onUploadComplete={(url) => setFormData({ ...formData, mediaUrl: url })}
+                disabled={loading}
               />
-            </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Thumbnail URL
-              </label>
-              <input
-                type="url"
-                value={formData.thumbnailUrl}
-                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/thumbnail.jpg"
+            {/* Thumbnail Upload */}
+            {formData.type === 'video' && (
+              <FileUpload
+                type="thumbnail"
+                label="Video Thumbnail"
+                accept="image/png,image/jpeg,image/jpg"
+                currentUrl={formData.thumbnailUrl}
+                onUploadComplete={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                disabled={loading}
               />
-            </div>
+            )}
 
             {formData.type === 'story' && (
               <div>
