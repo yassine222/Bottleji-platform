@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/providers/user_mode_provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/controllers/user_mode_controller.dart';
 import '../providers/training_provider.dart';
 import '../../data/models/training_content.dart';
 import 'video_player_screen.dart';
@@ -19,10 +18,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userMode = ref.watch(userModeProvider);
-    final isHousehold = userMode == UserMode.household;
-    final isCollector = userMode == UserMode.collector;
-
+    final userModeAsync = ref.watch(userModeControllerProvider);
     final trainingContentAsync = ref.watch(trainingContentProvider);
 
     return Scaffold(
@@ -36,77 +32,138 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
+              final userMode = ref.read(userModeControllerProvider).valueOrNull;
+              final isHousehold = userMode == UserMode.household;
               _showInfoDialog(context, isHousehold);
             },
           ),
         ],
       ),
-      body: trainingContentAsync.when(
-        data: (allContent) {
-          debugPrint('🔍 Filtering ${allContent.length} items with category: $_selectedCategory');
-          debugPrint('   Current mode - Household: $isHousehold, Collector: $isCollector');
+      body: userModeAsync.when(
+        data: (userMode) {
+          debugPrint('🔍 Training: Received userMode: $userMode (type: ${userMode.runtimeType})');
+          debugPrint('🔍 Training: UserMode.household: ${UserMode.household}');
+          debugPrint('🔍 Training: UserMode.collector: ${UserMode.collector}');
+          debugPrint('🔍 Training: userMode == UserMode.household: ${userMode == UserMode.household}');
+          debugPrint('🔍 Training: userMode == UserMode.collector: ${userMode == UserMode.collector}');
           
-          // Filter content based on CURRENT active mode (not user roles)
-          List<TrainingContent> filteredContent = allContent.where((content) {
-            // Category filter - convert camelCase enum to snake_case for comparison
-            final categoryString = content.category.toString().split('.').last;
-            final categorySnakeCase = categoryString
-                .replaceAllMapped(RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}');
-            
-            // Remove leading underscore if present
-            final cleanCategory = categorySnakeCase.startsWith('_') 
-                ? categorySnakeCase.substring(1) 
-                : categorySnakeCase;
-            
-            bool matchesCategory = _selectedCategory == 'all' || cleanCategory == _selectedCategory;
-
-            // Tag-based mode filter - ONLY check current active mode
-            bool matchesMode = false;
-            
-            // If content has tags, use tag-based filtering
-            if (content.tags.isNotEmpty) {
-              if (isHousehold) {
-                // Household mode: see content tagged with 'household'
-                matchesMode = content.tags.contains('household');
-              } else if (isCollector) {
-                // Collector mode: see content tagged with 'collector'
-                matchesMode = content.tags.contains('collector');
-              }
-            } else {
-              // Fallback to category-based filtering for content without tags
-              if (isHousehold) {
-                matchesMode = content.isRelevantForHousehold();
-              } else if (isCollector) {
-                matchesMode = content.isRelevantForCollector();
-              }
-            }
-            
-            debugPrint('  Content: ${content.title}, Tags: ${content.tags}, Mode: ${isHousehold ? "household" : "collector"}, Matches: $matchesMode');
-
-            return matchesCategory && matchesMode;
-          }).toList();
+          final isHousehold = userMode == UserMode.household;
+          final isCollector = userMode == UserMode.collector;
           
-          debugPrint('✅ Filtered to ${filteredContent.length} items');
-
-          return Column(
-            children: [
-              // Category Filter
-              _buildCategoryFilter(context, isHousehold, isCollector),
+          return trainingContentAsync.when(
+            data: (allContent) {
+              debugPrint('🔍 Filtering ${allContent.length} items with category: $_selectedCategory');
+              debugPrint('   Current mode - Household: $isHousehold, Collector: $isCollector');
               
-              // Content List
-              Expanded(
-                child: filteredContent.isEmpty
-                    ? _buildEmptyState(context)
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+              // Filter content based on CURRENT active mode (not user roles)
+              List<TrainingContent> filteredContent = allContent.where((content) {
+                // Category filter - convert camelCase enum to snake_case for comparison
+                final categoryString = content.category.toString().split('.').last;
+                final categorySnakeCase = categoryString
+                    .replaceAllMapped(RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}');
+                
+                // Remove leading underscore if present
+                final cleanCategory = categorySnakeCase.startsWith('_') 
+                    ? categorySnakeCase.substring(1) 
+                    : categorySnakeCase;
+                
+                bool matchesCategory = _selectedCategory == 'all' || cleanCategory == _selectedCategory;
+
+                // Tag-based mode filter - ONLY check current active mode
+                bool matchesMode = false;
+                
+                // If content has tags, use tag-based filtering
+                if (content.tags.isNotEmpty) {
+                  if (isHousehold) {
+                    // Household mode: see content tagged with 'household'
+                    matchesMode = content.tags.contains('household');
+                  } else if (isCollector) {
+                    // Collector mode: see content tagged with 'collector'
+                    matchesMode = content.tags.contains('collector');
+                  }
+                } else {
+                  // Fallback to category-based filtering for content without tags
+                  if (isHousehold) {
+                    matchesMode = content.isRelevantForHousehold();
+                  } else if (isCollector) {
+                    matchesMode = content.isRelevantForCollector();
+                  }
+                }
+                
+                debugPrint('  Content: ${content.title}, Tags: ${content.tags}, Mode: ${isHousehold ? "household" : "collector"}, Matches: $matchesMode');
+
+                return matchesCategory && matchesMode;
+              }).toList();
+              
+              debugPrint('✅ Filtered to ${filteredContent.length} items');
+
+              return Column(
+                children: [
+                  // Category Filter
+                  _buildCategoryFilter(context, isHousehold, isCollector),
+                  
+                  // Content List
+                  Expanded(
+                    child: filteredContent.isEmpty
+                        ? _buildEmptyState(context)
+                        : ListView.builder(
+        padding: const EdgeInsets.all(16),
                         itemCount: filteredContent.length,
-                        itemBuilder: (context, index) {
+        itemBuilder: (context, index) {
                           final content = filteredContent[index];
                           return _buildContentCard(context, content);
                         },
                       ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00695C),
               ),
-            ],
+            ),
+            error: (error, stack) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+            child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load training content',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString(),
+                      style: const TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(trainingContentProvider);
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00695C),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         },
         loading: () => const Center(
@@ -115,45 +172,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           ),
         ),
         error: (error, stack) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.red,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Failed to load training content',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  error.toString(),
-                  style: const TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    ref.invalidate(trainingContentProvider);
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00695C),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: Text('Error loading user mode: $error'),
         ),
       ),
     );
@@ -237,13 +256,13 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           _buildMediaSection(context, content),
           
           // Content Info
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Title
-                Text(
+                      Text(
                   content.title,
                   style: const TextStyle(
                     fontSize: 18,
@@ -252,11 +271,11 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
+                      ),
+                      const SizedBox(height: 8),
                 
                 // Description
-                Text(
+                      Text(
                   content.description,
                   style: TextStyle(
                     fontSize: 14,
@@ -285,15 +304,15 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                         'NEW',
                         const Color(0xFF00695C).withOpacity(0.1),
                         const Color(0xFF00695C),
+                          ),
+                        ],
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 
   Widget _buildMediaSection(BuildContext context, TrainingContent content) {
@@ -593,7 +612,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
               ),
             ),
           );
-        } else {
+    } else {
           debugPrint('❌ Cannot play video: mediaUrl is null or empty');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

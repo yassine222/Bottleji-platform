@@ -6,7 +6,7 @@ import 'package:botleji/features/collector/presentation/screens/collector_applic
 import 'package:botleji/features/collector/presentation/screens/collector_application_status_screen.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/services/mode_switch_service.dart';
-import 'package:botleji/features/settings/presentation/screens/theme_screen.dart';
+import 'package:botleji/features/settings/presentation/screens/settings_screen.dart';
 import 'package:botleji/features/account/presentation/screens/account_screen.dart';
 import 'package:botleji/features/history/presentation/screens/history_screen.dart';
 import 'package:botleji/features/notifications/presentation/screens/notifications_screen.dart';
@@ -14,7 +14,6 @@ import 'package:botleji/features/training/presentation/screens/trainings_screen.
 import 'package:botleji/features/rewards/presentation/screens/refer_earn_screen.dart';
 import 'package:botleji/features/support/presentation/screens/support_screen.dart';
 import 'package:botleji/features/support/presentation/screens/terms_screen.dart';
-import 'package:botleji/core/providers/connectivity_provider.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -315,12 +314,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
     return Drawer(
       backgroundColor: isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          // Header
+          // Modern Header with User Profile
           Container(
-            height: 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -332,171 +329,336 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               ),
             ),
             child: SafeArea(
+              bottom: false,
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // App Title
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.recycling_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Bottleji',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // User Info
-                    userAsync.when(
-                      data: (user) => user != null
-                          ? Row(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                child: userAsync.when(
+                  data: (user) => user != null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // User Profile Section
+                            Column(
                               children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: Colors.white.withOpacity(0.2),
-                                  child: Text(
-                                    (user.name?.isNotEmpty == true) ? user.name![0].toUpperCase() : 'U',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                Row(
+                                  children: [
+                                    // Profile Photo with Border
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 3,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 32,
+                                        backgroundColor: Colors.white,
+                                        backgroundImage: user.profilePhoto != null && user.profilePhoto!.isNotEmpty
+                                            ? NetworkImage(user.profilePhoto!)
+                                            : null,
+                                        child: user.profilePhoto == null || user.profilePhoto!.isEmpty
+                                            ? Text(
+                                                (user.name?.isNotEmpty == true) ? user.name![0].toUpperCase() : 'U',
+                                                style: const TextStyle(
+                                                  color: Color(0xFF00695C),
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 16),
+                                    // User Info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            user.name ?? 'User',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            user.email,
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.9),
+                                              fontSize: 12,
+                                              letterSpacing: 0.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user.name ?? 'User',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
+                                const SizedBox(height: 12),
+                                // Roles/Status Badges in a row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (user.roles.contains('household'))
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.3),
+                                            width: 1,
+                                          ),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        user.email,
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.8),
-                                          fontSize: 11,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.home_rounded,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Household',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
+                                    if (user.roles.contains('household') && user.roles.contains('collector'))
+                                      const SizedBox(width: 8),
+                                    if (user.roles.contains('collector'))
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.work_rounded,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Collector',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
-                            )
-                          : const SizedBox.shrink(),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ],
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                  loading: () => const SizedBox(height: 80),
+                  error: (_, __) => const SizedBox.shrink(),
                 ),
               ),
             ),
           ),
           
-          // Mode Selector
+          // Modern Mode Selector with Animation
           Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _handleRoleChange(context, UserMode.household),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: currentUserMode.when(
-                          data: (mode) => mode == UserMode.household ? const Color(0xFF00695C) : Colors.transparent,
-                          loading: () => const Color(0xFF00695C),
-                          error: (_, __) => const Color(0xFF00695C),
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.home_rounded,
-                            color: currentUserMode.when(
-                              data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[600],
-                              loading: () => Colors.white,
-                              error: (_, __) => Colors.white,
-                            ),
-                            size: 16,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Household',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: currentUserMode.when(
-                                data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[600],
-                                loading: () => Colors.white,
-                                error: (_, __) => Colors.white,
-                              ),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text(
+                    'Active Mode',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _handleRoleChange(context, UserMode.collector),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: currentUserMode.when(
-                          data: (mode) => mode == UserMode.collector ? const Color(0xFF00695C) : Colors.transparent,
-                          loading: () => Colors.transparent,
-                          error: (_, __) => Colors.transparent,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.work_rounded,
-                            color: currentUserMode.when(
-                              data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
-                              loading: () => Colors.grey[600],
-                              error: (_, __) => Colors.grey[600],
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _handleRoleChange(context, UserMode.household),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              gradient: currentUserMode.when(
+                                data: (mode) => mode == UserMode.household
+                                    ? const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF00695C),
+                                          Color(0xFF004D40),
+                                        ],
+                                      )
+                                    : null,
+                                loading: () => const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFF00695C),
+                                        Color(0xFF004D40),
+                                      ],
+                                    ),
+                                error: (_, __) => const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFF00695C),
+                                        Color(0xFF004D40),
+                                      ],
+                                    ),
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: currentUserMode.when(
+                                data: (mode) => mode == UserMode.household
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF00695C).withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : [],
+                                loading: () => [],
+                                error: (_, __) => [],
+                              ),
                             ),
-                            size: 16,
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.home_rounded,
+                                  color: currentUserMode.when(
+                                    data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[600],
+                                    loading: () => Colors.white,
+                                    error: (_, __) => Colors.white,
+                                  ),
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Household',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: currentUserMode.when(
+                                      data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[700],
+                                      loading: () => Colors.white,
+                                      error: (_, __) => Colors.white,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 4),
-                          userAsync.when(
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _handleRoleChange(context, UserMode.collector),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              gradient: currentUserMode.when(
+                                data: (mode) => mode == UserMode.collector
+                                    ? const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF00695C),
+                                          Color(0xFF004D40),
+                                        ],
+                                      )
+                                    : null,
+                                loading: () => null,
+                                error: (_, __) => null,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: currentUserMode.when(
+                                data: (mode) => mode == UserMode.collector
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF00695C).withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : [],
+                                loading: () => [],
+                                error: (_, __) => [],
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.work_rounded,
+                                  color: currentUserMode.when(
+                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                    loading: () => Colors.grey[600],
+                                    error: (_, __) => Colors.grey[600],
+                                  ),
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
+                                userAsync.when(
                             data: (user) {
                               if (user == null) {
                                 return Text(
@@ -504,12 +666,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
                                       error: (_, __) => Colors.grey[600],
                                     ),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    letterSpacing: 0.3,
                                   ),
                                 );
                               }
@@ -522,12 +685,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
                                       error: (_, __) => Colors.grey[600],
                                     ),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    letterSpacing: 0.3,
                                   ),
                                 );
                               }
@@ -540,45 +704,29 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: currentUserMode.when(
-                                          data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                          data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                           loading: () => Colors.grey[600],
                                           error: (_, __) => Colors.grey[600],
                                         ),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        letterSpacing: 0.3,
                                       ),
                                     );
                                   case CollectorApplicationStatus.rejected:
-                                    return Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Rejected',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: currentUserMode.when(
-                                              data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
-                                              loading: () => Colors.grey[600],
-                                              error: (_, __) => Colors.grey[600],
-                                            ),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                          ),
+                                    return Text(
+                                      'Rejected',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: currentUserMode.when(
+                                          data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                          loading: () => Colors.grey[600],
+                                          error: (_, __) => Colors.grey[600],
                                         ),
-                                        const SizedBox(width: 2),
-                                        GestureDetector(
-                                          onTap: () => _showRejectionReason(context, user),
-                                          child: Icon(
-                                            Icons.info_outline,
-                                            color: currentUserMode.when(
-                                              data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
-                                              loading: () => Colors.grey[600],
-                                              error: (_, __) => Colors.grey[600],
-                                            ),
-                                            size: 10,
-                                          ),
-                                        ),
-                                      ],
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        letterSpacing: 0.3,
+                                      ),
                                     );
                                   case CollectorApplicationStatus.approved:
                                     if (user.roles.contains('collector')) {
@@ -587,12 +735,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: currentUserMode.when(
-                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
                                             error: (_, __) => Colors.grey[600],
                                           ),
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          letterSpacing: 0.3,
                                         ),
                                       );
                                     } else {
@@ -601,12 +750,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: currentUserMode.when(
-                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
                                             error: (_, __) => Colors.grey[600],
                                           ),
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          letterSpacing: 0.3,
                                         ),
                                       );
                                     }
@@ -619,12 +769,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
                                       error: (_, __) => Colors.grey[600],
                                     ),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    letterSpacing: 0.3,
                                   ),
                                 );
                               }
@@ -634,12 +785,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: currentUserMode.when(
-                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                     loading: () => Colors.grey[600],
                                     error: (_, __) => Colors.grey[600],
                                   ),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  letterSpacing: 0.3,
                                 ),
                               );
                             },
@@ -648,12 +800,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: currentUserMode.when(
-                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
                                   error: (_, __) => Colors.grey[600],
                                 ),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                letterSpacing: 0.3,
                               ),
                             ),
                             error: (error, stack) => Text(
@@ -661,25 +814,33 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: currentUserMode.when(
-                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
+                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
                                   error: (_, __) => Colors.grey[600],
                                 ),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
-                        ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           
-          // Menu Items
+          // Scrollable Menu Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
           ListTile(
             leading: Icon(
               Icons.person_rounded,
@@ -752,15 +913,15 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ),
           ListTile(
             leading: Icon(
-              Icons.palette_rounded,
+              Icons.settings_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Display Theme'),
+            title: const Text('Settings'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ThemeScreen()),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
           ),
@@ -792,42 +953,6 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               );
             },
           ),
-          const Divider(),
-          // Debug offline toggle (only in debug mode)
-          if (const bool.fromEnvironment('dart.vm.product') == false) ...[
-            const Divider(),
-            Consumer(
-              builder: (context, ref, child) {
-                final connectivityNotifier = ref.read(connectivityProvider.notifier);
-                final isDebugOffline = connectivityNotifier.isDebugOfflineMode;
-                
-                return ListTile(
-                  leading: Icon(
-                    isDebugOffline ? Icons.wifi_off : Icons.wifi,
-                    color: isDebugOffline ? Colors.orange : Colors.green,
-                  ),
-                  title: Text(
-                    isDebugOffline ? 'Debug: Simulate Online' : 'Debug: Simulate Offline',
-                    style: TextStyle(
-                      color: isDebugOffline ? Colors.orange : Colors.green,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    connectivityNotifier.toggleDebugOfflineMode();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isDebugOffline ? 'Debug: Now simulating online' : 'Debug: Now simulating offline',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
           
           ListTile(
             leading: Icon(
@@ -839,6 +964,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               style: TextStyle(color: Colors.red),
             ),
             onTap: () => _handleLogout(context),
+          ),
+              ],
+            ),
           ),
         ],
       ),
