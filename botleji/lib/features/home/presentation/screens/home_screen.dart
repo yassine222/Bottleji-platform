@@ -25,6 +25,7 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/drops/presentation/screens/drops_list_screen.dart';
 import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dart';
+import 'package:botleji/features/drops/presentation/widgets/drop_details_modal.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/core/providers/connectivity_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
