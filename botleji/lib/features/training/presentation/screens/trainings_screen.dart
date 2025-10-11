@@ -259,19 +259,12 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                       Colors.grey.shade100,
                       Colors.grey.shade700,
                     ),
-                    if (content.duration > 0)
+                    if (content.isNew)
                       _buildBadge(
-                        '⏱️',
-                        content.formattedDuration,
-                        Colors.blue.shade50,
-                        Colors.blue.shade700,
-                      ),
-                    if (content.isFeatured)
-                      _buildBadge(
-                        '⭐',
-                        'Featured',
-                        Colors.yellow.shade50,
-                        Colors.yellow.shade800,
+                        '🎉',
+                        'NEW',
+                        const Color(0xFF00695C).withOpacity(0.1),
+                        const Color(0xFF00695C),
                       ),
                   ],
                 ),
@@ -340,24 +333,35 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
               ),
             ),
           
-          // Duration Badge for Videos
-          if (content.type == TrainingType.video && content.duration > 0)
+          // NEW Badge for Videos
+          if (content.isNew)
             Positioned(
-              bottom: 8,
-              right: 8,
+              top: 8,
+              left: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.75),
-                  borderRadius: BorderRadius.circular(4),
+                  color: const Color(0xFF00695C),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
-                child: Text(
-                  content.formattedDuration,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '🎉 NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

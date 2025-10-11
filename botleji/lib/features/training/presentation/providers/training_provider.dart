@@ -11,7 +11,7 @@ final trainingApiClientProvider = Provider<TrainingApiClient>((ref) {
 
 final trainingContentProvider = FutureProvider.autoDispose<List<TrainingContent>>((ref) async {
   final client = ref.watch(trainingApiClientProvider);
-  return client.getAllContent(isActive: true);
+  return client.getAllContent();
 });
 
 final featuredTrainingProvider = FutureProvider.autoDispose<List<TrainingContent>>((ref) async {

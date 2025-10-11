@@ -86,12 +86,12 @@ class TrainingDetailScreen extends StatelessWidget {
                         Colors.grey.shade100,
                         Colors.grey.shade700,
                       ),
-                      if (content.isFeatured)
+                      if (content.isNew)
                         _buildBadge(
-                          '⭐',
-                          'Featured',
-                          Colors.yellow.shade50,
-                          Colors.yellow.shade800,
+                          '🎉',
+                          'NEW',
+                          const Color(0xFF00695C).withOpacity(0.1),
+                          const Color(0xFF00695C),
                         ),
                     ],
                   ),

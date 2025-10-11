@@ -34,24 +34,6 @@ export class CreateTrainingContentDto {
   content?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  duration?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  order?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isFeatured?: boolean;
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   tags?: string[];

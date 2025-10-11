@@ -23,16 +23,12 @@ export class TrainingService {
   async findAll(params?: {
     category?: string;
     type?: string;
-    isActive?: boolean;
-    isFeatured?: boolean;
     page?: number;
     limit?: number;
   }): Promise<{ content: TrainingContent[]; total: number; page: number; totalPages: number }> {
     const {
       category,
       type,
-      isActive,
-      isFeatured,
       page = 1,
       limit = 20,
     } = params || {};
@@ -40,14 +36,12 @@ export class TrainingService {
     const filter: any = {};
     if (category) filter.category = category;
     if (type) filter.type = type;
-    if (isActive !== undefined) filter.isActive = isActive;
-    if (isFeatured !== undefined) filter.isFeatured = isFeatured;
 
     const skip = (page - 1) * limit;
     const total = await this.trainingContentModel.countDocuments(filter);
     const content = await this.trainingContentModel
       .find(filter)
-      .sort({ order: 1, createdAt: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .exec();
@@ -107,23 +101,17 @@ export class TrainingService {
     videoCount: number;
     imageCount: number;
     storyCount: number;
-    activeCount: number;
-    featuredCount: number;
   }> {
     const [
       totalContent,
       videoCount,
       imageCount,
       storyCount,
-      activeCount,
-      featuredCount,
     ] = await Promise.all([
       this.trainingContentModel.countDocuments(),
       this.trainingContentModel.countDocuments({ type: 'video' }),
       this.trainingContentModel.countDocuments({ type: 'image' }),
       this.trainingContentModel.countDocuments({ type: 'story' }),
-      this.trainingContentModel.countDocuments({ isActive: true }),
-      this.trainingContentModel.countDocuments({ isFeatured: true }),
     ]);
 
     return {
@@ -131,8 +119,6 @@ export class TrainingService {
       videoCount,
       imageCount,
       storyCount,
-      activeCount,
-      featuredCount,
     };
   }
 
@@ -150,15 +136,15 @@ export class TrainingService {
 
   async getFeaturedContent(): Promise<TrainingContent[]> {
     return this.trainingContentModel
-      .find({ isFeatured: true, isActive: true })
-      .sort({ order: 1, createdAt: -1 })
+      .find({})
+      .sort({ createdAt: -1 })
       .exec();
   }
 
   async getContentByCategory(category: string): Promise<TrainingContent[]> {
     return this.trainingContentModel
-      .find({ category, isActive: true })
-      .sort({ order: 1, createdAt: -1 })
+      .find({ category })
+      .sort({ createdAt: -1 })
       .exec();
   }
 }

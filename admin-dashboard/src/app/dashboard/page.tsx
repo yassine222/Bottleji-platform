@@ -2282,24 +2282,6 @@ function TrainingContent() {
                     {categories.find(c => c.value === content.category)?.icon} 
                     {categories.find(c => c.value === content.category)?.label}
                   </span>
-                  
-                  {content.duration && (
-                    <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                      ⏱️ {Math.floor(content.duration / 60)}:{(content.duration % 60).toString().padStart(2, '0')}
-                    </span>
-                  )}
-                  
-                  {content.isFeatured && (
-                    <span className="px-3 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                      ⭐ Featured
-                    </span>
-                  )}
-                  
-                  {!content.isActive && (
-                    <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
-                      ⏸️ Inactive
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -2376,23 +2358,20 @@ function TrainingContent() {
               
               {/* Card Footer */}
               <div className="px-4 py-2 bg-white border-t border-gray-100">
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <div className="flex items-center space-x-3">
-                    <span className="flex items-center">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {new Date(content.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <span className="flex items-center text-blue-600 font-medium">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      {content.viewCount || 0} {(content.viewCount || 0) === 1 ? 'view' : 'views'}
-                    </span>
-                  </div>
-                  <span className="font-medium text-gray-600">Order: {content.order || 0}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center text-gray-500">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(content.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <span className="flex items-center text-blue-600 font-semibold">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    {content.viewCount || 0} {(content.viewCount || 0) === 1 ? 'view' : 'views'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -2431,8 +2410,6 @@ function TrainingContentModal({ content, onClose, onSave }: {
 }) {
   const [formData, setFormData] = useState(() => {
     const safeString = (value: any) => (value && typeof value === 'string') ? value : '';
-    const safeNumber = (value: any) => (value && typeof value === 'number') ? value : 0;
-    const safeBoolean = (value: any) => (value && typeof value === 'boolean') ? value : false;
     
     return {
       title: safeString(content?.title),
@@ -2442,10 +2419,6 @@ function TrainingContentModal({ content, onClose, onSave }: {
       mediaUrl: safeString(content?.mediaUrl),
       thumbnailUrl: safeString(content?.thumbnailUrl),
       content: safeString(content?.content),
-      duration: safeNumber(content?.duration),
-      order: safeNumber(content?.order),
-      isActive: safeBoolean(content?.isActive ?? true),
-      isFeatured: safeBoolean(content?.isFeatured),
       tags: Array.isArray(content?.tags) ? content.tags : [],
     };
   });
@@ -2617,57 +2590,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration (seconds)
-                </label>
-                <input
-                  type="number"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Order
-                </label>
-                <input
-                  type="number"
-                  value={formData.order}
-                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">Active</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isFeatured}
-                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">Featured</span>
-              </label>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end space-x-3 pt-6">
               <button
                 type="button"
                 onClick={onClose}

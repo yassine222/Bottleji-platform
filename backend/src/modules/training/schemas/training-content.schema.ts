@@ -42,18 +42,6 @@ export class TrainingContent {
   @Prop()
   content?: string; // For text content or story content
 
-  @Prop({ default: 0 })
-  duration?: number; // Duration in seconds for videos
-
-  @Prop({ default: 0 })
-  order: number; // Display order
-
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ default: false })
-  isFeatured: boolean;
-
   @Prop({ type: [String], default: [] })
   tags: string[];
 

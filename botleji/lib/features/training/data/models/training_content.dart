@@ -7,11 +7,8 @@ class TrainingContent {
   final String? mediaUrl;
   final String? thumbnailUrl;
   final String? content;
-  final int duration; // in seconds
-  final int order;
-  final bool isActive;
-  final bool isFeatured;
   final List<String> tags;
+  final int viewCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,11 +21,8 @@ class TrainingContent {
     this.mediaUrl,
     this.thumbnailUrl,
     this.content,
-    this.duration = 0,
-    this.order = 0,
-    this.isActive = true,
-    this.isFeatured = false,
     this.tags = const [],
+    this.viewCount = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -43,11 +37,8 @@ class TrainingContent {
       mediaUrl: json['mediaUrl'],
       thumbnailUrl: json['thumbnailUrl'],
       content: json['content'],
-      duration: json['duration'] ?? 0,
-      order: json['order'] ?? 0,
-      isActive: json['isActive'] ?? true,
-      isFeatured: json['isFeatured'] ?? false,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      viewCount: json['viewCount'] ?? 0,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -87,11 +78,10 @@ class TrainingContent {
     }
   }
 
-  String get formattedDuration {
-    if (duration == 0) return '';
-    final minutes = duration ~/ 60;
-    final seconds = duration % 60;
-    return '${minutes}:${seconds.toString().padLeft(2, '0')}';
+  bool get isNew {
+    // Content is "new" if published in last 7 days AND has 0 views
+    final daysSinceCreation = DateTime.now().difference(createdAt).inDays;
+    return daysSinceCreation <= 7 && viewCount == 0;
   }
 
   bool isRelevantForHousehold() {
