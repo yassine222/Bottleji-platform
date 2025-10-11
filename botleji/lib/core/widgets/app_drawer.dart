@@ -527,17 +527,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           
           // Modern Mode Selector with Animation
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  padding: const EdgeInsets.only(left: 4, bottom: 6),
                   child: Text(
                     'Active Mode',
                     style: TextStyle(
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
@@ -546,16 +546,16 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 Container(
                   decoration: BoxDecoration(
                     color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   child: Row(
                     children: [
                       Expanded(
@@ -564,7 +564,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                             decoration: BoxDecoration(
                               gradient: currentUserMode.when(
                                 data: (mode) => mode == UserMode.household
@@ -594,14 +594,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                       ],
                                     ),
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: currentUserMode.when(
                                 data: (mode) => mode == UserMode.household
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00695C).withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
+                                          color: const Color(0xFF00695C).withOpacity(0.25),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 3),
                                         ),
                                       ]
                                     : [],
@@ -618,9 +618,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     loading: () => Colors.white,
                                     error: (_, __) => Colors.white,
                                   ),
-                                  size: 20,
+                                  size: 18,
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Household',
                                   textAlign: TextAlign.center,
@@ -631,7 +631,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                       error: (_, __) => Colors.white,
                                     ),
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -640,14 +640,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _handleRoleChange(context, UserMode.collector),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                             decoration: BoxDecoration(
                               gradient: currentUserMode.when(
                                 data: (mode) => mode == UserMode.collector
@@ -663,14 +663,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 loading: () => null,
                                 error: (_, __) => null,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: currentUserMode.when(
                                 data: (mode) => mode == UserMode.collector
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00695C).withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
+                                          color: const Color(0xFF00695C).withOpacity(0.25),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 3),
                                         ),
                                       ]
                                     : [],
@@ -687,9 +687,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     loading: () => Colors.grey[600],
                                     error: (_, __) => Colors.grey[600],
                                   ),
-                                  size: 20,
+                                  size: 18,
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 4),
                                 userAsync.when(
                             data: (user) {
                               if (user == null) {
@@ -739,10 +739,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                           data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                           loading: () => Colors.grey[600],
                                           error: (_, __) => Colors.grey[600],
-                                        ),
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                                       ),
                                     );
                                   case CollectorApplicationStatus.rejected:
@@ -754,10 +754,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                           data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                           loading: () => Colors.grey[600],
                                           error: (_, __) => Colors.grey[600],
-                                        ),
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                                       ),
                                     );
                                   case CollectorApplicationStatus.approved:
@@ -770,10 +770,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                             data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
                                             error: (_, __) => Colors.grey[600],
-                                          ),
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                          letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                                         ),
                                       );
                                     } else {
@@ -785,10 +785,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                             data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
                                             error: (_, __) => Colors.grey[600],
-                                          ),
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                          letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                                         ),
                                       );
                                     }
@@ -820,10 +820,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                     loading: () => Colors.grey[600],
                                     error: (_, __) => Colors.grey[600],
-                                  ),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                                 ),
                               );
                             },
@@ -835,10 +835,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                   data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
                                   error: (_, __) => Colors.grey[600],
-                                ),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                               ),
                             ),
                             error: (error, stack) => Text(
@@ -849,10 +849,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                   data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
                                   error: (_, __) => Colors.grey[600],
-                                ),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                letterSpacing: 0.3,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    letterSpacing: 0.3,
                               ),
                             ),
                           ),

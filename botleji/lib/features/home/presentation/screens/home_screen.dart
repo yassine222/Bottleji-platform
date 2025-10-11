@@ -33,6 +33,7 @@ import 'package:botleji/features/auth/data/models/user_data.dart';
 import 'package:botleji/core/theme/app_typography.dart';
 import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:botleji/core/widgets/active_collection_indicator.dart';
+import 'package:botleji/features/notifications/presentation/screens/notifications_screen.dart';
 
 
 // Navigation step model
@@ -1360,11 +1361,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ? _buildHouseholdHomeContent()
               : _buildCollectorHomeContent();
         case 1:
-          return const StatsScreen();
+          return const DropsListScreen();
         case 2:
           return const TipsScreen();
         case 3:
-          return const DropsListScreen();
+          return const StatsScreen();
         default:
           return const Center(child: Text('Invalid Page'));
       }
@@ -1764,7 +1765,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  void _showDropDetails(Drop drop) {
+  void _showDropDetails(Drop drop) async {
+    // Calculate distance if we have current location
+    double? distanceInMeters;
+    String? distanceText;
+    String? durationText;
+    
+    if (_currentLocation != null) {
+      distanceInMeters = Geolocator.distanceBetween(
+        _currentLocation!.latitude,
+        _currentLocation!.longitude,
+        drop.location.latitude,
+        drop.location.longitude,
+      );
+      
+      // Format distance
+      if (distanceInMeters < 1000) {
+        distanceText = '${distanceInMeters.toStringAsFixed(0)}m';
+      } else {
+        distanceText = '${(distanceInMeters / 1000).toStringAsFixed(1)}km';
+      }
+      
+      // Estimate duration (assuming walking speed of 5 km/h)
+      final durationMinutes = (distanceInMeters / 1000 / 5 * 60).round();
+      if (durationMinutes < 60) {
+        durationText = '${durationMinutes}min';
+      } else {
+        final hours = (durationMinutes / 60).floor();
+        final mins = durationMinutes % 60;
+        durationText = '${hours}h ${mins}min';
+      }
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1782,10 +1814,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           };
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               children: [
@@ -1795,118 +1827,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Hero Image / Preview
-                if ((drop.imageUrl ?? '').isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Image.network(
-                              drop.imageUrl!,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                                  child: const Center(child: CircularProgressIndicator()),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                                  child: const Center(child: Icon(Icons.image_not_supported_outlined)),
-                                );
-                              },
-                            ),
-                          ),
-                          // Gradient overlay and quick stats
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.5),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            left: 12,
-                            right: 12,
-                            bottom: 12,
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.local_drink, size: 16),
-                                      const SizedBox(width: 6),
-                                      Text('${drop.numberOfBottles + drop.numberOfCans} items'),
-                                    ],
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(drop.status),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    drop.status.name.toUpperCase(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                  
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Drop Details',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const Divider(),
-                  
+                
                 // Content
                 Expanded(
                   child: SingleChildScrollView(
@@ -2392,7 +2317,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             size: 24,
                           ),
                           onPressed: () {
-                            Navigator.pushNamed(context, '/notifications');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NotificationsScreen(),
+                              ),
+                            );
                           },
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(
