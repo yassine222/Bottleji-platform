@@ -53,11 +53,15 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           
           // Filter content based on user mode
           List<TrainingContent> filteredContent = allContent.where((content) {
-            // Category filter
+            // Category filter - convert camelCase enum to snake_case for comparison
             final categoryString = content.category.toString().split('.').last;
-            bool matchesCategory = _selectedCategory == 'all' || categoryString == _selectedCategory;
+            final categorySnakeCase = categoryString
+                .replaceAllMapped(RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}')
+                .replaceFirst('_', '');
             
-            debugPrint('  Content: ${content.title}, Category: $categoryString, Selected: $_selectedCategory, Matches: $matchesCategory');
+            bool matchesCategory = _selectedCategory == 'all' || categorySnakeCase == _selectedCategory;
+            
+            debugPrint('  Content: ${content.title}, Category: $categoryString -> $categorySnakeCase, Selected: $_selectedCategory, Matches: $matchesCategory');
 
             // Mode filter
             bool matchesMode = false;
