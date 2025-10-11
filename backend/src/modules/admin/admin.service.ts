@@ -28,30 +28,140 @@ export class AdminService {
 
   async getDashboardStats() {
     try {
-      const [totalUsers, totalDrops, totalApplications, pendingApplications, totalTickets, pendingTickets] = await Promise.all([
-        this.userModel.countDocuments({ isDeleted: { $ne: true } }), // Only count active users
-        this.dropoffModel.countDocuments(), // Count all drops (including from deleted users)
-        this.collectorApplicationModel.countDocuments(), // Count all applications (including from deleted users)
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const [
+        totalUsers, 
+        totalDrops, 
+        totalApplications, 
+        pendingApplications, 
+        totalTickets, 
+        pendingTickets,
+        activeCollectors,
+        dropsLast7Days,
+        dropsLast30Days,
+        usersLast7Days,
+        usersLast30Days,
+        dropsByStatus,
+        applicationsByStatus,
+        ticketsByStatus,
+        ticketsByCategory,
+        bottleTypeDistribution,
+      ] = await Promise.all([
+        // Basic counts
+        this.userModel.countDocuments({ isDeleted: { $ne: true } }),
+        this.dropoffModel.countDocuments(),
+        this.collectorApplicationModel.countDocuments(),
         this.collectorApplicationModel.countDocuments({ status: 'pending' }),
-        // Count all support tickets (excluding deleted ones)
         this.supportTicketModel.countDocuments({ isDeleted: false }),
-        // Count open/in-progress support tickets (pending = open + in_progress)
         this.supportTicketModel.countDocuments({ 
           isDeleted: false, 
           status: { $in: ['open', 'in_progress'] } 
         }),
+        
+        // Active collectors (users with collector role)
+        this.userModel.countDocuments({ 
+          isDeleted: { $ne: true },
+          roles: 'collector' 
+        }),
+        
+        // Time-based counts
+        this.dropoffModel.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+        this.dropoffModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+        this.userModel.countDocuments({ 
+          isDeleted: { $ne: true },
+          createdAt: { $gte: sevenDaysAgo } 
+        }),
+        this.userModel.countDocuments({ 
+          isDeleted: { $ne: true },
+          createdAt: { $gte: thirtyDaysAgo } 
+        }),
+        
+        // Drops by status
+        this.dropoffModel.aggregate([
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]),
+        
+        // Applications by status
+        this.collectorApplicationModel.aggregate([
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]),
+        
+        // Tickets by status
+        this.supportTicketModel.aggregate([
+          { $match: { isDeleted: false } },
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]),
+        
+        // Tickets by category
+        this.supportTicketModel.aggregate([
+          { $match: { isDeleted: false } },
+          { $group: { _id: '$category', count: { $sum: 1 } } }
+        ]),
+        
+        // Bottle type distribution
+        this.dropoffModel.aggregate([
+          { $group: { _id: '$bottleType', count: { $sum: 1 } } }
+        ]),
       ]);
+
+      // Get time series data for charts (last 30 days)
+      const usersTimeSeries = await this.getUsersTimeSeries(30);
+      const dropsTimeSeries = await this.getDropsTimeSeries(30);
+      const interactionsTimeSeries = await this.getInteractionsTimeSeries(30);
 
       // Get recent activity
       const recentActivity = await this.getRecentActivity();
 
       return {
+        // Basic stats
         totalUsers,
         totalDrops,
         totalApplications,
         pendingApplications,
         totalTickets,
         pendingTickets,
+        activeCollectors,
+        
+        // Recent activity counts
+        dropsLast7Days,
+        dropsLast30Days,
+        usersLast7Days,
+        usersLast30Days,
+        
+        // Status breakdowns
+        dropsByStatus: dropsByStatus.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        
+        applicationsByStatus: applicationsByStatus.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        
+        ticketsByStatus: ticketsByStatus.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        
+        ticketsByCategory: ticketsByCategory.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        
+        bottleTypeDistribution: bottleTypeDistribution.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        
+        // Time series data for charts
+        usersTimeSeries,
+        dropsTimeSeries,
+        interactionsTimeSeries,
+        
         recentActivity,
       };
     } catch (error) {
@@ -64,9 +174,148 @@ export class AdminService {
         pendingApplications: 0,
         totalTickets: 0,
         pendingTickets: 0,
+        activeCollectors: 0,
+        dropsLast7Days: 0,
+        dropsLast30Days: 0,
+        usersLast7Days: 0,
+        usersLast30Days: 0,
+        dropsByStatus: {},
+        applicationsByStatus: {},
+        ticketsByStatus: {},
+        ticketsByCategory: {},
+        bottleTypeDistribution: {},
+        usersTimeSeries: [],
+        dropsTimeSeries: [],
+        interactionsTimeSeries: [],
         recentActivity: [],
       };
     }
+  }
+
+  private async getUsersTimeSeries(days: number) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const timeSeries = await this.userModel.aggregate([
+      {
+        $match: {
+          isDeleted: { $ne: true },
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    return this.fillMissingDates(timeSeries, days);
+  }
+
+  private async getDropsTimeSeries(days: number) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const timeSeries = await this.dropoffModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    return this.fillMissingDates(timeSeries, days);
+  }
+
+  private async getInteractionsTimeSeries(days: number) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const timeSeries = await this.interactionModel.aggregate([
+      {
+        $match: {
+          interactionTime: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$interactionTime' } },
+            type: '$interactionType'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.date': 1 } }
+    ]);
+
+    // Group by date with all interaction types
+    const groupedByDate = timeSeries.reduce((acc, item) => {
+      const date = item._id.date;
+      if (!acc[date]) {
+        acc[date] = { date, accepted: 0, collected: 0, cancelled: 0, expired: 0 };
+      }
+      acc[date][item._id.type] = item.count;
+      return acc;
+    }, {});
+
+    return this.fillMissingDatesWithTypes(Object.values(groupedByDate), days);
+  }
+
+  private fillMissingDates(timeSeries: any[], days: number): any[] {
+    const result: any[] = [];
+    const dataMap = new Map(timeSeries.map(item => [item._id, item.count]));
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      result.push({
+        date: dateStr,
+        count: dataMap.get(dateStr) || 0
+      });
+    }
+    
+    return result;
+  }
+
+  private fillMissingDatesWithTypes(timeSeries: any[], days: number): any[] {
+    const result: any[] = [];
+    const dataMap = new Map(timeSeries.map(item => [item.date, item]));
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      result.push(dataMap.get(dateStr) || {
+        date: dateStr,
+        accepted: 0,
+        collected: 0,
+        cancelled: 0,
+        expired: 0
+      });
+    }
+    
+    return result;
   }
 
   async getAllUsers(page = 1, limit = 20, includeDeleted = false) {

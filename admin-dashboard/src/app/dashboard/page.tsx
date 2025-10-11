@@ -10,50 +10,27 @@ import {
   CubeIcon,
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
 import { supportTicketsAPI, trainingAPI } from '@/lib/api';
 import { CollectorApplication } from '@/types';
 import { UserRole } from '@/types';
+import {
+  UsersGrowthChart,
+  DropsActivityChart,
+  CollectorInteractionsChart,
+  DropStatusPieChart,
+  BottleTypeDistribution,
+  TicketsByCategory,
+  ApplicationsStatus,
+} from '@/components/dashboard/DashboardCharts';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
-  const statCards = [
-    {
-      name: 'Total Users',
-      value: stats?.totalUsers || 0,
-      icon: UsersIcon,
-      color: 'bg-secondary',
-      change: '+12%',
-      changeType: 'positive',
-    },
-    {
-      name: 'Total Drops',
-      value: stats?.totalDrops || 0,
-      icon: CubeIcon,
-      color: 'bg-primary',
-      change: '+8%',
-      changeType: 'positive',
-    },
-    {
-      name: 'Pending Applications',
-      value: stats?.pendingApplications || 0,
-      icon: ClipboardDocumentListIcon,
-      color: 'bg-warning-color',
-      change: '+3',
-      changeType: 'neutral',
-    },
-    {
-      name: 'Open Support Tickets',
-      value: stats?.pendingTickets || 0,
-      icon: ChatBubbleLeftRightIcon,
-      color: 'bg-error-color',
-      change: '-2',
-      changeType: 'negative',
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -73,115 +50,187 @@ function DashboardContent({ stats, loading, error }: any) {
     );
   }
 
+  const mainStatCards = [
+    {
+      name: 'Total Users',
+      value: stats?.totalUsers || 0,
+      icon: UsersIcon,
+      color: 'from-blue-500 to-blue-600',
+      textColor: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      trend: { value: stats?.usersLast7Days || 0, label: 'Last 7 days' },
+    },
+    {
+      name: 'Total Drops',
+      value: stats?.totalDrops || 0,
+      icon: CubeIcon,
+      color: 'from-green-500 to-green-600',
+      textColor: 'text-green-600',
+      bgColor: 'bg-green-50',
+      trend: { value: stats?.dropsLast7Days || 0, label: 'Last 7 days' },
+    },
+    {
+      name: 'Active Collectors',
+      value: stats?.activeCollectors || 0,
+      icon: UserGroupIcon,
+      color: 'from-purple-500 to-purple-600',
+      textColor: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      trend: { value: stats?.pendingApplications || 0, label: 'Pending' },
+    },
+    {
+      name: 'Open Tickets',
+      value: stats?.pendingTickets || 0,
+      icon: ChatBubbleLeftRightIcon,
+      color: 'from-orange-500 to-orange-600',
+      textColor: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      trend: { value: stats?.totalTickets || 0, label: 'Total' },
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
+      {/* Main Stats Cards - Enhanced */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {mainStatCards.map((stat) => (
           <div
             key={stat.name}
-            className="bg-white overflow-hidden shadow rounded-lg border border-gray-200"
+            className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
           >
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <stat.icon className="h-6 w-6 text-text-secondary" />
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-6 w-6 ${stat.textColor}`} />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-text-secondary truncate">
-                      {stat.name}
-                    </dt>
-                    <dd className="text-lg font-medium text-text-primary">
-                      {stat.value.toLocaleString()}
-                    </dd>
-                  </dl>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stat.value.toLocaleString()}
+                  </p>
+                  <p className="text-sm font-medium text-gray-500 mt-1">
+                    {stat.name}
+                  </p>
                 </div>
               </div>
-              <div className="mt-2">
-                <span
-                  className={`inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium ${
-                    stat.changeType === 'positive'
-                      ? 'bg-success-color text-white'
-                      : stat.changeType === 'negative'
-                      ? 'bg-error-color text-white'
-                      : 'bg-warning-color text-white'
-                  }`}
-                >
-                  {stat.change}
-                </span>
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center text-sm text-gray-600">
+                  <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
+                  <span className="font-medium">{stat.trend.value}</span>
+                  <span className="ml-1 text-gray-500">{stat.trend.label}</span>
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white shadow rounded-lg border border-gray-200">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="mt-5">
-            {stats?.recentActivity && stats.recentActivity.length > 0 ? (
-              <div className="flow-root">
-                <ul className="-mb-8">
-                  {stats.recentActivity.map((activity: any, activityIdx: number) => (
-                    <li key={activity.id}>
-                      <div className="relative pb-8">
-                        {activityIdx !== stats.recentActivity.length - 1 ? (
-                          <span
-                            className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="h-8 w-8 rounded-full bg-primary flex items-center justify-center ring-8 ring-white">
-                              <span className="text-white text-sm font-medium">
-                                {activity.type.charAt(0).toUpperCase()}
-                              </span>
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-text-secondary">
-                                {activity.description}
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-text-secondary">
-                              <time dateTime={activity.timestamp}>
-                                {new Date(activity.timestamp).toLocaleDateString()}
-                              </time>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="text-text-secondary">No recent activity</p>
-            )}
-          </div>
+      {/* Secondary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-600">Drops (Last 30 Days)</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">{stats?.dropsLast30Days || 0}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-600">New Users (Last 30 Days)</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">{stats?.usersLast30Days || 0}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-600">Total Applications</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalApplications || 0}</div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white shadow rounded-lg border border-gray-200">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button className="bg-secondary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
-              Review Applications
-            </button>
-            <button className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors">
-              Approve Drops
-            </button>
-            <button className="bg-primary-dark text-white px-4 py-2 rounded-md hover:bg-primary transition-colors">
-              Respond to Tickets
-            </button>
-            <button className="bg-secondary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
-              Add Training Content
-            </button>
-          </div>
+      {/* Charts Section - Time Series */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {stats?.usersTimeSeries && stats.usersTimeSeries.length > 0 && (
+          <UsersGrowthChart data={stats.usersTimeSeries} />
+        )}
+        {stats?.dropsTimeSeries && stats.dropsTimeSeries.length > 0 && (
+          <DropsActivityChart data={stats.dropsTimeSeries} />
+        )}
+      </div>
+
+      {/* Collector Interactions Chart - Full Width */}
+      {stats?.interactionsTimeSeries && stats.interactionsTimeSeries.length > 0 && (
+        <CollectorInteractionsChart data={stats.interactionsTimeSeries} />
+      )}
+
+      {/* Charts Section - Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {stats?.dropsByStatus && Object.keys(stats.dropsByStatus).length > 0 && (
+          <DropStatusPieChart data={stats.dropsByStatus} />
+        )}
+        {stats?.bottleTypeDistribution && Object.keys(stats.bottleTypeDistribution).length > 0 && (
+          <BottleTypeDistribution data={stats.bottleTypeDistribution} />
+        )}
+      </div>
+
+      {/* Charts Section - Applications & Tickets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {stats?.applicationsByStatus && Object.keys(stats.applicationsByStatus).length > 0 && (
+          <ApplicationsStatus data={stats.applicationsByStatus} />
+        )}
+        {stats?.ticketsByCategory && Object.keys(stats.ticketsByCategory).length > 0 && (
+          <TicketsByCategory data={stats.ticketsByCategory} />
+        )}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+        </div>
+        <div className="px-6 py-4">
+          {stats?.recentActivity && stats.recentActivity.length > 0 ? (
+            <div className="flow-root">
+              <ul className="-mb-8">
+                {stats.recentActivity.slice(0, 10).map((activity: any, activityIdx: number) => (
+                  <li key={activity.id}>
+                    <div className="relative pb-8">
+                      {activityIdx !== Math.min(stats.recentActivity.length, 10) - 1 ? (
+                        <span
+                          className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <div className="relative flex space-x-3">
+                        <div>
+                          <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${
+                            activity.type === 'user_registration' ? 'bg-blue-500' : 
+                            activity.type === 'drop_created' ? 'bg-green-500' : 'bg-purple-500'
+                          }`}>
+                            <span className="text-white text-sm font-medium">
+                              {activity.type === 'user_registration' ? 'U' : 
+                               activity.type === 'drop_created' ? 'D' : 'A'}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                          <div>
+                            <p className="text-sm text-gray-700">
+                              {activity.description}
+                            </p>
+                          </div>
+                          <div className="text-right text-sm whitespace-nowrap text-gray-500">
+                            <time dateTime={activity.timestamp}>
+                              {new Date(activity.timestamp).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </time>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No recent activity</p>
+          )}
         </div>
       </div>
     </div>
