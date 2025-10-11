@@ -136,33 +136,44 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: Column(
-            children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+            child: Column(
+              children: [
+                // Handle bar and close button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Handle bar
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Close button
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.grey[200],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              // Content
-              Expanded(
+                
+                // Content
+                Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                                      // Hero Image with overlay info
-                      if (widget.drop.imageUrl?.isNotEmpty == true)
-                        _buildHeroImage()
-                      else
-                        _buildNoImagePlaceholder(),
-                      
-                      const SizedBox(height: 16),
-                      
                       // Distance & Time Card
                       if (widget.currentLocation != null)
                         _buildDistanceTimeCard(),
@@ -170,6 +181,14 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       // Mini Map with Route
                       if (widget.currentLocation != null)
                         _buildMiniMap(),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Hero Image with overlay info
+                      if (widget.drop.imageUrl?.isNotEmpty == true)
+                        _buildHeroImage()
+                      else
+                        _buildNoImagePlaceholder(),
                       
                       const SizedBox(height: 16),
                       
@@ -312,21 +331,6 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
             ],
           ),
         ),
-        // Close button
-        Positioned(
-          top: 16,
-          right: 16,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close, color: Colors.white),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -427,28 +431,6 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   ),
                 ),
               ],
-            ),
-          ),
-          // Close button
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
             ),
           ),
         ],
