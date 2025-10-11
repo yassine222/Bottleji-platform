@@ -5,6 +5,7 @@ import { User, UserRole, CollectorApplicationStatus } from '../users/schemas/use
 import { CollectorApplication } from '../collector-applications/schemas/collector-application.schema';
 import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
 import { CollectorInteraction } from '../dropoffs/schemas/collector-interaction.schema';
+import { SupportTicket } from '../support-tickets/schemas/support-ticket.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CollectorApplicationsService } from '../collector-applications/collector-applications.service';
 import { UsersService } from '../users/users.service';
@@ -18,6 +19,7 @@ export class AdminService {
     @InjectModel(CollectorApplication.name) private collectorApplicationModel: Model<CollectorApplication>,
     @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
     @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
+    @InjectModel(SupportTicket.name) private supportTicketModel: Model<SupportTicket>,
     private notificationsService: NotificationsService,
     private collectorApplicationsService: CollectorApplicationsService,
     private usersService: UsersService,
@@ -31,9 +33,13 @@ export class AdminService {
         this.dropoffModel.countDocuments(), // Count all drops (including from deleted users)
         this.collectorApplicationModel.countDocuments(), // Count all applications (including from deleted users)
         this.collectorApplicationModel.countDocuments({ status: 'pending' }),
-        // TODO: Add support tickets model
-        Promise.resolve(0),
-        Promise.resolve(0),
+        // Count all support tickets (excluding deleted ones)
+        this.supportTicketModel.countDocuments({ isDeleted: false }),
+        // Count open/in-progress support tickets (pending = open + in_progress)
+        this.supportTicketModel.countDocuments({ 
+          isDeleted: false, 
+          status: { $in: ['open', 'in_progress'] } 
+        }),
       ]);
 
       // Get recent activity

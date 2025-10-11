@@ -7,6 +7,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { CollectorApplication, CollectorApplicationSchema } from '../collector-applications/schemas/collector-application.schema';
 import { Dropoff, DropoffSchema } from '../dropoffs/schemas/dropoff.schema';
 import { CollectorInteraction, CollectorInteractionSchema } from '../dropoffs/schemas/collector-interaction.schema';
+import { SupportTicket, SupportTicketSchema } from '../support-tickets/schemas/support-ticket.schema';
 import { CollectorApplicationsModule } from '../collector-applications/collector-applications.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -20,6 +21,7 @@ import { SupportTicketsModule } from '../support-tickets/support-tickets.module'
       { name: CollectorApplication.name, schema: CollectorApplicationSchema },
       { name: Dropoff.name, schema: DropoffSchema },
       { name: CollectorInteraction.name, schema: CollectorInteractionSchema },
+      { name: SupportTicket.name, schema: SupportTicketSchema },
     ]),
     CollectorApplicationsModule,
     UsersModule,
