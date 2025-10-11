@@ -2566,7 +2566,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
                 currentUrl={formData.mediaUrl}
                 onUploadComplete={(url) => {
                   console.log('🔄 Media upload complete callback:', url);
-                  setFormData({ ...formData, mediaUrl: url });
+                  setFormData(prev => ({ ...prev, mediaUrl: url }));
                 }}
                 onUploadingChange={setUploadingMedia}
                 disabled={loading}
@@ -2582,7 +2582,11 @@ function TrainingContentModal({ content, onClose, onSave }: {
                 currentUrl={formData.thumbnailUrl}
                 onUploadComplete={(url) => {
                   console.log('🔄 Thumbnail upload complete callback:', url);
-                  setFormData({ ...formData, thumbnailUrl: url });
+                  setFormData(prev => {
+                    const updated = { ...prev, thumbnailUrl: url };
+                    console.log('✅ Updated formData with thumbnail:', updated);
+                    return updated;
+                  });
                 }}
                 onUploadingChange={setUploadingThumbnail}
                 disabled={loading}
