@@ -50,6 +50,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
       body: trainingContentAsync.when(
         data: (allContent) {
           debugPrint('🔍 Filtering ${allContent.length} items with category: $_selectedCategory');
+          debugPrint('   User mode - Household: $isHousehold, Collector: $isCollector, Both: $hasBothModes');
           
           // Filter content based on user mode
           List<TrainingContent> filteredContent = allContent.where((content) {
@@ -64,18 +65,34 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                 : categorySnakeCase;
             
             bool matchesCategory = _selectedCategory == 'all' || cleanCategory == _selectedCategory;
-            
-            debugPrint('  Content: ${content.title}, Category: $categoryString -> $categorySnakeCase, Selected: $_selectedCategory, Matches: $matchesCategory');
 
-            // Mode filter
+            // Tag-based mode filter (more precise than category-based)
             bool matchesMode = false;
-            if (hasBothModes) {
-              matchesMode = true;
-            } else if (isHousehold) {
-              matchesMode = content.isRelevantForHousehold();
-            } else if (isCollector) {
-              matchesMode = content.isRelevantForCollector();
+            
+            // If content has tags, use tag-based filtering
+            if (content.tags.isNotEmpty) {
+              if (hasBothModes) {
+                // User with both modes sees everything
+                matchesMode = true;
+              } else if (isHousehold) {
+                // Household users see content tagged with 'household'
+                matchesMode = content.tags.contains('household');
+              } else if (isCollector) {
+                // Collector users see content tagged with 'collector'
+                matchesMode = content.tags.contains('collector');
+              }
+            } else {
+              // Fallback to category-based filtering for content without tags
+              if (hasBothModes) {
+                matchesMode = true;
+              } else if (isHousehold) {
+                matchesMode = content.isRelevantForHousehold();
+              } else if (isCollector) {
+                matchesMode = content.isRelevantForCollector();
+              }
             }
+            
+            debugPrint('  Content: ${content.title}, Tags: ${content.tags}, Category: $cleanCategory, Matches: $matchesCategory && $matchesMode');
 
             return matchesCategory && matchesMode;
           }).toList();

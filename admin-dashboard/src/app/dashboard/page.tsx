@@ -2427,6 +2427,12 @@ function TrainingContentModal({ content, onClose, onSave }: {
   const [error, setError] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const availableTags = [
+    { value: 'household', label: 'Household Users', icon: '🏠', color: 'bg-blue-100 text-blue-700' },
+    { value: 'collector', label: 'Collectors', icon: '🚛', color: 'bg-green-100 text-green-700' },
+  ];
 
   const contentTypes = [
     { value: 'video', label: 'Video', icon: '🎥' },
@@ -2608,6 +2614,54 @@ function TrainingContentModal({ content, onClose, onSave }: {
               </div>
             )}
 
+            {/* Tags Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Audience (Select who can see this content)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag) => {
+                  const isSelected = formData.tags.includes(tag.value);
+                  return (
+                    <button
+                      key={tag.value}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          tags: isSelected
+                            ? prev.tags.filter(t => t !== tag.value)
+                            : [...prev.tags, tag.value]
+                        }));
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        isSelected
+                          ? tag.color + ' border-2 border-current'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      {tag.icon} {tag.label}
+                      {isSelected && (
+                        <span className="ml-1">✓</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {formData.tags.length === 0 && (
+                <p className="text-xs text-orange-600 mt-2">
+                  ⚠️ Select at least one audience to make this content visible
+                </p>
+              )}
+              {formData.tags.length > 0 && (
+                <p className="text-xs text-green-600 mt-2">
+                  ✓ This content will be visible to: {formData.tags.map(t => 
+                    availableTags.find(at => at.value === t)?.label
+                  ).join(', ')}
+                </p>
+              )}
+            </div>
+
             <div className="flex justify-end space-x-3 pt-6">
               <button
                 type="button"
@@ -2625,6 +2679,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
                     uploadingThumbnail || 
                     !formData.title || 
                     !formData.description ||
+                    formData.tags.length === 0 ||
                     (formData.type !== 'story' && !formData.mediaUrl) ||
                     (formData.type === 'video' && !formData.thumbnailUrl);
                   
@@ -2634,6 +2689,8 @@ function TrainingContentModal({ content, onClose, onSave }: {
                     uploadingThumbnail,
                     hasTitle: !!formData.title,
                     hasDescription: !!formData.description,
+                    hasTags: formData.tags.length > 0,
+                    tags: formData.tags,
                     type: formData.type,
                     hasMediaUrl: !!formData.mediaUrl,
                     hasThumbnailUrl: !!formData.thumbnailUrl,
