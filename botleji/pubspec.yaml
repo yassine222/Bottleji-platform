@@ -60,8 +60,6 @@ dependencies:
   # Image & Media
   image_picker: ^1.1.2
   image: ^4.1.7
-  video_player: ^2.9.2
-  chewie: ^1.8.5
   
   # Storage & Preferences
   shared_preferences: ^2.3.2
