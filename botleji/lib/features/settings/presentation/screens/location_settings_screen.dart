@@ -22,8 +22,6 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
   }
 
   Future<void> _checkLocationStatus() async {
-    setState(() => _isLoading = true);
-    
     try {
       // Check if location services are enabled
       _isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -31,23 +29,33 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
       // Check location permission
       _locationPermission = await Geolocator.checkPermission();
       
-      // Get current position if we have permission
+      // Update UI immediately after checking permission/service status
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      
+      // Get current position in background if we have permission
       if (_locationPermission == LocationPermission.always || 
           _locationPermission == LocationPermission.whileInUse) {
         try {
-          _currentPosition = await Geolocator.getCurrentPosition(
+          final position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 5),
+            timeLimit: const Duration(seconds: 10),
           );
+          
+          if (mounted) {
+            setState(() => _currentPosition = position);
+          }
         } catch (e) {
           debugPrint('Error getting current position: $e');
         }
       }
     } catch (e) {
       debugPrint('Error checking location status: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-    
-    setState(() => _isLoading = false);
   }
 
   Future<void> _requestLocationPermission() async {

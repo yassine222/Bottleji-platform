@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme_screen.dart';
 import 'location_settings_screen.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -46,7 +47,10 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Notifications',
             subtitle: 'Manage notification preferences',
             onTap: () {
-              _showComingSoonDialog(context, 'Notification Settings');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationSettingsScreen()),
+              );
             },
           ),
           const SizedBox(height: 12),

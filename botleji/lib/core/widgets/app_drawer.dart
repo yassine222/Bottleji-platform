@@ -412,8 +412,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 ),
                                 const SizedBox(height: 12),
                                 // Roles/Status Badges in a row
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 8,
                                   children: [
                                     if (user.roles.contains('household'))
                                       Container(
@@ -446,8 +448,6 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                           ],
                                         ),
                                       ),
-                                    if (user.roles.contains('household') && user.roles.contains('collector'))
-                                      const SizedBox(width: 8),
                                     if (user.roles.contains('collector'))
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -474,6 +474,63 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                                 color: Colors.white,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    // Subscription Badge
+                                    if (user.roles.contains('collector') && user.collectorSubscriptionType != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          gradient: user.collectorSubscriptionType?.toLowerCase() == 'pro'
+                                              ? const LinearGradient(
+                                                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : const LinearGradient(
+                                                  colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: user.collectorSubscriptionType?.toLowerCase() == 'pro'
+                                                ? const Color(0xFFFFD700)
+                                                : Colors.blue.shade300,
+                                            width: 1,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (user.collectorSubscriptionType?.toLowerCase() == 'pro'
+                                                      ? const Color(0xFFFFD700)
+                                                      : Colors.blue)
+                                                  .withOpacity(0.3),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              user.collectorSubscriptionType?.toLowerCase() == 'pro'
+                                                  ? Icons.workspace_premium_rounded
+                                                  : Icons.star_rounded,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              user.collectorSubscriptionType?.toUpperCase() ?? 'BASIC',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.5,
                                               ),
                                             ),
                                           ],

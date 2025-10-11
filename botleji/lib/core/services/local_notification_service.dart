@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalNotificationService {
   static final LocalNotificationService _instance = LocalNotificationService._internal();
@@ -260,6 +261,20 @@ class LocalNotificationService {
   }) async {
     print('🔔 LocalNotificationService: Showing notification - Title: $title, Body: $body, ID: $id');
     
+    // Get notification preferences from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final generalNotifications = prefs.getBool('general_notifications') ?? true;
+    final soundEnabled = prefs.getBool('notification_sound') ?? true;
+    final vibrationEnabled = prefs.getBool('notification_vibration') ?? true;
+    
+    print('🔔 LocalNotificationService: Notification preferences - General: $generalNotifications, Sound: $soundEnabled, Vibration: $vibrationEnabled');
+    
+    // If general notifications are disabled, don't show anything
+    if (!generalNotifications) {
+      print('🔔 LocalNotificationService: General notifications disabled, skipping notification');
+      return;
+    }
+    
     // For iOS, use the notification plugin's permission check
     if (Platform.isIOS) {
       print('🔔 LocalNotificationService: iOS detected, checking permission via notification plugin');
@@ -271,7 +286,7 @@ class LocalNotificationService {
           final granted = await iosPlugin.requestPermissions(
             alert: true,
             badge: true,
-            sound: true,
+            sound: soundEnabled,
           );
           print('🔔 LocalNotificationService: iOS plugin permission check: $granted');
           
@@ -307,24 +322,27 @@ class LocalNotificationService {
       }
     }
     
-    // Create notification details with more specific iOS settings
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    // Create notification details with user preferences
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'default_channel',
       'Default Channel',
       channelDescription: 'Default notification channel',
       importance: Importance.high,
       priority: Priority.high,
+      playSound: soundEnabled,
+      enableVibration: vibrationEnabled,
+      sound: soundEnabled ? const RawResourceAndroidNotificationSound('notification') : null,
     );
     
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+    final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       presentAlert: true,  // Show alert/banner
       presentBadge: true,  // Show badge
-      presentSound: true,  // Play sound
-      sound: 'default',    // Use default sound
+      presentSound: soundEnabled,  // Play sound based on user preference
+      sound: soundEnabled ? 'default' : null,    // Use default sound if enabled
       badgeNumber: 1,      // Set badge number
     );
     
-    const NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
