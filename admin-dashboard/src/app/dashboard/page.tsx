@@ -2210,23 +2210,21 @@ function TrainingContent() {
                   {/* Media Display */}
                   {content.type === 'video' && content.mediaUrl && (
                     <div className="mt-4">
-                      <div className="relative w-full max-w-md">
-                        {content.thumbnailUrl ? (
-                          <img
-                            src={content.thumbnailUrl}
-                            alt={content.title}
-                            className="w-full h-48 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="bg-gray-200 h-48 rounded-lg flex items-center justify-center">
-                            <div className="text-center">
-                              <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                              </svg>
-                              <p className="text-gray-500">Video Content</p>
-                            </div>
-                          </div>
-                        )}
+                      <div className="relative w-full max-w-2xl">
+                        <video
+                          controls
+                          poster={content.thumbnailUrl || undefined}
+                          className="w-full rounded-lg shadow-lg"
+                          preload="metadata"
+                          crossOrigin="anonymous"
+                        >
+                          <source src={content.mediaUrl} type="video/mp4" />
+                          <source src={content.mediaUrl} type="video/webm" />
+                          Your browser does not support the video tag.
+                        </video>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Duration: {content.duration ? `${content.duration}s` : 'N/A'}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -2236,7 +2234,8 @@ function TrainingContent() {
                       <img
                         src={content.mediaUrl}
                         alt={content.title}
-                        className="w-full max-w-md h-48 object-cover rounded-lg"
+                        className="w-full max-w-md rounded-lg shadow-lg"
+                        crossOrigin="anonymous"
                       />
                     </div>
                   )}

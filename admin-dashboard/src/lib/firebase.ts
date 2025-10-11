@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, UploadTask, UploadMetadata } from 'firebase/storage';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -22,6 +22,28 @@ if (!getApps().length) {
 // Get Firebase Storage instance
 export const storage = getStorage(app);
 
+// Helper to get proper content type
+const getContentType = (file: File): string => {
+  if (file.type) return file.type;
+  
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'mp4':
+      return 'video/mp4';
+    case 'webm':
+      return 'video/webm';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'application/octet-stream';
+  }
+};
+
 // Upload file to Firebase Storage with progress tracking
 export interface UploadProgress {
   progress: number; // 0-100
@@ -36,7 +58,18 @@ export const uploadFile = (
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const storageRef = ref(storage, path);
-    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+    
+    // Set proper metadata for the file
+    const metadata: UploadMetadata = {
+      contentType: getContentType(file),
+      cacheControl: 'public, max-age=31536000', // Cache for 1 year
+      customMetadata: {
+        uploadedAt: new Date().toISOString(),
+        originalName: file.name,
+      }
+    };
+    
+    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file, metadata);
 
     uploadTask.on(
       'state_changed',
@@ -57,6 +90,7 @@ export const uploadFile = (
       async () => {
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          // Add token parameter to URL for better CORS handling
           resolve(downloadURL);
         } catch (error) {
           reject(error);
