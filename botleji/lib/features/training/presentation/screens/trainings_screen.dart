@@ -404,13 +404,21 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
   Widget _buildMediaWidget(TrainingContent content) {
     switch (content.type) {
       case TrainingType.video:
+        debugPrint('🎬 Video content: ${content.title}');
+        debugPrint('   thumbnailUrl: ${content.thumbnailUrl}');
+        debugPrint('   Has thumbnail: ${content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty}');
+        
         if (content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty) {
           return Image.network(
             content.thumbnailUrl!,
             fit: BoxFit.cover,
             width: double.infinity,
             loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
+              if (loadingProgress == null) {
+                debugPrint('✅ Thumbnail loaded successfully');
+                return child;
+              }
+              debugPrint('⏳ Loading thumbnail... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
               return Container(
                 color: Colors.grey.shade300,
                 child: const Center(
@@ -420,9 +428,13 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                 ),
               );
             },
-            errorBuilder: (context, error, stackTrace) => _buildDefaultVideoPlaceholder(),
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('❌ Thumbnail load error: $error');
+              return _buildDefaultVideoPlaceholder();
+            },
           );
         }
+        debugPrint('⚠️ No thumbnail URL, using placeholder');
         return _buildDefaultVideoPlaceholder();
         
       case TrainingType.image:
