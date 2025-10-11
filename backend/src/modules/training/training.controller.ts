@@ -72,6 +72,11 @@ export class TrainingController {
     return this.trainingService.findOne(id);
   }
 
+  @Post(':id/view')
+  async incrementView(@Param('id') id: string) {
+    return this.trainingService.incrementViewCount(id);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin' as any, 'admin' as any, 'moderator' as any)

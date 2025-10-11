@@ -59,6 +59,9 @@ export class TrainingContent {
 
   @Prop({ required: true })
   createdBy: string; // User ID who created this content
+
+  @Prop({ default: 0 })
+  viewCount: number; // Number of views
 }
 
 export const TrainingContentSchema = SchemaFactory.createForClass(TrainingContent);

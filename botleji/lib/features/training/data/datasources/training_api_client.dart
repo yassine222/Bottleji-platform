@@ -85,5 +85,15 @@ class TrainingApiClient {
       rethrow;
     }
   }
+
+  Future<void> incrementViewCount(String id) async {
+    try {
+      await _dio.post('/training/$id/view');
+      debugPrint('👁️ View count incremented for content: $id');
+    } catch (e) {
+      debugPrint('❌ Error incrementing view count: $e');
+      // Don't rethrow - view counting shouldn't break the user experience
+    }
+  }
 }
 

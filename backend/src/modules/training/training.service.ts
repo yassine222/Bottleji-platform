@@ -85,6 +85,23 @@ export class TrainingService {
     }
   }
 
+  async incrementViewCount(id: string): Promise<TrainingContent> {
+    const trainingContent = await this.trainingContentModel
+      .findByIdAndUpdate(
+        id,
+        { $inc: { viewCount: 1 } },
+        { new: true }
+      )
+      .exec();
+    
+    if (!trainingContent) {
+      throw new NotFoundException('Training content not found');
+    }
+    
+    console.log(`👁️ View count incremented for "${trainingContent.title}": ${trainingContent.viewCount}`);
+    return trainingContent;
+  }
+
   async getStats(): Promise<{
     totalContent: number;
     videoCount: number;

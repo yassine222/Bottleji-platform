@@ -537,6 +537,9 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
   }
 
   void _handleContentTap(BuildContext context, TrainingContent content) {
+    // Track view count
+    ref.read(trainingApiClientProvider).incrementViewCount(content.id);
+    
     switch (content.type) {
       case TrainingType.video:
         if (content.mediaUrl != null && content.mediaUrl!.isNotEmpty) {
