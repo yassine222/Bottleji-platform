@@ -2221,7 +2221,7 @@ function TrainingContent() {
           <p className="text-gray-400 text-sm mt-2">Create your first content to get started!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
           {filteredContent.map((content) => (
             <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
               {/* Card Header */}
