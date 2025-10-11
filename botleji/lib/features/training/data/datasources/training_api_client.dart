@@ -29,7 +29,12 @@ class TrainingApiClient {
       
       final data = response.data;
       final contentList = (data['content'] as List<dynamic>?)
-          ?.map((json) => TrainingContent.fromJson(json as Map<String, dynamic>))
+          ?.map((json) {
+            debugPrint('📄 Parsing content: ${json['title']}');
+            debugPrint('   mediaUrl: ${json['mediaUrl']}');
+            debugPrint('   thumbnailUrl: ${json['thumbnailUrl']}');
+            return TrainingContent.fromJson(json as Map<String, dynamic>);
+          })
           .toList() ?? [];
 
       debugPrint('✅ Loaded ${contentList.length} training items');
