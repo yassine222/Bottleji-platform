@@ -2448,6 +2448,10 @@ function TrainingContentModal({ content, onClose, onSave }: {
     setError(null);
 
     try {
+      console.log('📤 Submitting training content:', formData);
+      console.log('   mediaUrl:', formData.mediaUrl);
+      console.log('   thumbnailUrl:', formData.thumbnailUrl);
+      
       if (content) {
         await trainingAPI.updateContent(content._id, formData);
       } else {
