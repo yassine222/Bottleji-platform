@@ -39,17 +39,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         throw Exception('Video URL is empty');
       }
       
+      // Check if URL is a data URI (base64) - not supported for video
+      if (widget.videoUrl.startsWith('data:')) {
+        throw Exception('Base64/Data URIs are not supported for video playback. Please upload a proper video file.');
+      }
+      
       Uri videoUri;
       try {
         videoUri = Uri.parse(widget.videoUrl);
         if (!videoUri.hasScheme || videoUri.host.isEmpty) {
-          throw Exception('Invalid video URL format');
+          throw Exception('Invalid video URL format - missing scheme or host');
+        }
+        
+        // Check for valid HTTP/HTTPS scheme
+        if (videoUri.scheme != 'http' && videoUri.scheme != 'https') {
+          throw Exception('Video URL must use HTTP or HTTPS protocol');
         }
       } catch (e) {
         throw Exception('Invalid video URL: $e');
       }
       
       debugPrint('✅ Parsed video URI: $videoUri');
+      debugPrint('   Scheme: ${videoUri.scheme}');
+      debugPrint('   Host: ${videoUri.host}');
+      debugPrint('   Path: ${videoUri.path}');
       
       _videoPlayerController = VideoPlayerController.networkUrl(videoUri);
 
