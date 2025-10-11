@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/models/training_content.dart';
 
 class TrainingDetailScreen extends StatelessWidget {
@@ -27,21 +26,24 @@ class TrainingDetailScreen extends StatelessWidget {
             if (content.type == TrainingType.image && content.mediaUrl != null)
               Hero(
                 tag: 'training_${content.id}',
-                child: CachedNetworkImage(
-                  imageUrl: content.mediaUrl!,
+                child: Image.network(
+                  content.mediaUrl!,
                   width: double.infinity,
                   height: 300,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 300,
-                    color: Colors.grey.shade300,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF00695C),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 300,
+                      color: Colors.grey.shade300,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF00695C),
+                        ),
                       ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 300,
                     color: Colors.grey.shade300,
                     child: const Center(

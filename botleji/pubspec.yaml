@@ -60,7 +60,6 @@ dependencies:
   # Image & Media
   image_picker: ^1.1.2
   image: ^4.1.7
-  cached_network_image: ^3.4.1
   video_player: ^2.9.2
   chewie: ^1.8.5
   

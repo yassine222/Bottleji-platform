@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/providers/user_mode_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../providers/training_provider.dart';
@@ -371,38 +370,44 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     switch (content.type) {
       case TrainingType.video:
         if (content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty) {
-          return CachedNetworkImage(
-            imageUrl: content.thumbnailUrl!,
+          return Image.network(
+            content.thumbnailUrl!,
             fit: BoxFit.cover,
             width: double.infinity,
-            placeholder: (context, url) => Container(
-              color: Colors.grey.shade300,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF00695C),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF00695C),
+                  ),
                 ),
-              ),
-            ),
-            errorWidget: (context, url, error) => _buildDefaultVideoPlaceholder(),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => _buildDefaultVideoPlaceholder(),
           );
         }
         return _buildDefaultVideoPlaceholder();
         
       case TrainingType.image:
         if (content.mediaUrl != null && content.mediaUrl!.isNotEmpty) {
-          return CachedNetworkImage(
-            imageUrl: content.mediaUrl!,
+          return Image.network(
+            content.mediaUrl!,
             fit: BoxFit.cover,
             width: double.infinity,
-            placeholder: (context, url) => Container(
-              color: Colors.grey.shade300,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF00695C),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF00695C),
+                  ),
                 ),
-              ),
-            ),
-            errorWidget: (context, url, error) => _buildDefaultImagePlaceholder(),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => _buildDefaultImagePlaceholder(),
           );
         }
         return _buildDefaultImagePlaceholder();
