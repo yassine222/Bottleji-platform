@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/user_mode_provider.dart';
-import '../../../../core/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/training_provider.dart';
 import '../../data/models/training_content.dart';
 import 'video_player_screen.dart';
