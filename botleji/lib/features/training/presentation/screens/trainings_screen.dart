@@ -49,11 +49,15 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
       ),
       body: trainingContentAsync.when(
         data: (allContent) {
+          debugPrint('🔍 Filtering ${allContent.length} items with category: $_selectedCategory');
+          
           // Filter content based on user mode
           List<TrainingContent> filteredContent = allContent.where((content) {
             // Category filter
-            bool matchesCategory = _selectedCategory == 'all' ||
-                content.category.toString().split('.').last == _selectedCategory;
+            final categoryString = content.category.toString().split('.').last;
+            bool matchesCategory = _selectedCategory == 'all' || categoryString == _selectedCategory;
+            
+            debugPrint('  Content: ${content.title}, Category: $categoryString, Selected: $_selectedCategory, Matches: $matchesCategory');
 
             // Mode filter
             bool matchesMode = false;
@@ -67,6 +71,8 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
 
             return matchesCategory && matchesMode;
           }).toList();
+          
+          debugPrint('✅ Filtered to ${filteredContent.length} items');
 
           return Column(
             children: [
