@@ -172,9 +172,10 @@ export class DropoffsService {
   }
 
   private startCleanupTask() {
-    console.log('🚀 Starting cleanup task - will run every 10 minutes');
+    console.log('🚀 Starting cleanup task - will run every 1 minute (TESTING MODE)');
     
-    // Run cleanup every 10 minutes (increased from 5 to reduce race conditions)
+    // TESTING: Run cleanup every 1 minute (was 10 minutes)
+    // TODO: Change back to 10 minutes for production
     setInterval(async () => {
       try {
         console.log('⏰ Cleanup task triggered at:', new Date().toISOString());
@@ -187,7 +188,7 @@ export class DropoffsService {
       } catch (error) {
         console.error('❌ Error during cleanup task:', error);
       }
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 1 * 60 * 1000); // TESTING: 1 minute (was 10 * 60 * 1000)
     
     // Also run cleanup immediately on startup
     setTimeout(async () => {
@@ -679,21 +680,14 @@ export class DropoffsService {
       console.log(`⏰ Current time: ${now}`);
 
       // Calculate dynamic timeout based on route duration
-      // For now, we'll use a default calculation since route duration isn't stored
-      // In the future, this should be calculated when the drop is accepted
-      const routeDurationMinutes = 20; // Default 20 minutes, should be calculated from route
+      // FOR TESTING: Using 1 minute timeout
+      // TODO: Change back to dynamic calculation for production
+      const routeDurationMinutes = 1; // TESTING: 1 minute (was 20 minutes)
       
       // Fixed buffer based on route duration
-      let bufferMinutes;
-      if (routeDurationMinutes <= 5) {
-        bufferMinutes = 10; // Short routes: +10 minutes
-      } else if (routeDurationMinutes <= 15) {
-        bufferMinutes = 15; // Medium routes: +15 minutes
-      } else {
-        bufferMinutes = 20; // Long routes: +20 minutes
-      }
+      let bufferMinutes = 0; // TESTING: No buffer (was 10-20 minutes)
       
-      const totalTimeoutMinutes = routeDurationMinutes + bufferMinutes;
+      const totalTimeoutMinutes = routeDurationMinutes + bufferMinutes; // TESTING: 1 minute total
       
       const timeoutThreshold = new Date(interaction.interactionTime.getTime() + (totalTimeoutMinutes * 60 * 1000));
       
