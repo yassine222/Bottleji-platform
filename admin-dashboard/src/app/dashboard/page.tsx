@@ -1383,6 +1383,11 @@ function ApplicationsContent() {
   const [selectedApplication, setSelectedApplication] = useState<CollectorApplication | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedRejectionReason, setSelectedRejectionReason] = useState('');
+  const [inspectingImage, setInspectingImage] = useState<{ url: string; title: string } | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // Predefined rejection reasons
   const REJECTION_REASONS = [
@@ -1422,6 +1427,26 @@ function ApplicationsContent() {
     loadApplications();
     loadStats();
   }, [currentPage, selectedStatus]);
+
+  // Keyboard shortcuts for image inspector
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!inspectingImage) return;
+      
+      if (e.key === 'Escape') {
+        handleCloseInspector();
+      } else if (e.key === '+' || e.key === '=') {
+        handleZoomIn();
+      } else if (e.key === '-') {
+        handleZoomOut();
+      } else if (e.key === '0') {
+        handleResetZoom();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inspectingImage, imageZoom]);
 
   const loadApplications = async () => {
     try {
@@ -1501,6 +1526,60 @@ function ApplicationsContent() {
     }
   };
 
+  const handleInspectImage = (url: string, title: string) => {
+    setInspectingImage({ url, title });
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+  };
+
+  const handleCloseInspector = () => {
+    setInspectingImage(null);
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+  };
+
+  const handleZoomIn = () => {
+    setImageZoom(prev => Math.min(prev + 0.5, 5));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => Math.max(prev - 0.5, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (imageZoom > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - imagePan.x, y: e.clientY - imagePan.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && imageZoom > 1) {
+      setImagePan({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      handleZoomIn();
+    } else {
+      handleZoomOut();
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusClasses = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -1533,6 +1612,90 @@ function ApplicationsContent() {
 
   return (
     <div className="space-y-6">
+      {/* Image Inspector Modal */}
+      {inspectingImage && (
+        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center">
+          {/* Controls Bar */}
+          <div className="absolute top-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-4 flex items-center justify-between border-b border-gray-700">
+            <div className="flex items-center gap-4">
+              <h3 className="text-white font-semibold text-lg">{inspectingImage.title}</h3>
+              <span className="text-gray-400 text-sm">Zoom: {Math.round(imageZoom * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Zoom Controls */}
+              <button
+                onClick={handleZoomOut}
+                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                title="Zoom Out"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                </svg>
+              </button>
+              <button
+                onClick={handleResetZoom}
+                className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
+                title="Reset Zoom"
+              >
+                Reset
+              </button>
+              <button
+                onClick={handleZoomIn}
+                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                title="Zoom In"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                </svg>
+              </button>
+              <div className="w-px h-8 bg-gray-600"></div>
+              <button
+                onClick={handleCloseInspector}
+                className="p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors"
+                title="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Image Container */}
+          <div 
+            className="w-full h-full flex items-center justify-center overflow-hidden cursor-move"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
+          >
+            <img
+              src={inspectingImage.url}
+              alt={inspectingImage.title}
+              className="max-w-none select-none"
+              style={{
+                transform: `scale(${imageZoom}) translate(${imagePan.x / imageZoom}px, ${imagePan.y / imageZoom}px)`,
+                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                cursor: imageZoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+              }}
+              draggable={false}
+            />
+          </div>
+
+          {/* Instructions */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm px-6 py-3 rounded-full text-white text-sm">
+            <span className="flex items-center gap-4">
+              <span>🖱️ Scroll to zoom</span>
+              <span className="text-gray-400">•</span>
+              <span>🖐️ Drag to pan</span>
+              <span className="text-gray-400">•</span>
+              <span>ESC to close</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
         <div className="flex items-center gap-3 mb-2">
@@ -1970,18 +2133,30 @@ function ApplicationsContent() {
                         </svg>
                         Passport Main Page
                       </h5>
-                      <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
+                      <div 
+                        className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner cursor-pointer hover:border-purple-400 transition-colors group/img"
+                        onClick={() => selectedApplication.passportMainPagePhoto && handleInspectImage(selectedApplication.passportMainPagePhoto, 'Passport Main Page')}
+                      >
                         {selectedApplication.passportMainPagePhoto ? (
-                          <img
-                            src={selectedApplication.passportMainPagePhoto}
-                            alt="Passport Main Page"
-                            className="max-w-full max-h-full object-contain"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
+                          <>
+                            <img
+                              src={selectedApplication.passportMainPagePhoto}
+                              alt="Passport Main Page"
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-all flex items-center justify-center">
+                              <div className="bg-purple-600 rounded-full p-3 opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </>
                         ) : null}
                         <div className={`text-center ${selectedApplication.passportMainPagePhoto ? 'hidden' : ''}`}>
                           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2002,18 +2177,30 @@ function ApplicationsContent() {
                           </svg>
                           ID Card Front
                         </h5>
-                        <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
+                        <div 
+                          className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner cursor-pointer hover:border-purple-400 transition-colors group/img relative"
+                          onClick={() => selectedApplication.idCardPhoto && handleInspectImage(selectedApplication.idCardPhoto, 'ID Card Front')}
+                        >
                           {selectedApplication.idCardPhoto ? (
-                            <img
-                              src={selectedApplication.idCardPhoto}
-                              alt="ID Card Front"
-                              className="max-w-full max-h-full object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
+                            <>
+                              <img
+                                src={selectedApplication.idCardPhoto}
+                                alt="ID Card Front"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-all flex items-center justify-center">
+                                <div className="bg-purple-600 rounded-full p-3 opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg">
+                                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </>
                           ) : null}
                           <div className={`text-center ${selectedApplication.idCardPhoto ? 'hidden' : ''}`}>
                             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2032,18 +2219,30 @@ function ApplicationsContent() {
                           </svg>
                           ID Card Back
                         </h5>
-                        <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
+                        <div 
+                          className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner cursor-pointer hover:border-purple-400 transition-colors group/img relative"
+                          onClick={() => selectedApplication.idCardBackPhoto && handleInspectImage(selectedApplication.idCardBackPhoto, 'ID Card Back')}
+                        >
                           {selectedApplication.idCardBackPhoto ? (
-                            <img
-                              src={selectedApplication.idCardBackPhoto}
-                              alt="ID Card Back"
-                              className="max-w-full max-h-full object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
+                            <>
+                              <img
+                                src={selectedApplication.idCardBackPhoto}
+                                alt="ID Card Back"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-all flex items-center justify-center">
+                                <div className="bg-purple-600 rounded-full p-3 opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg">
+                                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </>
                           ) : null}
                           <div className={`text-center ${selectedApplication.idCardBackPhoto ? 'hidden' : ''}`}>
                             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2064,18 +2263,30 @@ function ApplicationsContent() {
                       </svg>
                       Selfie with ID
                     </h5>
-                    <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
+                    <div 
+                      className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner cursor-pointer hover:border-purple-400 transition-colors group/img relative"
+                      onClick={() => selectedApplication.selfieWithIdPhoto && handleInspectImage(selectedApplication.selfieWithIdPhoto, 'Selfie with ID')}
+                    >
                       {selectedApplication.selfieWithIdPhoto ? (
-                        <img
-                          src={selectedApplication.selfieWithIdPhoto}
-                          alt="Selfie with ID"
-                          className="max-w-full max-h-full object-contain"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
+                        <>
+                          <img
+                            src={selectedApplication.selfieWithIdPhoto}
+                            alt="Selfie with ID"
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-all flex items-center justify-center">
+                            <div className="bg-purple-600 rounded-full p-3 opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </>
                       ) : null}
                       <div className={`text-center ${selectedApplication.selfieWithIdPhoto ? 'hidden' : ''}`}>
                         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
