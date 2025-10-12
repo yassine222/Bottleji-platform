@@ -13,6 +13,13 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   UserGroupIcon,
+  TicketIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
@@ -2630,7 +2637,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
                         setFormData(prev => ({
                           ...prev,
                           tags: isSelected
-                            ? prev.tags.filter(t => t !== tag.value)
+                            ? prev.tags.filter((t: string) => t !== tag.value)
                             : [...prev.tags, tag.value]
                         }));
                       }}
@@ -2655,7 +2662,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
               )}
               {formData.tags.length > 0 && (
                 <p className="text-xs text-green-600 mt-2">
-                  ✓ This content will be visible to: {formData.tags.map(t => 
+                  ✓ This content will be visible to: {formData.tags.map((t: string) => 
                     availableTags.find(at => at.value === t)?.label
                   ).join(', ')}
                 </p>
