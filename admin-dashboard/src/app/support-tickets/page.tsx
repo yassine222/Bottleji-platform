@@ -400,6 +400,12 @@ export default function SupportTicketsPage() {
     byCategory: {},
   };
 
+  // Calculate urgent/high priority tickets
+  const urgentTickets = tickets.filter(t => 
+    (t.priority === 'urgent' || t.priority === 'high') && 
+    (t.status === 'open' || t.status === 'in_progress')
+  ).length;
+
   const statCards = [
     {
       name: 'Total Tickets',
@@ -433,6 +439,14 @@ export default function SupportTicketsPage() {
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
     },
+    {
+      name: 'High Priority',
+      value: urgentTickets,
+      icon: ExclamationCircleIcon,
+      color: 'from-red-500 to-red-600',
+      bgColor: 'bg-red-50',
+      iconColor: 'text-red-600',
+    },
   ];
 
   return (
@@ -457,7 +471,7 @@ export default function SupportTicketsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {statCards.map((stat) => (
             <div
               key={stat.name}
