@@ -35,13 +35,13 @@ interface SupportTicket {
 }
 
 interface TicketStats {
-  totalTickets: number;
-  openTickets: number;
-  inProgressTickets: number;
-  resolvedTickets: number;
-  closedTickets: number;
-  urgentTickets: number;
-  responseTime: number;
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  closed: number;
+  byPriority: Record<string, number>;
+  byCategory: Record<string, number>;
 }
 
 interface TicketDetailModalProps {
@@ -391,19 +391,19 @@ export default function SupportTicketsPage() {
 
   // Calculate stats if not available from API
   const calculatedStats = stats || {
-    totalTickets: tickets.length,
-    openTickets: tickets.filter(t => t.status === 'open').length,
-    inProgressTickets: tickets.filter(t => t.status === 'in_progress').length,
-    resolvedTickets: tickets.filter(t => t.status === 'resolved').length,
-    closedTickets: tickets.filter(t => t.status === 'closed').length,
-    urgentTickets: tickets.filter(t => t.priority === 'urgent' || t.priority === 'high').length,
-    responseTime: 0,
+    total: tickets.length,
+    open: tickets.filter(t => t.status === 'open').length,
+    inProgress: tickets.filter(t => t.status === 'in_progress').length,
+    resolved: tickets.filter(t => t.status === 'resolved').length,
+    closed: tickets.filter(t => t.status === 'closed').length,
+    byPriority: {},
+    byCategory: {},
   };
 
   const statCards = [
     {
       name: 'Total Tickets',
-      value: calculatedStats.totalTickets,
+      value: calculatedStats.total,
       icon: TicketIcon,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
@@ -411,7 +411,7 @@ export default function SupportTicketsPage() {
     },
     {
       name: 'Open Tickets',
-      value: calculatedStats.openTickets,
+      value: calculatedStats.open,
       icon: ClockIcon,
       color: 'from-yellow-500 to-yellow-600',
       bgColor: 'bg-yellow-50',
@@ -419,7 +419,7 @@ export default function SupportTicketsPage() {
     },
     {
       name: 'In Progress',
-      value: calculatedStats.inProgressTickets,
+      value: calculatedStats.inProgress,
       icon: SparklesIcon,
       color: 'from-indigo-500 to-indigo-600',
       bgColor: 'bg-indigo-50',
@@ -427,7 +427,7 @@ export default function SupportTicketsPage() {
     },
     {
       name: 'Resolved',
-      value: calculatedStats.resolvedTickets,
+      value: calculatedStats.resolved,
       icon: CheckCircleIcon,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
