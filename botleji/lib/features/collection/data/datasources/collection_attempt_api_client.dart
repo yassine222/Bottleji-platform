@@ -41,7 +41,7 @@ class CollectionAttemptApiClient {
     Map<String, double>? location,
   }) async {
     try {
-      final data = {
+      final Map<String, dynamic> data = {
         'outcome': outcome,
       };
 

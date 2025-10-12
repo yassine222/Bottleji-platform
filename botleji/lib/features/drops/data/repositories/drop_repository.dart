@@ -268,9 +268,18 @@ class DropRepository {
   }
     
 
-  // Assign collector to drop
+  // Assign collector to drop (creates CollectionAttempt in new system)
   Future<Drop> assignCollector(String dropId, String collectorId) async {
     try {
+      // First, create a collection attempt using the new system
+      print('📝 Creating collection attempt for drop: $dropId, collector: $collectorId');
+      final attemptResponse = await _dio.post(
+        '/dropoffs/$dropId/attempts',
+        data: {'collectorId': collectorId},
+      );
+      print('✅ Collection attempt created: ${attemptResponse.data['_id']}');
+      
+      // Then update the drop status to accepted
       final response = await _dio.patch(
         '/dropoffs/$dropId/collector',  // Updated endpoint path
         data: {'collectorId': collectorId},
@@ -281,9 +290,36 @@ class DropRepository {
     }
   }
 
-  // Confirm collection
+  // Confirm collection (completes CollectionAttempt as 'collected')
   Future<Drop> confirmCollection(String dropId) async {
     try {
+      // First, find the active collection attempt for this drop
+      print('📝 Getting active collection attempt for drop: $dropId');
+      final attemptsResponse = await _dio.get('/dropoffs/$dropId/attempts');
+      final attempts = attemptsResponse.data as List;
+      
+      // Find the active attempt
+      final activeAttempt = attempts.firstWhere(
+        (a) => a['status'] == 'active',
+        orElse: () => null,
+      );
+      
+      if (activeAttempt != null) {
+        final attemptId = activeAttempt['_id'];
+        print('✅ Found active attempt: $attemptId');
+        
+        // Complete the attempt as 'collected'
+        await _dio.patch(
+          '/dropoffs/$dropId/attempts/$attemptId/complete',
+          data: {
+            'outcome': 'collected',
+            'notes': 'Collection completed successfully',
+          },
+        );
+        print('✅ Collection attempt marked as collected');
+      }
+      
+      // Then update the drop status
       final response = await _dio.patch('/dropoffs/$dropId/confirm-collection');
       return Drop.fromJson(response.data);
     } catch (e) {
@@ -291,9 +327,37 @@ class DropRepository {
     }
   }
 
-  // Cancel accepted drop
+  // Cancel accepted drop (completes CollectionAttempt as 'cancelled')
   Future<void> cancelAcceptedDrop(String dropId, String reason, String cancelledByCollectorId) async {
     try {
+      // First, find the active collection attempt for this drop
+      print('📝 Getting active collection attempt for drop: $dropId');
+      final attemptsResponse = await _dio.get('/dropoffs/$dropId/attempts');
+      final attempts = attemptsResponse.data as List;
+      
+      // Find the active attempt
+      final activeAttempt = attempts.firstWhere(
+        (a) => a['status'] == 'active',
+        orElse: () => null,
+      );
+      
+      if (activeAttempt != null) {
+        final attemptId = activeAttempt['_id'];
+        print('✅ Found active attempt: $attemptId');
+        
+        // Complete the attempt as 'cancelled'
+        await _dio.patch(
+          '/dropoffs/$dropId/attempts/$attemptId/complete',
+          data: {
+            'outcome': 'cancelled',
+            'reason': reason,
+            'notes': 'Collection cancelled by collector',
+          },
+        );
+        print('✅ Collection attempt marked as cancelled');
+      }
+      
+      // Then update the drop status
       await _dio.patch(
         '/dropoffs/$dropId/cancel-accepted',
         data: {
