@@ -362,6 +362,9 @@ export class AuthService {
         isProfileComplete: user.isProfileComplete,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        isAccountLocked: user.isAccountLocked,
+        accountLockedUntil: user.accountLockedUntil,
+        warningCount: user.warningCount,
       },
     };
   }
