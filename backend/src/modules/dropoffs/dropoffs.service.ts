@@ -868,6 +868,38 @@ export class DropoffsService {
       interactionTime: createInteractionDto.interactionTime || now,
     };
 
+    // For EXPIRED, CANCELLED, or COLLECTED interactions, check if ACCEPTED exists
+    // If not, create it automatically to maintain complete timeline
+    if ([InteractionType.EXPIRED, InteractionType.CANCELLED, InteractionType.COLLECTED].includes(createInteractionDto.interactionType)) {
+      const existingAccepted = await this.interactionModel.findOne({
+        dropoffId: createInteractionDto.dropoffId,
+        collectorId: createInteractionDto.collectorId,
+        interactionType: InteractionType.ACCEPTED,
+      }).exec();
+
+      if (!existingAccepted) {
+        console.log(`⚠️ Creating ${createInteractionDto.interactionType} without ACCEPTED - auto-creating ACCEPTED interaction first`);
+        
+        // Create the ACCEPTED interaction with earlier timestamp
+        const acceptedTime = new Date(now.getTime() - 60 * 1000); // 1 minute before current interaction
+        const acceptedInteraction = new this.interactionModel({
+          collectorId: createInteractionDto.collectorId,
+          dropoffId: createInteractionDto.dropoffId,
+          interactionType: InteractionType.ACCEPTED,
+          interactionTime: acceptedTime,
+          acceptedAt: acceptedTime,
+          dropoffStatus: 'accepted',
+          numberOfItems: createInteractionDto.numberOfItems,
+          bottleType: createInteractionDto.bottleType,
+          location: createInteractionDto.location,
+          notes: 'Auto-created: Accepted drop for collection (reconstructed for timeline)',
+        });
+        
+        await acceptedInteraction.save();
+        console.log(`✅ Auto-created ACCEPTED interaction for complete timeline`);
+      }
+    }
+
     // Set specific timestamp fields based on interaction type
     switch (createInteractionDto.interactionType) {
       case InteractionType.ACCEPTED:
