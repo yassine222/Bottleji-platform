@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
@@ -464,10 +465,25 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
       print('🔍 Accepting drop: ${drop.id}');
       
       final authState = ref.read(authNotifierProvider);
-      final collectorId = authState.value?.id;
+      final user = authState.value;
+      final collectorId = user?.id;
       
       if (collectorId == null) {
         throw Exception('Collector ID not found');
+      }
+      
+      // Check if account is locked
+      if (user?.isCurrentlyLocked ?? false) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Your account is temporarily locked. Please wait until ${user?.accountLockedUntil != null ? DateFormat('MMM d, h:mm a').format(user!.accountLockedUntil!) : "unlock time"}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
       }
 
       // Assign the collector to the drop
