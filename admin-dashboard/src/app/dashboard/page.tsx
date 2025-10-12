@@ -1739,31 +1739,43 @@ function ApplicationsContent() {
 
       {/* Application Details Modal */}
       {showApplicationModal && selectedApplication && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">Application Review</h3>
-                  <p className="text-gray-600">Review collector application details</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl">
+            {/* Header with Gradient */}
+            <div className="relative px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+              <button
+                onClick={() => setShowApplicationModal(false)}
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="pr-12">
+                <div className="flex items-center gap-3 mb-3">
+                  <ClipboardDocumentListIcon className="h-8 w-8 text-purple-600" />
+                  <h3 className="text-3xl font-bold text-gray-900">Application Review</h3>
                 </div>
-                <button
-                  onClick={() => setShowApplicationModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-3">
+                  {getStatusBadge(selectedApplication.status)}
+                  <span className="text-sm text-gray-600">
+                    Submitted on {new Date(selectedApplication.appliedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
               </div>
+            </div>
 
+            {/* Content */}
+            <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - User Information */}
                 <div className="space-y-6">
                   {/* User Details */}
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Applicant Information</h4>
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <UsersIcon className="h-5 w-5 text-purple-600" />
+                      Applicant Information
+                    </h4>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-700">Name:</span>
@@ -1809,8 +1821,13 @@ function ApplicationsContent() {
                   </div>
 
                   {/* ID Card Information */}
-                  <div className="bg-blue-50 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">ID Card Information</h4>
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                      ID Card Information
+                    </h4>
                     <div className="space-y-3">
                       {selectedApplication.idCardType && (
                         <div className="flex justify-between">
@@ -1853,28 +1870,31 @@ function ApplicationsContent() {
 
                   {/* Review Actions */}
                   {selectedApplication.status === 'pending' && (
-                    <div className="bg-blue-50 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Review Actions</h4>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <SparklesIcon className="h-5 w-5 text-amber-600" />
+                        Review Actions
+                      </h4>
                       
                       {/* Rejection Reason Selection */}
                       <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
                           Rejection Reason (Required for rejection)
                         </label>
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {REJECTION_REASONS.map((reason) => (
-                            <label key={reason.id} className="flex items-start space-x-3 cursor-pointer">
+                            <label key={reason.id} className="flex items-start space-x-3 cursor-pointer p-3 rounded-lg hover:bg-white/50 transition-colors">
                               <input
                                 type="radio"
                                 name="rejectionReason"
                                 value={reason.id}
                                 checked={selectedRejectionReason === reason.id}
                                 onChange={(e) => setSelectedRejectionReason(e.target.value)}
-                                className="mt-1 h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                                className="mt-1 h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
                               />
                               <div className="flex-1">
-                                <div className="text-sm font-medium text-gray-900">{reason.label}</div>
-                                <div className="text-xs text-gray-500">{reason.description}</div>
+                                <div className="text-sm font-semibold text-gray-900">{reason.label}</div>
+                                <div className="text-xs text-gray-600">{reason.description}</div>
                               </div>
                             </label>
                           ))}
@@ -1885,16 +1905,16 @@ function ApplicationsContent() {
                       <div className="flex gap-3">
                         <button
                           onClick={handleApprove}
-                          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-medium"
+                          className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all font-semibold shadow-md hover:shadow-lg"
                         >
-                          Approve Application
+                          ✅ Approve Application
                         </button>
                         <button
                           onClick={handleReject}
                           disabled={!selectedRejectionReason}
-                          className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-3 rounded-xl hover:from-red-700 hover:to-red-800 transition-all font-semibold shadow-md hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed"
                         >
-                          Reject Application
+                          ❌ Reject Application
                         </button>
                       </div>
                     </div>
@@ -1902,45 +1922,55 @@ function ApplicationsContent() {
 
                   {/* Approved Application Actions */}
                   {selectedApplication.status === 'approved' && (
-                    <div className="bg-green-50 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Application Approved</h4>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                        Application Approved
+                      </h4>
                       <div className="mb-4">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-green-700">
-                              This application has been approved. You can reverse the approval if needed.
+                        <div className="flex items-start gap-3 p-4 bg-white/50 rounded-lg">
+                          <CheckCircleIcon className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-green-900 mb-1">
+                              This application has been approved
+                            </p>
+                            <p className="text-xs text-green-700">
+                              You can reverse the approval if needed.
                             </p>
                           </div>
                         </div>
                       </div>
                       
                       {/* Reverse Approval Button */}
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleReverseApproval}
-                          className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors font-medium"
-                        >
-                          Reverse Approval
-                        </button>
-                      </div>
+                      <button
+                        onClick={handleReverseApproval}
+                        className="w-full bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all font-semibold shadow-md hover:shadow-lg"
+                      >
+                        🔄 Reverse Approval
+                      </button>
                     </div>
                   )}
                 </div>
 
                 {/* Right Column - Image Comparison */}
                 <div className="space-y-6">
-                  <h4 className="text-lg font-semibold text-gray-900">Identity Verification</h4>
+                  <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Identity Verification
+                  </h4>
                   
                   {selectedApplication.idCardType === 'Passport' ? (
                     // Passport Photos
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h5 className="text-md font-medium text-gray-900 mb-3">Passport Main Page</h5>
-                      <div className="aspect-video bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                    <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+                      <h5 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Passport Main Page
+                      </h5>
+                      <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
                         {selectedApplication.passportMainPagePhoto ? (
                           <img
                             src={selectedApplication.passportMainPagePhoto}
@@ -1965,9 +1995,14 @@ function ApplicationsContent() {
                     // National ID Photos
                     <>
                       {/* ID Card Front Photo */}
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h5 className="text-md font-medium text-gray-900 mb-3">ID Card Front</h5>
-                        <div className="aspect-video bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <h5 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                          </svg>
+                          ID Card Front
+                        </h5>
+                        <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
                           {selectedApplication.idCardPhoto ? (
                             <img
                               src={selectedApplication.idCardPhoto}
@@ -1990,9 +2025,14 @@ function ApplicationsContent() {
                       </div>
 
                       {/* ID Card Back Photo */}
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h5 className="text-md font-medium text-gray-900 mb-3">ID Card Back</h5>
-                        <div className="aspect-video bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <h5 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                          </svg>
+                          ID Card Back
+                        </h5>
+                        <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
                           {selectedApplication.idCardBackPhoto ? (
                             <img
                               src={selectedApplication.idCardBackPhoto}
@@ -2017,9 +2057,14 @@ function ApplicationsContent() {
                   )}
 
                   {/* Selfie with ID Photo */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="text-md font-medium text-gray-900 mb-3">Selfie with ID</h5>
-                    <div className="aspect-video bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                  <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+                    <h5 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Selfie with ID
+                    </h5>
+                    <div className="aspect-video bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-inner">
                       {selectedApplication.selfieWithIdPhoto ? (
                         <img
                           src={selectedApplication.selfieWithIdPhoto}
@@ -2043,15 +2088,6 @@ function ApplicationsContent() {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="mt-8 flex justify-end">
-                <button
-                  onClick={() => setShowApplicationModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>
