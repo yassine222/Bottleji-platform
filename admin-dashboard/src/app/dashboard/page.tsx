@@ -1404,91 +1404,102 @@ function UsersContent() {
                     ) : (() => {
                       const filteredActivities = getFilteredActivities();
                       return filteredActivities.length > 0 ? (
-                        <div className="space-y-3">
-                          {filteredActivities.map((activity) => (
-                            <div key={activity.id} className="flex items-start space-x-3 p-3 bg-surface rounded-lg">
-                              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
-                                {activity.type === 'drop_created' && (
+                        <div className="space-y-4">
+                          {filteredActivities.map((activity) => {
+                            // For collection history with grouped interactions, show timeline card
+                            if (activeActivityTab === 'collection-history' && activity.interactions && activity.interactions.length > 0) {
+                              return (
+                                <div key={activity.id} className={`rounded-xl border-2 p-5 shadow-sm ${
+                                  activity.interactionType === 'collected' ? 'bg-green-50 border-green-300' :
+                                  activity.interactionType === 'cancelled' ? 'bg-red-50 border-red-300' :
+                                  activity.interactionType === 'expired' ? 'bg-orange-50 border-orange-300' :
+                                  'bg-blue-50 border-blue-300'
+                                }`}>
+                                  {/* Header with final status */}
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h5 className="text-base font-bold text-gray-900">{activity.title}</h5>
+                                    <span className="text-sm text-gray-600 font-medium">{activity.numberOfBottles} bottles, {activity.numberOfCans} cans</span>
+                                  </div>
+                                  
+                                  {/* Timeline of interactions inside the card */}
+                                  <div className="space-y-3 pl-4 border-l-4 border-gray-300">
+                                    {activity.interactions.map((interaction: any, idx: number) => (
+                                      <div key={idx} className="relative pl-6">
+                                        {/* Timeline dot */}
+                                        <div className={`absolute left-0 top-1.5 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                                          interaction.type === 'accepted' ? 'bg-blue-500' :
+                                          interaction.type === 'collected' ? 'bg-green-500' :
+                                          interaction.type === 'cancelled' ? 'bg-red-500' :
+                                          interaction.type === 'expired' ? 'bg-orange-500' :
+                                          'bg-gray-500'
+                                        }`}></div>
+                                        
+                                        <div className="bg-white/80 rounded-lg p-3 shadow-sm">
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-semibold text-gray-900">
+                                              {interaction.type === 'accepted' ? '📋 Accepted' :
+                                               interaction.type === 'collected' ? '✅ Collected' :
+                                               interaction.type === 'cancelled' ? '❌ Cancelled' :
+                                               interaction.type === 'expired' ? '⏰ Expired' : interaction.type}
+                                            </span>
+                                            <span className="text-xs text-gray-600">{formatDate(interaction.time)}</span>
+                                          </div>
+                                          {interaction.reason && (
+                                            <p className="text-xs text-red-700 font-medium mt-1">Reason: {interaction.reason}</p>
+                                          )}
+                                          {interaction.notes && (
+                                            <p className="text-xs text-gray-600 mt-1">{interaction.notes}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // For drops created or simple activities, show simple timeline
+                            return (
+                              <div key={activity.id} className="flex items-start space-x-3 p-3 bg-surface rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                   </div>
-                                )}
-                                {activity.type === 'collector_accepted' && (
-                                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  </div>
-                                )}
-                                {activity.type === 'collector_collected' && (
-                                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  </div>
-                                )}
-                                {activity.type === 'collector_cancelled' && (
-                                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </div>
-                                )}
-                                {activity.type === 'collector_expired' && (
-                                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-sm font-medium text-text-primary">{activity.title}</p>
-                                  <span className="text-xs text-text-secondary">{formatDate(activity.timestamp)}</span>
                                 </div>
-                                <p className="text-xs text-text-secondary mt-1">{activity.description}</p>
-                                
-                                {/* Additional details for drops */}
-                                {activity.type === 'drop_created' && (
-                                  <div className="mt-2 text-xs text-text-secondary">
-                                    <div className="flex items-center space-x-4">
-                                      <span>Bottles: {activity.numberOfBottles}</span>
-                                      <span>Cans: {activity.numberOfCans}</span>
-                                      <span>Type: {activity.bottleType}</span>
-                                      <span className={`px-2 py-1 rounded-full text-xs ${
-                                        activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        activity.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                                        activity.status === 'collected' ? 'bg-green-100 text-green-800' :
-                                        activity.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                        'bg-gray-100 text-gray-800'
-                                      }`}>
-                                        {activity.status}
-                                      </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-text-primary">{activity.title}</p>
+                                    <span className="text-xs text-text-secondary">{formatDate(activity.timestamp)}</span>
+                                  </div>
+                                  <p className="text-xs text-text-secondary mt-1">{activity.description}</p>
+                                  
+                                  {activity.type === 'drop_created' && (
+                                    <div className="mt-2 text-xs text-text-secondary">
+                                      <div className="flex items-center space-x-4">
+                                        <span>Bottles: {activity.numberOfBottles}</span>
+                                        <span>Cans: {activity.numberOfCans}</span>
+                                        <span>Type: {activity.bottleType}</span>
+                                        <span className={`px-2 py-1 rounded-full text-xs ${
+                                          activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                          activity.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                          activity.status === 'collected' ? 'bg-green-100 text-green-800' :
+                                          activity.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                          'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {activity.status}
+                                        </span>
+                                      </div>
+                                      {activity.notes && (
+                                        <p className="mt-1">Note: {activity.notes}</p>
+                                      )}
                                     </div>
-                                    {activity.notes && (
-                                      <p className="mt-1">Note: {activity.notes}</p>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Additional details for collector interactions */}
-                                {activity.type.startsWith('collector_') && activity.cancellationReason && (
-                                  <div className="mt-2 text-xs text-red-600">
-                                    <p>Reason: {activity.cancellationReason}</p>
-                                  </div>
-                                )}
-                                
-                                {activity.notes && activity.type.startsWith('collector_') && (
-                                  <div className="mt-2 text-xs text-text-secondary">
-                                    <p>Note: {activity.notes}</p>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-8">
