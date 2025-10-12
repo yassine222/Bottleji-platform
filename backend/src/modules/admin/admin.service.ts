@@ -514,6 +514,9 @@ export class AdminService {
 
   async getUserActivities(userId: string) {
     try {
+      const { Types } = require('mongoose');
+      const userObjectId = new Types.ObjectId(userId);
+      
       // Get user's drops
       const userDrops = await this.dropoffModel.find({ userId })
         .sort({ createdAt: -1 })
@@ -534,7 +537,7 @@ export class AdminService {
         },
         {
           $match: {
-            'interactions.collectorId': userId
+            'interactions.collectorId': userObjectId
           }
         },
         {
