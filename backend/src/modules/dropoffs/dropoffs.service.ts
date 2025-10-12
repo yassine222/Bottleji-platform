@@ -729,8 +729,9 @@ export class DropoffsService {
           { new: true }
         ).exec();
 
-        // Create interaction for expiration
+        // Create interaction for expiration and add penalty
         try {
+          // Create EXPIRED interaction
           await this.createInteraction({
             collectorId: interaction.collectorId,
             dropoffId: interaction.dropoffId,
@@ -740,17 +741,26 @@ export class DropoffsService {
             notes: `Collection expired after ${totalTimeoutMinutes} minutes`,
           });
 
-          // Add penalty warning to collector
-          await this.addCollectorPenalty(interaction.collectorId, 'TIMEOUT_WARNING');
+          console.log(`✅ EXPIRED interaction created for drop ${dropoff._id}`);
           
           cleanedCount++;
           console.log(`✅ Drop ${dropoff._id} timed out after ${totalTimeoutMinutes} minutes, set back to PENDING`);
         } catch (error: any) {
           if (error.code === 11000) { // MongoDB duplicate key error
-            console.log(`⚠️ Duplicate EXPIRED interaction detected for drop ${dropoff._id}, skipping`);
+            console.log(`⚠️ Duplicate EXPIRED interaction detected for drop ${dropoff._id}, skipping penalty`);
+            continue; // Skip penalty if interaction creation failed
           } else {
             console.error(`❌ Error creating EXPIRED interaction for drop ${dropoff._id}:`, error);
+            continue; // Skip penalty if interaction creation failed
           }
+        }
+
+        // Add penalty warning to collector (separate try-catch to ensure it runs even if interaction has issues)
+        try {
+          await this.addCollectorPenalty(interaction.collectorId, 'TIMEOUT_WARNING');
+          console.log(`✅ Penalty added to collector ${interaction.collectorId}`);
+        } catch (penaltyError) {
+          console.error(`❌ Error adding penalty to collector ${interaction.collectorId}:`, penaltyError);
         }
       } else {
         console.log(`✅ Drop ${dropoff._id} is still within timeout period`);
