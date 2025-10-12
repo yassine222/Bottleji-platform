@@ -56,7 +56,15 @@ class ModeSwitchService {
                 if (context.mounted) {
                   Navigator.of(context).pop(); // Close splash screen
                   await Future.delayed(const Duration(milliseconds: 100));
-                  ref.invalidate(userModeControllerProvider);
+                  
+                  // Only invalidate if the widget is still mounted
+                  if (context.mounted) {
+                    try {
+                      ref.invalidate(userModeControllerProvider);
+                    } catch (e) {
+                      print('⚠️ ModeSwitchService: Could not invalidate provider (widget disposed): $e');
+                    }
+                  }
                 }
 
                 print('🔄 ModeSwitchService: Mode switch completed successfully');

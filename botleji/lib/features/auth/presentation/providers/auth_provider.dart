@@ -69,21 +69,25 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // print('Loading saved auth - Token: $token');
       // print('Loading saved auth - Auth data: $authData');
 
-      if (token != null && authData != null) {
+      if (token != null) {
         try {
           print('🔍 Loading saved auth data...');
-          final jsonData = jsonDecode(authData);
-          print('🔍 Saved auth JSON keys: ${jsonData.keys.toList()}');
-          print('🔍 isAccountLocked in saved data: ${jsonData['isAccountLocked']}');
-          print('🔍 accountLockedUntil in saved data: ${jsonData['accountLockedUntil']}');
-          print('🔍 warningCount in saved data: ${jsonData['warningCount']}');
           
-          final userData = UserData.fromJson(jsonData);
-          print('🔒 PARSED LOCK STATUS:');
+          // Always call backend to get fresh user data (including lock status)
+          print('🔄 Calling backend to get fresh user data...');
+          final response = await _authApiClient.getCurrentUser();
+          print('✅ Backend response received');
+          
+          final userData = UserData.fromJson(response.data);
+          print('🔒 FRESH LOCK STATUS FROM BACKEND:');
           print('   - isAccountLocked: ${userData.isAccountLocked}');
           print('   - accountLockedUntil: ${userData.accountLockedUntil}');
           print('   - warningCount: ${userData.warningCount}');
           print('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
+          
+          // Update saved auth data with fresh backend data
+          await prefs.setString(_authKey, jsonEncode(userData.toJson()));
+          print('💾 Updated cached auth data with fresh backend data');
           
           state = AsyncValue.data(userData);
           
