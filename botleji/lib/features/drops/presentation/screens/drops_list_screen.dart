@@ -11,6 +11,8 @@ import 'package:botleji/features/drops/presentation/widgets/drop_card.dart';
 import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
+import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:botleji/core/widgets/welcome_back_card.dart';
 
 class DropsListScreen extends ConsumerStatefulWidget {
   const DropsListScreen({super.key});
@@ -22,6 +24,10 @@ class DropsListScreen extends ConsumerStatefulWidget {
 class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   // Filter states
   DropStatus? _selectedStatus; // For household users
+  
+  // Account lock card state
+  bool _lockCardDismissed = false;
+  bool _welcomeCardDismissed = false;
   String _selectedDateFilter = 'All';
   String _selectedDistanceFilter = 'All'; // For collectors
   List<Drop> _allDrops = [];

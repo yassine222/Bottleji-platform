@@ -14,6 +14,8 @@ import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart'; // Added import for NavigationScreen
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart'; // Added import for navigationControllerProvider
+import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:botleji/core/widgets/welcome_back_card.dart';
 
 class DropsMapScreen extends ConsumerStatefulWidget {
   const DropsMapScreen({super.key});
@@ -34,6 +36,10 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   final _formKey = GlobalKey<FormState>();
   String? _errorMessage;
   bool _isLoading = true;
+  
+  // Account lock card state
+  bool _lockCardDismissed = false;
+  bool _welcomeCardDismissed = false;
   
   // Custom marker icon
   BitmapDescriptor? _customDropMarker;
