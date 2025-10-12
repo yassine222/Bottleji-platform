@@ -75,10 +75,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           
           // Always call backend to get fresh user data (including lock status)
           print('🔄 Calling backend to get fresh user data...');
-          final response = await _authApiClient.getCurrentUser();
+          final response = await _authRepository.getProfile();
           print('✅ Backend response received');
           
-          final userData = UserData.fromJson(response.data);
+          final userData = response.when(
+            success: (user, token, message) => user,
+            error: (message, statusCode) => throw Exception('Failed to get fresh user data: $message'),
+          );
+          
+          if (userData == null) {
+            throw Exception('No user data received from backend');
+          }
           print('🔒 FRESH LOCK STATUS FROM BACKEND:');
           print('   - isAccountLocked: ${userData.isAccountLocked}');
           print('   - accountLockedUntil: ${userData.accountLockedUntil}');
