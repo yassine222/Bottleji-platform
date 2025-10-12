@@ -535,183 +535,126 @@ function UsersContent() {
     );
   }
 
+  const collectorsCount = users.filter(u => u.roles?.includes('collector')).length;
+  const activeUsersCount = users.filter(u => !u.isAccountLocked || (u.accountLockedUntil && new Date(u.accountLockedUntil) <= new Date())).length;
+  const lockedUsersCount = users.filter(u => u.isAccountLocked && (!u.accountLockedUntil || new Date(u.accountLockedUntil) > new Date())).length;
+
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">{totalUsers}</span>
-                </div>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl shadow-xl p-8 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <UsersIcon className="h-10 w-10" />
+          <h1 className="text-4xl font-bold">User Management</h1>
+        </div>
+        <p className="text-teal-100 text-lg">Manage users, roles, and permissions</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-blue-50">
+                <UsersIcon className="h-7 w-7 text-blue-600" />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-text-secondary truncate">Total Users</dt>
-                  <dd className="text-lg font-medium text-text-primary">{totalUsers}</dd>
-                </dl>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{totalUsers}</p>
               </div>
             </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Total Users</p>
           </div>
         </div>
         
-        <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
-                    {users.filter(u => u.roles?.includes('collector')).length}
-                  </span>
-                </div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-purple-50">
+                <UserGroupIcon className="h-7 w-7 text-purple-600" />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-text-secondary truncate">Collectors</dt>
-                  <dd className="text-lg font-medium text-text-primary">
-                    {users.filter(u => u.roles?.includes('collector')).length}
-                  </dd>
-                </dl>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{collectorsCount}</p>
               </div>
             </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Collectors</p>
           </div>
         </div>
         
-        <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-success-color rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
-                    {users.filter(u => !u.isAccountLocked || (u.accountLockedUntil && new Date(u.accountLockedUntil) <= new Date())).length}
-                  </span>
-                </div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-green-50">
+                <CheckCircleIcon className="h-7 w-7 text-green-600" />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-text-secondary truncate">Active Users</dt>
-                  <dd className="text-lg font-medium text-text-primary">
-                    {users.filter(u => !u.isAccountLocked || (u.accountLockedUntil && new Date(u.accountLockedUntil) <= new Date())).length}
-                  </dd>
-                </dl>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{activeUsersCount}</p>
               </div>
             </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Active Users</p>
           </div>
         </div>
         
-        <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-error-color rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
-                    {users.filter(u => u.isAccountLocked && (!u.accountLockedUntil || new Date(u.accountLockedUntil) > new Date())).length}
-                  </span>
-                </div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-red-50">
+                <ExclamationCircleIcon className="h-7 w-7 text-red-600" />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-text-secondary truncate">Locked Users</dt>
-                  <dd className="text-lg font-medium text-text-primary">
-                    {users.filter(u => u.isAccountLocked && (!u.accountLockedUntil || new Date(u.accountLockedUntil) > new Date())).length}
-                  </dd>
-                </dl>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{lockedUsersCount}</p>
               </div>
             </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Locked Users</p>
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100/50">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Search & Filter Users</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-text-primary mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Search Users
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="search"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name or email..."
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="filter" className="block text-sm font-medium text-text-primary mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                Filter by Status
-              </label>
-              <select
-                id="filter"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 bg-white"
-              >
-                <option value="all">All Users</option>
-                <option value="users">Household Users</option>
-                <option value="collectors">Collectors</option>
-                <option value="active">Active Users</option>
-                <option value="locked">Locked Users</option>
-              </select>
-            </div>
+      <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+            />
+          </div>
+          
+          {/* Status Filter */}
+          <div className="flex items-center gap-3">
+            <FunnelIcon className="h-5 w-5 text-gray-400" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-medium min-w-[180px]"
+            >
+              <option value="all">All Users</option>
+              <option value="users">🏠 Household</option>
+              <option value="collectors">👷 Collectors</option>
+              <option value="active">✅ Active</option>
+              <option value="locked">🔒 Locked</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M12 4v16" />
-                </svg>
-                Show Deleted Users
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="includeDeleted"
-                  checked={includeDeleted}
-                  onChange={(e) => {
-                    setIncludeDeleted(e.target.checked);
-                    loadUsers(1); // Reload with new filter
-                  }}
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                />
-                <label htmlFor="includeDeleted" className="ml-2 text-sm text-text-secondary">
-                  Include deleted users
-                </label>
-              </div>
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterStatus('all');
-                }}
-                className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gray-100 text-text-primary border border-gray-300 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Clear Filters
-              </button>
-            </div>
+          {/* Include Deleted Toggle */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+            <input
+              type="checkbox"
+              id="includeDeleted"
+              checked={includeDeleted}
+              onChange={(e) => {
+                setIncludeDeleted(e.target.checked);
+                loadUsers(1);
+              }}
+              className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+            />
+            <label htmlFor="includeDeleted" className="text-sm font-medium text-gray-700 cursor-pointer">
+              Show Deleted
+            </label>
           </div>
         </div>
       </div>
