@@ -71,17 +71,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
       if (token != null && authData != null) {
         try {
-          final userData = UserData.fromJson(jsonDecode(authData));
-          // print('Decoded user data: ${jsonDecode(authData)}');
-          // print('Subscription type from JSON: ${userData.collectorSubscriptionType}');
-          // print('Loaded user data: $userData');
-          // print('Loaded user ID: ${userData.id}');
-          // print('Loaded user roles: ${userData.roles}');
-          // print('Loaded user phone: ${userData.phone}');
-          // print('Loaded user isCollector: ${userData.isCollector}');
-          // print('Loaded user isHousehold: ${userData.isHousehold}');
+          print('🔍 Loading saved auth data...');
+          final jsonData = jsonDecode(authData);
+          print('🔍 Saved auth JSON keys: ${jsonData.keys.toList()}');
+          print('🔍 isAccountLocked in saved data: ${jsonData['isAccountLocked']}');
+          print('🔍 accountLockedUntil in saved data: ${jsonData['accountLockedUntil']}');
+          print('🔍 warningCount in saved data: ${jsonData['warningCount']}');
           
-          // print('Loading saved auth - Is logged in: true');
+          final userData = UserData.fromJson(jsonData);
+          print('🔒 PARSED LOCK STATUS:');
+          print('   - isAccountLocked: ${userData.isAccountLocked}');
+          print('   - accountLockedUntil: ${userData.accountLockedUntil}');
+          print('   - warningCount: ${userData.warningCount}');
+          print('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
+          
           state = AsyncValue.data(userData);
           
           // Set user mode based on roles
