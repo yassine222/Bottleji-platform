@@ -187,6 +187,9 @@ export class DropoffsService {
         } else {
           console.log('🧹 No expired drops found to clean up');
         }
+        
+        // Also check for expired account locks
+        await this.checkAndUnlockExpiredAccounts();
       } catch (error) {
         console.error('❌ Error during cleanup task:', error);
       }
@@ -1723,6 +1726,44 @@ export class DropoffsService {
     } catch (error) {
       console.error('❌ Error getting collection attempt stats:', error);
       throw error;
+    }
+  }
+
+  private async checkAndUnlockExpiredAccounts() {
+    try {
+      const now = new Date();
+      
+      // Find all locked accounts where the lock has expired
+      const expiredLocks = await this.userModel.find({
+        isAccountLocked: true,
+        accountLockedUntil: { $lte: now }
+      }).exec();
+      
+      if (expiredLocks.length === 0) {
+        return;
+      }
+      
+      console.log(`🔓 Found ${expiredLocks.length} expired account locks to unlock`);
+      
+      for (const user of expiredLocks) {
+        // Unlock the account
+        await this.userModel.updateOne(
+          { _id: user._id },
+          {
+            isAccountLocked: false,
+            accountLockedUntil: null,
+          }
+        ).exec();
+        
+        console.log(`✅ Auto-unlocked account: ${user._id} (${user.email})`);
+        
+        // TODO: Send push notification to user
+        // Note: Push notification implementation would require FCM tokens
+        // For now, just log it - notification will be shown in app when user opens it
+        console.log(`📱 Account unlocked notification needed for ${user.email}`);
+      }
+    } catch (error) {
+      console.error('❌ Error checking expired account locks:', error);
     }
   }
 } 
