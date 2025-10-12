@@ -90,6 +90,7 @@ class AccountLockCard extends StatelessWidget {
           
           // Time remaining
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.red.shade100,
@@ -104,12 +105,15 @@ class AccountLockCard extends StatelessWidget {
                   color: Colors.red.shade700,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Unlocks in ${_getTimeRemaining()}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red.shade900,
+                Flexible(
+                  child: Text(
+                    'Unlocks in ${_getTimeRemaining()}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red.shade900,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -124,6 +128,8 @@ class AccountLockCard extends StatelessWidget {
               fontSize: 12,
               color: Colors.red.shade700,
             ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
           
