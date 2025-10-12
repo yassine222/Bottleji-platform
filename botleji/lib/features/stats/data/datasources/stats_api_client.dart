@@ -114,6 +114,33 @@ class StatsApiClient {
     
     for (final attempt in attempts) {
       final timeline = attempt['timeline'] as List<dynamic>;
+      final dropSnapshot = attempt['dropSnapshot'] as Map<String, dynamic>;
+      
+      // Convert dropSnapshot to DropoffInfo format
+      final dropoffInfo = {
+        '_id': attempt['dropoffId'],
+        'userId': dropSnapshot['createdBy']?['id'] ?? '',
+        'imageUrl': '', // Not available in snapshot
+        'numberOfBottles': dropSnapshot['numberOfBottles'] ?? 0,
+        'numberOfCans': dropSnapshot['numberOfCans'] ?? 0,
+        'bottleType': dropSnapshot['bottleType'] ?? '',
+        'notes': dropSnapshot['notes'] ?? '',
+        'leaveOutside': false, // Not available in snapshot
+        'location': {
+          'type': 'Point',
+          'coordinates': [
+            dropSnapshot['location']?['lng'] ?? 0.0,
+            dropSnapshot['location']?['lat'] ?? 0.0,
+          ],
+        },
+        'status': attempt['status'] == 'completed' ? attempt['outcome'] : 'accepted',
+        'collectorId': attempt['collectorId'],
+        'cancellationCount': attempt['cancellationCount'] ?? 0,
+        'acceptedAt': attempt['acceptedAt'],
+        'isSuspicious': false,
+        'cancelledByCollectorIds': [],
+        'createdAt': dropSnapshot['createdAt'],
+      };
       
       // Create interaction entries for each timeline event
       for (final event in timeline) {
@@ -123,9 +150,9 @@ class StatsApiClient {
           'collectorId': attempt['collectorId'],
           'interactionType': event['event'],
           'interactionTime': event['timestamp'],
-          'notes': event['details']['notes'] ?? '',
-          'reason': event['details']['reason'],
-          'dropoffSnapshot': attempt['dropSnapshot'],
+          'notes': event['details']?['notes'] ?? '',
+          'cancellationReason': event['details']?['reason'],
+          'dropoff': dropoffInfo,
         });
       }
     }
