@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
 import { CollectorInteraction } from './schemas/collector-interaction.schema';
+import { CollectionAttempt } from './schemas/collection-attempt.schema';
 import { CreateDropoffDto } from './dto/create-dropoff.dto';
 import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
@@ -13,6 +14,7 @@ export class DropoffsService {
   constructor(
     @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
     @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
+    @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel(User.name) private userModel: Model<User>,
   ) {
     this.startCleanupTask();
@@ -1462,6 +1464,247 @@ export class DropoffsService {
     } catch (error) {
       console.log('⚠️ Error dropping constraint (might not exist):', error.message);
       return { message: 'Constraint drop attempted (might not exist)', error: error.message };
+    }
+  }
+
+  // =============================================================================
+  // NEW COLLECTION ATTEMPT METHODS
+  // =============================================================================
+
+  async createCollectionAttempt(dropoffId: string, collectorId: string) {
+    try {
+      // Get dropoff details
+      const dropoff = await this.dropoffModel.findById(dropoffId).populate('userId', 'name email').exec();
+      if (!dropoff) {
+        throw new NotFoundException('Dropoff not found');
+      }
+
+      // Get collector details
+      const collector = await this.userModel.findById(collectorId, 'name email').exec();
+      if (!collector) {
+        throw new NotFoundException('Collector not found');
+      }
+
+      // Check if there's already an active attempt for this dropoff
+      const existingAttempt = await this.collectionAttemptModel.findOne({
+        dropoffId,
+        status: 'active'
+      }).exec();
+
+      if (existingAttempt) {
+        throw new BadRequestException('An active collection attempt already exists for this dropoff');
+      }
+
+      // Get attempt number (count previous attempts for this dropoff)
+      const attemptNumber = await this.collectionAttemptModel.countDocuments({
+        dropoffId
+      }) + 1;
+
+      // Get cancellation count for this dropoff
+      const cancellationCount = await this.collectionAttemptModel.countDocuments({
+        dropoffId,
+        outcome: 'cancelled'
+      });
+
+      const now = new Date();
+
+      // Create collection attempt
+      const collectionAttempt = new this.collectionAttemptModel({
+        dropoffId,
+        collectorId,
+        status: 'active',
+        outcome: null,
+        acceptedAt: now,
+        completedAt: null,
+        durationMinutes: null,
+        attemptNumber,
+        cancellationCount,
+        dropSnapshot: {
+          numberOfBottles: dropoff.numberOfBottles,
+          numberOfCans: dropoff.numberOfCans,
+          bottleType: dropoff.bottleType,
+          location: {
+            lat: dropoff.location.coordinates[1],
+            lng: dropoff.location.coordinates[0]
+          },
+          address: dropoff.address,
+          notes: dropoff.notes,
+          createdBy: {
+            id: (dropoff as any).userId._id,
+            name: (dropoff as any).userId.name,
+            email: (dropoff as any).userId.email
+          },
+          createdAt: dropoff.createdAt
+        },
+        timeline: [{
+          event: 'accepted',
+          timestamp: now,
+          collector: {
+            id: collector._id,
+            name: collector.name,
+            email: collector.email
+          },
+          details: {
+            notes: 'Accepted drop for collection',
+            location: {
+              lat: dropoff.location.coordinates[1],
+              lng: dropoff.location.coordinates[0]
+            }
+          }
+        }]
+      });
+
+      const savedAttempt = await collectionAttempt.save();
+
+      console.log('✅ Collection attempt created:', {
+        id: savedAttempt._id,
+        dropoffId: savedAttempt.dropoffId,
+        collectorId: savedAttempt.collectorId,
+        attemptNumber: savedAttempt.attemptNumber
+      });
+
+      return savedAttempt;
+    } catch (error) {
+      console.error('❌ Error creating collection attempt:', error);
+      throw error;
+    }
+  }
+
+  async completeCollectionAttempt(attemptId: string, outcome: 'expired' | 'cancelled' | 'collected', details: any) {
+    try {
+      const attempt = await this.collectionAttemptModel.findById(attemptId).exec();
+      if (!attempt) {
+        throw new NotFoundException('Collection attempt not found');
+      }
+
+      if (attempt.status === 'completed') {
+        throw new BadRequestException('Collection attempt already completed');
+      }
+
+      const now = new Date();
+      const durationMinutes = Math.round((now.getTime() - attempt.acceptedAt.getTime()) / (1000 * 60));
+
+      // Add outcome event to timeline
+      const outcomeEvent = {
+        event: outcome,
+        timestamp: now,
+        collector: attempt.timeline[0].collector, // Use same collector as accepted event
+        details: {
+          reason: details.reason,
+          notes: details.notes,
+          location: details.location || attempt.dropSnapshot.location
+        }
+      };
+
+      // Update attempt
+      const updatedAttempt = await this.collectionAttemptModel.findByIdAndUpdate(
+        attemptId,
+        {
+          status: 'completed',
+          outcome,
+          completedAt: now,
+          durationMinutes,
+          timeline: [...attempt.timeline, outcomeEvent]
+        },
+        { new: true }
+      ).exec();
+
+      // Add warning if expired
+      if (outcome === 'expired') {
+        try {
+          await this.addCollectorPenalty(attempt.collectorId.toString(), 'TIMEOUT_WARNING');
+          console.log(`✅ Warning added to collector ${attempt.collectorId} for expired attempt`);
+        } catch (penaltyError) {
+          console.error(`❌ Error adding penalty:`, penaltyError);
+        }
+      }
+
+      console.log('✅ Collection attempt completed:', {
+        id: updatedAttempt._id,
+        outcome: updatedAttempt.outcome,
+        durationMinutes: updatedAttempt.durationMinutes
+      });
+
+      return updatedAttempt;
+    } catch (error) {
+      console.error('❌ Error completing collection attempt:', error);
+      throw error;
+    }
+  }
+
+  async getCollectorAttempts(collectorId: string, page = 1, limit = 20) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [attempts, total] = await Promise.all([
+        this.collectionAttemptModel.find({ collectorId })
+          .sort({ acceptedAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .exec(),
+        this.collectionAttemptModel.countDocuments({ collectorId })
+      ]);
+
+      return {
+        attempts,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      console.error('❌ Error getting collector attempts:', error);
+      throw error;
+    }
+  }
+
+  async getDropoffAttempts(dropoffId: string) {
+    try {
+      const attempts = await this.collectionAttemptModel.find({ dropoffId })
+        .sort({ acceptedAt: 1 }) // Chronological order
+        .exec();
+
+      return attempts;
+    } catch (error) {
+      console.error('❌ Error getting dropoff attempts:', error);
+      throw error;
+    }
+  }
+
+  async getCollectionAttemptStats(collectorId: string) {
+    try {
+      const stats = await this.collectionAttemptModel.aggregate([
+        { $match: { collectorId: new (require('mongoose').Types.ObjectId)(collectorId) } },
+        {
+          $group: {
+            _id: null,
+            totalAttempts: { $sum: 1 },
+            successfulCollections: { $sum: { $cond: [{ $eq: ['$outcome', 'collected'] }, 1, 0] } },
+            cancelledAttempts: { $sum: { $cond: [{ $eq: ['$outcome', 'cancelled'] }, 1, 0] } },
+            expiredAttempts: { $sum: { $cond: [{ $eq: ['$outcome', 'expired'] }, 1, 0] } },
+            activeAttempts: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
+            averageDuration: { $avg: '$durationMinutes' }
+          }
+        }
+      ]);
+
+      const result = stats[0] || {
+        totalAttempts: 0,
+        successfulCollections: 0,
+        cancelledAttempts: 0,
+        expiredAttempts: 0,
+        activeAttempts: 0,
+        averageDuration: 0
+      };
+
+      result.successRate = result.totalAttempts > 0 
+        ? Math.round((result.successfulCollections / result.totalAttempts) * 100) 
+        : 0;
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting collection attempt stats:', error);
+      throw error;
     }
   }
 } 

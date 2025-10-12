@@ -169,4 +169,56 @@ export class DropoffsController {
   getDropInteractionTimeline(@Param('dropoffId') dropoffId: string) {
     return this.dropoffsService.getDropInteractionTimeline(dropoffId);
   }
+
+  // =============================================================================
+  // NEW COLLECTION ATTEMPT ENDPOINTS
+  // =============================================================================
+
+  @Post(':dropoffId/attempts')
+  createCollectionAttempt(
+    @Param('dropoffId') dropoffId: string,
+    @Body() body: { collectorId: string }
+  ) {
+    return this.dropoffsService.createCollectionAttempt(dropoffId, body.collectorId);
+  }
+
+  @Patch(':dropoffId/attempts/:attemptId/complete')
+  completeCollectionAttempt(
+    @Param('attemptId') attemptId: string,
+    @Body() body: { 
+      outcome: 'expired' | 'cancelled' | 'collected',
+      reason?: string,
+      notes?: string,
+      location?: { lat: number, lng: number }
+    }
+  ) {
+    return this.dropoffsService.completeCollectionAttempt(
+      attemptId, 
+      body.outcome, 
+      { reason: body.reason, notes: body.notes, location: body.location }
+    );
+  }
+
+  @Get('collector/:collectorId/attempts')
+  getCollectorAttempts(
+    @Param('collectorId') collectorId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.dropoffsService.getCollectorAttempts(
+      collectorId, 
+      page ? parseInt(page.toString()) : 1, 
+      limit ? parseInt(limit.toString()) : 20
+    );
+  }
+
+  @Get(':dropoffId/attempts')
+  getDropoffAttempts(@Param('dropoffId') dropoffId: string) {
+    return this.dropoffsService.getDropoffAttempts(dropoffId);
+  }
+
+  @Get('collector/:collectorId/attempts/stats')
+  getCollectionAttemptStats(@Param('collectorId') collectorId: string) {
+    return this.dropoffsService.getCollectionAttemptStats(collectorId);
+  }
 } 
