@@ -1609,6 +1609,10 @@ export class DropoffsService {
         { new: true }
       ).exec();
 
+      if (!updatedAttempt) {
+        throw new NotFoundException('Collection attempt not found after update');
+      }
+
       // Add warning if expired
       if (outcome === 'expired') {
         try {

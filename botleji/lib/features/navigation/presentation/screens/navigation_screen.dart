@@ -269,19 +269,33 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
             'bottleType': activeCollection.bottleType,
           })}');
           
-          // Create expired interaction in the database
+          // Create expired collection attempt in the database
           final dio = ApiClientConfig.createDio();
           try {
-            final response = await dio.post(
-              '${ApiConfig.baseUrl}/dropoffs/interactions',
+            // First, create a collection attempt (this will auto-create ACCEPTED if missing)
+            debugPrint('🔄 Creating collection attempt...');
+            final attemptResponse = await dio.post(
+              '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
               data: {
                 'collectorId': collectorId,
-                'dropoffId': activeCollection.dropoffId,
-                'interactionType': 'expired',
+              },
+              options: Options(
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              ),
+            );
+            
+            final attemptId = attemptResponse.data['_id'];
+            debugPrint('✅ Collection attempt created: $attemptId');
+            
+            // Then complete it as expired
+            debugPrint('🔄 Completing attempt as expired...');
+            final completeResponse = await dio.patch(
+              '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
+              data: {
+                'outcome': 'expired',
                 'notes': 'Collection expired - timer timeout',
-                'dropoffStatus': 'pending',
-                'numberOfItems': activeCollection.numberOfBottles + activeCollection.numberOfCans,
-                'bottleType': activeCollection.bottleType,
               },
               options: Options(
                 headers: {
@@ -290,18 +304,18 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               ),
             );
 
-            debugPrint('✅ Expired interaction created: ${response.statusCode}');
-            debugPrint('✅ Response data: ${response.data}');
+            debugPrint('✅ Collection attempt completed as expired: ${completeResponse.statusCode}');
+            debugPrint('✅ Response data: ${completeResponse.data}');
 
             // Track collection expiration for smart support (placeholder log)
             debugPrint('✅ Collection expiration tracked for smart support');
           } catch (e) {
-            debugPrint('❌ Error creating expired interaction: $e');
+            debugPrint('❌ Error creating expired collection attempt: $e');
             debugPrint('❌ Error details: ${e.toString()}');
             
             // Check if it's a duplicate error (409 Conflict)
             if (e.toString().contains('409') || e.toString().contains('duplicate')) {
-              debugPrint('ℹ️ Expired interaction already exists, continuing...');
+              debugPrint('ℹ️ Collection attempt already exists, continuing...');
             } else {
               debugPrint('❌ Unknown error, continuing anyway...');
             }

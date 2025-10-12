@@ -138,22 +138,18 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
 
   void _createExpiredInteraction(activeCollection) async {
     try {
-      debugPrint('🚀 Creating expired interaction from ActiveCollectionIndicator...');
+      debugPrint('🚀 Creating expired collection attempt from ActiveCollectionIndicator...');
       debugPrint('🚀 Drop ID: ${activeCollection.dropId}');
       debugPrint('🚀 Collector ID: ${activeCollection.collectorId}');
       
-      // Create expired interaction in the database
       final dio = ApiClientConfig.createDio();
-      final response = await dio.post(
-        '${ApiConfig.baseUrl}/dropoffs/interactions',
+      
+      // First, create a collection attempt (this will auto-create ACCEPTED if missing)
+      debugPrint('🔄 Creating collection attempt...');
+      final attemptResponse = await dio.post(
+        '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
         data: {
           'collectorId': activeCollection.collectorId,
-          'dropoffId': activeCollection.dropoffId,
-          'interactionType': 'expired',
-          'notes': 'Collection expired - timer timeout',
-          'dropoffStatus': 'pending',
-          'numberOfItems': activeCollection.numberOfBottles + activeCollection.numberOfCans,
-          'bottleType': activeCollection.bottleType,
         },
         options: Options(
           headers: {
@@ -162,12 +158,29 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
         ),
       );
       
-      debugPrint('✅ Expired interaction created: ${response.statusCode}');
-      debugPrint('✅ Response data: ${response.data}');
+      final attemptId = attemptResponse.data['_id'];
+      debugPrint('✅ Collection attempt created: $attemptId');
+      
+      // Then complete it as expired
+      debugPrint('🔄 Completing attempt as expired...');
+      final completeResponse = await dio.patch(
+        '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
+        data: {
+          'outcome': 'expired',
+          'notes': 'Collection expired - timer timeout',
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('✅ Collection attempt completed as expired: ${completeResponse.statusCode}');
+      debugPrint('✅ Response data: ${completeResponse.data}');
       
       // Also update the drop status back to pending
       debugPrint('🔄 Updating drop status to pending...');
-      debugPrint('🔄 API URL: ${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/status');
       final updateResponse = await dio.patch(
         '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/status',
         data: {
@@ -182,7 +195,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       
       debugPrint('✅ Drop status updated to pending: ${updateResponse.statusCode}');
     } catch (e) {
-      debugPrint('❌ Error creating expired interaction: $e');
+      debugPrint('❌ Error creating expired collection attempt: $e');
       debugPrint('❌ Error details: ${e.toString()}');
     }
   }

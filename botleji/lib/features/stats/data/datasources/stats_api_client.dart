@@ -71,14 +71,15 @@ class StatsApiClient {
         queryParams['timeRange'] = timeRange;
       }
 
+      // Use new CollectionAttempt endpoint
       final response = await _dio.get(
-        '/dropoffs/collector/$collectorId/history',
+        '/dropoffs/collector/$collectorId/attempts',
         queryParameters: queryParams,
       );
 
       // Debug logging
-      print('History API Response Status: ${response.statusCode}');
-      print('History API Response Data Type: ${response.data.runtimeType}');
+      print('Collection Attempts API Response Status: ${response.statusCode}');
+      print('Collection Attempts API Response Data Type: ${response.data.runtimeType}');
       
       // Handle response data safely
       Map<String, dynamic> data;
@@ -93,13 +94,50 @@ class StatsApiClient {
         throw Exception('Unexpected response data type: ${response.data.runtimeType}');
       }
 
-      print('History API Response Data Keys: ${data.keys.toList()}');
+      print('Collection Attempts API Response Data Keys: ${data.keys.toList()}');
       
-      return CollectorHistory.fromJson(data);
+      // Convert CollectionAttempt data to CollectorHistory format for compatibility
+      return _convertAttemptsToHistory(data);
     } catch (e) {
-      print('❌ History API Error: $e');
+      print('❌ Collection Attempts API Error: $e');
       print('❌ Error type: ${e.runtimeType}');
-      throw Exception('Failed to fetch collector history: $e');
+      throw Exception('Failed to fetch collector attempts: $e');
     }
+  }
+
+  /// Convert CollectionAttempt response to CollectorHistory format for compatibility
+  CollectorHistory _convertAttemptsToHistory(Map<String, dynamic> data) {
+    final attempts = data['attempts'] as List<dynamic>;
+    
+    // Convert attempts to interactions for backward compatibility
+    final interactions = <Map<String, dynamic>>[];
+    
+    for (final attempt in attempts) {
+      final timeline = attempt['timeline'] as List<dynamic>;
+      
+      // Create interaction entries for each timeline event
+      for (final event in timeline) {
+        interactions.add({
+          '_id': '${attempt['_id']}_${event['event']}',
+          'dropoffId': attempt['dropoffId'],
+          'collectorId': attempt['collectorId'],
+          'interactionType': event['event'],
+          'interactionTime': event['timestamp'],
+          'notes': event['details']['notes'] ?? '',
+          'reason': event['details']['reason'],
+          'dropoffSnapshot': attempt['dropSnapshot'],
+        });
+      }
+    }
+    
+    return CollectorHistory.fromJson({
+      'interactions': interactions,
+      'pagination': {
+        'total': data['total'],
+        'page': data['page'],
+        'limit': data['limit'],
+        'totalPages': data['totalPages'],
+      }
+    });
   }
 }

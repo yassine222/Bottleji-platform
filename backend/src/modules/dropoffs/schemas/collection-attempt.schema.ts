@@ -5,7 +5,7 @@ export type CollectionAttemptDocument = CollectionAttempt & Document;
 
 @Schema({ timestamps: true })
 export class TimelineEvent {
-  @Prop({ required: true })
+  @Prop({ type: String, enum: ['accepted', 'cancelled', 'expired', 'collected'], required: true })
   event: 'accepted' | 'cancelled' | 'expired' | 'collected';
 
   @Prop({ required: true })
@@ -72,10 +72,10 @@ export class CollectionAttempt {
   collectorId: Types.ObjectId;
 
   // Core status
-  @Prop({ enum: ['active', 'completed'], default: 'active' })
+  @Prop({ type: String, enum: ['active', 'completed'], default: 'active' })
   status: 'active' | 'completed';
 
-  @Prop({ enum: ['expired', 'cancelled', 'collected'], default: null })
+  @Prop({ type: String, enum: ['expired', 'cancelled', 'collected'], default: null })
   outcome: 'expired' | 'cancelled' | 'collected' | null;
 
   // Timeline events (for UI display)
@@ -86,10 +86,10 @@ export class CollectionAttempt {
   @Prop({ required: true })
   acceptedAt: Date;
 
-  @Prop()
+  @Prop({ type: Date, default: null })
   completedAt: Date | null;
 
-  @Prop()
+  @Prop({ type: Number, default: null })
   durationMinutes: number | null;
 
   // Drop snapshot (for history display)
