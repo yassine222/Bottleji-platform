@@ -203,6 +203,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             print('User roles: ${user.roles}');
             print('User isCollector: ${user.isCollector}');
             print('User isHousehold: ${user.isHousehold}');
+            print('🔒 LOCK STATUS:');
+            print('   - isAccountLocked: ${user.isAccountLocked}');
+            print('   - accountLockedUntil: ${user.accountLockedUntil}');
+            print('   - warningCount: ${user.warningCount}');
+            print('   - isCurrentlyLocked: ${user.isCurrentlyLocked}');
             _saveAuth(user);
             _saveToken(token);
             state = AsyncValue.data(user);
