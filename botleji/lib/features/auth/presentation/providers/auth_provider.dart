@@ -232,10 +232,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
               print('Error setting user mode: $e');
             }
             
-            // Sync application status from database after login
-            syncApplicationStatusFromDatabase().catchError((e) {
-              print('Error syncing application status after login: $e');
-            });
+            // Note: Skip syncing application status after login since we already have fresh user data
+            // syncApplicationStatusFromDatabase().catchError((e) {
+            //   print('Error syncing application status after login: $e');
+            // });
             
             return user;
           } else {

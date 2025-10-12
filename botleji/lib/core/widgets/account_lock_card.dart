@@ -161,7 +161,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           
           // Unlock time
           Text(
-            'Available again at ${DateFormat('MMM d, h:mm a').format(lockedUntil)}',
+            'Available again at ${DateFormat('MMM d, h:mm a').format(widget.lockedUntil)}',
             style: TextStyle(
               fontSize: 12,
               color: Colors.red.shade700,
@@ -204,7 +204,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           
           // Dismiss button
           TextButton.icon(
-            onPressed: onDismiss,
+            onPressed: widget.onDismiss,
             icon: const Icon(Icons.close, size: 18),
             label: const Text('I Understand'),
             style: TextButton.styleFrom(
