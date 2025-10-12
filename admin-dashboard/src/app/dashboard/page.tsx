@@ -2850,182 +2850,8 @@ function SupportContent() {
     return categoryMap[category] || category;
   };
 
-  const TicketDetailModal = ({ ticket, onClose }: { ticket: any; onClose: () => void }) => {
-    const [newMessage, setNewMessage] = useState('');
-    const [sending, setSending] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [updatingStatus, setUpdatingStatus] = useState(false);
-
-    const handleSendMessage = async () => {
-      if (!newMessage.trim()) return;
-
-      try {
-        setSending(true);
-        setError(null);
-        
-        await supportTicketsAPI.addMessage(ticket.id || ticket._id, newMessage, false);
-        
-        setNewMessage('');
-        handleMessageSent();
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to send message');
-      } finally {
-        setSending(false);
-      }
-    };
-
-    const handleStatusUpdate = async (newStatus: string) => {
-      try {
-        setUpdatingStatus(true);
-        await supportTicketsAPI.updateTicketStatus(ticket.id || ticket._id, newStatus);
-        handleStatusChange();
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to update status');
-      } finally {
-        setUpdatingStatus(false);
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <div className="relative px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <button
-              onClick={onClose}
-              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="pr-12">
-              <div className="flex items-center gap-3 mb-3">
-                <TicketIcon className="h-6 w-6 text-blue-600" />
-                <h3 className="text-2xl font-bold text-gray-900">{ticket.title}</h3>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(ticket.status)}`}>
-                  {ticket.status.replace('_', ' ').toUpperCase()}
-                </span>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(ticket.priority)}`}>
-                  {getPriorityIcon(ticket.priority)}
-                  {ticket.priority.toUpperCase()}
-                </span>
-                <span className="text-sm text-gray-600">{getCategoryDisplayName(ticket.category)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="max-h-[calc(100vh-240px)] overflow-y-auto">
-            {/* Ticket Info Grid */}
-            <div className="px-8 py-6 grid grid-cols-3 gap-4 bg-gray-50 border-b border-gray-200">
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase mb-1">Created</div>
-                <div className="text-sm font-semibold text-gray-900">{new Date(ticket.createdAt).toLocaleString()}</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase mb-1">Last Updated</div>
-                <div className="text-sm font-semibold text-gray-900">{new Date(ticket.updatedAt).toLocaleString()}</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase mb-1">Messages</div>
-                <div className="text-sm font-semibold text-gray-900">{ticket.messages.length} messages</div>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="px-8 py-6 border-b border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase mb-3">Description</h4>
-              <p className="text-gray-900 leading-relaxed">{ticket.description}</p>
-            </div>
-
-            {/* Status Update */}
-            <div className="px-8 py-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-semibold text-gray-700">Update Status:</label>
-                <select
-                  value={ticket.status}
-                  onChange={(e) => handleStatusUpdate(e.target.value)}
-                  disabled={updatingStatus}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium disabled:opacity-50"
-                >
-                  <option value="open">Open</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                  <option value="on_hold">On Hold</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="px-8 py-6">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase mb-4 flex items-center gap-2">
-                <ChatBubbleLeftRightIcon className="h-5 w-5" />
-                Conversation
-              </h4>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {ticket.messages.map((msg: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.senderType === 'agent' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${
-                        msg.senderType === 'agent'
-                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                          : 'bg-white border border-gray-200 text-gray-900'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-semibold ${msg.senderType === 'agent' ? 'text-blue-100' : 'text-gray-600'}`}>
-                          {msg.senderType === 'agent' ? '🎫 Support Agent' : '👤 User'}
-                        </span>
-                        <span className={`text-xs ${msg.senderType === 'agent' ? 'text-blue-100' : 'text-gray-500'}`}>
-                          {new Date(msg.sentAt).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Send Message */}
-            <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center gap-2">
-                  <ExclamationCircleIcon className="h-5 w-5 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-              <div className="flex gap-3">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your response..."
-                  className="flex-1 p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  rows={3}
-                  disabled={sending}
-                />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={sending || !newMessage.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-medium transition-all shadow-md hover:shadow-lg"
-                >
-                  {sending ? 'Sending...' : 'Send'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Simple modal - just shows ticket details
+  const showTicketModal = selectedTicket !== null;
 
   if (loading) {
     return (
@@ -3119,11 +2945,103 @@ function SupportContent() {
 
   return (
     <div className="p-6">
+      {/* Simple Ticket Detail Modal */}
       {selectedTicket && (
-        <TicketDetailModal
-          ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-        />
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={() => setSelectedTicket(null)}>
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b">
+              <h3 className="text-lg font-medium text-gray-900">{selectedTicket.title}</h3>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Ticket Info */}
+            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Status:</span>
+                <span className="ml-2 font-medium">{selectedTicket.status}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Priority:</span>
+                <span className="ml-2 font-medium">{selectedTicket.priority}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Category:</span>
+                <span className="ml-2 font-medium">{selectedTicket.category}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Created:</span>
+                <span className="ml-2 font-medium">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Description</h4>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTicket.description}</p>
+            </div>
+
+            {/* Messages */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Messages</h4>
+              <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+                {selectedTicket.messages.map((msg: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg ${
+                      msg.senderType === 'agent'
+                        ? 'bg-blue-100 ml-8'
+                        : 'bg-white mr-8'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-xs font-medium text-gray-700">
+                        {msg.senderType === 'agent' ? '🎫 Support Agent' : '👤 User'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(msg.sentAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.message}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Send Message */}
+            <div className="mt-4">
+              <div className="flex space-x-2">
+                <textarea
+                  placeholder="Type your response..."
+                  className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  rows={3}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Simple send message handler
+                    try {
+                      await supportTicketsAPI.addMessage(selectedTicket.id || selectedTicket._id, '', false);
+                      fetchTickets();
+                    } catch (err) {
+                      console.error('Error sending message:', err);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       
       <div className="space-y-6">
