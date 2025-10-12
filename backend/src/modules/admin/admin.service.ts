@@ -572,44 +572,65 @@ export class AdminService {
         });
       });
 
-      // Add collector interaction activities
+      // Group collector interactions by dropoffId to show them as pairs
+      const interactionsByDrop = new Map();
+      
       collectorInteractions.forEach(item => {
-        const interaction = item.interaction;
-        const dropoff = item.dropoff;
-        
-        let title = '';
-        let description = '';
-        
-        switch (interaction.interactionType) {
-          case 'accepted':
-            title = 'Drop Accepted';
-            description = `Accepted drop from ${dropoff.userId} with ${dropoff.numberOfBottles} bottles and ${dropoff.numberOfCans} cans`;
-            break;
-          case 'collected':
-            title = 'Drop Collected';
-            description = `Successfully collected drop from ${dropoff.userId}`;
-            break;
-          case 'cancelled':
-            title = 'Drop Cancelled';
-            description = `Cancelled drop from ${dropoff.userId} - ${interaction.cancellationReason || 'No reason provided'}`;
-            break;
-          case 'expired':
-            title = 'Drop Expired';
-            description = `Drop from ${dropoff.userId} expired`;
-            break;
+        const dropId = item.dropoff._id?.toString();
+        if (!interactionsByDrop.has(dropId)) {
+          interactionsByDrop.set(dropId, []);
         }
+        interactionsByDrop.get(dropId).push(item);
+      });
 
+      // Add collector interaction activities (grouped)
+      interactionsByDrop.forEach((items, dropId) => {
+        // Sort interactions by time
+        items.sort((a, b) => new Date(a.interaction.interactionTime).getTime() - new Date(b.interaction.interactionTime).getTime());
+        
+        const firstItem = items[0];
+        const dropoff = firstItem.dropoff;
+        
+        // Determine the final status of this drop collection
+        const hasCollected = items.some(i => i.interaction.interactionType === 'collected');
+        const hasCancelled = items.some(i => i.interaction.interactionType === 'cancelled');
+        const hasExpired = items.some(i => i.interaction.interactionType === 'expired');
+        
+        let finalStatus = 'accepted';
+        let statusIcon = '📋';
+        if (hasCollected) {
+          finalStatus = 'collected';
+          statusIcon = '✅';
+        } else if (hasCancelled) {
+          finalStatus = 'cancelled';
+          statusIcon = '❌';
+        } else if (hasExpired) {
+          finalStatus = 'expired';
+          statusIcon = '⏰';
+        }
+        
+        // Create a grouped activity entry
+        const interactionsList = items.map(i => ({
+          type: i.interaction.interactionType,
+          time: i.interaction.interactionTime,
+          reason: i.interaction.cancellationReason,
+          notes: i.interaction.notes,
+        }));
+        
         activities.push({
-          id: interaction._id?.toString(),
-          type: `collector_${interaction.interactionType}`,
-          title,
-          description,
-          timestamp: interaction.interactionTime,
-          dropoffId: dropoff._id?.toString(),
-          interactionType: interaction.interactionType,
-          cancellationReason: interaction.cancellationReason,
-          notes: interaction.notes,
-          location: interaction.location
+          id: dropId,
+          type: `collector_${finalStatus}`,
+          title: `${statusIcon} Collection ${finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1)}`,
+          description: `${dropoff.numberOfBottles} bottles, ${dropoff.numberOfCans} cans - ${finalStatus}`,
+          timestamp: items[items.length - 1].interaction.interactionTime, // Use last interaction time
+          dropoffId: dropId,
+          interactionType: finalStatus,
+          interactions: interactionsList, // Include all interactions in the group
+          numberOfBottles: dropoff.numberOfBottles,
+          numberOfCans: dropoff.numberOfCans,
+          bottleType: dropoff.bottleType,
+          location: dropoff.location,
+          userId: dropoff.userId,
         });
       });
 

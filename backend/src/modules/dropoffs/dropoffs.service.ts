@@ -729,9 +729,9 @@ export class DropoffsService {
           { new: true }
         ).exec();
 
-        // Create interaction for expiration and add penalty
+        // Create interaction for expiration (penalty is now added automatically inside createInteraction)
         try {
-          // Create EXPIRED interaction
+          // Create EXPIRED interaction (this will automatically add the penalty)
           await this.createInteraction({
             collectorId: interaction.collectorId,
             dropoffId: interaction.dropoffId,
@@ -741,26 +741,18 @@ export class DropoffsService {
             notes: `Collection expired after ${totalTimeoutMinutes} minutes`,
           });
 
-          console.log(`✅ EXPIRED interaction created for drop ${dropoff._id}`);
+          console.log(`✅ EXPIRED interaction created for drop ${dropoff._id} (penalty added automatically)`);
           
           cleanedCount++;
           console.log(`✅ Drop ${dropoff._id} timed out after ${totalTimeoutMinutes} minutes, set back to PENDING`);
         } catch (error: any) {
           if (error.code === 11000) { // MongoDB duplicate key error
-            console.log(`⚠️ Duplicate EXPIRED interaction detected for drop ${dropoff._id}, skipping penalty`);
-            continue; // Skip penalty if interaction creation failed
+            console.log(`⚠️ Duplicate EXPIRED interaction detected for drop ${dropoff._id}, skipping`);
+            continue;
           } else {
             console.error(`❌ Error creating EXPIRED interaction for drop ${dropoff._id}:`, error);
-            continue; // Skip penalty if interaction creation failed
+            continue;
           }
-        }
-
-        // Add penalty warning to collector (separate try-catch to ensure it runs even if interaction has issues)
-        try {
-          await this.addCollectorPenalty(interaction.collectorId, 'TIMEOUT_WARNING');
-          console.log(`✅ Penalty added to collector ${interaction.collectorId}`);
-        } catch (penaltyError) {
-          console.error(`❌ Error adding penalty to collector ${interaction.collectorId}:`, penaltyError);
         }
       } else {
         console.log(`✅ Drop ${dropoff._id} is still within timeout period`);
@@ -889,6 +881,13 @@ export class DropoffsService {
         break;
       case InteractionType.EXPIRED:
         interactionData.expiredAt = now;
+        // Immediately add penalty warning when EXPIRED interaction is created
+        try {
+          await this.addCollectorPenalty(createInteractionDto.collectorId, 'TIMEOUT_WARNING');
+          console.log(`✅ Warning instantly added to collector ${createInteractionDto.collectorId} for expired drop`);
+        } catch (penaltyError) {
+          console.error(`❌ Error adding instant penalty:`, penaltyError);
+        }
         break;
     }
 
