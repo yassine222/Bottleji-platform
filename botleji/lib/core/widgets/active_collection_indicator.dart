@@ -138,19 +138,16 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
 
   void _createExpiredInteraction(activeCollection) async {
     try {
-      debugPrint('🚀 Creating expired collection attempt from ActiveCollectionIndicator...');
+      debugPrint('🚀 Expiring collection attempt from ActiveCollectionIndicator...');
       debugPrint('🚀 Drop ID: ${activeCollection.dropId}');
       debugPrint('🚀 Collector ID: ${activeCollection.collectorId}');
       
       final dio = ApiClientConfig.createDio();
       
-      // First, create a collection attempt (this will auto-create ACCEPTED if missing)
-      debugPrint('🔄 Creating collection attempt...');
-      final attemptResponse = await dio.post(
+      // Find the active collection attempt for this drop
+      debugPrint('🔍 Getting active collection attempt...');
+      final attemptsResponse = await dio.get(
         '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
-        data: {
-          'collectorId': activeCollection.collectorId,
-        },
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -158,10 +155,21 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
         ),
       );
       
-      final attemptId = attemptResponse.data['_id'];
-      debugPrint('✅ Collection attempt created: $attemptId');
+      final attempts = attemptsResponse.data as List;
+      final activeAttempt = attempts.firstWhere(
+        (a) => a['status'] == 'active',
+        orElse: () => null,
+      );
       
-      // Then complete it as expired
+      if (activeAttempt == null) {
+        debugPrint('❌ No active collection attempt found for this drop');
+        return;
+      }
+      
+      final attemptId = activeAttempt['_id'];
+      debugPrint('✅ Found active attempt: $attemptId');
+      
+      // Complete it as expired
       debugPrint('🔄 Completing attempt as expired...');
       final completeResponse = await dio.patch(
         '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',

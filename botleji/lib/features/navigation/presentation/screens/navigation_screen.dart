@@ -269,16 +269,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
             'bottleType': activeCollection.bottleType,
           })}');
           
-          // Create expired collection attempt in the database
+          // Find and complete the existing collection attempt
           final dio = ApiClientConfig.createDio();
           try {
-            // First, create a collection attempt (this will auto-create ACCEPTED if missing)
-            debugPrint('🔄 Creating collection attempt...');
-            final attemptResponse = await dio.post(
+            // Find the active collection attempt for this drop
+            debugPrint('🔍 Getting active collection attempt...');
+            final attemptsResponse = await dio.get(
               '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
-              data: {
-                'collectorId': collectorId,
-              },
               options: Options(
                 headers: {
                   'Content-Type': 'application/json',
@@ -286,10 +283,21 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               ),
             );
             
-            final attemptId = attemptResponse.data['_id'];
-            debugPrint('✅ Collection attempt created: $attemptId');
+            final attempts = attemptsResponse.data as List;
+            final activeAttempt = attempts.firstWhere(
+              (a) => a['status'] == 'active',
+              orElse: () => null,
+            );
             
-            // Then complete it as expired
+            if (activeAttempt == null) {
+              debugPrint('❌ No active collection attempt found');
+              return;
+            }
+            
+            final attemptId = activeAttempt['_id'];
+            debugPrint('✅ Found active attempt: $attemptId');
+            
+            // Complete it as expired
             debugPrint('🔄 Completing attempt as expired...');
             final completeResponse = await dio.patch(
               '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
