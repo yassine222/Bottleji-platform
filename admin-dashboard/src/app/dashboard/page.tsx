@@ -2241,15 +2241,15 @@ function TrainingContent() {
           <p className="text-gray-400 text-sm mt-2">Create your first content to get started!</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredContent.map((content) => (
-            <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 inline-block w-auto max-w-full">
-              {/* Card Header */}
-              <div className="p-4 border-b border-gray-100">
+            <div key={content._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+              {/* Card Header - Fixed height */}
+              <div className="p-4 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">
+                      <span className="text-2xl flex-shrink-0">
                         {contentTypes.find(t => t.value === content.type)?.icon || '📄'}
                       </span>
                       <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
@@ -2257,11 +2257,11 @@ function TrainingContent() {
                       </h3>
                     </div>
                     
-                    <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">{content.description}</p>
+                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed h-10">{content.description}</p>
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex gap-2 ml-3">
+                  <div className="flex gap-2 ml-3 flex-shrink-0">
                     <button
                       onClick={() => handleEdit(content)}
                       className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
@@ -2292,11 +2292,11 @@ function TrainingContent() {
                 </div>
               </div>
 
-              {/* Card Body - Media */}
-              <div className="p-3 bg-gray-50">
+              {/* Card Body - Media - Fixed height */}
+              <div className="p-3 bg-gray-50 flex-1 flex flex-col">
                 {content.type === 'video' && content.mediaUrl && (
-                  <div className="relative group/video cursor-pointer" onClick={() => handlePlayVideo(content.mediaUrl, content.thumbnailUrl, content.title)}>
-                    <div className="relative w-96 h-56 bg-black rounded-lg overflow-hidden">
+                  <div className="relative group/video cursor-pointer flex-1 flex flex-col" onClick={() => handlePlayVideo(content.mediaUrl, content.thumbnailUrl, content.title)}>
+                    <div className="relative w-full h-56 bg-black rounded-lg overflow-hidden flex-shrink-0">
                       {content.thumbnailUrl ? (
                         <img
                           src={content.thumbnailUrl}
@@ -2335,11 +2335,11 @@ function TrainingContent() {
                 )}
 
                 {content.type === 'image' && content.mediaUrl && (
-                  <div className="relative group/image w-96">
+                  <div className="relative group/image w-full h-56 flex-shrink-0">
                     <img
                       src={content.mediaUrl}
                       alt={content.title}
-                      className="w-full h-56 object-cover rounded-lg shadow-md"
+                      className="w-full h-full object-cover rounded-lg shadow-md"
                       crossOrigin="anonymous"
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
@@ -2351,14 +2351,16 @@ function TrainingContent() {
                 )}
                 
                 {content.type === 'story' && (
-                  <div className="bg-white p-3 rounded-lg border border-gray-200 w-96 max-w-full">
-                    <div className="flex items-center text-gray-500 mb-2">
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 w-full h-56 flex-shrink-0 flex flex-col">
+                    <div className="flex items-center text-gray-500 mb-3">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <span className="text-xs font-medium">Story Content</span>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">{content.content}</p>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-sm text-gray-600 leading-relaxed h-full overflow-y-auto">{content.content}</p>
+                    </div>
                   </div>
                 )}
               </div>
