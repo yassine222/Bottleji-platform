@@ -75,6 +75,11 @@ class UserData {
   // Session invalidation field
   final DateTime? sessionInvalidatedAt;
 
+  // Account lock fields (for collectors with 5 warnings)
+  final bool isAccountLocked;
+  final DateTime? accountLockedUntil;
+  final int warningCount;
+
   // Collector application status
   final CollectorApplicationStatus? collectorApplicationStatus;
   final String? collectorApplicationId;
@@ -99,6 +104,9 @@ class UserData {
     this.deletedAt,
     this.deletedBy,
     this.sessionInvalidatedAt,
+    this.isAccountLocked = false,
+    this.accountLockedUntil,
+    this.warningCount = 0,
     this.collectorApplicationStatus,
     this.collectorApplicationId,
     this.collectorApplicationAppliedAt,

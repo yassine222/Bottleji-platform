@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class AccountLockCard extends StatelessWidget {
+  final DateTime lockedUntil;
+  final VoidCallback onDismiss;
+
+  const AccountLockCard({
+    super.key,
+    required this.lockedUntil,
+    required this.onDismiss,
+  });
+
+  String _getTimeRemaining() {
+    final now = DateTime.now();
+    final difference = lockedUntil.difference(now);
+
+    if (difference.isNegative) {
+      return 'Lock expired';
+    }
+
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+
+    if (hours > 0) {
+      return '$hours hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes != 1 ? 's' : ''}';
+    } else {
+      return '$minutes minute${minutes != 1 ? 's' : ''}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade300, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Icon
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.lock_clock,
+              size: 48,
+              color: Colors.red.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Title
+          Text(
+            'Account Temporarily Locked',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.red.shade900,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          
+          // Reason
+          Text(
+            'Your account has been locked for 24 hours due to 5 collection timeout warnings.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red.shade800,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          
+          // Time remaining
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.timer_outlined,
+                  size: 20,
+                  color: Colors.red.shade700,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Unlocks in ${_getTimeRemaining()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Unlock time
+          Text(
+            'Available again at ${DateFormat('MMM d, h:mm a').format(lockedUntil)}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.red.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Info message
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade300),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: Colors.amber.shade700,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'You can still browse drops and use other features, but cannot accept new drops until unlocked.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.amber.shade900,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Dismiss button
+          TextButton.icon(
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close, size: 18),
+            label: const Text('I Understand'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Overlay version for center screen display
+class AccountLockOverlay extends StatelessWidget {
+  final DateTime lockedUntil;
+  final VoidCallback onDismiss;
+
+  const AccountLockOverlay({
+    super.key,
+    required this.lockedUntil,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: AccountLockCard(
+              lockedUntil: lockedUntil,
+              onDismiss: onDismiss,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
