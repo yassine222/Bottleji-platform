@@ -3513,28 +3513,6 @@ function SupportContent() {
           </div>
         </div>
 
-        {/* Stats */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Total Tickets</h3>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTickets || 0}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Open</h3>
-              <p className="text-2xl font-bold text-yellow-600">{stats.openTickets || 0}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">In Progress</h3>
-              <p className="text-2xl font-bold text-blue-600">{stats.inProgressTickets || 0}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Resolved</h3>
-              <p className="text-2xl font-bold text-green-600">{stats.resolvedTickets || 0}</p>
-            </div>
-          </div>
-        )}
-
         {tickets.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
