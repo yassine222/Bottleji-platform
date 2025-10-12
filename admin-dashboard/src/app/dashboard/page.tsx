@@ -267,6 +267,9 @@ function UsersContent() {
   const [activeActivityTab, setActiveActivityTab] = useState('drops-created');
   const [activityFilter, setActivityFilter] = useState('all');
   const [activityDateFilter, setActivityDateFilter] = useState('all');
+  const [showAddWarningModal, setShowAddWarningModal] = useState(false);
+  const [newWarningReason, setNewWarningReason] = useState('');
+  const [editingWarning, setEditingWarning] = useState<{ index: number; reason: string; date: string } | null>(null);
 
   // Load users from API
   const loadUsers = async (page = 1) => {
@@ -1063,23 +1066,233 @@ function UsersContent() {
                   </div>
                 )}
                 
-                {selectedUser.warnings && selectedUser.warnings.length > 0 && (
-                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
-                      Warnings
-                    </h4>
-                    <div className="space-y-3">
-                      {selectedUser.warnings.map((warning: any, index: number) => (
-                        <div key={index} className="bg-white/50 p-3 rounded-lg border border-red-200">
-                          <div className="text-sm font-semibold text-red-900">{warning.reason}</div>
-                          <div className="text-xs text-red-600 mt-1">{formatDate(warning.date)}</div>
-                        </div>
-                      ))}
+              </div>
+
+              {/* Warnings Management Section - Full Width */}
+              <div className="mt-6 bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border-2 border-red-200">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <ExclamationCircleIcon className="h-6 w-6 text-red-600" />
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900">Warnings Management</h4>
+                      <p className="text-sm text-gray-600">Track and manage user violations</p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-red-600">{selectedUser.warningCount || 0}/5</div>
+                      <div className="text-xs text-gray-600 font-medium">Warnings</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">Warning Level</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {selectedUser.warningCount >= 5 ? '🔒 Account Locked' : 
+                       selectedUser.warningCount >= 4 ? '⚠️ Critical' : 
+                       selectedUser.warningCount >= 3 ? '⚠️ High' : 
+                       selectedUser.warningCount >= 2 ? '⚡ Medium' : 
+                       selectedUser.warningCount >= 1 ? '💬 Low' : '✅ Clean'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        selectedUser.warningCount >= 5 ? 'bg-red-600' :
+                        selectedUser.warningCount >= 4 ? 'bg-orange-500' :
+                        selectedUser.warningCount >= 3 ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`}
+                      style={{ width: `${Math.min((selectedUser.warningCount || 0) / 5 * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mb-6">
+                  <button
+                    onClick={() => setShowAddWarningModal(true)}
+                    className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Add Warning
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to reset all warnings for this user? This action cannot be undone.')) {
+                        // TODO: Call API to reset warnings
+                        alert('Reset warnings functionality will be implemented');
+                      }
+                    }}
+                    disabled={!selectedUser.warnings || selectedUser.warnings.length === 0}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-cyan-700 font-semibold transition-all shadow-md hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset All Warnings
+                  </button>
+                </div>
+
+                {/* Warnings List */}
+                {selectedUser.warnings && selectedUser.warnings.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedUser.warnings.map((warning: any, index: number) => (
+                      <div key={index} className="bg-white rounded-xl p-4 border-2 border-red-200 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">
+                                Warning #{index + 1}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(warning.date)}
+                              </span>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-900">{warning.reason}</p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => setEditingWarning({ index, reason: warning.reason, date: warning.date })}
+                              className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                              title="Edit Warning"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to remove warning #${index + 1}?`)) {
+                                  // TODO: Call API to remove warning
+                                  alert('Remove warning functionality will be implemented');
+                                }
+                              }}
+                              className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                              title="Remove Warning"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white/50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
+                    <CheckCircleIcon className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">No warnings issued</p>
+                    <p className="text-sm text-gray-500 mt-1">This user has a clean record</p>
                   </div>
                 )}
               </div>
+
+              {/* Add Warning Modal */}
+              {showAddWarningModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-xl font-bold text-gray-900">Add New Warning</h3>
+                      <p className="text-sm text-gray-600 mt-1">Issue a warning to this user</p>
+                    </div>
+                    <div className="p-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Warning Reason
+                      </label>
+                      <textarea
+                        value={newWarningReason}
+                        onChange={(e) => setNewWarningReason(e.target.value)}
+                        placeholder="Enter the reason for this warning..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none"
+                        rows={4}
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        ⚠️ Warning {(selectedUser.warningCount || 0) + 1} of 5 - Account will be locked after 5 warnings
+                      </p>
+                    </div>
+                    <div className="p-6 border-t border-gray-200 flex gap-3">
+                      <button
+                        onClick={() => {
+                          setShowAddWarningModal(false);
+                          setNewWarningReason('');
+                        }}
+                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (newWarningReason.trim()) {
+                            // TODO: Call API to add warning
+                            alert('Add warning functionality will be implemented');
+                            setShowAddWarningModal(false);
+                            setNewWarningReason('');
+                          }
+                        }}
+                        disabled={!newWarningReason.trim()}
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl hover:from-red-700 hover:to-orange-700 font-semibold transition-all shadow-md hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Add Warning
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Warning Modal */}
+              {editingWarning && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-xl font-bold text-gray-900">Edit Warning #{editingWarning.index + 1}</h3>
+                      <p className="text-sm text-gray-600 mt-1">Modify the warning details</p>
+                    </div>
+                    <div className="p-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Warning Reason
+                      </label>
+                      <textarea
+                        value={editingWarning.reason}
+                        onChange={(e) => setEditingWarning({ ...editingWarning, reason: e.target.value })}
+                        placeholder="Enter the reason for this warning..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                        rows={4}
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Issued on: {formatDate(editingWarning.date)}
+                      </p>
+                    </div>
+                    <div className="p-6 border-t border-gray-200 flex gap-3">
+                      <button
+                        onClick={() => setEditingWarning(null)}
+                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (editingWarning.reason.trim()) {
+                            // TODO: Call API to update warning
+                            alert('Edit warning functionality will be implemented');
+                            setEditingWarning(null);
+                          }
+                        }}
+                        disabled={!editingWarning.reason.trim()}
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-semibold transition-all shadow-md hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               
                   {/* User Activities with Tabs */}
                   <div className="mt-8">
