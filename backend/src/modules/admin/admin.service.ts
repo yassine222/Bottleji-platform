@@ -525,11 +525,22 @@ export class AdminService {
         .exec();
 
       // Get collection attempts where user is the collector (using new CollectionAttempt system)
+      console.log(`🔍 Looking for collection attempts for userId: ${userId}`);
+      console.log(`🔍 Converted to ObjectId: ${userObjectId}`);
+      
       const collectionAttempts = await this.collectionAttemptModel.find({ 
         collectorId: userObjectId 
       })
         .sort({ acceptedAt: -1 })
         .exec();
+      
+      console.log(`📦 Found ${collectionAttempts.length} collection attempts`);
+      
+      // Also try finding by string ID to debug
+      const attemptsAsString = await this.collectionAttemptModel.find({ 
+        collectorId: userId 
+      }).exec();
+      console.log(`📦 Found ${attemptsAsString.length} collection attempts (using string ID)`);
 
       // Group activities by type and create timeline
       const activities: any[] = [];
