@@ -117,6 +117,22 @@ class UserData {
   // Helper getters for backward compatibility
   bool get isCollector => roles.contains('collector');
   bool get isHousehold => roles.contains('household');
+  
+  // Check if account is currently locked (lock hasn't expired yet)
+  bool get isCurrentlyLocked {
+    if (!isAccountLocked) return false;
+    if (accountLockedUntil == null) return false;
+    return DateTime.now().isBefore(accountLockedUntil!);
+  }
+  
+  // Check if user was just unlocked (unlocked in last hour)
+  bool get wasRecentlyUnlocked {
+    if (isAccountLocked) return false;
+    if (accountLockedUntil == null) return false;
+    final now = DateTime.now();
+    final hourAgo = now.subtract(const Duration(hours: 1));
+    return accountLockedUntil!.isAfter(hourAgo) && accountLockedUntil!.isBefore(now);
+  }
 
   // Check if profile is complete (use backend field if available, otherwise calculate)
   bool get isProfileCompleteCalculated {
@@ -180,6 +196,19 @@ class UserData {
       }
     }
     
+    // Handle account lock fields
+    bool isAccountLocked = json['isAccountLocked'] ?? false;
+    DateTime? accountLockedUntil;
+    int warningCount = json['warningCount'] ?? 0;
+    
+    if (json['accountLockedUntil'] != null) {
+      try {
+        accountLockedUntil = DateTime.parse(json['accountLockedUntil'] as String);
+      } catch (e) {
+        accountLockedUntil = null;
+      }
+    }
+    
     // Handle createdAt and updatedAt with fallbacks
     DateTime createdAt;
     DateTime updatedAt;
@@ -206,6 +235,9 @@ class UserData {
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'sessionInvalidatedAt': sessionInvalidatedAt?.toIso8601String(),
+      'isAccountLocked': isAccountLocked,
+      'accountLockedUntil': accountLockedUntil?.toIso8601String(),
+      'warningCount': warningCount,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     });
@@ -311,6 +343,19 @@ class UserData {
       updatedAt = DateTime.now();
     }
 
+    // Handle account lock fields
+    bool isAccountLocked = json['isAccountLocked'] ?? false;
+    DateTime? accountLockedUntil;
+    int warningCount = json['warningCount'] ?? 0;
+    
+    if (json['accountLockedUntil'] != null) {
+      try {
+        accountLockedUntil = DateTime.parse(json['accountLockedUntil'] as String);
+      } catch (e) {
+        accountLockedUntil = null;
+      }
+    }
+    
     final userData = UserData(
       id: json['id'] as String,
       email: json['email'] as String,
@@ -327,6 +372,9 @@ class UserData {
       deletedAt: deletedAt,
       deletedBy: deletedBy,
       sessionInvalidatedAt: sessionInvalidatedAt,
+      isAccountLocked: isAccountLocked,
+      accountLockedUntil: accountLockedUntil,
+      warningCount: warningCount,
       collectorApplicationStatus: collectorApplicationStatus,
       collectorApplicationId: collectorApplicationId,
       collectorApplicationAppliedAt: collectorApplicationAppliedAt,
@@ -354,6 +402,9 @@ class UserData {
         'deletedAt': deletedAt?.toIso8601String(),
         'deletedBy': deletedBy,
         'sessionInvalidatedAt': sessionInvalidatedAt?.toIso8601String(),
+        'isAccountLocked': isAccountLocked,
+        'accountLockedUntil': accountLockedUntil?.toIso8601String(),
+        'warningCount': warningCount,
         'collectorApplicationStatus': collectorApplicationStatus?.name,
         'collectorApplicationId': collectorApplicationId,
         'collectorApplicationAppliedAt': collectorApplicationAppliedAt?.toIso8601String(),
