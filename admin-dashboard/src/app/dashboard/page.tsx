@@ -1388,6 +1388,7 @@ function ApplicationsContent() {
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Predefined rejection reasons
   const REJECTION_REASONS = [
@@ -1761,21 +1762,36 @@ function ApplicationsContent() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search and Filters */}
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        <div className="flex gap-4 items-center">
-          <FunnelIcon className="h-5 w-5 text-gray-400" />
-          <label className="text-sm font-semibold text-gray-700">Filter by Status:</label>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium"
-          >
-            <option value="">All Statuses</option>
-            <option value="pending">⏳ Pending</option>
-            <option value="approved">✅ Approved</option>
-            <option value="rejected">❌ Rejected</option>
-          </select>
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, email, or application ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+            />
+          </div>
+          
+          {/* Status Filter */}
+          <div className="flex items-center gap-3">
+            <FunnelIcon className="h-5 w-5 text-gray-400" />
+            <label className="text-sm font-semibold text-gray-700">Status:</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium min-w-[180px]"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="approved">✅ Approved</option>
+              <option value="rejected">❌ Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1796,14 +1812,31 @@ function ApplicationsContent() {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No applications found</h3>
               <p className="text-gray-600">
-                {selectedStatus ? 'Try adjusting your filters.' : 'No collector applications have been submitted yet.'}
+                {searchQuery || selectedStatus 
+                  ? 'Try adjusting your search or filters.' 
+                  : 'No collector applications have been submitted yet.'}
               </p>
             </div>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {applications.map((application, index) => (
+          {applications
+            .filter(application => {
+              if (!searchQuery) return true;
+              
+              const query = searchQuery.toLowerCase();
+              const name = typeof application.userId === 'object' && application.userId?.name 
+                ? application.userId.name.toLowerCase() 
+                : '';
+              const email = typeof application.userId === 'object' && application.userId?.email 
+                ? application.userId.email.toLowerCase() 
+                : '';
+              const id = application.id.toLowerCase();
+              
+              return name.includes(query) || email.includes(query) || id.includes(query);
+            })
+            .map((application, index) => (
             <div
               key={`${application.id}-${index}`}
               className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
