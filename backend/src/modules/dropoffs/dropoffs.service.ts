@@ -1572,17 +1572,24 @@ export class DropoffsService {
 
   async completeCollectionAttempt(attemptId: string, outcome: 'expired' | 'cancelled' | 'collected', details: any) {
     try {
+      console.log(`🔄 Completing collection attempt: ${attemptId} with outcome: ${outcome}`);
       const attempt = await this.collectionAttemptModel.findById(attemptId).exec();
       if (!attempt) {
+        console.log(`❌ Collection attempt not found: ${attemptId}`);
         throw new NotFoundException('Collection attempt not found');
       }
 
+      console.log(`📋 Current attempt status: ${attempt.status}, current timeline length: ${attempt.timeline.length}`);
+
       if (attempt.status === 'completed') {
+        console.log(`⚠️ Collection attempt already completed with outcome: ${attempt.outcome}`);
         throw new BadRequestException('Collection attempt already completed');
       }
 
       const now = new Date();
       const durationMinutes = Math.round((now.getTime() - attempt.acceptedAt.getTime()) / (1000 * 60));
+
+      console.log(`⏱️ Duration: ${durationMinutes} minutes`);
 
       // Add outcome event to timeline
       const outcomeEvent = {
@@ -1590,11 +1597,13 @@ export class DropoffsService {
         timestamp: now,
         collector: attempt.timeline[0].collector, // Use same collector as accepted event
         details: {
-          reason: details.reason,
-          notes: details.notes,
+          reason: details.reason || null,
+          notes: details.notes || null,
           location: details.location || attempt.dropSnapshot.location
         }
       };
+
+      console.log(`📝 Creating outcome event: ${JSON.stringify(outcomeEvent)}`);
 
       // Update attempt
       const updatedAttempt = await this.collectionAttemptModel.findByIdAndUpdate(
@@ -1604,14 +1613,18 @@ export class DropoffsService {
           outcome,
           completedAt: now,
           durationMinutes,
-          timeline: [...attempt.timeline, outcomeEvent]
+          $push: { timeline: outcomeEvent }  // Use $push instead of spreading array
         },
         { new: true }
       ).exec();
 
       if (!updatedAttempt) {
+        console.log(`❌ Collection attempt not found after update`);
         throw new NotFoundException('Collection attempt not found after update');
       }
+
+      console.log(`✅ Collection attempt updated! New timeline length: ${updatedAttempt.timeline.length}`);
+      console.log(`📋 Timeline events: ${updatedAttempt.timeline.map(e => e.event).join(' → ')}`);
 
       // Add warning if expired
       if (outcome === 'expired') {
@@ -1626,7 +1639,8 @@ export class DropoffsService {
       console.log('✅ Collection attempt completed:', {
         id: updatedAttempt._id,
         outcome: updatedAttempt.outcome,
-        durationMinutes: updatedAttempt.durationMinutes
+        durationMinutes: updatedAttempt.durationMinutes,
+        timelineLength: updatedAttempt.timeline.length
       });
 
       return updatedAttempt;
