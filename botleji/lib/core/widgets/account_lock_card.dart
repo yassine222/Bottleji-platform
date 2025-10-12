@@ -32,8 +32,8 @@ class AccountLockCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 24), // Reduced horizontal margin, added bottom padding
+      padding: const EdgeInsets.all(20), // Increased padding
       decoration: BoxDecoration(
         color: Colors.red.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -192,7 +192,7 @@ class AccountLockOverlay extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 80), // Added bottom padding for nav bar
             child: AccountLockCard(
               lockedUntil: lockedUntil,
               onDismiss: onDismiss,
