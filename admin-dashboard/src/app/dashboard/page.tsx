@@ -1503,14 +1503,20 @@ function ApplicationsContent() {
 
   const getStatusBadge = (status: string) => {
     const statusClasses = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      approved: 'bg-green-100 text-green-800 border-green-200',
-      rejected: 'bg-red-100 text-red-800 border-red-200',
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      approved: 'bg-green-100 text-green-800 border-green-300',
+      rejected: 'bg-red-100 text-red-800 border-red-300',
+    };
+    
+    const statusIcons = {
+      pending: '⏳ ',
+      approved: '✅ ',
+      rejected: '❌ ',
     };
     
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${statusClasses[status as keyof typeof statusClasses] || statusClasses.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${statusClasses[status as keyof typeof statusClasses] || statusClasses.pending}`}>
+        {statusIcons[status as keyof typeof statusIcons]}{status.charAt(0).toUpperCase() + status.slice(1).toUpperCase()}
       </span>
     );
   };
@@ -1528,123 +1534,183 @@ function ApplicationsContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Collector Applications</h1>
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <ClipboardDocumentListIcon className="h-10 w-10" />
+          <h1 className="text-4xl font-bold">Collector Applications</h1>
+        </div>
+        <p className="text-purple-100 text-lg">Review and manage collector applications</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Total Applications</div>
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-blue-50">
+                <ClipboardDocumentListIcon className="h-7 w-7 text-blue-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+            </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Total Applications</p>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Pending</div>
-          <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-yellow-50">
+                <ClockIcon className="h-7 w-7 text-yellow-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
+              </div>
+            </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Pending Review</p>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Approved</div>
-          <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-green-50">
+                <CheckCircleIcon className="h-7 w-7 text-green-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{stats.approved}</p>
+              </div>
+            </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Approved</p>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Rejected</div>
-          <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-red-50">
+                <ExclamationCircleIcon className="h-7 w-7 text-red-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">{stats.rejected}</p>
+              </div>
+            </div>
+            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Rejected</p>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow border">
+      <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
         <div className="flex gap-4 items-center">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status Filter</label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
+          <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <label className="text-sm font-semibold text-gray-700">Filter by Status:</label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="approved">✅ Approved</option>
+            <option value="rejected">❌ Rejected</option>
+          </select>
         </div>
       </div>
 
-      {/* Applications Table */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-gray-500">Loading applications...</p>
+      {/* Applications Cards */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading applications...</p>
           </div>
-        ) : applications.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">No applications found</p>
+        </div>
+      ) : applications.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-md border border-gray-100">
+          <div className="px-6 py-16">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <ClipboardDocumentListIcon className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No applications found</h3>
+              <p className="text-gray-600">
+                {selectedStatus ? 'Try adjusting your filters.' : 'No collector applications have been submitted yet.'}
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applicant
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applied
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reviewed
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {applications.map((application, index) => (
-                  <tr key={`${application.id}-${index}`} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {applications.map((application, index) => (
+            <div
+              key={`${application.id}-${index}`}
+              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {/* Applicant Info */}
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        {typeof application.userId === 'object' && application.userId?.name 
+                          ? application.userId.name[0].toUpperCase() 
+                          : '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600 transition-colors truncate">
                           {typeof application.userId === 'object' && application.userId?.name 
                             ? application.userId.name 
-                            : String(application.userId)}
-                        </div>
-                        <div className="text-sm text-gray-500">
+                            : 'Unknown Applicant'}
+                        </h3>
+                        <p className="text-sm text-gray-600 truncate">
                           {typeof application.userId === 'object' && application.userId?.email 
                             ? application.userId.email 
                             : `ID: ${application.id}`}
-                        </div>
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(application.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(application.appliedAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {application.reviewedAt ? formatDate(application.reviewedAt) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleViewApplication(application)}
-                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md text-xs font-medium"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      <div className="flex-shrink-0">
+                        {getStatusBadge(application.status)}
+                      </div>
+                    </div>
+                    
+                    {/* Meta Info */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+                      <span className="flex items-center gap-1.5">
+                        <ClockIcon className="h-4 w-4" />
+                        Applied: {new Date(application.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      {application.reviewedAt && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircleIcon className="h-4 w-4" />
+                            Reviewed: {new Date(application.reviewedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </>
+                      )}
+                      {application.idCardType && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <span className="flex items-center gap-1.5">
+                            🆔 {application.idCardType}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* View Button */}
+                  <button
+                    onClick={() => handleViewApplication(application)}
+                    className="flex-shrink-0 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 font-semibold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    Review
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
