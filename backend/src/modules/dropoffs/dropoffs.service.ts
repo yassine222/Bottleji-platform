@@ -706,7 +706,10 @@ export class DropoffsService {
         }).exec();
 
         if (existingExpiredInteraction) {
-          console.log(`⚠️ EXPIRED interaction already exists for drop ${dropoff._id} and collector ${interaction.collectorId}, skipping`);
+          console.log(`⚠️ EXPIRED interaction already exists for drop ${dropoff._id} and collector ${interaction.collectorId}`);
+          // Delete the orphaned ACCEPTED interaction since we already have the EXPIRED one
+          await this.interactionModel.findByIdAndDelete(interaction._id).exec();
+          console.log(`🗑️ Deleted orphaned ACCEPTED interaction ${interaction._id}`);
           continue;
         }
 
@@ -742,6 +745,10 @@ export class DropoffsService {
           });
 
           console.log(`✅ EXPIRED interaction created for drop ${dropoff._id} (penalty added automatically)`);
+          
+          // Delete the old ACCEPTED interaction now that we've created the EXPIRED one
+          await this.interactionModel.findByIdAndDelete(interaction._id).exec();
+          console.log(`🗑️ Deleted old ACCEPTED interaction ${interaction._id}`);
           
           cleanedCount++;
           console.log(`✅ Drop ${dropoff._id} timed out after ${totalTimeoutMinutes} minutes, set back to PENDING`);
