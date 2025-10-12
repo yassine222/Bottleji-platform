@@ -560,43 +560,47 @@ export class AdminService {
 
       // Add collection attempt activities (using new CollectionAttempt system)
       collectionAttempts.forEach(attempt => {
-        // Determine the status and icon based on outcome
-        let finalStatus = attempt.outcome || 'accepted';
-        let statusIcon = '📋';
-        
-        if (finalStatus === 'collected') {
-          statusIcon = '✅';
-        } else if (finalStatus === 'cancelled') {
-          statusIcon = '❌';
-        } else if (finalStatus === 'expired') {
-          statusIcon = '⏰';
+        try {
+          // Determine the status and icon based on outcome
+          let finalStatus = attempt.outcome || 'accepted';
+          let statusIcon = '📋';
+          
+          if (finalStatus === 'collected') {
+            statusIcon = '✅';
+          } else if (finalStatus === 'cancelled') {
+            statusIcon = '❌';
+          } else if (finalStatus === 'expired') {
+            statusIcon = '⏰';
+          }
+          
+          // Convert timeline events to interaction format for compatibility
+          const interactionsList = (attempt.timeline || []).map(event => ({
+            type: event.event,
+            time: event.timestamp,
+            reason: event.details?.reason,
+            notes: event.details?.notes,
+          }));
+          
+          activities.push({
+            id: attempt._id?.toString(),
+            type: `collector_${finalStatus}`,
+            title: `${statusIcon} Collection ${finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1)}`,
+            description: `${attempt.dropSnapshot?.numberOfBottles || 0} bottles, ${attempt.dropSnapshot?.numberOfCans || 0} cans - ${finalStatus}`,
+            timestamp: attempt.completedAt || attempt.acceptedAt,
+            dropoffId: attempt.dropoffId?.toString(),
+            interactionType: finalStatus,
+            interactions: interactionsList, // Include all timeline events
+            numberOfBottles: attempt.dropSnapshot?.numberOfBottles || 0,
+            numberOfCans: attempt.dropSnapshot?.numberOfCans || 0,
+            bottleType: attempt.dropSnapshot?.bottleType || 'mixed',
+            location: attempt.dropSnapshot?.location || { lat: 0, lng: 0 },
+            userId: attempt.dropSnapshot?.createdBy?.id || 'unknown',
+            attemptNumber: attempt.attemptNumber || 1,
+            durationMinutes: attempt.durationMinutes || 0,
+          });
+        } catch (error) {
+          console.error('❌ Error processing collection attempt:', attempt._id, error);
         }
-        
-        // Convert timeline events to interaction format for compatibility
-        const interactionsList = attempt.timeline.map(event => ({
-          type: event.event,
-          time: event.timestamp,
-          reason: event.details.reason,
-          notes: event.details.notes,
-        }));
-        
-        activities.push({
-          id: attempt._id?.toString(),
-          type: `collector_${finalStatus}`,
-          title: `${statusIcon} Collection ${finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1)}`,
-          description: `${attempt.dropSnapshot.numberOfBottles} bottles, ${attempt.dropSnapshot.numberOfCans} cans - ${finalStatus}`,
-          timestamp: attempt.completedAt || attempt.acceptedAt,
-          dropoffId: attempt.dropoffId?.toString(),
-          interactionType: finalStatus,
-          interactions: interactionsList, // Include all timeline events
-          numberOfBottles: attempt.dropSnapshot.numberOfBottles,
-          numberOfCans: attempt.dropSnapshot.numberOfCans,
-          bottleType: attempt.dropSnapshot.bottleType,
-          location: attempt.dropSnapshot.location,
-          userId: attempt.dropSnapshot.createdBy.id,
-          attemptNumber: attempt.attemptNumber,
-          durationMinutes: attempt.durationMinutes,
-        });
       });
 
       // Sort all activities by timestamp (newest first)
