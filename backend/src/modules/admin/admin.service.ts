@@ -596,6 +596,11 @@ export class AdminService {
       // Sort all activities by timestamp (newest first)
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+      console.log(`📊 Total activities: ${activities.length}`);
+      console.log(`   - Drop created: ${activities.filter(a => a.type === 'drop_created').length}`);
+      console.log(`   - Collection attempts: ${activities.filter(a => a.type.startsWith('collector_')).length}`);
+      console.log(`   - Collection types: ${activities.filter(a => a.type.startsWith('collector_')).map(a => a.type).join(', ')}`);
+
       return activities;
     } catch (error) {
       console.error('Error getting user activities:', error);
