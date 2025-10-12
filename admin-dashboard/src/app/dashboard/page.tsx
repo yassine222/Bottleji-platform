@@ -295,7 +295,11 @@ function UsersContent() {
     try {
       setLoadingActivities(true);
       const response = await usersAPI.getUserActivities(userId);
-      setUserActivities(response.data.activities || []);
+      console.log('📊 Frontend received activities:', response.data);
+      const activities = response.data.activities || response.data || [];
+      console.log('📊 Total activities:', activities.length);
+      console.log('📊 Collection activities:', activities.filter((a: any) => a.type?.startsWith('collector_')).length);
+      setUserActivities(activities);
     } catch (err: any) {
       console.error('Error loading user activities:', err);
       setUserActivities([]);
