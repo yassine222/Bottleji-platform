@@ -5,6 +5,7 @@ import { User, UserRole, CollectorApplicationStatus } from '../users/schemas/use
 import { CollectorApplication } from '../collector-applications/schemas/collector-application.schema';
 import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
 import { CollectorInteraction } from '../dropoffs/schemas/collector-interaction.schema';
+import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
 import { SupportTicket } from '../support-tickets/schemas/support-ticket.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CollectorApplicationsService } from '../collector-applications/collector-applications.service';
@@ -19,6 +20,7 @@ export class AdminService {
     @InjectModel(CollectorApplication.name) private collectorApplicationModel: Model<CollectorApplication>,
     @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
     @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
+    @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel(SupportTicket.name) private supportTicketModel: Model<SupportTicket>,
     private notificationsService: NotificationsService,
     private collectorApplicationsService: CollectorApplicationsService,
@@ -522,34 +524,12 @@ export class AdminService {
         .sort({ createdAt: -1 })
         .exec();
 
-      // Get collector interactions where user is the collector
-      const collectorInteractions = await this.dropoffModel.aggregate([
-        {
-          $lookup: {
-            from: 'collectorinteractions',
-            localField: '_id',
-            foreignField: 'dropoffId',
-            as: 'interactions'
-          }
-        },
-        {
-          $unwind: '$interactions'
-        },
-        {
-          $match: {
-            'interactions.collectorId': userObjectId
-          }
-        },
-        {
-          $project: {
-            dropoff: '$$ROOT',
-            interaction: '$interactions'
-          }
-        },
-        {
-          $sort: { 'interaction.interactionTime': -1 }
-        }
-      ]);
+      // Get collection attempts where user is the collector (using new CollectionAttempt system)
+      const collectionAttempts = await this.collectionAttemptModel.find({ 
+        collectorId: userObjectId 
+      })
+        .sort({ acceptedAt: -1 })
+        .exec();
 
       // Group activities by type and create timeline
       const activities: any[] = [];
@@ -572,65 +552,44 @@ export class AdminService {
         });
       });
 
-      // Group collector interactions by dropoffId to show them as pairs
-      const interactionsByDrop = new Map();
-      
-      collectorInteractions.forEach(item => {
-        const dropId = item.dropoff._id?.toString();
-        if (!interactionsByDrop.has(dropId)) {
-          interactionsByDrop.set(dropId, []);
-        }
-        interactionsByDrop.get(dropId).push(item);
-      });
-
-      // Add collector interaction activities (grouped)
-      interactionsByDrop.forEach((items, dropId) => {
-        // Sort interactions by time
-        items.sort((a, b) => new Date(a.interaction.interactionTime).getTime() - new Date(b.interaction.interactionTime).getTime());
-        
-        const firstItem = items[0];
-        const dropoff = firstItem.dropoff;
-        
-        // Determine the final status of this drop collection
-        const hasCollected = items.some(i => i.interaction.interactionType === 'collected');
-        const hasCancelled = items.some(i => i.interaction.interactionType === 'cancelled');
-        const hasExpired = items.some(i => i.interaction.interactionType === 'expired');
-        
-        let finalStatus = 'accepted';
+      // Add collection attempt activities (using new CollectionAttempt system)
+      collectionAttempts.forEach(attempt => {
+        // Determine the status and icon based on outcome
+        let finalStatus = attempt.outcome || 'accepted';
         let statusIcon = '📋';
-        if (hasCollected) {
-          finalStatus = 'collected';
+        
+        if (finalStatus === 'collected') {
           statusIcon = '✅';
-        } else if (hasCancelled) {
-          finalStatus = 'cancelled';
+        } else if (finalStatus === 'cancelled') {
           statusIcon = '❌';
-        } else if (hasExpired) {
-          finalStatus = 'expired';
+        } else if (finalStatus === 'expired') {
           statusIcon = '⏰';
         }
         
-        // Create a grouped activity entry
-        const interactionsList = items.map(i => ({
-          type: i.interaction.interactionType,
-          time: i.interaction.interactionTime,
-          reason: i.interaction.cancellationReason,
-          notes: i.interaction.notes,
+        // Convert timeline events to interaction format for compatibility
+        const interactionsList = attempt.timeline.map(event => ({
+          type: event.event,
+          time: event.timestamp,
+          reason: event.details.reason,
+          notes: event.details.notes,
         }));
         
         activities.push({
-          id: dropId,
+          id: attempt._id?.toString(),
           type: `collector_${finalStatus}`,
           title: `${statusIcon} Collection ${finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1)}`,
-          description: `${dropoff.numberOfBottles} bottles, ${dropoff.numberOfCans} cans - ${finalStatus}`,
-          timestamp: items[items.length - 1].interaction.interactionTime, // Use last interaction time
-          dropoffId: dropId,
+          description: `${attempt.dropSnapshot.numberOfBottles} bottles, ${attempt.dropSnapshot.numberOfCans} cans - ${finalStatus}`,
+          timestamp: attempt.completedAt || attempt.acceptedAt,
+          dropoffId: attempt.dropoffId?.toString(),
           interactionType: finalStatus,
-          interactions: interactionsList, // Include all interactions in the group
-          numberOfBottles: dropoff.numberOfBottles,
-          numberOfCans: dropoff.numberOfCans,
-          bottleType: dropoff.bottleType,
-          location: dropoff.location,
-          userId: dropoff.userId,
+          interactions: interactionsList, // Include all timeline events
+          numberOfBottles: attempt.dropSnapshot.numberOfBottles,
+          numberOfCans: attempt.dropSnapshot.numberOfCans,
+          bottleType: attempt.dropSnapshot.bottleType,
+          location: attempt.dropSnapshot.location,
+          userId: attempt.dropSnapshot.createdBy.id,
+          attemptNumber: attempt.attemptNumber,
+          durationMinutes: attempt.durationMinutes,
         });
       });
 
