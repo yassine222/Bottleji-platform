@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
-class AccountLockCard extends StatelessWidget {
+class AccountLockCard extends StatefulWidget {
   final DateTime lockedUntil;
   final VoidCallback onDismiss;
 
@@ -11,21 +12,58 @@ class AccountLockCard extends StatelessWidget {
     required this.onDismiss,
   });
 
-  String _getTimeRemaining() {
-    final now = DateTime.now();
-    final difference = lockedUntil.difference(now);
+  @override
+  State<AccountLockCard> createState() => _AccountLockCardState();
+}
 
-    if (difference.isNegative) {
+class _AccountLockCardState extends State<AccountLockCard> {
+  Timer? _timer;
+  Duration _timeRemaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimeRemaining();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _updateTimeRemaining();
+        });
+      }
+    });
+  }
+
+  void _updateTimeRemaining() {
+    final now = DateTime.now();
+    final difference = widget.lockedUntil.difference(now);
+    _timeRemaining = difference.isNegative ? Duration.zero : difference;
+  }
+
+  String _getTimeRemaining() {
+    if (_timeRemaining == Duration.zero) {
       return 'Lock expired';
     }
 
-    final hours = difference.inHours;
-    final minutes = difference.inMinutes % 60;
+    final hours = _timeRemaining.inHours;
+    final minutes = _timeRemaining.inMinutes % 60;
+    final seconds = _timeRemaining.inSeconds % 60;
 
     if (hours > 0) {
       return '$hours hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes != 1 ? 's' : ''}';
+    } else if (minutes > 0) {
+      return '$minutes minute${minutes != 1 ? 's' : ''} ${seconds} second${seconds != 1 ? 's' : ''}';
     } else {
-      return '$minutes minute${minutes != 1 ? 's' : ''}';
+      return '$seconds second${seconds != 1 ? 's' : ''}';
     }
   }
 
