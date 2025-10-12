@@ -928,49 +928,61 @@ function UsersContent() {
 
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0 h-16 w-16">
-                    {selectedUser.profilePhoto ? (
-                      <img
-                        className="h-16 w-16 rounded-full object-cover"
-                        src={selectedUser.profilePhoto}
-                        alt={selectedUser.name || 'User'}
-                        onError={(e) => {
-                          // Fallback to initials if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                    ) : null}
-                    <div className={`h-16 w-16 rounded-full bg-primary flex items-center justify-center ${selectedUser.profilePhoto ? 'hidden' : ''}`}>
-                      <span className="text-white text-xl font-medium">
-                        {selectedUser.name?.charAt(0)?.toUpperCase() || selectedUser.email?.charAt(0)?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-text-primary">{selectedUser.name || 'No Name'}</h3>
-                    <p className="text-sm text-text-secondary">{selectedUser.email}</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl">
+            {/* Header with Gradient and Profile */}
+            <div className="relative px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-cyan-50">
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="flex items-center gap-6 pr-12">
+                <div className="flex-shrink-0">
+                  {selectedUser.profilePhoto ? (
+                    <img
+                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-lg"
+                      src={selectedUser.profilePhoto}
+                      alt={selectedUser.name || 'User'}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center ring-4 ring-white shadow-lg ${selectedUser.profilePhoto ? 'hidden' : ''}`}>
+                    <span className="text-white text-3xl font-bold">
+                      {selectedUser.name?.charAt(0)?.toUpperCase() || selectedUser.email?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowUserModal(false)}
-                  className="text-text-secondary hover:text-text-primary"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-3xl font-bold text-gray-900 mb-2">{selectedUser.name || 'No Name'}</h3>
+                  <p className="text-gray-600 mb-3">{selectedUser.email}</p>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(selectedUser)}
+                    {selectedUser.roles?.map((role: string) => (
+                      <span key={role} className="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full border border-gray-300">
+                        {role === 'household' ? '🏠 Household' : role === 'collector' ? '👷 Collector' : role}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-text-primary mb-2">Personal Information</h4>
+            </div>
+
+            {/* Content */}
+            <div className="max-h-[calc(100vh-240px)] overflow-y-auto p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-100">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <UsersIcon className="h-5 w-5 text-teal-600" />
+                    Personal Information
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div><span className="font-medium">Name:</span> {selectedUser.name || 'Not provided'}</div>
                     <div><span className="font-medium">Email:</span> {selectedUser.email}</div>
@@ -979,45 +991,89 @@ function UsersContent() {
                   </div>
                 </div>
                 
-                <div>
-                  <h4 className="font-medium text-text-primary mb-2">Account Information</h4>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Status:</span> {getStatusBadge(selectedUser)}</div>
-                    <div><span className="font-medium">Roles:</span> {selectedUser.roles?.join(', ') || 'No roles'}</div>
-                    <div><span className="font-medium">Verified:</span> {selectedUser.isVerified ? 'Yes' : 'No'}</div>
-                    <div><span className="font-medium">Profile Complete:</span> {selectedUser.isProfileComplete ? 'Yes' : 'No'}</div>
-                    <div><span className="font-medium">Joined:</span> {formatDate(selectedUser.createdAt)}</div>
-                    <div><span className="font-medium">Last Updated:</span> {formatDate(selectedUser.updatedAt)}</div>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Account Information
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-700">Status:</span>
+                      {getStatusBadge(selectedUser)}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Verified:</span>
+                      <span className={selectedUser.isVerified ? 'text-green-600 font-medium' : 'text-orange-600 font-medium'}>
+                        {selectedUser.isVerified ? '✅ Yes' : '⚠️ No'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Profile Complete:</span>
+                      <span className={selectedUser.isProfileComplete ? 'text-green-600 font-medium' : 'text-orange-600 font-medium'}>
+                        {selectedUser.isProfileComplete ? '✅ Yes' : '⚠️ No'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Joined:</span>
+                      <span className="text-gray-900">{formatDate(selectedUser.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Last Updated:</span>
+                      <span className="text-gray-900">{formatDate(selectedUser.updatedAt)}</span>
+                    </div>
                     {selectedUser.isAccountLocked && selectedUser.accountLockedUntil && (
-                      <div><span className="font-medium">Lock Expires:</span> {formatDate(selectedUser.accountLockedUntil)}</div>
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-gray-700">Lock Expires:</span>
+                        <span className="text-red-600 font-medium">{formatDate(selectedUser.accountLockedUntil)}</span>
+                      </div>
                     )}
                   </div>
                 </div>
                 
                 {selectedUser.collectorApplication && (
-                  <div>
-                    <h4 className="font-medium text-text-primary mb-2">Collector Application</h4>
-                    <div className="space-y-2 text-sm">
-                      <div><span className="font-medium">Status:</span> {selectedUser.collectorApplication.status}</div>
-                      <div><span className="font-medium">Applied:</span> {formatDate(selectedUser.collectorApplication.appliedAt)}</div>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <ClipboardDocumentListIcon className="h-5 w-5 text-purple-600" />
+                      Collector Application
+                    </h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-700">Status:</span>
+                        <span className="font-medium">{selectedUser.collectorApplication.status}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-gray-700">Applied:</span>
+                        <span className="text-gray-900">{formatDate(selectedUser.collectorApplication.appliedAt)}</span>
+                      </div>
                       {selectedUser.collectorApplication.reviewedAt && (
-                        <div><span className="font-medium">Reviewed:</span> {formatDate(selectedUser.collectorApplication.reviewedAt)}</div>
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-700">Reviewed:</span>
+                          <span className="text-gray-900">{formatDate(selectedUser.collectorApplication.reviewedAt)}</span>
+                        </div>
                       )}
                       {selectedUser.collectorApplication.rejectionReason && (
-                        <div><span className="font-medium">Rejection Reason:</span> {selectedUser.collectorApplication.rejectionReason}</div>
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-700">Rejection Reason:</span>
+                          <span className="text-red-600 font-medium">{selectedUser.collectorApplication.rejectionReason}</span>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
                 
                 {selectedUser.warnings && selectedUser.warnings.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-text-primary mb-2">Warnings</h4>
-                    <div className="space-y-2 text-sm">
+                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
+                      Warnings
+                    </h4>
+                    <div className="space-y-3">
                       {selectedUser.warnings.map((warning: any, index: number) => (
-                        <div key={index} className="text-error-color">
-                          <div>{warning.reason}</div>
-                          <div className="text-xs">{formatDate(warning.date)}</div>
+                        <div key={index} className="bg-white/50 p-3 rounded-lg border border-red-200">
+                          <div className="text-sm font-semibold text-red-900">{warning.reason}</div>
+                          <div className="text-xs text-red-600 mt-1">{formatDate(warning.date)}</div>
                         </div>
                       ))}
                     </div>
