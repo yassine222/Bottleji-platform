@@ -158,6 +158,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Check if account lock has expired and auto-unlock
+    if (user.isAccountLocked && user.accountLockedUntil) {
+      const now = new Date();
+      if (now >= user.accountLockedUntil) {
+        // Lock has expired, auto-unlock the account
+        await this.usersService.unlockAccount(user.id);
+        console.log(`✅ Account ${user.id} auto-unlocked on login`);
+        
+        // Refresh user data after unlock
+        const unlockedUser = await this.usersService.findByEmail(loginDto.email);
+        if (unlockedUser) {
+          Object.assign(user, unlockedUser);
+        }
+      }
+    }
+
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -178,6 +194,9 @@ export class AuthService {
         roles: user.roles,
         collectorSubscriptionType: user.collectorSubscriptionType,
         isProfileComplete: user.isProfileComplete,
+        isAccountLocked: user.isAccountLocked,
+        accountLockedUntil: user.accountLockedUntil,
+        warningCount: user.warningCount,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },

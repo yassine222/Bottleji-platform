@@ -71,4 +71,23 @@ export class UsersService {
     }
     return user;
   }
+
+  async unlockAccount(userId: string): Promise<User> {
+    console.log(`🔓 Unlocking account for user: ${userId}`);
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        isAccountLocked: false,
+        accountLockedUntil: null,
+      },
+      { new: true }
+    ).exec();
+    
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    
+    console.log(`✅ Account unlocked for user: ${userId}`);
+    return user;
+  }
 } 
