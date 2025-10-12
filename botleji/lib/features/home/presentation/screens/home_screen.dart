@@ -28,6 +28,8 @@ import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dar
 import 'package:botleji/features/drops/presentation/widgets/drop_details_modal.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:botleji/core/widgets/welcome_back_card.dart';
 import 'package:botleji/core/providers/connectivity_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -135,6 +137,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Navigation functionality
   bool _isNavigationMode = false;
   List<NavigationStep> _navigationSteps = [];
+  
+  // Account lock card state
+  bool _lockCardDismissed = false;
+  bool _welcomeCardDismissed = false;
   int _currentStepIndex = 0;
   String? _nextTurnInstruction;
   String? _nextTurnDistance;
@@ -2486,6 +2492,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
+          
+          // Account Lock Overlay (shows when account is locked)
+          Consumer(
+            builder: (context, ref, child) {
+              final authState = ref.watch(authNotifierProvider);
+              final user = authState.value;
+              
+              // Only show for collectors
+              if (user == null || !user.isCollector) return const SizedBox.shrink();
+              
+              // Check if account is currently locked
+              if (user.isCurrentlyLocked && !_lockCardDismissed) {
+                return AccountLockOverlay(
+                  lockedUntil: user.accountLockedUntil!,
+                  onDismiss: () {
+                    setState(() {
+                      _lockCardDismissed = true;
+                    });
+                  },
+                );
+              }
+              
+              // Check if account was recently unlocked
+              if (user.wasRecentlyUnlocked && !_welcomeCardDismissed) {
+                return WelcomeBackOverlay(
+                  onDismiss: () {
+                    setState(() {
+                      _welcomeCardDismissed = true;
+                    });
+                  },
+                );
+              }
+              
+              return const SizedBox.shrink();
+            },
+          ),
+          
           // Floating bottom navigation bar
           BottomNavBar(
             currentIndex: currentIndex,
