@@ -285,21 +285,37 @@ export class DropsManagementService {
    * Get detailed drop information
    */
   async getDropDetails(dropId: string) {
+    console.log('🔍 getDropDetails called with dropId:', dropId);
+    
     // Get the drop
     const drop = await this.dropModel.findById(dropId).exec();
     if (!drop) {
       throw new Error('Drop not found');
     }
+    console.log('✅ Drop found:', drop._id);
 
     // Get user who created the drop
     const user = await this.userModel.findById(drop.userId).exec();
 
     // Get all collection attempts for this drop
-    // Convert dropId string to ObjectId for query
+    // Try both the string dropId and the drop's _id
+    console.log('🔍 Searching for collection attempts...');
+    console.log('   - dropId param:', dropId);
+    console.log('   - drop._id:', drop._id);
+    console.log('   - drop._id type:', typeof drop._id);
+    
     const collectionAttempts = await this.collectionAttemptModel
-      .find({ dropoffId: new Types.ObjectId(dropId) })
+      .find({ 
+        $or: [
+          { dropoffId: drop._id },
+          { dropoffId: dropId },
+          { dropoffId: new Types.ObjectId(dropId) }
+        ]
+      })
       .sort({ acceptedAt: -1 })
       .exec();
+    
+    console.log('✅ Found collection attempts:', collectionAttempts.length);
 
     // Get collector details for all attempts
     const collectorIds = collectionAttempts.map(attempt => attempt.collectorId).filter(Boolean);
