@@ -314,7 +314,7 @@ export class DropsManagementService {
 
     // Get all collection attempts for this drop
     // IMPORTANT: dropoffId in CollectionAttempt is stored as STRING, not ObjectId
-    const dropIdString = drop._id.toString();
+    const dropIdString = (drop as any)._id.toString();
     console.log('🔍 Searching for collection attempts...');
     console.log('   - Querying with dropoffId (string):', dropIdString);
     
@@ -418,7 +418,7 @@ export class DropsManagementService {
         type: 'censored_image',
         reason: reason,
         date: new Date(),
-        dropId: drop._id.toString(),
+        dropId: (drop as any)._id.toString(),
       };
 
       await this.userModel.findByIdAndUpdate(
@@ -681,7 +681,7 @@ export class DropsManagementService {
     ]);
 
     const reportsWithDetails = reports.map(report => {
-      const drop = drops.find(d => d._id.toString() === report.dropId);
+      const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
       const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
       
       return {

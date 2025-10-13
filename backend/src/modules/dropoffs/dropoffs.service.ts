@@ -1861,7 +1861,7 @@ export class DropoffsService {
         console.log(`✅ Auto-unlocked account: ${user._id} (${user.email})`);
         
         // Emit WebSocket event for real-time unlock notification
-        this.notificationsGateway.sendNotificationToUser(user._id.toString(), {
+        this.notificationsGateway.sendNotificationToUser((user as any)._id.toString(), {
           type: 'account_unlocked',
           title: 'Account Unlocked',
           message: 'Your account has been unlocked. You can start collecting again!',

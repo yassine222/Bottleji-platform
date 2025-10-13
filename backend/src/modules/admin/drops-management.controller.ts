@@ -150,11 +150,11 @@ export class DropsManagementController {
     
     // Notify the user
     if (result.user) {
-      this.notificationsGateway.sendNotificationToUser(result.user._id.toString(), {
+      this.notificationsGateway.sendNotificationToUser((result.user as any)._id.toString(), {
         type: 'drop_censored',
         title: 'Drop Image Censored',
         message: `Your drop image has been censored. Reason: ${reason}. You have received a warning.`,
-        data: { dropId: result.drop._id.toString(), reason },
+        data: { dropId: (result.drop as any)._id.toString(), reason },
         timestamp: new Date(),
       });
     }
