@@ -1968,8 +1968,8 @@ function DropsContent() {
                       </td>
                     </tr>
                   ) : (
-                    dropsList.map((drop: any) => (
-                      <tr key={drop._id} className="hover:bg-gray-50 transition-colors">
+                    dropsList.map((drop: any, index: number) => (
+                      <tr key={drop._id || `drop-${index}`} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
                           {drop._id?.substring(0, 8) || 'N/A'}...
                         </td>
