@@ -412,7 +412,12 @@ export class SupportTicketsService {
 
     // Send push notification if agent sent message
     if (senderType === 'agent') {
-      console.log('🔔 Sending push notification to user for agent message');
+      console.log('🔔 ===== SENDING PUSH NOTIFICATION =====');
+      console.log('🔔 User ID:', ticket.userId.toString());
+      console.log('🔔 Ticket ID:', ticketId);
+      console.log('🔔 Message:', message);
+      console.log('🔔 Sender Type:', senderType);
+      
       this.notificationsGateway.sendTicketMessageUpdate(
         ticket.userId.toString(),
         ticketId,
@@ -424,6 +429,11 @@ export class SupportTicketsService {
           isInternal,
         },
       );
+      
+      console.log('🔔 Push notification sent via gateway');
+      console.log('🔔 ====================================');
+    } else {
+      console.log('ℹ️ Not sending push notification - sender is user, not agent');
     }
 
     return ticket;
