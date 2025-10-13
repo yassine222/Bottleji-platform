@@ -156,11 +156,14 @@ export class DropsManagementService {
 
     const skip = (page - 1) * limit;
 
-    // If filtering by drops with attempts, get drop IDs that have attempts
-    let dropIdsWithAttempts: string[] = [];
+    // If filtering by drops with attempts, first get all drop IDs that have collection attempts
     if (hasAttempts) {
-      const attempts = await this.collectionAttemptModel.find({}).distinct('dropoffId').exec();
-      dropIdsWithAttempts = attempts.map(id => id.toString());
+      // Get unique drop IDs from CollectionAttempt collection
+      const dropIdsWithAttempts = await this.collectionAttemptModel
+        .distinct('dropoffId')
+        .exec();
+      
+      // Add to query: only show drops whose ID is in the list of drops with attempts
       query._id = { $in: dropIdsWithAttempts };
     }
 
