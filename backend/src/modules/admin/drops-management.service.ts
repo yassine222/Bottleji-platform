@@ -163,8 +163,21 @@ export class DropsManagementService {
         .distinct('dropoffId')
         .exec();
       
+      console.log('🔍 Filtering by drops with attempts...');
+      console.log('   - Found attempts for', dropIdsWithAttempts.length, 'unique drops');
+      console.log('   - Sample dropoffId:', dropIdsWithAttempts[0]);
+      console.log('   - Type:', typeof dropIdsWithAttempts[0]);
+      
+      // Convert to ObjectIds if they're strings
+      const dropObjectIds = dropIdsWithAttempts.map(id => {
+        if (typeof id === 'string') {
+          return new Types.ObjectId(id);
+        }
+        return id;
+      });
+      
       // Add to query: only show drops whose ID is in the list of drops with attempts
-      query._id = { $in: dropIdsWithAttempts };
+      query._id = { $in: dropObjectIds };
     }
 
     const [drops, total] = await Promise.all([
@@ -298,24 +311,23 @@ export class DropsManagementService {
     const user = await this.userModel.findById(drop.userId).exec();
 
     // Get all collection attempts for this drop
-    // Try both the string dropId and the drop's _id
+    // dropoffId in CollectionAttempt is stored as STRING, not ObjectId
     console.log('🔍 Searching for collection attempts...');
     console.log('   - dropId param:', dropId);
     console.log('   - drop._id:', drop._id);
-    console.log('   - drop._id type:', typeof drop._id);
+    console.log('   - drop._id.toString():', drop._id.toString());
     
+    // Query using the string representation of the drop ID
     const collectionAttempts = await this.collectionAttemptModel
-      .find({ 
-        $or: [
-          { dropoffId: drop._id },
-          { dropoffId: dropId },
-          { dropoffId: new Types.ObjectId(dropId) }
-        ]
-      })
+      .find({ dropoffId: drop._id.toString() })
       .sort({ acceptedAt: -1 })
       .exec();
     
     console.log('✅ Found collection attempts:', collectionAttempts.length);
+    if (collectionAttempts.length > 0) {
+      console.log('   - First attempt dropoffId:', collectionAttempts[0].dropoffId);
+      console.log('   - First attempt dropoffId type:', typeof collectionAttempts[0].dropoffId);
+    }
 
     // Get collector details for all attempts
     const collectorIds = collectionAttempts.map(attempt => attempt.collectorId).filter(Boolean);
