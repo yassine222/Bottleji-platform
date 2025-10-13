@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
 import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
 import { User } from '../users/schemas/user.schema';
@@ -276,8 +276,9 @@ export class DropsManagementService {
     const user = await this.userModel.findById(drop.userId).exec();
 
     // Get all collection attempts for this drop
+    // Convert dropId string to ObjectId for query
     const collectionAttempts = await this.collectionAttemptModel
-      .find({ dropoffId: dropId })
+      .find({ dropoffId: new Types.ObjectId(dropId) })
       .sort({ acceptedAt: -1 })
       .exec();
 
