@@ -1617,6 +1617,11 @@ function DropsContent() {
     fetchDropsList();
   }, [selectedStatus, searchQuery, currentPage]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus, searchQuery]);
+
   const fetchDropsList = async () => {
     try {
       setDropsLoading(true);
