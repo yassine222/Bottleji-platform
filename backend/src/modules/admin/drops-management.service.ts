@@ -152,7 +152,6 @@ export class DropsManagementService {
       this.dropModel
         .find(query)
         .populate('userId', 'name email')
-        .populate('collectorId', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -182,7 +181,6 @@ export class DropsManagementService {
         isSuspicious: { $ne: true }, // Don't include already flagged drops
       })
       .populate('userId', 'name email')
-      .populate('collectorId', 'name email')
       .sort({ createdAt: 1 })
       .exec();
 
@@ -231,7 +229,6 @@ export class DropsManagementService {
     const flaggedDrops = await this.dropModel
       .find({ isSuspicious: true })
       .populate('userId', 'name email')
-      .populate('collectorId', 'name email')
       .sort({ createdAt: -1 })
       .exec();
 

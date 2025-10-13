@@ -1957,7 +1957,7 @@ function DropsContent() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collector</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -1993,12 +1993,13 @@ function DropsContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(drop.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {drop.collectorId ? (
-                          <div className="text-sm text-gray-900">{drop.collectorId?.name || 'Assigned'}</div>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {(() => {
+                          const created = new Date(drop.createdAt);
+                          const now = new Date();
+                          const days = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+                          return days === 0 ? 'Today' : `${days}d ago`;
+                        })()}
                       </td>
                     </tr>
                   ))}
