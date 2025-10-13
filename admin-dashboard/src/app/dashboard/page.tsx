@@ -1612,11 +1612,11 @@ function DropsContent() {
         collectorRes,
         householdRes,
       ] = await Promise.all([
-        axios.get(`${API_URL}/admin/drops/stats`, config),
-        axios.get(`${API_URL}/admin/drops/analytics/time-based`, config),
-        axios.get(`${API_URL}/admin/drops/analytics/success-rate`, config),
-        axios.get(`${API_URL}/admin/drops/performance/collector-leaderboard?limit=5`, config),
-        axios.get(`${API_URL}/admin/drops/performance/household-rankings?limit=5`, config),
+        axios.get(`${API_URL}/admin/drops-management/stats`, config),
+        axios.get(`${API_URL}/admin/drops-management/analytics/time-based`, config),
+        axios.get(`${API_URL}/admin/drops-management/analytics/success-rate`, config),
+        axios.get(`${API_URL}/admin/drops-management/performance/collector-leaderboard?limit=5`, config),
+        axios.get(`${API_URL}/admin/drops-management/performance/household-rankings?limit=5`, config),
       ]);
 
       setStats(statsRes.data.stats);
@@ -1635,7 +1635,7 @@ function DropsContent() {
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_URL}/admin/drops/analyze-old`, config);
+      const response = await axios.get(`${API_URL}/admin/drops-management/analyze-old`, config);
       setOldDrops(response.data.drops);
       setShowOldDropsModal(true);
     } catch (error) {
@@ -1649,7 +1649,7 @@ function DropsContent() {
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.post(`${API_URL}/admin/drops/hide-old`, 
+      await axios.post(`${API_URL}/admin/drops-management/hide-old`, 
         { dropIds: selectedOldDrops }, 
         config
       );

@@ -4,7 +4,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { DropsManagementService } from './drops-management.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 
-@Controller('admin/drops')
+@Controller('admin/drops-management')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class DropsManagementController {
   constructor(
