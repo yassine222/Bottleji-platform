@@ -120,12 +120,12 @@ class StatsApiClient {
       final dropoffInfo = {
         '_id': attempt['dropoffId'],
         'userId': dropSnapshot['createdBy']?['id'] ?? '',
-        'imageUrl': '', // Not available in snapshot
+        'imageUrl': dropSnapshot['imageUrl'] ?? '',
         'numberOfBottles': dropSnapshot['numberOfBottles'] ?? 0,
         'numberOfCans': dropSnapshot['numberOfCans'] ?? 0,
         'bottleType': dropSnapshot['bottleType'] ?? '',
         'notes': dropSnapshot['notes'] ?? '',
-        'leaveOutside': false, // Not available in snapshot
+        'leaveOutside': dropSnapshot['leaveOutside'] ?? false,
         'location': {
           'type': 'Point',
           'coordinates': [
