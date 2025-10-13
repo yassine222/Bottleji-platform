@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { analyticsAPI } from '../../lib/api';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -38,6 +39,8 @@ import {
 import FileUpload from '@/components/training/FileUpload';
 import VideoPlayer from '@/components/training/VideoPlayer';
 import VideoModal from '@/components/training/VideoModal';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://172.20.10.12:3000/api';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
