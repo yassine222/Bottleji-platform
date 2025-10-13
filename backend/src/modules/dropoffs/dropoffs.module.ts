@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DropoffsService } from './dropoffs.service';
 import { DropoffsController } from './dropoffs.controller';
@@ -7,6 +7,7 @@ import { CollectorInteraction, CollectorInteractionSchema } from './schemas/coll
 import { CollectionAttempt, CollectionAttemptSchema } from './schemas/collection-attempt.schema';
 import { DropReport, DropReportSchema } from './schemas/drop-report.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
       { name: DropReport.name, schema: DropReportSchema },
       { name: User.name, schema: UserSchema },
     ]),
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [DropoffsController],
   providers: [DropoffsService],

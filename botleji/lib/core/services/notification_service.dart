@@ -95,6 +95,7 @@ class NotificationService extends ChangeNotifier {
   Function(String ticketId, Map<String, dynamic> message)? onTicketMessageReceived;
   Function(String ticketId, bool isTyping, String senderType)? onTypingIndicator;
   Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
+  Function(bool isLocked, DateTime? lockedUntil, int warningCount)? onAccountLockStatusUpdate;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -171,6 +172,36 @@ class NotificationService extends ChangeNotifier {
       _socket!.on('notification', (data) {
         debugPrint('🔔 Notification received: ${data['type']}');
         debugPrint('🔔 Full notification data: $data');
+        
+        // Handle account lock/unlock notifications
+        if (data['type'] == 'account_locked' || data['type'] == 'account_unlocked') {
+          debugPrint('🔒 Account lock status update received!');
+          final isLocked = data['data']?['isAccountLocked'] ?? false;
+          final lockedUntilStr = data['data']?['accountLockedUntil'];
+          final warningCount = data['data']?['warningCount'] ?? 0;
+          
+          DateTime? lockedUntil;
+          if (lockedUntilStr != null) {
+            try {
+              lockedUntil = DateTime.parse(lockedUntilStr);
+            } catch (e) {
+              debugPrint('❌ Error parsing lockedUntil date: $e');
+            }
+          }
+          
+          debugPrint('🔒 Lock status: $isLocked, Until: $lockedUntil, Warnings: $warningCount');
+          
+          // Show push notification
+          _localNotificationService.showNotification(
+            title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
+            body: data['message'] ?? '',
+            id: 9000, // Unique ID for lock notifications
+            payload: 'account_lock:$isLocked',
+          );
+          
+          // Call the callback to update user state
+          onAccountLockStatusUpdate?.call(isLocked, lockedUntil, warningCount);
+        }
         
         // Handle ticket message notifications
         if (data['type'] == 'ticket_message') {

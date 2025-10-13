@@ -491,6 +491,43 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         print('🚪 AuthProvider: handleForceLogout completed');
       };
       
+      // Set up account lock status update callback
+      notificationService.onAccountLockStatusUpdate = (isLocked, lockedUntil, warningCount) {
+        print('🔒 AuthProvider: Account lock status update received!');
+        print('   - isLocked: $isLocked');
+        print('   - lockedUntil: $lockedUntil');
+        print('   - warningCount: $warningCount');
+        
+        // Update user state immediately
+        final currentUser = state.value;
+        if (currentUser != null) {
+          final updatedUser = UserData(
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+            phoneNumber: currentUser.phoneNumber,
+            roles: currentUser.roles,
+            profilePhoto: currentUser.profilePhoto,
+            isPhoneVerified: currentUser.isPhoneVerified,
+            collectorApplication: currentUser.collectorApplication,
+            isAccountLocked: isLocked,
+            accountLockedUntil: lockedUntil,
+            warningCount: warningCount,
+            warnings: currentUser.warnings,
+          );
+          
+          state = AsyncValue.data(updatedUser);
+          
+          // Update cached data
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString(_authKey, jsonEncode(updatedUser.toJson()));
+            print('💾 AuthProvider: Updated cached user data with new lock status');
+          });
+          
+          print('✅ AuthProvider: User state updated with new lock status');
+        }
+      };
+      
       // Connect to WebSocket
       print('🔌 AuthProvider: Calling notificationService.connect() on startup...');
       notificationService.connect(token);

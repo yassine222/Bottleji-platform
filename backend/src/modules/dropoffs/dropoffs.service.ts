@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
@@ -9,6 +9,7 @@ import { CreateDropoffDto } from './dto/create-dropoff.dto';
 import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
 import { User } from '../users/schemas/user.schema';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class DropoffsService {
@@ -18,6 +19,8 @@ export class DropoffsService {
     @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel(DropReport.name) private dropReportModel: Model<DropReport>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
   ) {
     this.startCleanupTask();
     this.migrateOldCancellationFields();
@@ -844,7 +847,20 @@ export class DropoffsService {
         console.log(`Warning count: ${updatedUser.warningCount}/5`);
         
         if (updatedUser.isAccountLocked) {
-          console.log(`Account ${collectorId} locked until ${updatedUser.accountLockedUntil}`);
+          console.log(`🔒 Account ${collectorId} locked until ${updatedUser.accountLockedUntil}`);
+          
+          // Emit WebSocket event for real-time lock notification
+          this.notificationsGateway.sendNotificationToUser(collectorId, {
+            type: 'account_locked',
+            title: 'Account Locked',
+            message: 'Your account has been locked for 24 hours due to 5 warnings.',
+            data: {
+              isAccountLocked: true,
+              accountLockedUntil: updatedUser.accountLockedUntil,
+              warningCount: updatedUser.warningCount,
+            },
+            timestamp: new Date(),
+          });
         }
       } else {
         console.log(`Failed to update collector ${collectorId} with penalty`);
@@ -1760,10 +1776,20 @@ export class DropoffsService {
         
         console.log(`✅ Auto-unlocked account: ${user._id} (${user.email})`);
         
-        // TODO: Send push notification to user
-        // Note: Push notification implementation would require FCM tokens
-        // For now, just log it - notification will be shown in app when user opens it
-        console.log(`📱 Account unlocked notification needed for ${user.email}`);
+        // Emit WebSocket event for real-time unlock notification
+        this.notificationsGateway.sendNotificationToUser(user._id.toString(), {
+          type: 'account_unlocked',
+          title: 'Account Unlocked',
+          message: 'Your account has been unlocked. You can start collecting again!',
+          data: {
+            isAccountLocked: false,
+            accountLockedUntil: null,
+            warningCount: user.warningCount,
+          },
+          timestamp: new Date(),
+        });
+        
+        console.log(`📱 WebSocket unlock notification sent to ${user.email}`);
       }
     } catch (error) {
       console.error('❌ Error checking expired account locks:', error);
