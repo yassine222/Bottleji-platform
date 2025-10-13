@@ -1058,54 +1058,40 @@ export class DropoffsService {
         startDate = new Date(0); // All time
     }
 
-    // Get all interactions for this collector
-    const interactions = await this.interactionModel.find({
+    // Get all collection attempts for this collector
+    const attempts = await this.collectionAttemptModel.find({
       collectorId,
-      interactionTime: { $gte: startDate }
-    }).populate('dropoffId').exec();
+      acceptedAt: { $gte: startDate }
+    }).exec();
 
-    // Group interactions by dropoffId to determine final status
-    const dropoffStatusMap = new Map();
-
-    interactions.forEach(interaction => {
-      const dropoffId = interaction.dropoffId.toString();
-      const currentStatus = dropoffStatusMap.get(dropoffId);
-      
-      // Priority: COLLECTED > CANCELLED > EXPIRED > ACCEPTED
-      // Only update if the new status has higher priority
-      if (!currentStatus || this.getStatusPriority(interaction.interactionType) > this.getStatusPriority(currentStatus)) {
-        dropoffStatusMap.set(dropoffId, interaction.interactionType);
-      }
-    });
-
-    // Count drops by their final status
-    let acceptedCount = 0;
+    // Count attempts by outcome
+    let acceptedCount = 0; // Active attempts (not completed yet)
     let collectedCount = 0;
     let cancelledCount = 0;
     let expiredCount = 0;
 
-    dropoffStatusMap.forEach((finalStatus) => {
-      switch (finalStatus) {
-        case InteractionType.ACCEPTED:
-          acceptedCount++;
-          break;
-        case InteractionType.COLLECTED:
-          collectedCount++;
-          break;
-        case InteractionType.CANCELLED:
-          cancelledCount++;
-          break;
-        case InteractionType.EXPIRED:
-          expiredCount++;
-          break;
+    attempts.forEach(attempt => {
+      if (attempt.status === 'active') {
+        acceptedCount++; // Still in progress
+      } else if (attempt.status === 'completed') {
+        switch (attempt.outcome) {
+          case 'collected':
+            collectedCount++;
+            break;
+          case 'cancelled':
+            cancelledCount++;
+            break;
+          case 'expired':
+            expiredCount++;
+            break;
+        }
       }
     });
 
     // Debug logging
-    console.log('🔍 Enhanced Stats Debug for collector:', collectorId);
-    console.log('📊 Total unique drops:', dropoffStatusMap.size);
-    console.log('📊 Final status counts - Accepted:', acceptedCount, 'Collected:', collectedCount, 'Cancelled:', cancelledCount, 'Expired:', expiredCount);
-    console.log('📊 Dropoff status map:', Object.fromEntries(dropoffStatusMap));
+    console.log('🔍 Stats from CollectionAttempts for collector:', collectorId);
+    console.log('📊 Total attempts:', attempts.length);
+    console.log('📊 Counts - Active:', acceptedCount, 'Collected:', collectedCount, 'Cancelled:', cancelledCount, 'Expired:', expiredCount);
 
     const stats = {
       accepted: acceptedCount,
@@ -1118,34 +1104,25 @@ export class DropoffsService {
       timeRange,
     };
 
-    // Calculate collection rate (collected / accepted)
-    if (acceptedCount > 0) {
-      stats.collectionRate = (collectedCount / acceptedCount) * 100;
+    // Calculate collection rate (collected / total completed attempts)
+    const totalCompleted = collectedCount + cancelledCount + expiredCount;
+    if (totalCompleted > 0) {
+      stats.collectionRate = (collectedCount / totalCompleted) * 100;
     }
 
-    // Calculate average collection time
+    // Calculate average collection time from completed attempts
     if (collectedCount > 0) {
-      const totalTime: number = Array.from(dropoffStatusMap.entries())
-        .filter(([_, status]) => status === InteractionType.COLLECTED)
-        .reduce<number>((sum: number, [dropoffId, _]) => {
-          const collectedInteraction = interactions.find(i => 
-            i.dropoffId.toString() === dropoffId && i.interactionType === InteractionType.COLLECTED
-          );
-          const acceptedInteraction = interactions.find(i => 
-            i.dropoffId.toString() === dropoffId && i.interactionType === InteractionType.ACCEPTED
-          );
-          if (collectedInteraction && acceptedInteraction) {
-            return sum + (collectedInteraction.interactionTime.getTime() - acceptedInteraction.interactionTime.getTime());
-          }
-          return sum;
-        }, 0);
-      stats.averageCollectionTime = totalTime / collectedCount;
+      const collectedAttempts = attempts.filter(a => a.outcome === 'collected' && a.durationMinutes);
+      const totalMinutes = collectedAttempts.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
+      stats.averageCollectionTime = totalMinutes > 0 ? (totalMinutes / collectedAttempts.length) * 60 * 1000 : 0; // Convert to milliseconds
     }
 
-    // Calculate cancellation reasons
-    const cancelledInteractions = interactions.filter(i => i.interactionType === InteractionType.CANCELLED);
-    cancelledInteractions.forEach(interaction => {
-      const reason = interaction.cancellationReason || 'unknown';
+    // Calculate cancellation reasons from timeline events
+    const cancelledAttempts = attempts.filter(a => a.outcome === 'cancelled');
+    cancelledAttempts.forEach(attempt => {
+      // Find the cancelled event in timeline
+      const cancelledEvent = attempt.timeline.find(e => e.event === 'cancelled');
+      const reason = cancelledEvent?.details?.reason || 'unknown';
       stats.cancellationReasons[reason] = (stats.cancellationReasons[reason] || 0) + 1;
     });
 
