@@ -221,7 +221,8 @@ export class SupportTicketsService {
         
         if (collectionObjectWithInteractions) {
           (plainTicket as any).relatedCollectionId = collectionObjectWithInteractions;
-          console.log('🔍 Support Tickets: Replaced relatedCollectionId with object containing', collectionObjectWithInteractions.interactions.length, 'interactions');
+          const timelineLength = collectionObjectWithInteractions.timeline?.length || 0;
+          console.log('🔍 Support Tickets: Replaced relatedCollectionId with CollectionAttempt containing', timelineLength, 'timeline events');
         }
         
         return plainTicket;
