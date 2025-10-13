@@ -566,6 +566,11 @@ Widget _buildCollectorHistory(BuildContext context) {
 
   Widget _buildHistoryCard(CollectorInteraction interaction) {
     final dropoff = interaction.dropoff;
+    
+    print('🖼️ Building history card:');
+    print('   dropoff: ${dropoff != null}');
+    print('   imageUrl: ${dropoff?.imageUrl}');
+    print('   imageUrl isEmpty: ${dropoff?.imageUrl?.isEmpty}');
 
     return InkWell(
       onTap: () => _showInteractionDetails(interaction),

@@ -116,6 +116,10 @@ class StatsApiClient {
       final timeline = attempt['timeline'] as List<dynamic>;
       final dropSnapshot = attempt['dropSnapshot'] as Map<String, dynamic>;
       
+      print('🔍 Converting attempt to history:');
+      print('   dropSnapshot keys: ${dropSnapshot.keys}');
+      print('   imageUrl in snapshot: ${dropSnapshot['imageUrl']}');
+      
       // Convert dropSnapshot to DropoffInfo format
       final dropoffInfo = {
         '_id': attempt['dropoffId'],
