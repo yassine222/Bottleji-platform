@@ -11,6 +11,7 @@ import 'package:botleji/features/navigation/controllers/navigation_controller.da
 import 'package:botleji/core/providers/connectivity_provider.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:botleji/core/widgets/account_lock_card.dart';
 
 class DropDetailsModal extends ConsumerStatefulWidget {
   final Drop drop;
@@ -1081,6 +1082,26 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 }
                 
                 if (currentUserId == null) return;
+
+                // Check if account is locked
+                final user = ref.read(authNotifierProvider).value;
+                if (user?.isCurrentlyLocked ?? false) {
+                  if (context.mounted && user?.accountLockedUntil != null) {
+                    Navigator.pop(context); // Close the drop details modal first
+                    showDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (context) => Dialog(
+                        backgroundColor: Colors.transparent,
+                        child: AccountLockCard(
+                          lockedUntil: user!.accountLockedUntil!,
+                          onDismiss: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
 
                 try {
                   // Assign collector to the drop
