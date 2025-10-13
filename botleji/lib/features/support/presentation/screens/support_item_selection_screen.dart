@@ -960,7 +960,7 @@ Widget _buildGeneralSupportOption() {
           itemDescription: 'Issue with collection ${statusText.toLowerCase()} on ${_formatDate(lastInteraction.interactionTime.toString())}\nDrop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'}',
           metadata: {
             'ticketType': 'collection_issue',
-            'collectionId': firstInteraction.id,
+            'collectionId': firstInteraction.id.split('_')[0], // Extract actual CollectionAttempt ID (remove _accepted suffix)
             'dropoffId': firstInteraction.dropoffId,
             'interaction': {
               'id': firstInteraction.id,
