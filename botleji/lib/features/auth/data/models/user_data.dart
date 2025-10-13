@@ -348,10 +348,17 @@ class UserData {
     DateTime? accountLockedUntil;
     int warningCount = json['warningCount'] ?? 0;
     
+    print('🔍 UserData.fromJson: LOCK FIELDS:');
+    print('   - isAccountLocked: ${json['isAccountLocked']} -> $isAccountLocked');
+    print('   - accountLockedUntil: ${json['accountLockedUntil']}');
+    print('   - warningCount: ${json['warningCount']} -> $warningCount');
+    
     if (json['accountLockedUntil'] != null) {
       try {
         accountLockedUntil = DateTime.parse(json['accountLockedUntil'] as String);
+        print('   - Parsed accountLockedUntil: $accountLockedUntil');
       } catch (e) {
+        print('   - Error parsing accountLockedUntil: $e');
         accountLockedUntil = null;
       }
     }
@@ -382,6 +389,11 @@ class UserData {
       collectorApplicationRejectionReason: collectorApplicationRejectionReason,
     );
     print('🔍 UserData.fromJson: Created user data with application status: ${userData.collectorApplicationStatus}');
+    print('🔍 UserData.fromJson: FINAL LOCK STATUS:');
+    print('   - isAccountLocked: ${userData.isAccountLocked}');
+    print('   - accountLockedUntil: ${userData.accountLockedUntil}');
+    print('   - warningCount: ${userData.warningCount}');
+    print('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
     return userData;
   }
 
