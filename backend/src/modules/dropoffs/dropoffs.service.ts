@@ -1773,6 +1773,15 @@ export class DropoffsService {
         this.collectionAttemptModel.countDocuments({ collectorId })
       ]);
 
+      // Debug: Check if imageUrl exists in snapshots
+      if (attempts.length > 0) {
+        console.log('🔍 Sample attempt dropSnapshot:', {
+          hasImageUrl: 'imageUrl' in (attempts[0].dropSnapshot || {}),
+          imageUrl: attempts[0].dropSnapshot?.imageUrl,
+          snapshotKeys: Object.keys(attempts[0].dropSnapshot || {}),
+        });
+      }
+
       return {
         attempts,
         total,
