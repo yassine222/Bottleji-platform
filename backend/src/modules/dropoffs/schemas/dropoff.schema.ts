@@ -75,6 +75,18 @@ export class Dropoff extends Document {
   @Prop({ default: false })
   isSuspicious: boolean;
 
+  @Prop()
+  suspiciousReason?: string;
+
+  @Prop({ default: false })
+  isCensored: boolean;
+
+  @Prop()
+  censorReason?: string;
+
+  @Prop()
+  censoredAt?: Date;
+
   @Prop({ type: [String], default: [] })
   cancelledByCollectorIds: string[];
 

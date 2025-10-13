@@ -287,6 +287,7 @@ export class DropoffsService {
       const query: any = {
         status: DropoffStatus.PENDING, // Only show PENDING drops
         isSuspicious: false,
+        isCensored: false, // Don't show censored drops to collectors
         cancellationCount: { $lt: 3 }, // Additional safety check
       };
 

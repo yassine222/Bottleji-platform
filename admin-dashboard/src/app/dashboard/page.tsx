@@ -1771,6 +1771,26 @@ function DropsContent() {
     }
   };
 
+  const censorDrop = async (dropId: string) => {
+    const reason = prompt('Enter reason for censoring this drop image:');
+    if (!reason) return;
+    
+    if (!confirm('This will:\n- Hide the drop from collectors\n- Send notification to the user\n- Add a warning to their account\n\nContinue?')) return;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${API_URL}/admin/drops-management/censor/${dropId}`, { reason }, config);
+      alert('Drop image censored, user notified, and warning added!');
+      setShowDropDetails(false);
+      fetchDropsList();
+      fetchAllData();
+    } catch (error) {
+      console.error('Error censoring drop:', error);
+      alert('Error censoring drop');
+    }
+  };
+
   const deleteDrop = async (dropId: string) => {
     if (!confirm('Are you sure you want to permanently delete this drop? This action cannot be undone.')) return;
     
@@ -2352,6 +2372,46 @@ function DropsContent() {
 
                   {/* Right Column */}
                   <div className="space-y-6">
+                    {/* Location Map */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">📍 Drop Location</h3>
+                      <div className="space-y-3">
+                        {/* Map */}
+                        <div className="w-full h-64 rounded-lg overflow-hidden border-2 border-gray-300">
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            style={{ border: 0 }}
+                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${selectedDrop.drop?.location?.coordinates?.[1]},${selectedDrop.drop?.location?.coordinates?.[0]}&zoom=15`}
+                            allowFullScreen
+                          />
+                        </div>
+                        
+                        {/* Coordinates */}
+                        <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Latitude:</span>
+                            <span className="font-mono font-medium">{selectedDrop.drop?.location?.coordinates?.[1]?.toFixed(6)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Longitude:</span>
+                            <span className="font-mono font-medium">{selectedDrop.drop?.location?.coordinates?.[0]?.toFixed(6)}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Open in Maps Button */}
+                        <a
+                          href={`https://www.google.com/maps?q=${selectedDrop.drop?.location?.coordinates?.[1]},${selectedDrop.drop?.location?.coordinates?.[0]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary-dark transition-colors font-medium"
+                        >
+                          🗺️ Open in Google Maps
+                        </a>
+                      </div>
+                    </div>
+
                     {/* Complete Drop Timeline */}
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-semibold text-gray-900 mb-4">
@@ -2472,6 +2532,17 @@ function DropsContent() {
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="font-semibold text-gray-900 mb-4">Admin Actions</h3>
                   <div className="flex flex-wrap gap-3">
+                    {/* Censor Image Button */}
+                    {!selectedDrop.drop?.isCensored && (
+                      <button
+                        onClick={() => censorDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
+                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                      >
+                        🚫 Censor Image
+                      </button>
+                    )}
+                    
+                    {/* Flag/Unflag Button */}
                     {selectedDrop.drop?.isSuspicious ? (
                       <button
                         onClick={() => unflagDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
@@ -2487,6 +2558,8 @@ function DropsContent() {
                         ⚠️ Flag as Suspicious
                       </button>
                     )}
+                    
+                    {/* Contact User Button */}
                     <button
                       onClick={() => {
                         const email = selectedDrop.drop?.user?.email;
@@ -2496,6 +2569,8 @@ function DropsContent() {
                     >
                       ✉️ Contact User
                     </button>
+                    
+                    {/* Delete Button */}
                     <button
                       onClick={() => deleteDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
                       className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md hover:shadow-lg"
@@ -2503,6 +2578,17 @@ function DropsContent() {
                       🗑️ Delete Drop
                     </button>
                   </div>
+                  
+                  {/* Censored Warning */}
+                  {selectedDrop.drop?.isCensored && (
+                    <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-purple-900 font-semibold">🚫 This drop image has been censored</p>
+                      <p className="text-sm text-purple-700 mt-1">Reason: {selectedDrop.drop.censorReason}</p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        Censored on: {new Date(selectedDrop.drop.censoredAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

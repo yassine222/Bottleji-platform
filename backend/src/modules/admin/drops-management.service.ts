@@ -392,6 +392,48 @@ export class DropsManagementService {
   }
 
   /**
+   * Censor drop image and add warning to user
+   */
+  async censorDrop(dropId: string, reason: string) {
+    const drop = await this.dropModel.findByIdAndUpdate(
+      dropId,
+      { 
+        isCensored: true, 
+        censorReason: reason,
+        censoredAt: new Date(),
+      },
+      { new: true },
+    ).exec();
+
+    if (!drop) {
+      throw new Error('Drop not found');
+    }
+
+    // Add warning to user
+    const user = await this.userModel.findById(drop.userId).exec();
+    if (user) {
+      const warning = {
+        type: 'censored_image',
+        reason: reason,
+        date: new Date(),
+        dropId: drop._id.toString(),
+      };
+
+      await this.userModel.findByIdAndUpdate(
+        drop.userId,
+        {
+          $push: { warnings: warning },
+          $inc: { warningCount: 1 },
+        },
+      ).exec();
+
+      console.log(`⚠️ Warning added to user ${user.email} for censored drop image`);
+    }
+
+    return { drop, user };
+  }
+
+  /**
    * Delete drop permanently
    */
   async deleteDrop(dropId: string) {

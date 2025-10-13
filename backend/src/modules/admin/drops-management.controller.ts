@@ -141,6 +141,28 @@ export class DropsManagementController {
   }
 
   /**
+   * Censor drop image
+   * PUT /admin/drops-management/censor/:id
+   */
+  @Put('censor/:id')
+  async censorDrop(@Param('id') dropId: string, @Body('reason') reason: string) {
+    const result = await this.dropsManagementService.censorDrop(dropId, reason);
+    
+    // Notify the user
+    if (result.user) {
+      this.notificationsGateway.sendNotificationToUser(result.user._id.toString(), {
+        type: 'drop_censored',
+        title: 'Drop Image Censored',
+        message: `Your drop image has been censored. Reason: ${reason}. You have received a warning.`,
+        data: { dropId: result.drop._id.toString(), reason },
+        timestamp: new Date(),
+      });
+    }
+    
+    return { success: true, drop: result.drop, warningAdded: true };
+  }
+
+  /**
    * Delete drop permanently
    * DELETE /admin/drops-management/delete/:id
    */
