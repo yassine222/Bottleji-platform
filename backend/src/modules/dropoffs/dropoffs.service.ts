@@ -821,6 +821,11 @@ export class DropoffsService {
         return;
       }
 
+      console.log(`\n🔍 PENALTY CHECK - Collector: ${collector.email}`);
+      console.log(`   Current warningCount: ${collector.warningCount}`);
+      console.log(`   Current isAccountLocked: ${collector.isAccountLocked}`);
+      console.log(`   Current accountLockedUntil: ${collector.accountLockedUntil}`);
+
       // Add warning
       const warning = {
         type: penaltyType,
@@ -830,6 +835,7 @@ export class DropoffsService {
 
       // Calculate new warning count
       const newWarningCount = collector.warningCount + 1;
+      console.log(`   New warningCount will be: ${newWarningCount}`);
       
       // Determine lock duration based on warning count (incremental system)
       let lockDuration: number | null = null;
@@ -874,14 +880,28 @@ export class DropoffsService {
                                 collector.accountLockedUntil && 
                                 new Date(collector.accountLockedUntil) > new Date();
       
+      console.log(`   Should lock at this count? ${shouldLock}`);
+      console.log(`   Is currently locked? ${isCurrentlyLocked}`);
+      
       if (shouldLock && !isCurrentlyLocked) {
+        // Apply new lock
         updateFields.$set = {
           isAccountLocked: true,
           accountLockedUntil: lockDuration ? new Date(Date.now() + lockDuration) : null,
         };
-        console.log(`🔒 Applying new lock: duration=${lockDuration ? lockDuration / (24 * 60 * 60 * 1000) + ' days' : 'PERMANENT'}`);
+        console.log(`🔒 APPLYING NEW LOCK: duration=${lockDuration ? lockDuration / (24 * 60 * 60 * 1000) + ' days' : 'PERMANENT'}`);
       } else if (isCurrentlyLocked) {
-        console.log(`⏳ User already locked until ${collector.accountLockedUntil}, not resetting timer`);
+        console.log(`⏳ User already locked until ${collector.accountLockedUntil}, NOT resetting timer`);
+      } else if (!shouldLock && collector.isAccountLocked && !isCurrentlyLocked) {
+        // User was locked but lock expired and this warning doesn't trigger a new lock
+        // Explicitly unlock them
+        updateFields.$set = {
+          isAccountLocked: false,
+          accountLockedUntil: null,
+        };
+        console.log(`🔓 UNLOCKING - Lock expired and warning ${newWarningCount} doesn't trigger new lock`);
+      } else {
+        console.log(`✅ No lock needed - warning count ${newWarningCount} is not a lock threshold`);
       }
       
       // Update user with new warning
