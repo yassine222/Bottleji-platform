@@ -828,17 +828,58 @@ export class DropoffsService {
         timestamp: new Date(),
       };
 
+      // Calculate new warning count
+      const newWarningCount = collector.warningCount + 1;
+      
+      // Determine lock duration based on warning count (incremental system)
+      let lockDuration: number | null = null;
+      let shouldLock = false;
+      
+      if (newWarningCount >= 25) {
+        // 5th lock: Permanent until admin review
+        shouldLock = true;
+        lockDuration = null; // null means permanent
+        console.log(`🔒 PERMANENT LOCK - User has ${newWarningCount} warnings (25+)`);
+      } else if (newWarningCount >= 20 && newWarningCount % 5 === 0) {
+        // 4th lock: 1 month (30 days)
+        shouldLock = true;
+        lockDuration = 30 * 24 * 60 * 60 * 1000;
+        console.log(`🔒 1 MONTH LOCK - User has ${newWarningCount} warnings`);
+      } else if (newWarningCount >= 15 && newWarningCount % 5 === 0) {
+        // 3rd lock: 1 week (7 days)
+        shouldLock = true;
+        lockDuration = 7 * 24 * 60 * 60 * 1000;
+        console.log(`🔒 1 WEEK LOCK - User has ${newWarningCount} warnings`);
+      } else if (newWarningCount >= 10 && newWarningCount % 5 === 0) {
+        // 2nd lock: 3 days
+        shouldLock = true;
+        lockDuration = 3 * 24 * 60 * 60 * 1000;
+        console.log(`🔒 3 DAYS LOCK - User has ${newWarningCount} warnings`);
+      } else if (newWarningCount >= 5 && newWarningCount % 5 === 0) {
+        // 1st lock: 24 hours
+        shouldLock = true;
+        lockDuration = 24 * 60 * 60 * 1000;
+        console.log(`🔒 24 HOURS LOCK - User has ${newWarningCount} warnings`);
+      }
+      
+      // Only update lock status if user should be locked AND is not already locked
+      // This prevents resetting the lock timer if user is already locked
+      const updateFields: any = {
+        $inc: { warningCount: 1 },
+        $push: { warnings: warning },
+      };
+      
+      if (shouldLock && !collector.isAccountLocked) {
+        updateFields.$set = {
+          isAccountLocked: true,
+          accountLockedUntil: lockDuration ? new Date(Date.now() + lockDuration) : null,
+        };
+      }
+      
       // Update user with new warning
       const updatedUser = await UserModel.findByIdAndUpdate(
         collectorId,
-        {
-          $inc: { warningCount: 1 },
-          $push: { warnings: warning },
-          $set: {
-            isAccountLocked: collector.warningCount + 1 >= 5,
-            accountLockedUntil: collector.warningCount + 1 >= 5 ? new Date(Date.now() + 24 * 60 * 60 * 1000) : undefined, // 24 hours lock
-          }
-        },
+        updateFields,
         { new: true }
       );
 
@@ -849,11 +890,25 @@ export class DropoffsService {
         if (updatedUser.isAccountLocked) {
           console.log(`🔒 Account ${collectorId} locked until ${updatedUser.accountLockedUntil}`);
           
+          // Determine lock message based on warning count
+          let lockMessage = '';
+          if (updatedUser.warningCount >= 25) {
+            lockMessage = 'Your account has been permanently locked due to repeated violations. Please contact admin for review.';
+          } else if (updatedUser.warningCount >= 20) {
+            lockMessage = 'Your account has been locked for 1 month due to 20 warnings.';
+          } else if (updatedUser.warningCount >= 15) {
+            lockMessage = 'Your account has been locked for 1 week due to 15 warnings.';
+          } else if (updatedUser.warningCount >= 10) {
+            lockMessage = 'Your account has been locked for 3 days due to 10 warnings.';
+          } else {
+            lockMessage = 'Your account has been locked for 24 hours due to 5 warnings.';
+          }
+          
           // Emit WebSocket event for real-time lock notification
           this.notificationsGateway.sendNotificationToUser(collectorId, {
             type: 'account_locked',
             title: 'Account Locked',
-            message: 'Your account has been locked for 24 hours due to 5 warnings.',
+            message: lockMessage,
             data: {
               isAccountLocked: true,
               accountLockedUntil: updatedUser.accountLockedUntil,
@@ -1753,9 +1808,10 @@ export class DropoffsService {
       const now = new Date();
       
       // Find all locked accounts where the lock has expired
+      // Exclude permanently locked accounts (accountLockedUntil is null)
       const expiredLocks = await this.userModel.find({
         isAccountLocked: true,
-        accountLockedUntil: { $lte: now }
+        accountLockedUntil: { $ne: null, $lte: now }
       }).exec();
       
       if (expiredLocks.length === 0) {

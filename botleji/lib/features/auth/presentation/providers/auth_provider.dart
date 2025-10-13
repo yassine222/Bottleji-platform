@@ -506,14 +506,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             name: currentUser.name,
             email: currentUser.email,
             phoneNumber: currentUser.phoneNumber,
+            address: currentUser.address,
             roles: currentUser.roles,
             profilePhoto: currentUser.profilePhoto,
+            collectorSubscriptionType: currentUser.collectorSubscriptionType,
+            createdAt: currentUser.createdAt,
+            updatedAt: currentUser.updatedAt,
+            isProfileComplete: currentUser.isProfileComplete,
             isPhoneVerified: currentUser.isPhoneVerified,
-            collectorApplication: currentUser.collectorApplication,
             isAccountLocked: isLocked,
             accountLockedUntil: lockedUntil,
             warningCount: warningCount,
-            warnings: currentUser.warnings,
           );
           
           state = AsyncValue.data(updatedUser);
