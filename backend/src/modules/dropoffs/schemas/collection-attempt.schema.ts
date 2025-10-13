@@ -32,6 +32,9 @@ export class TimelineEvent {
 @Schema({ _id: false })
 export class DropSnapshot {
   @Prop({ required: true })
+  imageUrl: string;
+
+  @Prop({ required: true })
   numberOfBottles: number;
 
   @Prop({ required: true })
@@ -51,6 +54,9 @@ export class DropSnapshot {
 
   @Prop()
   notes?: string;
+
+  @Prop()
+  leaveOutside?: boolean;
 
   @Prop({ type: Object, required: true })
   createdBy: {

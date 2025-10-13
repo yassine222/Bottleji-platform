@@ -1628,6 +1628,7 @@ export class DropoffsService {
         attemptNumber,
         cancellationCount,
         dropSnapshot: {
+          imageUrl: dropoff.imageUrl,
           numberOfBottles: dropoff.numberOfBottles,
           numberOfCans: dropoff.numberOfCans,
           bottleType: dropoff.bottleType,
@@ -1637,6 +1638,7 @@ export class DropoffsService {
           },
           address: dropoff.address,
           notes: dropoff.notes,
+          leaveOutside: dropoff.leaveOutside,
           createdBy: {
             id: (dropoff as any).userId._id,
             name: (dropoff as any).userId.name,
