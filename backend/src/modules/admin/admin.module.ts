@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AdminController } from './admin.controller';
+import { DropsManagementController } from './drops-management.controller';
 import { AdminService } from './admin.service';
+import { DropsManagementService } from './drops-management.service';
 import { AdminGuard } from './guards/admin.guard';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { CollectorApplication, CollectorApplicationSchema } from '../collector-applications/schemas/collector-application.schema';
@@ -31,8 +33,8 @@ import { SupportTicketsModule } from '../support-tickets/support-tickets.module'
     EmailModule,
     SupportTicketsModule,
   ],
-  controllers: [AdminController],
-  providers: [AdminService, AdminGuard],
-  exports: [AdminService, AdminGuard],
+  controllers: [AdminController, DropsManagementController],
+  providers: [AdminService, DropsManagementService, AdminGuard],
+  exports: [AdminService, DropsManagementService, AdminGuard],
 })
 export class AdminModule {} 
