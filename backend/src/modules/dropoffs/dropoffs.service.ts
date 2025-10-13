@@ -862,18 +862,26 @@ export class DropoffsService {
         console.log(`🔒 24 HOURS LOCK - User has ${newWarningCount} warnings`);
       }
       
-      // Only update lock status if user should be locked AND is not already locked
-      // This prevents resetting the lock timer if user is already locked
+      // Prepare update fields
       const updateFields: any = {
         $inc: { warningCount: 1 },
         $push: { warnings: warning },
       };
       
-      if (shouldLock && !collector.isAccountLocked) {
+      // Apply lock if user should be locked
+      // Only skip lock update if user is CURRENTLY locked (not expired)
+      const isCurrentlyLocked = collector.isAccountLocked && 
+                                collector.accountLockedUntil && 
+                                new Date(collector.accountLockedUntil) > new Date();
+      
+      if (shouldLock && !isCurrentlyLocked) {
         updateFields.$set = {
           isAccountLocked: true,
           accountLockedUntil: lockDuration ? new Date(Date.now() + lockDuration) : null,
         };
+        console.log(`🔒 Applying new lock: duration=${lockDuration ? lockDuration / (24 * 60 * 60 * 1000) + ' days' : 'PERMANENT'}`);
+      } else if (isCurrentlyLocked) {
+        console.log(`⏳ User already locked until ${collector.accountLockedUntil}, not resetting timer`);
       }
       
       // Update user with new warning

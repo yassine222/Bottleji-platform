@@ -8,6 +8,7 @@ import { CollectorInteraction } from '../dropoffs/schemas/collector-interaction.
 import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
 import { SupportTicket } from '../support-tickets/schemas/support-ticket.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CollectorApplicationsService } from '../collector-applications/collector-applications.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
@@ -23,6 +24,7 @@ export class AdminService {
     @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel(SupportTicket.name) private supportTicketModel: Model<SupportTicket>,
     private notificationsService: NotificationsService,
+    private notificationsGateway: NotificationsGateway,
     private collectorApplicationsService: CollectorApplicationsService,
     private usersService: UsersService,
     private emailService: EmailService,
@@ -438,7 +440,7 @@ export class AdminService {
   }
 
   async unbanUser(userId: string) {
-    return await this.userModel.findByIdAndUpdate(
+    const user = await this.userModel.findByIdAndUpdate(
       userId,
       { 
         isAccountLocked: false,
@@ -446,6 +448,25 @@ export class AdminService {
       },
       { new: true }
     ).select('-password');
+    
+    if (user) {
+      console.log(`🔓 Admin manually unlocked account: ${userId}`);
+      
+      // Emit WebSocket event for real-time unlock notification
+      this.notificationsGateway.sendNotificationToUser(userId, {
+        type: 'account_unlocked',
+        title: 'Account Unlocked',
+        message: 'Your account has been unlocked by an administrator. You can start collecting again!',
+        data: {
+          isAccountLocked: false,
+          accountLockedUntil: null,
+          warningCount: user.warningCount,
+        },
+        timestamp: new Date(),
+      });
+    }
+    
+    return user;
   }
 
   async deleteUser(userId: string, deletedByAdminId: string) {
