@@ -1633,8 +1633,8 @@ function DropsContent() {
       
       console.log('📋 Drops list response:', response.data);
       
-      setDropsList(response.data.drops);
-      setTotalPages(response.data.totalPages);
+      setDropsList(response.data.drops || []);
+      setTotalPages(response.data.totalPages || 1);
     } catch (error: any) {
       console.error('❌ Error fetching drops list:', error);
       console.error('❌ Error response:', error.response?.data);
@@ -1961,11 +1961,18 @@ function DropsContent() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {dropsList.map((drop: any) => (
-                    <tr key={drop._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {drop._id.substring(0, 8)}...
+                  {dropsList.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                        No drops found
                       </td>
+                    </tr>
+                  ) : (
+                    dropsList.map((drop: any) => (
+                      <tr key={drop._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                          {drop._id?.substring(0, 8) || 'N/A'}...
+                        </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
                         <div className="text-sm text-gray-500">{drop.userId?.email}</div>
@@ -2002,7 +2009,7 @@ function DropsContent() {
                         })()}
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
