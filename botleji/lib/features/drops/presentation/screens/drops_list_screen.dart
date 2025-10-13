@@ -283,19 +283,8 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
           if (distance > maxDistance) return false;
         }
         
-        // Enforce 3-day cutoff for household mode
-        final userMode = ref.read(userModeControllerProvider);
-        bool within3Days = true;
-        userMode.whenData((mode) {
-          if (mode == UserMode.household) {
-            final cutoff = DateTime.now().subtract(const Duration(days: 3));
-            if (drop.createdAt.isBefore(cutoff)) {
-              within3Days = false;
-            }
-          }
-        });
-
-        return within3Days;
+        // Note: 3-day cutoff is only for support tickets, not for user's own drops
+        return true;
       }).toList();
       
       // Sort drops by distance for collectors (nearest first) or by creation date for households (newest first)
