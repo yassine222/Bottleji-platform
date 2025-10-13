@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
@@ -12,7 +11,6 @@ import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dar
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
-import 'package:botleji/core/widgets/welcome_back_card.dart';
 
 class DropsListScreen extends ConsumerStatefulWidget {
   const DropsListScreen({super.key});
@@ -27,7 +25,6 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   
   // Account lock card state
   bool _lockCardDismissed = false;
-  bool _welcomeCardDismissed = false;
   String _selectedDateFilter = 'All';
   String _selectedDistanceFilter = 'All'; // For collectors
   List<Drop> _allDrops = [];
@@ -61,6 +58,24 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     // Load drops when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDrops();
+      
+      // Listen for mode changes to reset lock card dismissed flag and show card
+      ref.listen(userModeControllerProvider, (previous, next) {
+        next.whenData((mode) {
+          if (mode == UserMode.collector) {
+            // Reset dismissed flag when switching to collector mode
+            setState(() {
+              _lockCardDismissed = false;
+            });
+            // Check lock status when switching to collector mode
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _checkLockStatus();
+              }
+            });
+          }
+        });
+      });
     });
   }
 
@@ -71,8 +86,38 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadDrops();
+        _checkLockStatus();
       }
     });
+  }
+  
+  void _checkLockStatus() {
+    final userMode = ref.read(userModeControllerProvider).value;
+    final user = ref.read(authNotifierProvider).value;
+    
+    // Only show lock card if in collector mode and account is locked
+    if (userMode == UserMode.collector && 
+        user != null && 
+        user.isCurrentlyLocked && 
+        user.accountLockedUntil != null &&
+        !_lockCardDismissed) {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: AccountLockCard(
+            lockedUntil: user.accountLockedUntil!,
+            onDismiss: () {
+              setState(() {
+                _lockCardDismissed = true;
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _initializeLocation() async {
@@ -480,12 +525,16 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
       
       // Check if account is locked
       if (user?.isCurrentlyLocked ?? false) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Your account is temporarily locked. Please wait until ${user?.accountLockedUntil != null ? DateFormat('MMM d, h:mm a').format(user!.accountLockedUntil!) : "unlock time"}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 4),
+        if (mounted && user?.accountLockedUntil != null) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: AccountLockCard(
+                lockedUntil: user!.accountLockedUntil!,
+                onDismiss: () => Navigator.of(context).pop(),
+              ),
             ),
           );
         }

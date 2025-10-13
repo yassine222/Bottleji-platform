@@ -7,7 +7,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
@@ -15,7 +14,6 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart'; // Added import for NavigationScreen
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart'; // Added import for navigationControllerProvider
 import 'package:botleji/core/widgets/account_lock_card.dart';
-import 'package:botleji/core/widgets/welcome_back_card.dart';
 
 class DropsMapScreen extends ConsumerStatefulWidget {
   const DropsMapScreen({super.key});
@@ -39,7 +37,6 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   
   // Account lock card state
   bool _lockCardDismissed = false;
-  bool _welcomeCardDismissed = false;
   
   // Custom marker icon
   BitmapDescriptor? _customDropMarker;
@@ -72,6 +69,26 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
     _loadCustomMarker(); // Load custom marker icon
     _initializeLocation();
     _loadDropsForMap();
+    
+    // Listen for mode changes to reset lock card dismissed flag and show card
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listen(userModeControllerProvider, (previous, next) {
+        next.whenData((mode) {
+          if (mode == UserMode.collector) {
+            // Reset dismissed flag when switching to collector mode
+            setState(() {
+              _lockCardDismissed = false;
+            });
+            // Check lock status when switching to collector mode
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _checkLockStatus();
+              }
+            });
+          }
+        });
+      });
+    });
     
     // Add a test polyline immediately for debugging
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1199,12 +1216,16 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                                             
                                             // Check if account is locked
                                             if (user?.isCurrentlyLocked ?? false) {
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Your account is temporarily locked. Please wait until ${user?.accountLockedUntil != null ? DateFormat('MMM d, h:mm a').format(user!.accountLockedUntil!) : "unlock time"}'),
-                                                    backgroundColor: Colors.red,
-                                                    duration: const Duration(seconds: 4),
+                                              if (mounted && user?.accountLockedUntil != null) {
+                                                showDialog(
+                                                  context: context,
+                                                  barrierDismissible: true,
+                                                  builder: (context) => Dialog(
+                                                    backgroundColor: Colors.transparent,
+                                                    child: AccountLockCard(
+                                                      lockedUntil: user!.accountLockedUntil!,
+                                                      onDismiss: () => Navigator.of(context).pop(),
+                                                    ),
                                                   ),
                                                 );
                                               }
@@ -1526,6 +1547,35 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
       setState(() {
         _customDropMarker = BitmapDescriptor.defaultMarker;
       });
+    }
+  }
+
+  void _checkLockStatus() {
+    final userMode = ref.read(userModeControllerProvider).value;
+    final user = ref.read(authNotifierProvider).value;
+    
+    // Only show lock card if in collector mode and account is locked
+    if (userMode == UserMode.collector && 
+        user != null && 
+        user.isCurrentlyLocked && 
+        user.accountLockedUntil != null &&
+        !_lockCardDismissed) {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: AccountLockCard(
+            lockedUntil: user.accountLockedUntil!,
+            onDismiss: () {
+              setState(() {
+                _lockCardDismissed = true;
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
     }
   }
 
