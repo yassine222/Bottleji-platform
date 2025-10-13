@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -448,5 +449,43 @@ class DropRepository {
       'phoneNumber': 'N/A',
       'profilePhoto': null,
     };
+  }
+
+  // Report a drop
+  Future<void> reportDrop(String dropId, String reason, String? details) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      // Get current user ID
+      final authData = prefs.getString('auth_data');
+      if (authData == null) {
+        throw Exception('User data not found');
+      }
+      
+      final userData = jsonDecode(authData);
+      final collectorId = userData['id'];
+
+      await _dio.post(
+        '/dropoffs/$dropId/report',
+        data: {
+          'collectorId': collectorId,
+          'reason': reason,
+          if (details != null) 'details': details,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      
+      print('✅ Drop reported successfully');
+    } catch (e) {
+      print('❌ Error reporting drop: $e');
+      rethrow;
+    }
   }
 }

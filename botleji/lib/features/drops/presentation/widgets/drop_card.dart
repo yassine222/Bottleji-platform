@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'dart:math'; // Added for pow
+import 'report_drop_dialog.dart';
 
 class DropCard extends StatelessWidget {
   final Drop drop;
@@ -393,31 +394,53 @@ class DropCard extends StatelessWidget {
             // Actions for collectors
             if (showActions && drop.status == DropStatus.pending) ...[
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: hasActiveCollection
-                      ? null
-                      : () {
-                          print('🔍 Accept Drop button pressed for drop: ${drop.id}');
-                          onStatusUpdate?.call(DropStatus.accepted);
-                        },
-                  icon: Icon(
-                    hasActiveCollection ? Icons.block : Icons.check,
-                    size: 16,
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: FilledButton.icon(
+                      onPressed: hasActiveCollection
+                          ? null
+                          : () {
+                              print('🔍 Accept Drop button pressed for drop: ${drop.id}');
+                              onStatusUpdate?.call(DropStatus.accepted);
+                            },
+                      icon: Icon(
+                        hasActiveCollection ? Icons.block : Icons.check,
+                        size: 16,
+                      ),
+                      label: Text(
+                        hasActiveCollection
+                            ? 'Complete Current Drop First'
+                            : 'Accept Drop',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: hasActiveCollection
+                            ? Colors.grey
+                            : Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
                   ),
-                  label: Text(
-                    hasActiveCollection
-                        ? 'Complete Current Drop First'
-                        : 'Accept Drop',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ReportDropDialog(dropId: drop.id),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Icon(Icons.flag, size: 20),
+                    ),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: hasActiveCollection
-                        ? Colors.grey
-                        : Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
+                ],
               ),
               if (hasActiveCollection) ...[
                 const SizedBox(height: 8),

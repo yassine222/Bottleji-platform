@@ -12,6 +12,7 @@ import 'package:botleji/core/providers/connectivity_provider.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'report_drop_dialog.dart';
 
 class DropDetailsModal extends ConsumerStatefulWidget {
   final Drop drop;
@@ -1064,10 +1065,13 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
 
           // No active collection — allow starting a new one
           final isOnline = ref.watch(connectivityProvider);
-          return SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
               onPressed: () async {
                 if (!isOnline) {
                   if (context.mounted) {
@@ -1157,6 +1161,27 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 ),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => ReportDropDialog(dropId: widget.drop.id),
+              );
+            },
+            icon: const Icon(Icons.flag, size: 20),
+            label: const Text('Report Drop'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ],
           );
         }
         

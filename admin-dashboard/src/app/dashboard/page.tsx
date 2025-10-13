@@ -2100,7 +2100,17 @@ function DropsContent() {
                         📍 {drop.location?.latitude?.toFixed(2)}, {drop.location?.longitude?.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        🍾 {drop.numberOfBottles} • 🥫 {drop.numberOfCans}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <img src="/water-bottle.png" alt="Bottles" className="w-4 h-4" />
+                            <span>{drop.numberOfBottles}</span>
+                          </div>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <img src="/can.png" alt="Cans" className="w-4 h-4" />
+                            <span>{drop.numberOfCans}</span>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -2208,9 +2218,18 @@ function DropsContent() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{drop.userId?.email}</p>
-                      <p className="text-sm text-gray-500">
-                        📍 {drop.location?.latitude?.toFixed(4)}, {drop.location?.longitude?.toFixed(4)} • 
-                        🍾 {drop.numberOfBottles} bottles • 🥫 {drop.numberOfCans} cans
+                      <p className="text-sm text-gray-500 flex items-center gap-2">
+                        <span>📍 {drop.location?.latitude?.toFixed(4)}, {drop.location?.longitude?.toFixed(4)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <img src="/water-bottle.png" alt="Bottles" className="w-4 h-4 inline" />
+                          {drop.numberOfBottles} bottles
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <img src="/can.png" alt="Cans" className="w-4 h-4 inline" />
+                          {drop.numberOfCans} cans
+                        </span>
                       </p>
                       {drop.notes && <p className="text-sm text-gray-500 mt-1">Note: {drop.notes}</p>}
                     </div>
@@ -2309,15 +2328,28 @@ function DropsContent() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Bottles:</span>
-                          <span className="font-medium">🍾 {selectedDrop.drop?.numberOfBottles}</span>
+                          <span className="font-medium flex items-center gap-2">
+                            <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
+                            {selectedDrop.drop?.numberOfBottles}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Cans:</span>
-                          <span className="font-medium">🥫 {selectedDrop.drop?.numberOfCans}</span>
+                          <span className="font-medium flex items-center gap-2">
+                            <img src="/can.png" alt="Cans" className="w-5 h-5" />
+                            {selectedDrop.drop?.numberOfCans}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Bottle Type:</span>
-                          <span className="font-medium capitalize">{selectedDrop.drop?.bottleType}</span>
+                          <span className="font-medium capitalize flex items-center gap-2">
+                            <img 
+                              src={selectedDrop.drop?.bottleType === 'mixed' ? '/mixed.png' : '/water-bottle.png'} 
+                              alt={selectedDrop.drop?.bottleType} 
+                              className="w-5 h-5" 
+                            />
+                            {selectedDrop.drop?.bottleType}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Leave Outside:</span>
@@ -5592,7 +5624,7 @@ function SupportContent() {
                                   <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                                     <div className="flex items-center space-x-2">
                                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-lg">🍾</span>
+                                        <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
                                       </div>
                                       <div>
                                         <p className="text-2xl font-bold text-blue-900">{selectedTicket.relatedDropId.numberOfBottles || 0}</p>
@@ -5604,7 +5636,7 @@ function SupportContent() {
                                   <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                                     <div className="flex items-center space-x-2">
                                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-lg">🥫</span>
+                                        <img src="/can.png" alt="Cans" className="w-5 h-5" />
                                       </div>
                                       <div>
                                         <p className="text-2xl font-bold text-blue-900">{selectedTicket.relatedDropId.numberOfCans || 0}</p>
