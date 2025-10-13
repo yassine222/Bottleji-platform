@@ -2352,43 +2352,99 @@ function DropsContent() {
 
                   {/* Right Column */}
                   <div className="space-y-6">
-                    {/* Collection Attempts Timeline */}
+                    {/* Complete Drop Timeline */}
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-900 mb-3">
-                        Collection History ({selectedDrop.totalAttempts || 0} attempts)
+                      <h3 className="font-semibold text-gray-900 mb-4">
+                        📜 Complete Drop Timeline
                       </h3>
-                      {selectedDrop.collectionAttempts && selectedDrop.collectionAttempts.length > 0 ? (
-                        <div className="space-y-3 max-h-96 overflow-y-auto">
-                          {selectedDrop.collectionAttempts.map((attempt: any, index: number) => (
-                            <div key={attempt._id || index} className="border-l-4 border-primary pl-4 py-2 bg-white rounded-r-lg">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium text-gray-900">
-                                  {attempt.collector?.name || 'Unknown Collector'}
-                                </span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  attempt.outcome === 'collected' ? 'bg-green-100 text-green-800' :
-                                  attempt.outcome === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                                  'bg-orange-100 text-orange-800'
-                                }`}>
-                                  {attempt.outcome || attempt.status}
-                                </span>
-                              </div>
-                              <p className="text-xs text-gray-600">{attempt.collector?.email}</p>
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {/* Drop Created Event */}
+                        <div className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                              📦
+                            </div>
+                            {(selectedDrop.collectionAttempts && selectedDrop.collectionAttempts.length > 0) && (
+                              <div className="w-0.5 h-full bg-gray-300 mt-2"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <p className="font-semibold text-gray-900">Drop Created</p>
+                              <p className="text-sm text-gray-600">by {selectedDrop.drop?.user?.name || 'Unknown'}</p>
                               <p className="text-xs text-gray-500 mt-1">
-                                ✓ Accepted: {new Date(attempt.acceptedAt).toLocaleString()}
+                                {new Date(selectedDrop.drop?.createdAt).toLocaleString()}
                               </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Collection Attempts */}
+                        {selectedDrop.collectionAttempts && selectedDrop.collectionAttempts.length > 0 ? (
+                          selectedDrop.collectionAttempts.map((attempt: any, index: number) => (
+                            <div key={attempt._id || index}>
+                              {/* Accepted Event */}
+                              <div className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+                                    ✓
+                                  </div>
+                                  <div className="w-0.5 h-full bg-gray-300 mt-2"></div>
+                                </div>
+                                <div className="flex-1 pb-4">
+                                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                                    <p className="font-semibold text-gray-900">Accepted for Collection</p>
+                                    <p className="text-sm text-gray-600">by {attempt.collector?.name || 'Unknown Collector'}</p>
+                                    <p className="text-xs text-gray-500">{attempt.collector?.email}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {new Date(attempt.acceptedAt).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Outcome Event (Collected/Cancelled/Expired) */}
                               {attempt.completedAt && (
-                                <p className="text-xs text-gray-500">
-                                  ✓ Completed: {new Date(attempt.completedAt).toLocaleString()}
-                                  {attempt.durationMinutes && ` (${attempt.durationMinutes} min)`}
-                                </p>
+                                <div className="flex gap-3">
+                                  <div className="flex flex-col items-center">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                                      attempt.outcome === 'collected' ? 'bg-green-600' :
+                                      attempt.outcome === 'cancelled' ? 'bg-gray-500' :
+                                      'bg-orange-500'
+                                    }`}>
+                                      {attempt.outcome === 'collected' ? '✓' : 
+                                       attempt.outcome === 'cancelled' ? '✕' : '⏱'}
+                                    </div>
+                                    {index < selectedDrop.collectionAttempts.length - 1 && (
+                                      <div className="w-0.5 h-full bg-gray-300 mt-2"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 pb-4">
+                                    <div className={`rounded-lg p-3 shadow-sm ${
+                                      attempt.outcome === 'collected' ? 'bg-green-50 border border-green-200' :
+                                      attempt.outcome === 'cancelled' ? 'bg-gray-50 border border-gray-200' :
+                                      'bg-orange-50 border border-orange-200'
+                                    }`}>
+                                      <p className="font-semibold text-gray-900 capitalize">
+                                        {attempt.outcome === 'collected' ? '✓ Successfully Collected' :
+                                         attempt.outcome === 'cancelled' ? '✕ Collection Cancelled' :
+                                         '⏱ Collection Expired'}
+                                      </p>
+                                      <p className="text-sm text-gray-600">by {attempt.collector?.name || 'Unknown Collector'}</p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {new Date(attempt.completedAt).toLocaleString()}
+                                        {attempt.durationMinutes !== undefined && ` • Duration: ${attempt.durationMinutes} min`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-sm text-center py-4">No collection attempts yet</p>
-                      )}
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm text-center py-4">No collection attempts yet</p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Statistics */}
