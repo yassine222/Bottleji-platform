@@ -1158,7 +1158,7 @@ function UsersContent() {
                                 Warning #{index + 1}
                               </span>
                               <span className="text-xs text-gray-500">
-                                {formatDate(warning.date)}
+                                {formatDate(warning.date || warning.timestamp || new Date().toISOString())}
                               </span>
                             </div>
                             <p className="text-sm font-semibold text-gray-900">{warning.reason}</p>
