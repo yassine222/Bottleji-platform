@@ -15,6 +15,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:botleji/core/services/local_notification_service.dart';
 import 'package:botleji/features/home/presentation/screens/home_screen.dart';
+import 'package:botleji/features/drops/presentation/widgets/report_drop_dialog.dart';
 
 // Navigation step model
 class NavigationStep {
@@ -1569,35 +1570,13 @@ Widget build(BuildContext context) {
 
                 const SizedBox(height: 12),
 
-                // Toggle simple slide button / timer
+                // Drop Details button
                 FloatingActionButton(
-                  heroTag: 'test_slide_button_fab',
-                  onPressed: () {
-                    setState(() {
-                      _showSlideButton = !_showSlideButton;
-                      if (_showSlideButton) {
-                        _slideProgress = 0.0;
-                        _timer?.cancel();
-                      } else {
-                        _initializeTimer();
-                      }
-                    });
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _showSlideButton
-                              ? 'Slide button shown - Timer stopped'
-                              : 'Slide button hidden - Timer restarted',
-                        ),
-                        backgroundColor: Colors.blue,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.blue,
+                  heroTag: 'drop_details_fab',
+                  onPressed: () => _showDropDetailsCard(context),
+                  backgroundColor: const Color(0xFF00695C),
                   foregroundColor: Colors.white,
-                  child: Icon(_showSlideButton ? Icons.visibility_off : Icons.visibility),
+                  child: const Icon(Icons.info_outline),
                 ),
 
                 const SizedBox(height: 12),
@@ -1850,6 +1829,237 @@ Widget _buildSlideButton() {
   }
 
   
+  void _showDropDetailsCard(BuildContext context) {
+    final activeCollection = ref.read(navigationControllerProvider);
+    
+    if (activeCollection == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00695C).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.recycling,
+                      color: Color(0xFF00695C),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Drop Details',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Drop Image
+              if (activeCollection.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    activeCollection.imageUrl!,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported, size: 50),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // Items Info
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Icon(Icons.water_drop, color: Color(0xFF00695C)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${activeCollection.numberOfBottles}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Text(
+                              'Bottles',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 1,
+                          height: 50,
+                          color: Colors.grey[300],
+                        ),
+                        Column(
+                          children: [
+                            const Icon(Icons.local_drink, color: Color(0xFF00695C)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${activeCollection.numberOfCans}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Text(
+                              'Cans',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    if (activeCollection.bottleType != null) ...[
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Type: ',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          Text(
+                            activeCollection.bottleType!.toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF00695C),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Notes
+              if (activeCollection.notes != null && activeCollection.notes!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber[200]!),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.note, color: Colors.amber, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          activeCollection.notes!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Leave Outside
+              if (activeCollection.leaveOutside) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.door_front_door, color: Colors.blue, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Leave outside',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // Report Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close details dialog
+                    showDialog(
+                      context: context,
+                      builder: (context) => ReportDropDialog(dropId: widget.dropId),
+                    );
+                  },
+                  icon: const Icon(Icons.flag, size: 20),
+                  label: const Text('Report Drop'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showCancellationDialog(BuildContext context) {
   CancellationReason? selectedReason;
 
