@@ -1624,15 +1624,21 @@ function DropsContent() {
       params.append('page', currentPage.toString());
       params.append('limit', '10');
       
+      console.log('📋 Fetching drops list with params:', params.toString());
+      
       const response = await axios.get(
         `${API_URL}/admin/drops-management/list?${params.toString()}`,
         config
       );
       
+      console.log('📋 Drops list response:', response.data);
+      
       setDropsList(response.data.drops);
       setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error('Error fetching drops list:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching drops list:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
     } finally {
       setDropsLoading(false);
     }
