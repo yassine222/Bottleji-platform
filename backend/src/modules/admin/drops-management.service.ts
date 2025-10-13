@@ -151,7 +151,6 @@ export class DropsManagementService {
     const [drops, total] = await Promise.all([
       this.dropModel
         .find(query)
-        .populate('userId', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -159,8 +158,20 @@ export class DropsManagementService {
       this.dropModel.countDocuments(query),
     ]);
 
+    // Manually populate user data since userId is a string, not a reference
+    const userIds = drops.map(drop => drop.userId);
+    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
+    
+    const dropsWithUsers = drops.map(drop => {
+      const user = users.find(u => u._id.toString() === drop.userId);
+      return {
+        ...drop.toObject(),
+        userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
+      };
+    });
+
     return {
-      drops,
+      drops: dropsWithUsers,
       total,
       page,
       limit,
@@ -180,9 +191,12 @@ export class DropsManagementService {
         status: { $ne: 'collected' },
         isSuspicious: { $ne: true }, // Don't include already flagged drops
       })
-      .populate('userId', 'name email')
       .sort({ createdAt: 1 })
       .exec();
+
+    // Manually populate user data
+    const userIds = oldDrops.map(drop => drop.userId);
+    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
 
     // Calculate age in days for each drop
     const dropsWithAge = oldDrops.map(drop => {
@@ -190,8 +204,10 @@ export class DropsManagementService {
       const ageInDays = Math.floor(
         (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
       );
+      const user = users.find(u => u._id.toString() === drop.userId);
       return {
         ...drop.toObject(),
+        userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
         ageInDays,
         reason: `Drop is ${ageInDays} days old and has not been collected`,
       };
@@ -228,11 +244,22 @@ export class DropsManagementService {
   async getFlaggedDrops() {
     const flaggedDrops = await this.dropModel
       .find({ isSuspicious: true })
-      .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .exec();
 
-    return flaggedDrops;
+    // Manually populate user data
+    const userIds = flaggedDrops.map(drop => drop.userId);
+    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
+    
+    const dropsWithUsers = flaggedDrops.map(drop => {
+      const user = users.find(u => u._id.toString() === drop.userId);
+      return {
+        ...drop.toObject(),
+        userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
+      };
+    });
+
+    return dropsWithUsers;
   }
 
   /**

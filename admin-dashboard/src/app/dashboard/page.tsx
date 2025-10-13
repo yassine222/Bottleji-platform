@@ -1632,6 +1632,8 @@ function DropsContent() {
       );
       
       console.log('📋 Drops list response:', response.data);
+      console.log('📋 First drop sample:', response.data.drops?.[0]);
+      console.log('📋 Total drops returned:', response.data.drops?.length);
       
       setDropsList(response.data.drops || []);
       setTotalPages(response.data.totalPages || 1);
@@ -1969,13 +1971,17 @@ function DropsContent() {
                     </tr>
                   ) : (
                     dropsList.map((drop: any, index: number) => (
-                      <tr key={drop._id || `drop-${index}`} className="hover:bg-gray-50 transition-colors">
+                      <tr key={drop.id || drop._id || `drop-${index}`} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                          {drop._id?.substring(0, 8) || 'N/A'}...
+                          {(drop.id || drop._id)?.substring(0, 8) || 'N/A'}...
                         </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{drop.userId?.email}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {typeof drop.userId === 'object' ? drop.userId?.name : 'User ID: ' + (drop.userId?.substring(0, 8) || 'Unknown')}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {typeof drop.userId === 'object' ? drop.userId?.email : ''}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         📍 {drop.location?.latitude?.toFixed(2)}, {drop.location?.longitude?.toFixed(2)}
