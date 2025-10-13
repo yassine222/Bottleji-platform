@@ -1582,15 +1582,370 @@ function UsersContent() {
 }
 
 function DropsContent() {
+  const [stats, setStats] = useState<any>(null);
+  const [timeBasedStats, setTimeBasedStats] = useState<any>(null);
+  const [successRate, setSuccessRate] = useState<any>(null);
+  const [collectorLeaderboard, setCollectorLeaderboard] = useState<any[]>([]);
+  const [householdRankings, setHouseholdRankings] = useState<any[]>([]);
+  const [oldDrops, setOldDrops] = useState<any[]>([]);
+  const [selectedOldDrops, setSelectedOldDrops] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showOldDropsModal, setShowOldDropsModal] = useState(false);
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      const [
+        statsRes,
+        timeRes,
+        successRes,
+        collectorRes,
+        householdRes,
+      ] = await Promise.all([
+        axios.get(`${API_URL}/admin/drops/stats`, config),
+        axios.get(`${API_URL}/admin/drops/analytics/time-based`, config),
+        axios.get(`${API_URL}/admin/drops/analytics/success-rate`, config),
+        axios.get(`${API_URL}/admin/drops/performance/collector-leaderboard?limit=5`, config),
+        axios.get(`${API_URL}/admin/drops/performance/household-rankings?limit=5`, config),
+      ]);
+
+      setStats(statsRes.data.stats);
+      setTimeBasedStats(timeRes.data.stats);
+      setSuccessRate(successRes.data.stats);
+      setCollectorLeaderboard(collectorRes.data.leaderboard);
+      setHouseholdRankings(householdRes.data.rankings);
+    } catch (error) {
+      console.error('Error fetching drops data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const analyzeOldDrops = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_URL}/admin/drops/analyze-old`, config);
+      setOldDrops(response.data.drops);
+      setShowOldDropsModal(true);
+    } catch (error) {
+      console.error('Error analyzing old drops:', error);
+    }
+  };
+
+  const hideSelectedDrops = async () => {
+    if (selectedOldDrops.length === 0) return;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.post(`${API_URL}/admin/drops/hide-old`, 
+        { dropIds: selectedOldDrops }, 
+        config
+      );
+      
+      alert(`${selectedOldDrops.length} drops hidden successfully and users notified!`);
+      setShowOldDropsModal(false);
+      setSelectedOldDrops([]);
+      fetchAllData();
+    } catch (error) {
+      console.error('Error hiding drops:', error);
+      alert('Error hiding drops');
+    }
+  };
+
+  if (loading || !stats) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const COLORS = {
+    pending: '#FFC107',
+    collected: '#4CAF50',
+    cancelled: '#9E9E9E',
+    expired: '#FF5722',
+  };
+
+  const statusData = [
+    { name: 'Pending', value: stats.dropsByStatus['pending'] || 0, color: COLORS.pending },
+    { name: 'Collected', value: stats.dropsByStatus['collected'] || 0, color: COLORS.collected },
+    { name: 'Cancelled', value: stats.dropsByStatus['cancelled'] || 0, color: COLORS.cancelled },
+    { name: 'Expired', value: stats.dropsByStatus['expired'] || 0, color: COLORS.expired },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg border border-gray-200">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="bg-surface p-4 rounded-md">
-            <p className="text-text-secondary">Drops management functionality will be implemented here.</p>
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Drops Management</h2>
+        <p className="text-gray-600">Monitor, analyze, and manage all drops in the system</p>
+      </div>
+
+      {/* Stats Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Drops */}
+        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-blue-500 p-3 rounded-lg text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            {timeBasedStats && (
+              <div className={`flex items-center gap-1 text-sm ${timeBasedStats.weekChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {timeBasedStats.weekChange > 0 ? '↑' : '↓'}
+                {Math.abs(timeBasedStats.weekChange).toFixed(1)}%
+              </div>
+            )}
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Drops</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.totalDrops.toLocaleString()}</p>
+        </div>
+
+        {/* Active Drops */}
+        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-green-500 p-3 rounded-lg text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Active Drops</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.activeDrops.toLocaleString()}</p>
+        </div>
+
+        {/* Flagged Drops */}
+        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-orange-500 p-3 rounded-lg text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Flagged Drops</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.flaggedDrops.toLocaleString()}</p>
+        </div>
+
+        {/* Old Drops */}
+        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-red-500 p-3 rounded-lg text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Old Drops (&gt;3 days)</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.oldDrops.toLocaleString()}</p>
+          <button
+            onClick={analyzeOldDrops}
+            className="mt-3 w-full bg-white text-red-600 border border-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+          >
+            Analyze Old Drops
+          </button>
+        </div>
+      </div>
+
+      {/* Success Rate & Status Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Success Rate */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Drop Success Rate</h3>
+          {successRate && (
+            <div className="space-y-4">
+              <div className="flex justify-around">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-green-600">{successRate.successRate.toFixed(1)}%</p>
+                  <p className="text-sm text-gray-600">Collected</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-gray-600">{successRate.cancellationRate.toFixed(1)}%</p>
+                  <p className="text-sm text-gray-600">Cancelled</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-orange-600">{successRate.expirationRate.toFixed(1)}%</p>
+                  <p className="text-sm text-gray-600">Expired</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Status Distribution */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Status Distribution</h3>
+          <div className="space-y-2">
+            {statusData.map((status) => (
+              <div key={status.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: status.color }}></div>
+                  <span className="text-sm text-gray-700">{status.name}</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{status.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* Leaderboards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Collector Leaderboard */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              🏆 Top Collectors
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {collectorLeaderboard.map((collector: any, index: number) => (
+              <div key={collector.collectorId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                    index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-gray-300'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{collector.collectorName}</p>
+                    <p className="text-sm text-gray-500">{collector.collectorEmail}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-green-600">{collector.totalCollections}</p>
+                  <p className="text-xs text-gray-500">collections</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Household Rankings */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              👥 Top Households
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {householdRankings.map((household: any, index: number) => (
+              <div key={household.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                    index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-gray-300'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{household.userName}</p>
+                    <p className="text-sm text-gray-500">{household.totalDrops} drops</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-green-600">{household.successRate}%</p>
+                  <p className="text-xs text-gray-500">success rate</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Old Drops Modal */}
+      {showOldDropsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Old Drops Analysis (&gt;3 days)</h2>
+                <button
+                  onClick={() => setShowOldDropsModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-gray-600 mt-2">Found {oldDrops.length} drops older than 3 days that have not been collected</p>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <div className="space-y-3">
+                {oldDrops.map((drop: any) => (
+                  <div key={drop._id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-red-300 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selectedOldDrops.includes(drop._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedOldDrops([...selectedOldDrops, drop._id]);
+                        } else {
+                          setSelectedOldDrops(selectedOldDrops.filter(id => id !== drop._id));
+                        }
+                      }}
+                      className="w-5 h-5 text-red-600 rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-gray-900">{drop.userId?.name || 'Unknown User'}</p>
+                        <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                          {drop.ageInDays} days old
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{drop.userId?.email}</p>
+                      <p className="text-sm text-gray-500">
+                        📍 {drop.location?.latitude?.toFixed(4)}, {drop.location?.longitude?.toFixed(4)} • 
+                        🍾 {drop.numberOfBottles} bottles • 🥫 {drop.numberOfCans} cans
+                      </p>
+                      {drop.notes && <p className="text-sm text-gray-500 mt-1">Note: {drop.notes}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  {selectedOldDrops.length} of {oldDrops.length} selected
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSelectedOldDrops(oldDrops.map((d: any) => d._id))}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={() => setSelectedOldDrops([])}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={hideSelectedDrops}
+                    disabled={selectedOldDrops.length === 0}
+                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                  >
+                    Hide Selected & Notify Users
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

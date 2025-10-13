@@ -188,8 +188,9 @@ export class DropsManagementService {
 
     // Calculate age in days for each drop
     const dropsWithAge = oldDrops.map(drop => {
+      const createdAt = drop.createdAt ? new Date(drop.createdAt) : new Date();
       const ageInDays = Math.floor(
-        (Date.now() - new Date(drop.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+        (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
       );
       return {
         ...drop.toObject(),
@@ -311,7 +312,9 @@ export class DropsManagementService {
     // Calculate average collection time
     const totalMinutes = collectedDrops.reduce((sum, drop) => {
       // Simple calculation: time from creation to last update (collected)
-      const minutes = (new Date(drop.updatedAt).getTime() - new Date(drop.createdAt).getTime()) / (1000 * 60);
+      const createdAt = drop.createdAt ? new Date(drop.createdAt) : new Date();
+      const updatedAt = drop.updatedAt ? new Date(drop.updatedAt) : new Date();
+      const minutes = (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60);
       return sum + minutes;
     }, 0);
 
