@@ -5884,19 +5884,131 @@ function SupportContent() {
                         </div>
                       )}
                       
-                      {/* Collection Issue - Show only the interaction timeline, no separate drop card */}
+                      {/* Collection Issue - Show CollectionAttempt timeline */}
                       {selectedTicket.relatedCollectionId && (
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                          <h4 className="font-medium text-green-900 mb-3">Collection Attempt Details</h4>
+                          
+                          {/* Collection Attempt Info */}
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-white rounded-lg p-3 border border-green-200">
+                              <p className="text-xs text-gray-600">Status</p>
+                              <p className="font-semibold text-green-900 capitalize">{selectedTicket.relatedCollectionId.status}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 border border-green-200">
+                              <p className="text-xs text-gray-600">Outcome</p>
+                              <p className="font-semibold text-green-900 capitalize">{selectedTicket.relatedCollectionId.outcome || 'In Progress'}</p>
+                            </div>
+                            {selectedTicket.relatedCollectionId.durationMinutes && (
+                              <div className="bg-white rounded-lg p-3 border border-green-200">
+                                <p className="text-xs text-gray-600">Duration</p>
+                                <p className="font-semibold text-green-900">{selectedTicket.relatedCollectionId.durationMinutes} min</p>
+                              </div>
+                            )}
+                          </div>
 
-                          {/* Collection Interaction Timeline - Grouped by Pairs */}
-                          {selectedTicket.relatedCollectionId.interactions && selectedTicket.relatedCollectionId.interactions.length > 0 && (
+                          {/* Collection Attempt Timeline */}
+                          {selectedTicket.relatedCollectionId.timeline && selectedTicket.relatedCollectionId.timeline.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-green-200">
-                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline (Paired)</h4>
+                              <h4 className="font-medium text-green-900 mb-3">Collection Attempt Timeline</h4>
                               
                               <div className="space-y-4 max-h-96 overflow-y-auto">
-                                {(() => {
-                                  // Group interactions into pairs (ACCEPTED + FINAL_STATE)
-                                  const interactions = selectedTicket.relatedCollectionId.interactions;
+                                {selectedTicket.relatedCollectionId.timeline.map((event: any, index: number) => {
+                                  const getEventIcon = (eventType: string) => {
+                                    switch (eventType.toLowerCase()) {
+                                      case 'accepted':
+                                        return '✓';
+                                      case 'collected':
+                                        return '📦';
+                                      case 'cancelled':
+                                        return '✗';
+                                      case 'expired':
+                                        return '⏰';
+                                      default:
+                                        return '•';
+                                    }
+                                  };
+
+                                  const getEventColor = (eventType: string) => {
+                                    switch (eventType.toLowerCase()) {
+                                      case 'accepted':
+                                        return 'bg-green-100 text-green-800 border-green-200';
+                                      case 'collected':
+                                        return 'bg-blue-100 text-blue-800 border-blue-200';
+                                      case 'cancelled':
+                                        return 'bg-red-100 text-red-800 border-red-200';
+                                      case 'expired':
+                                        return 'bg-orange-100 text-orange-800 border-orange-200';
+                                      default:
+                                        return 'bg-gray-100 text-gray-800 border-gray-200';
+                                    }
+                                  };
+
+                                  const getEventTitle = (eventType: string) => {
+                                    switch (eventType.toLowerCase()) {
+                                      case 'accepted':
+                                        return 'Collector Accepted Drop';
+                                      case 'collected':
+                                        return 'Drop Collected Successfully';
+                                      case 'cancelled':
+                                        return 'Collection Cancelled';
+                                      case 'expired':
+                                        return 'Collection Expired';
+                                      default:
+                                        return eventType.charAt(0).toUpperCase() + eventType.slice(1);
+                                    }
+                                  };
+
+                                  return (
+                                    <div key={index} className="relative flex items-start space-x-4">
+                                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${getEventColor(event.event)}`}>
+                                        {getEventIcon(event.event)}
+                                      </div>
+                                      <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-3">
+                                        <div className="flex items-center justify-between">
+                                          <h5 className="text-sm font-medium text-gray-900">{getEventTitle(event.event)}</h5>
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(event.timestamp).toLocaleString()}
+                                          </span>
+                                        </div>
+                                        {event.collector && (
+                                          <p className="mt-1 text-sm text-gray-600">
+                                            <strong>Collector:</strong> {event.collector.name} ({event.collector.email})
+                                          </p>
+                                        )}
+                                        {event.details?.reason && (
+                                          <p className="mt-1 text-sm text-gray-600">
+                                            <strong>Reason:</strong> {event.details.reason}
+                                          </p>
+                                        )}
+                                        {event.details?.notes && (
+                                          <p className="mt-1 text-sm text-gray-600">
+                                            <strong>Notes:</strong> {event.details.notes}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Show message when no timeline found */}
+                          {(!selectedTicket.relatedCollectionId.timeline || selectedTicket.relatedCollectionId.timeline.length === 0) && (
+                            <div className="mt-4 pt-4 border-t border-green-200">
+                              <h4 className="font-medium text-green-900 mb-3">Collection Attempt Timeline</h4>
+                              <div className="text-center py-4 text-gray-500">
+                                <p>No timeline found for this collection attempt.</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Old code to remove - start marker */}
+                      {false && (
+                        <div>
                                   console.log('🔍 Total interactions:', interactions.length);
                                   console.log('🔍 All interactions:', interactions.map((i: any) => ({ type: i.type, time: i.timestamp })));
                                   
@@ -6083,17 +6195,9 @@ function SupportContent() {
                             </div>
                           )}
                           
-                          {/* Show message when no interactions are found for collection */}
-                          {(!selectedTicket.relatedCollectionId.interactions || selectedTicket.relatedCollectionId.interactions.length === 0) && (
-                            <div className="mt-4 pt-4 border-t border-green-200">
-                              <h4 className="font-medium text-green-900 mb-3">Collection Interaction Timeline</h4>
-                              <div className="text-center py-4 text-gray-500">
-                                <p>No interaction history found for this drop.</p>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
+                      {/* Old code to remove - end marker */}
                       
                       {selectedTicket.relatedApplicationId && (
                         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
