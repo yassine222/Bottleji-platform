@@ -163,7 +163,7 @@ export class DropsManagementService {
     const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
     
     const dropsWithUsers = drops.map(drop => {
-      const user = users.find(u => u._id.toString() === drop.userId);
+      const user = users.find(u => (u as any)._id.toString() === drop.userId);
       return {
         ...drop.toObject(),
         userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
@@ -204,7 +204,7 @@ export class DropsManagementService {
       const ageInDays = Math.floor(
         (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
       );
-      const user = users.find(u => u._id.toString() === drop.userId);
+      const user = users.find(u => (u as any)._id.toString() === drop.userId);
       return {
         ...drop.toObject(),
         userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
@@ -252,7 +252,7 @@ export class DropsManagementService {
     const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
     
     const dropsWithUsers = flaggedDrops.map(drop => {
-      const user = users.find(u => u._id.toString() === drop.userId);
+      const user = users.find(u => (u as any)._id.toString() === drop.userId);
       return {
         ...drop.toObject(),
         userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
@@ -287,7 +287,7 @@ export class DropsManagementService {
 
     // Enrich attempts with collector info
     const enrichedAttempts = collectionAttempts.map(attempt => {
-      const collector = collectors.find(c => c._id.toString() === attempt.collectorId);
+      const collector = collectors.find(c => (c as any)._id.toString() === attempt.collectorId);
       return {
         ...attempt.toObject(),
         collector: collector ? { name: collector.name, email: collector.email } : null,
