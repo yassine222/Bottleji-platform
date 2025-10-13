@@ -2083,6 +2083,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           }
                                           if (currentUserId == null) return;
                                           
+                                          // Check if account is locked
+                                          final user = ref.read(authNotifierProvider).value;
+                                          if (user?.isCurrentlyLocked ?? false) {
+                                            if (context.mounted && user?.accountLockedUntil != null) {
+                                              Navigator.pop(context); // Close the drop details modal first
+                                              showDialog(
+                                                context: context,
+                                                barrierDismissible: true,
+                                                builder: (context) => Dialog(
+                                                  backgroundColor: Colors.transparent,
+                                                  child: AccountLockCard(
+                                                    lockedUntil: user!.accountLockedUntil!,
+                                                    onDismiss: () => Navigator.of(context).pop(),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            return;
+                                          }
+                                          
                                           try {
                                             // Assign collector to drop
                                             await ref.read(dropsControllerProvider.notifier)
