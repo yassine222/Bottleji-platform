@@ -1594,10 +1594,49 @@ function DropsContent() {
   const [selectedOldDrops, setSelectedOldDrops] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOldDropsModal, setShowOldDropsModal] = useState(false);
+  
+  // Drops list state
+  const [dropsList, setDropsList] = useState<any[]>([]);
+  const [dropsLoading, setDropsLoading] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchAllData();
+    fetchDropsList();
   }, []);
+
+  useEffect(() => {
+    fetchDropsList();
+  }, [selectedStatus, searchQuery, currentPage]);
+
+  const fetchDropsList = async () => {
+    try {
+      setDropsLoading(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      const params = new URLSearchParams();
+      if (selectedStatus) params.append('status', selectedStatus);
+      if (searchQuery) params.append('search', searchQuery);
+      params.append('page', currentPage.toString());
+      params.append('limit', '10');
+      
+      const response = await axios.get(
+        `${API_URL}/admin/drops-management/list?${params.toString()}`,
+        config
+      );
+      
+      setDropsList(response.data.drops);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      console.error('Error fetching drops list:', error);
+    } finally {
+      setDropsLoading(false);
+    }
+  };
 
   const fetchAllData = async () => {
     try {
@@ -1864,6 +1903,127 @@ function DropsContent() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Drops List Table */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">All Drops</h3>
+          <div className="flex gap-3">
+            {/* Status Filter */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="collected">Collected</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="expired">Expired</option>
+            </select>
+            
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search by ID or notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-64"
+            />
+          </div>
+        </div>
+
+        {dropsLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collector</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {dropsList.map((drop: any) => (
+                    <tr key={drop._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                        {drop._id.substring(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{drop.userId?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        📍 {drop.location?.latitude?.toFixed(2)}, {drop.location?.longitude?.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        🍾 {drop.numberOfBottles} • 🥫 {drop.numberOfCans}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          drop.status === 'collected' ? 'bg-green-100 text-green-800' :
+                          drop.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          drop.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                          drop.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {drop.status}
+                        </span>
+                        {drop.isSuspicious && (
+                          <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">⚠️ Flagged</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(drop.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {drop.collectorId ? (
+                          <div className="text-sm text-gray-900">{drop.collectorId?.name || 'Assigned'}</div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Old Drops Modal */}
