@@ -2,14 +2,14 @@ import { Controller, Get, Put, Post, Body, UseGuards, Query, Param } from '@nest
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { DropsManagementService } from './drops-management.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Controller('admin/drops')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class DropsManagementController {
   constructor(
     private readonly dropsManagementService: DropsManagementService,
-    private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   /**
@@ -78,11 +78,12 @@ export class DropsManagementController {
 
     // Send notifications to affected users
     for (const userId of result.userIds) {
-      await this.notificationsService.sendNotificationToUser(userId, {
+      this.notificationsGateway.sendNotificationToUser(userId, {
         type: 'drop_removed',
         title: 'Drop Removed',
         message: 'Your drop has been removed as it was older than 3 days and not collected.',
         data: {},
+        timestamp: new Date(),
       });
     }
 

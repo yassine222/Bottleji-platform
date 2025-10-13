@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Drop } from '../dropoffs/schemas/dropoff.schema';
+import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
 import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
 import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class DropsManagementService {
   constructor(
-    @InjectModel('Drop') private dropModel: Model<Drop>,
+    @InjectModel('Dropoff') private dropModel: Model<Dropoff>,
     @InjectModel('CollectionAttempt') private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel('User') private userModel: Model<User>,
   ) {}
@@ -308,17 +308,11 @@ export class DropsManagementService {
       };
     }
 
+    // Calculate average collection time
     const totalMinutes = collectedDrops.reduce((sum, drop) => {
-      const collectedAttempt = this.collectionAttemptModel.findOne({
-        dropoffId: drop._id,
-        outcome: 'collected',
-      });
-      // Calculate time from createdAt to completedAt
-      if (collectedAttempt) {
-        const minutes = (new Date(drop.updatedAt).getTime() - new Date(drop.createdAt).getTime()) / (1000 * 60);
-        return sum + minutes;
-      }
-      return sum;
+      // Simple calculation: time from creation to last update (collected)
+      const minutes = (new Date(drop.updatedAt).getTime() - new Date(drop.createdAt).getTime()) / (1000 * 60);
+      return sum + minutes;
     }, 0);
 
     const averageMinutes = totalMinutes / collectedDrops.length;
@@ -418,7 +412,7 @@ export class DropsManagementService {
     const users = await this.userModel.find({ _id: { $in: collectorIds } }).exec();
 
     return leaderboard.map(item => {
-      const user = users.find(u => u._id.toString() === item._id.toString());
+      const user = users.find(u => (u as any)._id.toString() === item._id.toString());
       return {
         collectorId: item._id,
         collectorName: user?.name || 'Unknown',
@@ -460,7 +454,7 @@ export class DropsManagementService {
     const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
 
     return rankings.map(item => {
-      const user = users.find(u => u._id.toString() === item._id.toString());
+      const user = users.find(u => (u as any)._id.toString() === item._id.toString());
       const successRate = item.totalDrops > 0 ? (item.collectedDrops / item.totalDrops) * 100 : 0;
       return {
         userId: item._id,
