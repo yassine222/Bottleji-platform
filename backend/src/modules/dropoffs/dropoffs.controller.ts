@@ -221,4 +221,26 @@ export class DropoffsController {
   getCollectionAttemptStats(@Param('collectorId') collectorId: string) {
     return this.dropoffsService.getCollectionAttemptStats(collectorId);
   }
+
+  // Report drop endpoint
+  @Post(':dropId/report')
+  async reportDrop(
+    @Param('dropId') dropId: string,
+    @Body() body: { collectorId: string; reason: string; details?: string },
+  ) {
+    const report = await this.dropoffsService.reportDrop(
+      dropId,
+      body.collectorId,
+      body.reason,
+      body.details,
+    );
+    return { success: true, report };
+  }
+
+  // Get reports for a drop
+  @Get(':dropId/reports')
+  async getDropReports(@Param('dropId') dropId: string) {
+    const reports = await this.dropoffsService.getDropReports(dropId);
+    return { success: true, reports };
+  }
 } 

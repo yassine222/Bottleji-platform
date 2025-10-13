@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
 import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
+import { DropReport } from '../dropoffs/schemas/drop-report.schema';
 import { User } from '../users/schemas/user.schema';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class DropsManagementService {
   constructor(
     @InjectModel('Dropoff') private dropModel: Model<Dropoff>,
     @InjectModel('CollectionAttempt') private collectionAttemptModel: Model<CollectionAttempt>,
+    @InjectModel('DropReport') private dropReportModel: Model<DropReport>,
     @InjectModel('User') private userModel: Model<User>,
   ) {}
 
@@ -658,6 +660,66 @@ export class DropsManagementService {
         successRate: Math.round(successRate * 10) / 10,
       };
     });
+  }
+
+  /**
+   * Get all reported drops with report details
+   */
+  async getReportedDrops() {
+    const reports = await this.dropReportModel
+      .find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    // Get drop and user details for each report
+    const dropIds = reports.map(r => r.dropId);
+    const collectorIds = reports.map(r => r.reportedBy);
+    
+    const [drops, collectors] = await Promise.all([
+      this.dropModel.find({ _id: { $in: dropIds } }).exec(),
+      this.userModel.find({ _id: { $in: collectorIds } }).exec(),
+    ]);
+
+    const reportsWithDetails = reports.map(report => {
+      const drop = drops.find(d => d._id.toString() === report.dropId);
+      const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
+      
+      return {
+        ...report.toObject(),
+        drop: drop ? {
+          id: drop._id,
+          imageUrl: drop.imageUrl,
+          status: drop.status,
+          numberOfBottles: drop.numberOfBottles,
+          numberOfCans: drop.numberOfCans,
+        } : null,
+        reporter: collector ? {
+          name: collector.name,
+          email: collector.email,
+        } : null,
+      };
+    });
+
+    return reportsWithDetails;
+  }
+
+  /**
+   * Review a report (mark as reviewed/dismissed/action taken)
+   */
+  async reviewReport(reportId: string, adminId: string, status: string, actionTaken?: string, adminNotes?: string) {
+    const report = await this.dropReportModel.findByIdAndUpdate(
+      reportId,
+      {
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        actionTaken,
+        adminNotes,
+      },
+      { new: true },
+    ).exec();
+
+    return report;
   }
 
   /**

@@ -283,5 +283,34 @@ export class DropsManagementController {
     const stats = await this.dropsManagementService.getTimeBasedAnalytics();
     return { success: true, stats };
   }
+
+  /**
+   * Get all reported drops
+   * GET /admin/drops-management/reported
+   */
+  @Get('reported')
+  async getReportedDrops() {
+    const reports = await this.dropsManagementService.getReportedDrops();
+    return { success: true, count: reports.length, reports };
+  }
+
+  /**
+   * Review a report
+   * PUT /admin/drops-management/reports/:id/review
+   */
+  @Put('reports/:id/review')
+  async reviewReport(
+    @Param('id') reportId: string,
+    @Body() body: { adminId: string; status: string; actionTaken?: string; adminNotes?: string },
+  ) {
+    const report = await this.dropsManagementService.reviewReport(
+      reportId,
+      body.adminId,
+      body.status,
+      body.actionTaken,
+      body.adminNotes,
+    );
+    return { success: true, report };
+  }
 }
 

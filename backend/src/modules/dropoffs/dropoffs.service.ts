@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
 import { CollectorInteraction } from './schemas/collector-interaction.schema';
 import { CollectionAttempt } from './schemas/collection-attempt.schema';
+import { DropReport } from './schemas/drop-report.schema';
 import { CreateDropoffDto } from './dto/create-dropoff.dto';
 import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
@@ -15,6 +16,7 @@ export class DropoffsService {
     @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
     @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
     @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
+    @InjectModel(DropReport.name) private dropReportModel: Model<DropReport>,
     @InjectModel(User.name) private userModel: Model<User>,
   ) {
     this.startCleanupTask();
@@ -1766,5 +1768,41 @@ export class DropoffsService {
     } catch (error) {
       console.error('❌ Error checking expired account locks:', error);
     }
+  }
+
+  /**
+   * Report a drop (by collector)
+   */
+  async reportDrop(dropId: string, collectorId: string, reason: string, details?: string) {
+    const report = await this.dropReportModel.create({
+      dropId,
+      reportedBy: collectorId,
+      reason,
+      details,
+      status: 'pending',
+    });
+
+    console.log(`📢 Drop ${dropId} reported by collector ${collectorId} for: ${reason}`);
+    
+    return report;
+  }
+
+  /**
+   * Get all reports for a drop
+   */
+  async getDropReports(dropId: string) {
+    return await this.dropReportModel.find({ dropId }).sort({ createdAt: -1 }).exec();
+  }
+
+  /**
+   * Get all pending reports
+   */
+  async getPendingReports() {
+    const reports = await this.dropReportModel
+      .find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .exec();
+    
+    return reports;
   }
 } 
