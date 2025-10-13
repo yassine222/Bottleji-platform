@@ -140,10 +140,16 @@ export class DropsManagementService {
 
     // Search filter (by ID or notes)
     if (search) {
-      query.$or = [
+      const searchConditions: any[] = [
         { notes: { $regex: search, $options: 'i' } },
-        { _id: search.match(/^[0-9a-fA-F]{24}$/) ? search : null },
-      ].filter(Boolean);
+      ];
+      
+      // If search looks like a MongoDB ObjectId (24 hex chars), search by ID
+      if (search.match(/^[0-9a-fA-F]{24}$/)) {
+        searchConditions.push({ _id: search });
+      }
+      
+      query.$or = searchConditions;
     }
 
     const skip = (page - 1) * limit;
