@@ -28,46 +28,60 @@ export class SupportTicketsService {
     relatedApplicationId?: string,
     location?: { latitude: number; longitude: number; address: string },
   ): Promise<SupportTicket> {
-    const ticket = new this.supportTicketModel({
-      userId: new Types.ObjectId(userId),
-      title,
-      description,
-      category,
-      priority,
-      attachments,
-      createdBy: new Types.ObjectId(userId),
-      lastUpdatedBy: new Types.ObjectId(userId),
-      contextMetadata,
-      relatedDropId: relatedDropId ? new Types.ObjectId(relatedDropId) : undefined,
-      relatedCollectionId: relatedCollectionId ? new Types.ObjectId(relatedCollectionId) : undefined,
-      relatedApplicationId: relatedApplicationId ? new Types.ObjectId(relatedApplicationId) : undefined,
-      location,
-      messages: [{
-        message: this._generateContextualMessage(description, category, contextMetadata, relatedDropId, relatedCollectionId, relatedApplicationId),
-        senderId: new Types.ObjectId(userId),
-        senderType: 'user',
-        sentAt: new Date(),
-        isInternal: false,
-      }],
-    });
+    try {
+      console.log('🎫 Creating support ticket:', {
+        userId,
+        title,
+        category,
+        relatedDropId,
+        relatedCollectionId,
+      });
 
-    const savedTicket = await ticket.save();
+      const ticket = new this.supportTicketModel({
+        userId: new Types.ObjectId(userId),
+        title,
+        description,
+        category,
+        priority,
+        attachments,
+        createdBy: new Types.ObjectId(userId),
+        lastUpdatedBy: new Types.ObjectId(userId),
+        contextMetadata,
+        relatedDropId: relatedDropId ? new Types.ObjectId(relatedDropId) : undefined,
+        relatedCollectionId: relatedCollectionId ? new Types.ObjectId(relatedCollectionId) : undefined,
+        relatedApplicationId: relatedApplicationId ? new Types.ObjectId(relatedApplicationId) : undefined,
+        location,
+        messages: [{
+          message: this._generateContextualMessage(description, category, contextMetadata, relatedDropId, relatedCollectionId, relatedApplicationId),
+          senderId: new Types.ObjectId(userId),
+          senderType: 'user',
+          sentAt: new Date(),
+          isInternal: false,
+        }],
+      });
 
-    // Send real-time notification for new ticket
-    this.notificationsGateway.sendTicketUpdateToAdmins(
-      (savedTicket._id as any).toString(),
-      'new_ticket',
-      {
-        ticket: {
-          id: (savedTicket._id as any).toString(),
-          title: savedTicket.title,
-          userId: savedTicket.userId.toString(),
+      const savedTicket = await ticket.save();
+      console.log('✅ Support ticket created:', savedTicket._id);
+
+      // Send real-time notification for new ticket
+      this.notificationsGateway.sendTicketUpdateToAdmins(
+        (savedTicket._id as any).toString(),
+        'new_ticket',
+        {
+          ticket: {
+            id: (savedTicket._id as any).toString(),
+            title: savedTicket.title,
+            userId: savedTicket.userId.toString(),
+          },
+          ticketTitle: savedTicket.title,
         },
-        ticketTitle: savedTicket.title,
-      },
-    );
+      );
 
-    return savedTicket;
+      return savedTicket;
+    } catch (error) {
+      console.error('❌ Error creating support ticket:', error);
+      throw error;
+    }
   }
 
   private _generateContextualMessage(
