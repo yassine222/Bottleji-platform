@@ -110,9 +110,9 @@ export class DropsManagementController {
 
   /**
    * Get detailed drop information
-   * GET /admin/drops-management/:id/details
+   * GET /admin/drops-management/details/:id
    */
-  @Get(':id/details')
+  @Get('details/:id')
   async getDropDetails(@Param('id') dropId: string) {
     const details = await this.dropsManagementService.getDropDetails(dropId);
     return { success: true, ...details };
@@ -120,9 +120,9 @@ export class DropsManagementController {
 
   /**
    * Flag drop as suspicious
-   * PUT /admin/drops-management/:id/flag
+   * PUT /admin/drops-management/flag/:id
    */
-  @Put(':id/flag')
+  @Put('flag/:id')
   async flagDrop(@Param('id') dropId: string, @Body('reason') reason: string) {
     const drop = await this.dropsManagementService.flagDrop(dropId, reason);
     return { success: true, drop };
@@ -130,9 +130,9 @@ export class DropsManagementController {
 
   /**
    * Remove flag from drop
-   * PUT /admin/drops-management/:id/unflag
+   * PUT /admin/drops-management/unflag/:id
    */
-  @Put(':id/unflag')
+  @Put('unflag/:id')
   async unflagDrop(@Param('id') dropId: string) {
     const drop = await this.dropsManagementService.unflagDrop(dropId);
     return { success: true, drop };
@@ -140,9 +140,9 @@ export class DropsManagementController {
 
   /**
    * Delete drop permanently
-   * DELETE /admin/drops-management/:id
+   * DELETE /admin/drops-management/delete/:id
    */
-  @Put(':id/delete')
+  @Put('delete/:id')
   async deleteDrop(@Param('id') dropId: string) {
     const drop = await this.dropsManagementService.deleteDrop(dropId);
     

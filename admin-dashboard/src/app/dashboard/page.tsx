@@ -1722,7 +1722,7 @@ function DropsContent() {
       setShowDropDetails(true);
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_URL}/admin/drops-management/${dropId}/details`, config);
+      const response = await axios.get(`${API_URL}/admin/drops-management/details/${dropId}`, config);
       setSelectedDrop(response.data);
     } catch (error) {
       console.error('Error fetching drop details:', error);
@@ -1738,7 +1738,7 @@ function DropsContent() {
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/${dropId}/flag`, { reason }, config);
+      await axios.put(`${API_URL}/admin/drops-management/flag/${dropId}`, { reason }, config);
       alert('Drop flagged successfully!');
       setShowDropDetails(false);
       fetchDropsList();
@@ -1753,7 +1753,7 @@ function DropsContent() {
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/${dropId}/unflag`, {}, config);
+      await axios.put(`${API_URL}/admin/drops-management/unflag/${dropId}`, {}, config);
       alert('Flag removed successfully!');
       setShowDropDetails(false);
       fetchDropsList();
@@ -1770,7 +1770,7 @@ function DropsContent() {
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/${dropId}/delete`, {}, config);
+      await axios.put(`${API_URL}/admin/drops-management/delete/${dropId}`, {}, config);
       alert('Drop deleted successfully and user notified!');
       setShowDropDetails(false);
       fetchDropsList();
