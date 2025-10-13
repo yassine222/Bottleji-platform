@@ -1912,7 +1912,11 @@ Widget _buildSlideButton() {
                       children: [
                         Column(
                           children: [
-                            const Icon(Icons.water_drop, color: Color(0xFF00695C)),
+                            Image.asset(
+                              'assets/icons/water-bottle.png',
+                              width: 32,
+                              height: 32,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '${activeCollection.numberOfBottles}',
@@ -1934,7 +1938,11 @@ Widget _buildSlideButton() {
                         ),
                         Column(
                           children: [
-                            const Icon(Icons.local_drink, color: Color(0xFF00695C)),
+                            Image.asset(
+                              'assets/icons/can.png',
+                              width: 32,
+                              height: 32,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '${activeCollection.numberOfCans}',
