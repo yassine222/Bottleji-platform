@@ -1600,6 +1600,7 @@ function DropsContent() {
   const [dropsLoading, setDropsLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showWithAttempts, setShowWithAttempts] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   
@@ -1615,12 +1616,12 @@ function DropsContent() {
 
   useEffect(() => {
     fetchDropsList();
-  }, [selectedStatus, searchQuery, currentPage]);
+  }, [selectedStatus, searchQuery, showWithAttempts, currentPage]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatus, searchQuery]);
+  }, [selectedStatus, searchQuery, showWithAttempts]);
 
   const fetchDropsList = async () => {
     try {
@@ -1631,6 +1632,7 @@ function DropsContent() {
       const params = new URLSearchParams();
       if (selectedStatus) params.append('status', selectedStatus);
       if (searchQuery) params.append('search', searchQuery);
+      if (showWithAttempts) params.append('hasAttempts', 'true');
       params.append('page', currentPage.toString());
       params.append('limit', '10');
       
@@ -1990,31 +1992,46 @@ function DropsContent() {
 
       {/* Drops List Table */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">All Drops</h3>
-          <div className="flex gap-3">
-            {/* Status Filter */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="collected">Collected</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="expired">Expired</option>
-            </select>
-            
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search by ID or notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-64"
-            />
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xl font-semibold text-gray-900">All Drops</h3>
+            <div className="flex gap-3">
+              {/* Status Filter */}
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="collected">Collected</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="expired">Expired</option>
+              </select>
+              
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search by ID or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-64"
+              />
+            </div>
+          </div>
+          
+          {/* Additional Filters */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showWithAttempts}
+                onChange={(e) => setShowWithAttempts(e.target.checked)}
+                className="w-4 h-4 text-primary rounded focus:ring-primary"
+              />
+              <span>Only show drops with collection attempts</span>
+            </label>
           </div>
         </div>
 

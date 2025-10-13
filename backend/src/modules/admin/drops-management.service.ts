@@ -91,6 +91,7 @@ export class DropsManagementService {
     userId?: string;
     isSuspicious?: boolean;
     isOld?: boolean;
+    hasAttempts?: boolean;
     search?: string;
     page?: number;
     limit?: number;
@@ -102,6 +103,7 @@ export class DropsManagementService {
       userId,
       isSuspicious,
       isOld,
+      hasAttempts,
       search,
       page = 1,
       limit = 20,
@@ -153,6 +155,14 @@ export class DropsManagementService {
     }
 
     const skip = (page - 1) * limit;
+
+    // If filtering by drops with attempts, get drop IDs that have attempts
+    let dropIdsWithAttempts: string[] = [];
+    if (hasAttempts) {
+      const attempts = await this.collectionAttemptModel.find({}).distinct('dropoffId').exec();
+      dropIdsWithAttempts = attempts.map(id => id.toString());
+      query._id = { $in: dropIdsWithAttempts };
+    }
 
     const [drops, total] = await Promise.all([
       this.dropModel
