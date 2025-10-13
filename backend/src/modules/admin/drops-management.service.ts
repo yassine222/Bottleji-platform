@@ -311,15 +311,14 @@ export class DropsManagementService {
     const user = await this.userModel.findById(drop.userId).exec();
 
     // Get all collection attempts for this drop
-    // dropoffId in CollectionAttempt is stored as STRING, not ObjectId
+    // IMPORTANT: dropoffId in CollectionAttempt is stored as STRING, not ObjectId
+    const dropIdString = drop._id.toString();
     console.log('🔍 Searching for collection attempts...');
-    console.log('   - dropId param:', dropId);
-    console.log('   - drop._id:', drop._id);
-    console.log('   - drop._id.toString():', drop._id.toString());
+    console.log('   - Querying with dropoffId (string):', dropIdString);
     
-    // Query using the string representation of the drop ID
+    // Query using string comparison since dropoffId is a string field
     const collectionAttempts = await this.collectionAttemptModel
-      .find({ dropoffId: drop._id.toString() })
+      .find({ dropoffId: dropIdString })
       .sort({ acceptedAt: -1 })
       .exec();
     
@@ -327,6 +326,11 @@ export class DropsManagementService {
     if (collectionAttempts.length > 0) {
       console.log('   - First attempt dropoffId:', collectionAttempts[0].dropoffId);
       console.log('   - First attempt dropoffId type:', typeof collectionAttempts[0].dropoffId);
+      console.log('   - Match:', collectionAttempts[0].dropoffId === dropIdString);
+    } else {
+      console.log('   - No attempts found. Checking if any attempts exist in DB...');
+      const anyAttempts = await this.collectionAttemptModel.countDocuments();
+      console.log('   - Total attempts in DB:', anyAttempts);
     }
 
     // Get collector details for all attempts
