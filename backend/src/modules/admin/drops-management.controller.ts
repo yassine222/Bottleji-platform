@@ -109,12 +109,54 @@ export class DropsManagementController {
   }
 
   /**
+   * Get detailed drop information
+   * GET /admin/drops-management/:id/details
+   */
+  @Get(':id/details')
+  async getDropDetails(@Param('id') dropId: string) {
+    const details = await this.dropsManagementService.getDropDetails(dropId);
+    return { success: true, ...details };
+  }
+
+  /**
+   * Flag drop as suspicious
+   * PUT /admin/drops-management/:id/flag
+   */
+  @Put(':id/flag')
+  async flagDrop(@Param('id') dropId: string, @Body('reason') reason: string) {
+    const drop = await this.dropsManagementService.flagDrop(dropId, reason);
+    return { success: true, drop };
+  }
+
+  /**
    * Remove flag from drop
-   * PUT /admin/drops/:id/unflag
+   * PUT /admin/drops-management/:id/unflag
    */
   @Put(':id/unflag')
   async unflagDrop(@Param('id') dropId: string) {
     const drop = await this.dropsManagementService.unflagDrop(dropId);
+    return { success: true, drop };
+  }
+
+  /**
+   * Delete drop permanently
+   * DELETE /admin/drops-management/:id
+   */
+  @Put(':id/delete')
+  async deleteDrop(@Param('id') dropId: string) {
+    const drop = await this.dropsManagementService.deleteDrop(dropId);
+    
+    // Notify the user
+    if (drop && drop.userId) {
+      this.notificationsGateway.sendNotificationToUser(drop.userId, {
+        type: 'drop_deleted',
+        title: 'Drop Deleted',
+        message: 'Your drop has been deleted by an administrator.',
+        data: { dropId: drop.id },
+        timestamp: new Date(),
+      });
+    }
+    
     return { success: true, drop };
   }
 

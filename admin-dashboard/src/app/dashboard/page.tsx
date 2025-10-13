@@ -1602,6 +1602,11 @@ function DropsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Drop details modal state
+  const [selectedDrop, setSelectedDrop] = useState<any>(null);
+  const [showDropDetails, setShowDropDetails] = useState(false);
+  const [dropDetailsLoading, setDropDetailsLoading] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -1708,6 +1713,71 @@ function DropsContent() {
     } catch (error) {
       console.error('Error hiding drops:', error);
       alert('Error hiding drops');
+    }
+  };
+
+  const viewDropDetails = async (dropId: string) => {
+    try {
+      setDropDetailsLoading(true);
+      setShowDropDetails(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_URL}/admin/drops-management/${dropId}/details`, config);
+      setSelectedDrop(response.data);
+    } catch (error) {
+      console.error('Error fetching drop details:', error);
+    } finally {
+      setDropDetailsLoading(false);
+    }
+  };
+
+  const flagDrop = async (dropId: string) => {
+    const reason = prompt('Enter reason for flagging this drop:');
+    if (!reason) return;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${API_URL}/admin/drops-management/${dropId}/flag`, { reason }, config);
+      alert('Drop flagged successfully!');
+      setShowDropDetails(false);
+      fetchDropsList();
+      fetchAllData();
+    } catch (error) {
+      console.error('Error flagging drop:', error);
+      alert('Error flagging drop');
+    }
+  };
+
+  const unflagDrop = async (dropId: string) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${API_URL}/admin/drops-management/${dropId}/unflag`, {}, config);
+      alert('Flag removed successfully!');
+      setShowDropDetails(false);
+      fetchDropsList();
+      fetchAllData();
+    } catch (error) {
+      console.error('Error unflagging drop:', error);
+      alert('Error unflagging drop');
+    }
+  };
+
+  const deleteDrop = async (dropId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this drop? This action cannot be undone.')) return;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${API_URL}/admin/drops-management/${dropId}/delete`, {}, config);
+      alert('Drop deleted successfully and user notified!');
+      setShowDropDetails(false);
+      fetchDropsList();
+      fetchAllData();
+    } catch (error) {
+      console.error('Error deleting drop:', error);
+      alert('Error deleting drop');
     }
   };
 
@@ -1960,12 +2030,13 @@ function DropsContent() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {dropsList.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                         No drops found
                       </td>
                     </tr>
@@ -2013,6 +2084,14 @@ function DropsContent() {
                           const days = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
                           return days === 0 ? 'Today' : `${days}d ago`;
                         })()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => viewDropDetails(drop.id || drop._id)}
+                          className="text-primary hover:text-primary-dark font-medium"
+                        >
+                          View Details →
+                        </button>
                       </td>
                     </tr>
                   )))}
@@ -2126,6 +2205,233 @@ function DropsContent() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drop Details Modal */}
+      {showDropDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full my-8">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-primary to-primary-dark">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Drop Details</h2>
+                <button
+                  onClick={() => setShowDropDetails(false)}
+                  className="text-white hover:text-gray-200 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {dropDetailsLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : selectedDrop ? (
+              <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                {/* Drop Information Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Drop Image */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Drop Image</h3>
+                      <img 
+                        src={selectedDrop.drop?.imageUrl} 
+                        alt="Drop" 
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    </div>
+
+                    {/* Drop Details */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Drop Information</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Drop ID:</span>
+                          <span className="font-mono font-medium text-xs">{selectedDrop.drop?.id || selectedDrop.drop?._id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Status:</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            selectedDrop.drop?.status === 'collected' ? 'bg-green-100 text-green-800' :
+                            selectedDrop.drop?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedDrop.drop?.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedDrop.drop?.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Bottles:</span>
+                          <span className="font-medium">🍾 {selectedDrop.drop?.numberOfBottles}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cans:</span>
+                          <span className="font-medium">🥫 {selectedDrop.drop?.numberOfCans}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Bottle Type:</span>
+                          <span className="font-medium capitalize">{selectedDrop.drop?.bottleType}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Leave Outside:</span>
+                          <span className="font-medium">{selectedDrop.drop?.leaveOutside ? 'Yes' : 'No'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Created:</span>
+                          <span className="font-medium text-xs">{new Date(selectedDrop.drop?.createdAt).toLocaleString()}</span>
+                        </div>
+                        {selectedDrop.drop?.isSuspicious && (
+                          <div className="pt-2 border-t border-red-200 bg-red-50 -mx-4 -mb-4 p-4 mt-3">
+                            <span className="text-red-800 font-medium">⚠️ Flagged as Suspicious</span>
+                            {selectedDrop.drop?.suspiciousReason && (
+                              <p className="text-xs text-red-700 mt-1">{selectedDrop.drop.suspiciousReason}</p>
+                            )}
+                          </div>
+                        )}
+                        {selectedDrop.drop?.notes && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <span className="text-gray-600">Notes:</span>
+                            <p className="mt-1 text-gray-900">{selectedDrop.drop.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* User Information */}
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Household User</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Name:</span>
+                          <span className="font-medium">{selectedDrop.drop?.user?.name || 'Unknown'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Email:</span>
+                          <span className="font-medium">{selectedDrop.drop?.user?.email || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Phone:</span>
+                          <span className="font-medium">{selectedDrop.drop?.user?.phoneNumber || 'N/A'}</span>
+                        </div>
+                        {selectedDrop.drop?.user?.address && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <span className="text-gray-600">Address:</span>
+                            <p className="mt-1 text-gray-900 text-xs">{selectedDrop.drop.user.address}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Collection Attempts Timeline */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">
+                        Collection History ({selectedDrop.totalAttempts || 0} attempts)
+                      </h3>
+                      {selectedDrop.collectionAttempts && selectedDrop.collectionAttempts.length > 0 ? (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {selectedDrop.collectionAttempts.map((attempt: any, index: number) => (
+                            <div key={attempt._id || index} className="border-l-4 border-primary pl-4 py-2 bg-white rounded-r-lg">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-gray-900">
+                                  {attempt.collector?.name || 'Unknown Collector'}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  attempt.outcome === 'collected' ? 'bg-green-100 text-green-800' :
+                                  attempt.outcome === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {attempt.outcome || attempt.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600">{attempt.collector?.email}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                ✓ Accepted: {new Date(attempt.acceptedAt).toLocaleString()}
+                              </p>
+                              {attempt.completedAt && (
+                                <p className="text-xs text-gray-500">
+                                  ✓ Completed: {new Date(attempt.completedAt).toLocaleString()}
+                                  {attempt.durationMinutes && ` (${attempt.durationMinutes} min)`}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">No collection attempts yet</p>
+                      )}
+                    </div>
+
+                    {/* Statistics */}
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Attempt Statistics</h3>
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-white rounded-lg p-3">
+                          <p className="text-2xl font-bold text-green-600">{selectedDrop.successfulCollections || 0}</p>
+                          <p className="text-xs text-gray-600">Collected</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3">
+                          <p className="text-2xl font-bold text-gray-600">{selectedDrop.cancelledAttempts || 0}</p>
+                          <p className="text-xs text-gray-600">Cancelled</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3">
+                          <p className="text-2xl font-bold text-orange-600">{selectedDrop.expiredAttempts || 0}</p>
+                          <p className="text-xs text-gray-600">Expired</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">Admin Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedDrop.drop?.isSuspicious ? (
+                      <button
+                        onClick={() => unflagDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                      >
+                        ✓ Remove Flag
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => flagDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
+                        className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                      >
+                        ⚠️ Flag as Suspicious
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        const email = selectedDrop.drop?.user?.email;
+                        if (email) window.location.href = `mailto:${email}`;
+                      }}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                    >
+                      ✉️ Contact User
+                    </button>
+                    <button
+                      onClick={() => deleteDrop(selectedDrop.drop.id || selectedDrop.drop._id)}
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                    >
+                      🗑️ Delete Drop
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                Failed to load drop details
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -263,6 +263,57 @@ export class DropsManagementService {
   }
 
   /**
+   * Get detailed drop information
+   */
+  async getDropDetails(dropId: string) {
+    // Get the drop
+    const drop = await this.dropModel.findById(dropId).exec();
+    if (!drop) {
+      throw new Error('Drop not found');
+    }
+
+    // Get user who created the drop
+    const user = await this.userModel.findById(drop.userId).exec();
+
+    // Get all collection attempts for this drop
+    const collectionAttempts = await this.collectionAttemptModel
+      .find({ dropoffId: dropId })
+      .sort({ acceptedAt: -1 })
+      .exec();
+
+    // Get collector details for all attempts
+    const collectorIds = collectionAttempts.map(attempt => attempt.collectorId).filter(Boolean);
+    const collectors = await this.userModel.find({ _id: { $in: collectorIds } }).exec();
+
+    // Enrich attempts with collector info
+    const enrichedAttempts = collectionAttempts.map(attempt => {
+      const collector = collectors.find(c => c._id.toString() === attempt.collectorId);
+      return {
+        ...attempt.toObject(),
+        collector: collector ? { name: collector.name, email: collector.email } : null,
+      };
+    });
+
+    return {
+      drop: {
+        ...drop.toObject(),
+        user: user ? { 
+          id: user._id,
+          name: user.name, 
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          address: user.address,
+        } : null,
+      },
+      collectionAttempts: enrichedAttempts,
+      totalAttempts: enrichedAttempts.length,
+      successfulCollections: enrichedAttempts.filter(a => a.outcome === 'collected').length,
+      cancelledAttempts: enrichedAttempts.filter(a => a.outcome === 'cancelled').length,
+      expiredAttempts: enrichedAttempts.filter(a => a.outcome === 'expired').length,
+    };
+  }
+
+  /**
    * Remove flag from drop
    */
   async unflagDrop(dropId: string) {
@@ -272,6 +323,27 @@ export class DropsManagementService {
       { new: true },
     );
 
+    return drop;
+  }
+
+  /**
+   * Flag drop as suspicious
+   */
+  async flagDrop(dropId: string, reason: string) {
+    const drop = await this.dropModel.findByIdAndUpdate(
+      dropId,
+      { isSuspicious: true, suspiciousReason: reason },
+      { new: true },
+    );
+
+    return drop;
+  }
+
+  /**
+   * Delete drop permanently
+   */
+  async deleteDrop(dropId: string) {
+    const drop = await this.dropModel.findByIdAndDelete(dropId).exec();
     return drop;
   }
 
