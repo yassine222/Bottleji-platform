@@ -140,8 +140,7 @@ export class SupportTicketsService {
         .populate('userId', '_id name email phoneNumber profilePhoto roles isVerified isPhoneVerified collectorApplicationStatus')
         .populate('assignedTo', 'name email')
         .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt imageUrl')
-        // Don't populate relatedCollectionId - it's an interaction ID, not a collection entity
-        // We'll manually create an object for it and add interactions later
+        .populate('relatedCollectionId') // Now populate CollectionAttempt with full timeline
         .populate('relatedApplicationId', 'status appliedAt reviewedAt rejectionReason idCardPhoto selfieWithIdPhoto')
         .sort({ priority: -1, createdAt: -1 })
         .skip(skip)
@@ -180,44 +179,30 @@ export class SupportTicketsService {
         
         if (ticket.relatedCollectionId) {
           try {
-            console.log('🔍 Support Tickets: Processing ticket with relatedCollectionId:', ticket.relatedCollectionId);
-            console.log('🔍 Support Tickets: Ticket also has relatedDropId:', ticket.relatedDropId);
+            console.log('🔍 Support Tickets: Processing ticket with relatedCollectionId (CollectionAttempt)');
             
-            // Get the ObjectId string - relatedCollectionId is not populated, so it's just an ObjectId
-            const collectionId = ticket.relatedCollectionId.toString();
-            console.log('🔍 Support Tickets: Extracted collectionId:', collectionId);
+            // relatedCollectionId is now populated as a CollectionAttempt with full timeline
+            const collectionAttempt = ticket.relatedCollectionId as any;
             
-            // Create an object for relatedCollectionId so we can add interactions to it
-            const collectionObject = {
-              _id: ticket.relatedCollectionId.toString(),  // Convert ObjectId to string for JSON serialization
-              interactions: [] as any[]
-            };
-            
-            // If we have relatedDropId, use it directly to fetch interactions
-            // This is more reliable than using the collection ID (which is actually an interaction ID)
-            if (ticket.relatedDropId) {
-              const dropoffId = typeof ticket.relatedDropId === 'object' && (ticket.relatedDropId as any)._id 
-                ? (ticket.relatedDropId as any)._id.toString()
-                : (ticket.relatedDropId as any).toString();
+            if (collectionAttempt && collectionAttempt.timeline) {
+              console.log('✅ CollectionAttempt populated with', collectionAttempt.timeline.length, 'timeline events');
               
-              const dropInteractions = await this.dropoffsService.getDropInteractionTimeline(dropoffId);
-              console.log('🔍 Support Tickets: Fetched drop timeline with', dropInteractions.length, 'interactions for collection issue');
-              
-              collectionObject.interactions = dropInteractions;
-              console.log('🔍 Support Tickets: Added drop interactions to collection object');
+              // Format the timeline for frontend display
+              collectionObjectWithInteractions = {
+                _id: collectionAttempt._id?.toString() || collectionAttempt.toString(),
+                status: collectionAttempt.status,
+                outcome: collectionAttempt.outcome,
+                acceptedAt: collectionAttempt.acceptedAt,
+                completedAt: collectionAttempt.completedAt,
+                durationMinutes: collectionAttempt.durationMinutes,
+                dropSnapshot: collectionAttempt.dropSnapshot,
+                timeline: collectionAttempt.timeline,
+              };
             } else {
-              // Fallback: Try to fetch interactions by collection ID (interaction ID)
-              const collectionInteractions = await this.dropoffsService.getCollectionInteractionTimeline(collectionId);
-              console.log('🔍 Support Tickets: Fetched collection timeline with', collectionInteractions.length, 'interactions');
-              
-              collectionObject.interactions = collectionInteractions;
-              console.log('🔍 Support Tickets: Added interactions to collection object');
+              console.log('⚠️ relatedCollectionId not populated or has no timeline');
             }
-            
-            // Store to add after converting to plain object
-            collectionObjectWithInteractions = collectionObject;
           } catch (error) {
-            console.error(`❌ Support Tickets: Error fetching timeline for collection ${ticket.relatedCollectionId}:`, error);
+            console.error(`❌ Support Tickets: Error processing CollectionAttempt ${ticket.relatedCollectionId}:`, error);
           }
         }
         
