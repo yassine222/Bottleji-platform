@@ -122,7 +122,7 @@ export class SupportTicket {
   @Prop({ default: null, type: Types.ObjectId, ref: 'Dropoff' })
   relatedDropId: Types.ObjectId;
 
-  @Prop({ default: null })
+  @Prop({ default: null, type: Types.ObjectId, ref: 'CollectionAttempt' })
   relatedCollectionId: Types.ObjectId;
 
   @Prop({ default: null, type: Types.ObjectId, ref: 'CollectorApplication' })
