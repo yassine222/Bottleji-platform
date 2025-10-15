@@ -43,7 +43,7 @@ final userDropsCountProvider = Provider<int>((ref) {
       if (mode != UserMode.household) return 0;
       
       return dropsState.when(
-        data: (drops) => drops.length,
+        data: (drops) => drops.where((d) => !d.isCensored).length,
         loading: () => 0,
         error: (_, __) => 0,
       );

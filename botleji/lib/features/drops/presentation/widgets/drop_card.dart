@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'dart:math'; // Added for pow
+import 'dart:ui'; // For ImageFilter.blur
 import 'report_drop_dialog.dart';
 
 class DropCard extends StatelessWidget {
@@ -37,6 +38,31 @@ class DropCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (drop.isCensored) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.08),
+                  border: Border.all(color: Colors.purple.withOpacity(0.25)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.hide_image, size: 16, color: Colors.purple),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Censored: ${drop.censorReason ?? 'Inappropriate image'}',
+                        style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             // Header with image and map side by side
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,25 +70,56 @@ class DropCard extends StatelessWidget {
                 // Drop image
                 ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: Image.network(
-                    drop.imageUrl,
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                  child: Stack(
+                    children: [
+                      SizedBox(
                         width: 120,
                         height: 120,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: const BorderRadius.all(Radius.circular(8)),
+                        child: ImageFiltered(
+                          imageFilter: drop.isCensored
+                              ? ImageFilter.blur(sigmaX: 6, sigmaY: 6)
+                              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                          child: Image.network(
+                            drop.imageUrl,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                                ),
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      if (drop.isCensored)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.black.withOpacity(0.25),
+                            alignment: Alignment.center,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'CENSORED',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ),
                         ),
-                      );
-                    },
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),

@@ -493,6 +493,7 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   List<Drop> _applyFiltersToDrops(List<Drop> drops) {
+    // My Drops: show censored drops too, but mark them; do not hide here
     List<Drop> filtered = drops;
 
     // Apply search filter

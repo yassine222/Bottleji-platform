@@ -43,19 +43,27 @@ class NotificationsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-          )
+            )
           : ListView.builder(
               itemCount: notificationService.notifications.length,
               itemBuilder: (context, index) {
                 final notification = notificationService.notifications[index];
                 final isRead = notification.data?['read'] ?? false;
                 
+                // Filter out connection notifications
+                if (notification.type == 'connection_established' || 
+                    notification.type == 'connection') {
+                  return const SizedBox.shrink();
+                }
+                
                 return _NotificationTile(
                   notification: notification,
                   isRead: isRead,
                   onTap: () => notificationService.markAsRead(index),
-            );},),);
-          
+                );
+              },
+            ),
+    );
   }
 }
 
@@ -170,6 +178,14 @@ class _NotificationTile extends StatelessWidget {
       case 'announcement':
         iconData = Icons.announcement;
         iconColor = Colors.blue;
+        break;
+      case 'new_training_content':
+        iconData = Icons.school;
+        iconColor = Colors.blue;
+        break;
+      case 'training_completed':
+        iconData = Icons.check_circle;
+        iconColor = Colors.green;
         break;
       case 'connection_established':
         iconData = Icons.notifications;

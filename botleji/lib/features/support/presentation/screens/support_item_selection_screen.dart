@@ -5,6 +5,7 @@ import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/collector/controllers/collector_application_controller.dart';
 import 'package:botleji/features/support/presentation/screens/create_ticket_screen.dart';
+import 'package:botleji/features/support/presentation/providers/support_ticket_provider.dart';
 import 'package:botleji/features/stats/data/models/collector_stats.dart';
 import 'package:botleji/features/stats/data/repositories/stats_repository.dart';
 import 'package:botleji/features/stats/data/datasources/stats_api_client.dart';
@@ -166,6 +167,8 @@ class _SupportItemSelectionScreenState
         return _buildDropsList();
       case 'applications':
         return _buildApplicationsList();
+      case 'payments':
+        return _buildPaymentsList();
       default:
         return _buildGeneralOptions();
     }
@@ -189,10 +192,10 @@ class _SupportItemSelectionScreenState
           data: (mode) {
             if (mode == UserMode.collector) {
               // Show collections for collectors
-              return _buildCollectionsList(user!.id!);
+              return _buildCollectionsList(user?.id ?? '');
             } else {
               // Show drops for households
-              return _buildUserDropsList(user!.id!);
+              return _buildUserDropsList(user?.id ?? '');
             }
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -227,15 +230,30 @@ class _SupportItemSelectionScreenState
 
         // Group interactions by drop (same logic as history page)
         final groupedInteractions = _groupInteractionsByDrop(history.interactions);
-        final recentCollections = groupedInteractions.take(5).toList(); // Show last 5 collections
+        
+        // Filter to last 3 days and exclude collections with existing tickets
+        final cutoff = DateTime.now().subtract(const Duration(days: 3));
+        final filteredCollections = groupedInteractions.where((interactions) {
+          // Check if any interaction in the group is within 3 days
+          final hasRecentInteraction = interactions.any((interaction) => 
+              interaction.interactionTime.isAfter(cutoff));
+          return hasRecentInteraction;
+        }).toList();
+        
+        // Sort by most recent interaction
+        filteredCollections.sort((a, b) {
+          final aLatest = a.map((i) => i.interactionTime).reduce((a, b) => a.isAfter(b) ? a : b);
+          final bLatest = b.map((i) => i.interactionTime).reduce((a, b) => a.isAfter(b) ? a : b);
+          return bLatest.compareTo(aLatest);
+        });
 
-        print('🔍 Support: Showing ${recentCollections.length} collections for support');
+        print('🔍 Support: Found ${groupedInteractions.length} total collections, ${filteredCollections.length} available for support (last 3 days)');
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Collections',
+              'Your Collections (Last 3 Days)',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -243,7 +261,7 @@ class _SupportItemSelectionScreenState
               ),
             ),
             const SizedBox(height: 16),
-            ...recentCollections.map((interactions) => _buildCollectionCard(interactions)).toList(),
+            ...filteredCollections.map((interactions) => _buildCollectionCard(interactions)).toList(),
           ],
         );
       },
@@ -252,7 +270,7 @@ class _SupportItemSelectionScreenState
 
   Widget _buildUserDropsList(String userId) {
     return FutureBuilder<List<Drop>>(
-      future: ref.read(dropsControllerProvider.notifier).getUserDropsForSupport(userId),
+      future: _getUserDropsForSupport(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -263,14 +281,8 @@ class _SupportItemSelectionScreenState
         }
 
         final drops = snapshot.data ?? [];
-        // Filter to last 3 days and sort by most recent
-        final cutoff = DateTime.now().subtract(const Duration(days: 3));
-        final recentDrops = drops
-            .where((d) => d.createdAt.isAfter(cutoff))
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-        if (recentDrops.isEmpty) {
+        
+        if (drops.isEmpty) {
           return _buildEmptyState(
             icon: Icons.local_drink,
             title: 'No Drops Found',
@@ -282,7 +294,7 @@ class _SupportItemSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Drops',
+              'Your Drops (Last 3 Days)',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -290,11 +302,45 @@ class _SupportItemSelectionScreenState
               ),
             ),
             const SizedBox(height: 16),
-            ...recentDrops.map((drop) => _buildDropCard(drop)).toList(),
+            ...drops.map((drop) => _buildDropCard(drop)).toList(),
           ],
         );
       },
     );
+  }
+
+  Future<List<Drop>> _getUserDropsForSupport(String userId) async {
+    try {
+      // Load tickets first to ensure we have the latest data
+      await ref.read(supportTicketProvider.notifier).loadMyTickets();
+      
+      // Get all user drops
+      final allDrops = await ref.read(dropsControllerProvider.notifier).getUserDropsForSupport(userId);
+      
+      // Get existing tickets to filter out drops that already have tickets
+      final ticketsState = ref.read(supportTicketProvider);
+      final tickets = ticketsState.value ?? [];
+      final existingDropIds = tickets
+          .where((ticket) => ticket.relatedDropId != null)
+          .map((ticket) => ticket.relatedDropId!)
+          .toSet();
+      
+      // Filter to last 3 days, exclude drops with existing tickets, and sort by most recent
+      final cutoff = DateTime.now().subtract(const Duration(days: 3));
+      final filteredDrops = allDrops
+          .where((d) => 
+              d.createdAt.isAfter(cutoff) && 
+              !existingDropIds.contains(d.id))
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      print('🔍 Support: Found ${allDrops.length} total drops, ${filteredDrops.length} available for support (after 3-day and existing ticket filters)');
+      
+      return filteredDrops;
+    } catch (e) {
+      print('❌ Error getting user drops for support: $e');
+      return [];
+    }
   }
 
   Widget _buildApplicationsList() {
@@ -344,6 +390,104 @@ class _SupportItemSelectionScreenState
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
           Center(child: Text('Error loading application: $error')),
+    );
+  }
+
+  Widget _buildPaymentsList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Payment Issues',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: appGreenColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildEmptyState(
+          icon: Icons.payment,
+          title: 'No Payments Yet',
+          description: 'Payment feature is not available yet. Select a payment to get help with payment-related issues.',
+        ),
+        const SizedBox(height: 16),
+        _buildPaymentSupportCard(),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSupportCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => _navigateToCreateTicket(
+          context: context,
+          category: widget.category,
+          itemId: null,
+          itemTitle: 'Payment Support',
+          itemDescription: 'Get help with payment-related issues',
+          metadata: {
+            'ticketType': 'payment_issue',
+            'context': 'payment_support',
+            'category': widget.category,
+            'categoryTitle': widget.categoryTitle,
+            'issueContext': 'payment_support_request',
+          },
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.payment,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Payment Support',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Get help with payment-related issues',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -728,16 +872,36 @@ Widget _buildGeneralSupportOption() {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.local_drink,
-                  color: statusColor,
-                  size: 20,
+              // Drop image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[200],
+                  child: drop.imageUrl != null && drop.imageUrl.isNotEmpty
+                      ? Image.network(
+                          drop.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[200],
+                              child: Icon(
+                                Icons.local_drink,
+                                color: statusColor,
+                                size: 24,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: statusColor.withOpacity(0.1),
+                          child: Icon(
+                            Icons.local_drink,
+                            color: statusColor,
+                            size: 24,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -753,22 +917,54 @@ Widget _buildGeneralSupportOption() {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Status: $statusText',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: statusColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${drop.numberOfBottles + drop.numberOfCans} items',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
-                      '${drop.numberOfBottles} bottles, ${drop.numberOfCans} cans • ${_formatDate(drop.createdAt.toString())}',
+                      _formatDate(drop.createdAt.toString()),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
                       ),
                     ),
+                    if (drop.notes != null && drop.notes.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        drop.notes,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -989,16 +1185,36 @@ Widget _buildGeneralSupportOption() {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.inventory_2,
-                  color: statusColor,
-                  size: 20,
+              // Drop image from the collection
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[200],
+                  child: dropoff?.imageUrl != null && dropoff!.imageUrl.isNotEmpty
+                      ? Image.network(
+                          dropoff.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: statusColor.withOpacity(0.1),
+                              child: Icon(
+                                Icons.inventory_2,
+                                color: statusColor,
+                                size: 24,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: statusColor.withOpacity(0.1),
+                          child: Icon(
+                            Icons.inventory_2,
+                            color: statusColor,
+                            size: 24,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -1014,15 +1230,35 @@ Widget _buildGeneralSupportOption() {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Status: $statusText',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: statusColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (dropoff != null)
+                          Text(
+                            '${dropoff.numberOfBottles + dropoff.numberOfCans} items',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       'Drop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'} • ${_formatDate(lastInteraction.interactionTime.toString())}',
                       style: TextStyle(

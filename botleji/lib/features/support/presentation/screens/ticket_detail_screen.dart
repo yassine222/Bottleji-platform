@@ -7,9 +7,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../../core/services/notification_service.dart';
-import '../../../../core/services/chat_service.dart';
 import '../providers/chat_provider.dart';
+import '../../../../core/api/api_client.dart';
 
 class TicketDetailScreen extends ConsumerStatefulWidget {
   final SupportTicket ticket;
@@ -29,8 +28,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   bool _adminPresent = false;
   Timer? _typingTimer;
   final ScrollController _scrollController = ScrollController();
+  final Set<String> _seenMessageKeys = <String>{};
+  bool _showHeader = true;
 
-  // Function to scroll to bottom
+  // Auto-scroll to bottom function
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -41,17 +42,256 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     }
   }
 
+  String _messageKey(String message, String senderType, DateTime sentAt) {
+    // Use second precision to avoid millisecond jitter dupes
+    final ts = sentAt.toIso8601String().split('.').first;
+    return '$senderType|$ts|$message';
+  }
+
+  Widget _buildCompactHeader() {
+    final relatedDropId = _currentTicket.relatedDropId ?? _currentTicket.relatedCollectionId;
+    if (relatedDropId == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        color: Colors.grey[100],
+        child: Row(
+          children: [
+            Expanded(child: _buildTitleOnly()),
+          ],
+        ),
+      );
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDropDetails(relatedDropId),
+      builder: (context, snapshot) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: Colors.grey[100],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: Image and Map side by side
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image - bigger size
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey[200],
+                      child: (snapshot.hasData && (snapshot.data!['imageUrl']?.toString().isNotEmpty == true))
+                          ? Image.network(snapshot.data!['imageUrl'], fit: BoxFit.cover)
+                          : const Icon(Icons.image, color: Colors.grey, size: 40),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Map preview - bigger size
+                  Expanded(
+                    child: _buildCompactMapPreview(snapshot.data?['location'] as Map<String, dynamic>?),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+
+              // Bottom section: Title, item info, status badges, address
+              _buildTitleOnly(),
+              const SizedBox(height: 12),
+              
+              if (snapshot.hasData) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _miniInfoChipWithAsset('assets/icons/water-bottle.png', '${snapshot.data!['numberOfBottles'] ?? 0} bottles'),
+                    _miniInfoChipWithAsset('assets/icons/can.png', '${snapshot.data!['numberOfCans'] ?? 0} cans'),
+                    if (snapshot.data!['bottleType'] != null)
+                      _miniInfoChip(Icons.category, snapshot.data!['bottleType'].toString()),
+                    if (snapshot.data!['leaveOutside'] == true)
+                      _miniInfoChip(Icons.door_front_door, 'Leave outside'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildStatusBadges(),
+                const SizedBox(height: 12),
+                if (snapshot.data!['address'] != null && snapshot.data!['address'] != 'Address not available')
+                  Text(
+                    snapshot.data!['address'].toString(),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTitleOnly() {
+    return Text(
+      _currentTicket.title,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildStatusBadges() {
+    return Row(
+      children: [
+        _buildStatusChip(_currentTicket.status),
+        const SizedBox(width: 8),
+        _buildPriorityChip(_currentTicket.priority),
+      ],
+    );
+  }
+
+  Widget _miniInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.grey[700]),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11, color: Colors.grey[800])),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniInfoChipWithAsset(String assetPath, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            assetPath,
+            width: 16,
+            height: 16,
+          ),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11, color: Colors.grey[800])),
+        ],
+      ),
+    );
+  }
+
+  // Compact static map with pin using Google Static Maps
+  // Expects location as { lat: number, lng: number }
+  // If unavailable, renders a placeholder
+  // Note: this is a small preview, not interactive
+  Widget _buildCompactMapPreview(Map<String, dynamic>? location) {
+    String _staticMapUrl(double lat, double lng) {
+      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+      final baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
+      final params = {
+        'center': '$lat,$lng',
+        'zoom': '16',
+        'size': '300x200',
+        'maptype': 'roadmap',
+        'markers': 'color:red|size:mid|$lat,$lng',
+        'key': apiKey,
+      };
+      return Uri.parse(baseUrl).replace(queryParameters: params).toString();
+    }
+
+    if (location == null || location['lat'] == null || location['lng'] == null) {
+      print('🚫 No location data available for map');
+      return Container(
+        height: 120,
+        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+        child: const Icon(Icons.map, color: Colors.grey, size: 40),
+      );
+    }
+
+    final lat = (location['lat'] as num).toDouble();
+    final lng = (location['lng'] as num).toDouble();
+    print('📍 Map location: lat=$lat, lng=$lng');
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(_staticMapUrl(lat, lng), height: 120, fit: BoxFit.cover),
+    );
+  }
   @override
   void initState() {
     super.initState();
     _currentTicket = widget.ticket;
+    // Seed seen set from initial messages
+    for (final msg in _currentTicket.messages) {
+      _seenMessageKeys.add(_messageKey(msg.message, msg.senderType, msg.sentAt));
+    }
     _refreshTicket();
     _setupRealtimeMessaging();
+    _ensureChatConnectedAndJoin();
+    // Removed scroll listener - header visibility now only controlled by typing
     
-    // Auto-scroll to bottom when screen loads
+    // Auto-scroll to bottom on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+  }
+
+  Future<void> _ensureChatConnectedAndJoin() async {
+    // Ensure ChatService connects and joins this ticket room
+    final chatService = ref.read(chatServiceProvider);
+    final notificationService = ref.read(notificationServiceProvider);
+    debugPrint('🔌 TicketDetailScreen: ensuring chat connection... (connected=${chatService.isConnected}, connecting=${chatService.isConnecting})');
+    try {
+      if (!chatService.isConnected) {
+        if (!chatService.isConnecting) {
+          await chatService.connect();
+        } else {
+          // wait up to 10s for an in-progress connection
+          int attempts = 0;
+          while (chatService.isConnecting && attempts < 20) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            attempts++;
+          }
+        }
+      }
+
+      if (chatService.isConnected) {
+        await chatService.joinTicket(widget.ticket.id, 'user');
+        // Ensure presence is sent promptly over notifications channel too
+        if (notificationService.isConnected) {
+          notificationService.sendPresenceIndicator(widget.ticket.id, true);
+        } else {
+          // Register a one-time callback to send presence when connected
+          notificationService.onConnectionEstablished = () {
+            debugPrint('👤 TicketDetailScreen: Notifications connected, sending presence');
+            notificationService.sendPresenceIndicator(widget.ticket.id, true);
+          };
+          // Fallback retry after a short delay
+          Future.delayed(const Duration(seconds: 1), () {
+            if (notificationService.isConnected) {
+              notificationService.sendPresenceIndicator(widget.ticket.id, true);
+            }
+          });
+        }
+      } else {
+        debugPrint('❌ TicketDetailScreen: Chat not connected after attempts');
+      }
+    } catch (e) {
+      debugPrint('❌ TicketDetailScreen: Error connecting to chat: $e');
+    }
   }
 
   void _setupRealtimeMessaging() {
@@ -100,16 +340,13 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           isInternal: messageData['isInternal'] ?? false,
         );
         
-        // Check if message already exists to prevent duplicates
-        final messageExists = _currentTicket.messages.any((msg) => 
-          msg.message == newMessage.message && 
-          msg.sentAt.difference(newMessage.sentAt).inSeconds.abs() < 5 // Within 5 seconds
-        );
-        
-        if (messageExists) {
-          debugPrint('📨 TicketDetailScreen: Message already exists, skipping duplicate');
+        // Strict de-dup using a stable key
+        final key = _messageKey(newMessage.message, newMessage.senderType, newMessage.sentAt);
+        if (_seenMessageKeys.contains(key)) {
+          debugPrint('📨 TicketDetailScreen: Duplicate message suppressed by key');
           return;
         }
+        _seenMessageKeys.add(key);
         
         debugPrint('📨 TicketDetailScreen: Adding new message to conversation');
         debugPrint('📨 TicketDetailScreen: Current messages count: ${_currentTicket.messages.length}');
@@ -141,10 +378,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         
         debugPrint('📨 TicketDetailScreen: setState completed, new messages count: ${_currentTicket.messages.length}');
         
-        // Auto-scroll to bottom when receiving new message
+        // Auto-scroll to bottom when new message is received
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
-          debugPrint('📨 TicketDetailScreen: Auto-scroll completed');
         });
       } else {
         debugPrint('📨 TicketDetailScreen: Message does not match current ticket');
@@ -184,7 +420,13 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   @override
   void dispose() {
-    // Send presence indicator - user exited chat
+    // Leave chat room and send presence leave
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      chatService.leaveTicket(widget.ticket.id, 'user');
+    } catch (_) {}
+
+    // Send presence indicator over notifications channel as well
     final notificationService = ref.read(notificationServiceProvider);
     notificationService.sendPresenceIndicator(widget.ticket.id, false);
     
@@ -192,6 +434,19 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     _scrollController.dispose();
     _typingTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleScrollVisibility() {
+    // Only hide header when typing, not based on scroll
+    if (_isTyping && _showHeader) {
+      setState(() {
+        _showHeader = false;
+      });
+    } else if (!_isTyping && !_showHeader) {
+      setState(() {
+        _showHeader = true;
+      });
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -233,7 +488,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       );
     });
 
-    // Auto-scroll to bottom after adding message
+    // Auto-scroll to bottom after sending message
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -249,6 +504,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       _typingTimer?.cancel();
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.sendTypingIndicator(widget.ticket.id, false);
+      _handleScrollVisibility(); // Show header when done typing
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -305,6 +561,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       _isTyping = true;
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.sendTypingIndicator(widget.ticket.id, true);
+      _handleScrollVisibility(); // Hide header while typing
     }
 
     // Clear existing timer
@@ -315,6 +572,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       _isTyping = false;
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.sendTypingIndicator(widget.ticket.id, false);
+      _handleScrollVisibility(); // Show header when done typing
     });
   }
 
@@ -457,57 +715,21 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       appBar: AppBar(
         title: Text('Ticket #${_currentTicket.id.substring(0, 8)}'),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
         children: [
-          // Ticket Info Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _currentTicket.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildStatusChip(_currentTicket.status),
-                    const SizedBox(width: 8),
-                    _buildPriorityChip(_currentTicket.priority),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Category: ${_currentTicket.categoryDisplayName}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Created: ${_formatDate(_currentTicket.createdAt)}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                if (_currentTicket.assignedTo != null) ...[
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Assigned to: Support Agent',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ],
-            ),
-          ),
+          // Header visibility controlled by scroll/typing; hide when keyboard is open
+          if (_showHeader && !isKeyboardOpen)
+            _buildCompactHeader(),
   
       
 
@@ -518,7 +740,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
               onRefresh: _refreshTicket,
               child: ListView.builder(
                 controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: const ClampingScrollPhysics(), // Reduce bounce effect
                 padding: const EdgeInsets.all(16),
                 itemCount: _currentTicket.messages.length,
                 itemBuilder: (context, index) {
@@ -530,8 +752,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Column(
                       children: [
-                        // Related item cards (only show in first message)
-                        if (isFirstMessage && (
+                        // Related item cards (only show in first message and when keyboard not open)
+                        if (!isKeyboardOpen && isFirstMessage && (
                           _currentTicket.relatedDropId != null ||
                           _currentTicket.relatedCollectionId != null ||
                           _currentTicket.relatedApplicationId != null
@@ -626,6 +848,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           // Message Input
           _buildInputBar(),
         ],
+      ),
       ),
     );
   }
@@ -1121,19 +1344,42 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   Future<Map<String, dynamic>> _fetchDropDetails(String dropId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/dropoffs/$dropId'),
+        Uri.parse('${ApiClientConfig.baseUrl}/dropoffs/$dropId'),
         headers: {'Content-Type': 'application/json'},
       );
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('🔍 Drop details fetched: $data'); // Debug log
+        
+        // Convert GeoJSON location to lat/lng format
+        Map<String, dynamic>? locationData;
+        if (data['location'] != null) {
+          final location = data['location'];
+          if (location['type'] == 'Point' && location['coordinates'] != null) {
+            final coordinates = location['coordinates'] as List;
+            if (coordinates.length >= 2) {
+              // GeoJSON format: [longitude, latitude]
+              locationData = {
+                'lng': coordinates[0],
+                'lat': coordinates[1],
+              };
+              print('📍 Converted location: lat=${locationData['lat']}, lng=${locationData['lng']}');
+            }
+          }
+        }
+        
         return {
           'imageUrl': data['imageUrl'],
           'numberOfBottles': data['numberOfBottles'],
           'numberOfCans': data['numberOfCans'],
           'bottleType': data['bottleType'],
           'address': data['address'] ?? 'Address not available',
+          'leaveOutside': data['leaveOutside'] ?? false,
+          'location': locationData, // Converted location for map
         };
+      } else {
+        print('❌ Failed to fetch drop details: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching drop details: $e');
@@ -1145,7 +1391,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   Future<Map<String, dynamic>> _fetchApplicationDetails(String applicationId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/collector-applications/$applicationId'),
+        Uri.parse('${ApiClientConfig.baseUrl}/collector-applications/$applicationId'),
         headers: {'Content-Type': 'application/json'},
       );
       

@@ -67,6 +67,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  static int _instanceCount = 0;
+  late int _instanceId;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey _screenKey = GlobalKey(); // Add global key for screen rebuild
   GoogleMapController? _mapController;
@@ -717,6 +719,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Track HomeScreen instances for debugging
+    _instanceCount++;
+    _instanceId = _instanceCount;
+    print('🏠 HomeScreen Instance #$_instanceId created at ${DateTime.now()}');
+    
     _bottlesController = TextEditingController(text: '1');
     _cansController = TextEditingController(text: '0');
     _notesController = TextEditingController();
@@ -1036,6 +1044,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    print('🗑️ HomeScreen Instance #$_instanceId disposed at ${DateTime.now()}');
+    
     _mapRebuildTimer?.cancel();
     _markerUpdateTimer?.cancel();
     _dropsLoadDebounceTimer?.cancel(); // Cancel debounce timer
@@ -2986,23 +2996,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Take a clear photo of your bottles to help collectors identify them easily',
+          'Take a photo or choose from gallery - show your bottles clearly to help collectors',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: () async {
-            final imagePicker = ImagePicker();
-            final pickedFile = await imagePicker.pickImage(source: ImageSource.camera);
-            
-            if (pickedFile != null) {
-              setModalState(() {
-                _selectedImage = File(pickedFile.path);
-              });
-            }
-          },
+          onTap: () => _showImageSourceDialog(setModalState),
           child: Container(
             height: 120,
             decoration: BoxDecoration(
@@ -3018,15 +3019,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.camera_alt,
-                          color: Theme.of(context).colorScheme.error,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.photo_library,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Add Photo',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Camera or Gallery',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -3070,6 +3089,148 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _showImageSourceDialog(StateSetter setModalState) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _pickImageFromSource(ImageSource.camera, setModalState);
+                },
+              ),
+              // Only show gallery option on Android or if we're not in debug mode
+              if (Platform.isAndroid || !kDebugMode)
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    try {
+                      await _pickImageFromSource(ImageSource.gallery, setModalState);
+                    } catch (e) {
+                      print('❌ Gallery error: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Gallery error: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+              // Show simulator notice for iOS debug mode
+              if (Platform.isIOS && kDebugMode)
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('Gallery (iOS Simulator Issue)'),
+                  subtitle: const Text('Use camera or real device'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    try {
+                      await _pickImageFromSource(ImageSource.gallery, setModalState);
+                    } catch (e) {
+                      print('❌ Gallery error: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Gallery not available on iOS simulator: ${e.toString()}'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.cancel),
+                title: const Text('Cancel'),
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source, StateSetter setModalState) async {
+    try {
+      print('🖼️ Starting image picker with source: $source');
+      
+      final imagePicker = ImagePicker();
+      
+      // For iOS simulator, try a simpler approach first
+      XFile? pickedFile;
+      
+      if (source == ImageSource.gallery) {
+        // Try with minimal parameters for iOS simulator compatibility
+        pickedFile = await imagePicker.pickImage(
+          source: source,
+          imageQuality: 70,
+        );
+      } else {
+        // Camera with full parameters
+        pickedFile = await imagePicker.pickImage(
+          source: source,
+          imageQuality: 85,
+          maxWidth: 1920,
+          maxHeight: 1080,
+        );
+      }
+      
+      if (pickedFile != null) {
+        print('✅ Image picked successfully: ${pickedFile.path}');
+        setModalState(() {
+          _selectedImage = File(pickedFile!.path);
+        });
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Image selected successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        print('ℹ️ No image selected');
+      }
+    } catch (e) {
+      print('❌ Error picking image: $e');
+      
+      // Show detailed error to user
+      if (mounted) {
+        String errorMessage = 'Error selecting image';
+        
+        if (e.toString().contains('Permission')) {
+          errorMessage = 'Permission denied. Please allow photo access in Settings.';
+        } else if (e.toString().contains('simulator')) {
+          errorMessage = 'Gallery not available on simulator. Try camera or use a real device.';
+        } else {
+          errorMessage = 'Error: ${e.toString()}';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildBottleTypeSelector(StateSetter setModalState) {

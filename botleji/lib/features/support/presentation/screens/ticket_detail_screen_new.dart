@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import '../providers/support_ticket_provider.dart';
 import '../providers/chat_provider.dart';
 import '../../data/models/support_ticket.dart';
+import '../../../../core/api/api_client.dart';
 
 class TicketDetailScreenNew extends ConsumerStatefulWidget {
   final SupportTicket ticket;
@@ -22,14 +25,27 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
   Timer? _typingTimer;
   bool _adminTyping = false;
   bool _adminPresent = false;
+  bool _showHeader = true;
+
+  // Auto-scroll to bottom function
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _currentTicket = widget.ticket;
     _setupRealtimeChat();
+    // Removed scroll listener - header visibility now only controlled by typing
     
-    // Auto-scroll to bottom when screen loads
+    // Auto-scroll to bottom on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -46,6 +62,19 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     chatService.leaveTicket(widget.ticket.id, 'user');
     
     super.dispose();
+  }
+
+  void _handleScrollVisibility() {
+    // Only hide header when typing, not based on scroll
+    if (_isTyping && _showHeader) {
+      setState(() {
+        _showHeader = false;
+      });
+    } else if (!_isTyping && !_showHeader) {
+      setState(() {
+        _showHeader = true;
+      });
+    }
   }
 
   void _setupRealtimeChat() {
@@ -152,10 +181,9 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
           );
         });
         
-        // Auto-scroll to bottom when receiving new message
+        // Auto-scroll to bottom when new message is received
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
-          debugPrint('📨 Auto-scrolled to bottom after receiving message');
         });
       }
     };
@@ -275,6 +303,11 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
       // Don't refresh the ticket data here - let the WebSocket callback handle the UI update
       // This prevents duplicate messages from appearing in the chat
       
+      // Auto-scroll to bottom after sending message
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+      
     } catch (error) {
       debugPrint('❌ Error sending message: $error');
       // Show error to user
@@ -293,8 +326,12 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     
     if (!_isTyping && text.isNotEmpty) {
       _startTyping();
+      if (_showHeader) {
+        setState(() { _showHeader = false; });
+      }
     } else if (_isTyping && text.isEmpty) {
       _stopTyping();
+      _handleScrollVisibility();
     }
   }
 
@@ -307,6 +344,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
     final chatService = ref.read(chatServiceProvider);
     chatService.startTyping(widget.ticket.id, 'user');
+    _handleScrollVisibility(); // Hide header while typing
 
     // Set timer to stop typing after 2 seconds of inactivity
     _typingTimer?.cancel();
@@ -324,26 +362,12 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
     final chatService = ref.read(chatServiceProvider);
     chatService.stopTyping(widget.ticket.id, 'user');
+    _handleScrollVisibility(); // Show header when done typing
 
     _typingTimer?.cancel();
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-          debugPrint('📜 Scrolled to bottom - maxScrollExtent: ${_scrollController.position.maxScrollExtent}');
-        }
-      });
-    } else {
-      debugPrint('📜 ScrollController has no clients yet');
-    }
-  }
+  // Removed auto-scroll function
 
   @override
   Widget build(BuildContext context) {
@@ -358,75 +382,20 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
       debugPrint('🔌 Chat service state changed: ${next.isConnected}');
     });
     
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Support Ticket'),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
         children: [
-          // Ticket info
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _currentTicket.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _currentTicket.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(_currentTicket.status.toString().split('.').last),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _currentTicket.status.toString().split('.').last.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getPriorityColor(_currentTicket.priority.toString().split('.').last),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _currentTicket.priority.toString().split('.').last.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          if (_showHeader && !isKeyboardOpen)
+            _buildCompactHeader(),
           
           // Presence and typing indicators
           if (_adminPresent || _adminTyping)
@@ -460,6 +429,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
+              physics: const ClampingScrollPhysics(), // Reduce bounce effect
               padding: const EdgeInsets.all(16),
               itemCount: _currentTicket.messages.length,
               itemBuilder: (context, index) {
@@ -704,6 +674,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -749,6 +720,261 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
       return '${difference.inMinutes}m ago';
     } else {
       return 'Just now';
+    }
+  }
+
+  Widget _buildCompactHeader() {
+    final relatedDropId = _currentTicket.relatedDropId ?? _currentTicket.relatedCollectionId;
+    if (relatedDropId == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        color: Colors.grey[100],
+        child: Row(
+          children: [
+            Expanded(child: _buildTitleOnly()),
+          ],
+        ),
+      );
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDropDetails(relatedDropId),
+      builder: (context, snapshot) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: Colors.grey[100],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: Image and Map side by side
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image - bigger size
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey[200],
+                      child: (snapshot.hasData && (snapshot.data!['imageUrl']?.toString().isNotEmpty == true))
+                          ? Image.network(snapshot.data!['imageUrl'], fit: BoxFit.cover)
+                          : const Icon(Icons.image, color: Colors.grey, size: 40),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Map preview - bigger size
+                  Expanded(
+                    child: _buildCompactMapPreview(snapshot.data?['location'] as Map<String, dynamic>?),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+
+              // Bottom section: Title, item info, status badges, address
+              _buildTitleOnly(),
+              const SizedBox(height: 12),
+              
+              if (snapshot.hasData) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _miniInfoChipWithAsset('assets/icons/water-bottle.png', '${snapshot.data!['numberOfBottles'] ?? 0} bottles'),
+                    _miniInfoChipWithAsset('assets/icons/can.png', '${snapshot.data!['numberOfCans'] ?? 0} cans'),
+                    if (snapshot.data!['bottleType'] != null)
+                      _miniInfoChip(Icons.category, snapshot.data!['bottleType'].toString()),
+                    if (snapshot.data!['leaveOutside'] == true)
+                      _miniInfoChip(Icons.door_front_door, 'Leave outside'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildStatusBadges(),
+                const SizedBox(height: 12),
+                if (snapshot.data!['address'] != null && snapshot.data!['address'] != 'Address not available')
+                  Text(
+                    snapshot.data!['address'].toString(),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTitleOnly() {
+    return Text(
+      _currentTicket.title,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildStatusBadges() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _getStatusColor(_currentTicket.status.toString().split('.').last),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _currentTicket.status.toString().split('.').last.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _getPriorityColor(_currentTicket.priority.toString().split('.').last),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _currentTicket.priority.toString().split('.').last.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _miniInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.grey[700]),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11, color: Colors.grey[800])),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniInfoChipWithAsset(String assetPath, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            assetPath,
+            width: 16,
+            height: 16,
+          ),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11, color: Colors.grey[800])),
+        ],
+      ),
+    );
+  }
+
+  // Compact static map with pin using Google Static Maps
+  Widget _buildCompactMapPreview(Map<String, dynamic>? location) {
+    String _staticMapUrl(double lat, double lng) {
+      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+      final baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
+      final params = {
+        'center': '$lat,$lng',
+        'zoom': '16',
+        'size': '300x200',
+        'maptype': 'roadmap',
+        'markers': 'color:red|size:mid|$lat,$lng',
+        'key': apiKey,
+      };
+      return Uri.parse(baseUrl).replace(queryParameters: params).toString();
+    }
+
+    if (location == null || location['lat'] == null || location['lng'] == null) {
+      print('🚫 No location data available for map');
+      return Container(
+        height: 120,
+        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+        child: const Icon(Icons.map, color: Colors.grey, size: 40),
+      );
+    }
+
+    final lat = (location['lat'] as num).toDouble();
+    final lng = (location['lng'] as num).toDouble();
+    print('📍 Map location: lat=$lat, lng=$lng');
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(_staticMapUrl(lat, lng), height: 120, fit: BoxFit.cover),
+    );
+  }
+
+  Future<Map<String, dynamic>> _fetchDropDetails(String dropId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiClientConfig.baseUrl}/dropoffs/$dropId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('🔍 Drop details fetched: $data'); // Debug log
+        
+        // Convert GeoJSON location to lat/lng format
+        Map<String, dynamic>? locationData;
+        if (data['location'] != null) {
+          final location = data['location'];
+          if (location['type'] == 'Point' && location['coordinates'] != null) {
+            final coordinates = location['coordinates'] as List;
+            if (coordinates.length >= 2) {
+              // GeoJSON format: [longitude, latitude]
+              locationData = {
+                'lng': coordinates[0],
+                'lat': coordinates[1],
+              };
+              print('📍 Converted location: lat=${locationData['lat']}, lng=${locationData['lng']}');
+            }
+          }
+        }
+        
+        return {
+          'imageUrl': data['imageUrl'],
+          'numberOfBottles': data['numberOfBottles'],
+          'numberOfCans': data['numberOfCans'],
+          'bottleType': data['bottleType'],
+          'address': data['address'] ?? 'Address not available',
+          'leaveOutside': data['leaveOutside'] ?? false,
+          'location': locationData, // Converted location for map
+        };
+      } else {
+        print('❌ Failed to fetch drop details: ${response.statusCode}');
+        return {};
+      }
+    } catch (e) {
+      print('❌ Error fetching drop details: $e');
+      return {};
     }
   }
 }

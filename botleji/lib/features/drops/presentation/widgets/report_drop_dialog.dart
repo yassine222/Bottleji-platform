@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/drop_repository.dart';
 import '../../controllers/drops_controller.dart';
 
 class ReportDropDialog extends ConsumerStatefulWidget {
@@ -23,10 +22,7 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
   final Map<String, String> _reportReasons = {
     'inappropriate_image': '🚫 Inappropriate Image',
     'fake_drop': '❌ Fake Drop',
-    'wrong_location': '📍 Wrong Location',
-    'already_collected': '✅ Already Collected',
-    'dangerous_location': '⚠️ Dangerous Location',
-    'other': '📝 Other',
+    'amount_mismatch': '📊 Amount of bottles not matching the real drop',
   };
 
   @override
@@ -90,11 +86,13 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
             Row(
@@ -141,52 +139,62 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
             ),
             const SizedBox(height: 24),
 
-            // Reason Selection
-            const Text(
-              'Select Reason',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ..._reportReasons.entries.map((entry) => 
-              RadioListTile<String>(
-                title: Text(entry.value),
-                value: entry.key,
-                groupValue: _selectedReason,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedReason = value;
-                  });
-                },
-                activeColor: const Color(0xFF00695C),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
+            // Scrollable content
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Reason Selection
+                    const Text(
+                      'Select Reason',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._reportReasons.entries.map((entry) => 
+                      RadioListTile<String>(
+                        title: Text(entry.value),
+                        value: entry.key,
+                        groupValue: _selectedReason,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedReason = value;
+                          });
+                        },
+                        activeColor: const Color(0xFF00695C),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-            // Additional Details
-            const Text(
-              'Additional Details (Optional)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _detailsController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Provide more information...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF00695C), width: 2),
+                    // Additional Details
+                    const Text(
+                      'Additional Details (Optional)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _detailsController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Provide more information...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF00695C), width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -1,7 +1,7 @@
-import 'dart:convert';
+// Removed unused: import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// Removed unused: import 'package:shared_preferences/shared_preferences.dart';
 import 'local_notification_service.dart';
 import '../config/server_config.dart';
 
@@ -72,18 +72,19 @@ class NotificationPayload {
 }
 
 class NotificationService extends ChangeNotifier {
-  static const String _namespace = '/notifications';
+  // Removed unused _namespace
   
   IO.Socket? _socket;
   bool _isConnected = false;
-  String? _currentUserId;
+  // Removed unused _currentUserId
   final List<NotificationPayload> _notifications = [];
   final LocalNotificationService _localNotificationService = LocalNotificationService();
+  final Map<String, DateTime> _recentNotificationKeys = {};
   
   // Getters
   bool get isConnected => _isConnected;
   List<NotificationPayload> get notifications => List.unmodifiable(_notifications);
-  int get unreadCount => _notifications.where((n) => !n.data?['read'] ?? false).length;
+  int get unreadCount => _notifications.where((n) => !(n.data?['read'] == true)).length;
   bool get hasSocket => _socket != null;
 
   // Callbacks
@@ -96,6 +97,7 @@ class NotificationService extends ChangeNotifier {
   Function(String ticketId, bool isTyping, String senderType)? onTypingIndicator;
   Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
   Function(bool isLocked, DateTime? lockedUntil, int warningCount)? onAccountLockStatusUpdate;
+  Function(String dropId, String reason)? onDropCensored;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -172,6 +174,21 @@ class NotificationService extends ChangeNotifier {
       _socket!.on('notification', (data) {
         debugPrint('🔔 Notification received: ${data['type']}');
         debugPrint('🔔 Full notification data: $data');
+
+        // De-dup: ignore if same type+timestamp+id seen in last 10s
+        try {
+          final type = (data['type'] ?? '').toString();
+          final ts = (data['timestamp'] ?? '').toString();
+          final idHint = (data['data']?['ticketId'] ?? data['data']?['dropId'] ?? data['userId'] ?? '').toString();
+          final key = '$type|$ts|$idHint';
+          // Clean old entries
+          _recentNotificationKeys.removeWhere((_, t) => DateTime.now().difference(t) > const Duration(seconds: 20));
+          if (_recentNotificationKeys.containsKey(key)) {
+            debugPrint('🔁 Duplicate notification suppressed: $key');
+            return;
+          }
+          _recentNotificationKeys[key] = DateTime.now();
+        } catch (_) {}
         
         // Handle account lock/unlock notifications
         if (data['type'] == 'account_locked' || data['type'] == 'account_unlocked') {
@@ -201,6 +218,29 @@ class NotificationService extends ChangeNotifier {
           
           // Call the callback to update user state
           onAccountLockStatusUpdate?.call(isLocked, lockedUntil, warningCount);
+
+          // We've already shown a notification for lock/unlock; skip generic handler
+          return;
+        }
+        
+        // Handle drop censored notification
+        if (data['type'] == 'drop_censored') {
+          debugPrint('🛑 Drop censored notification received');
+          final dropId = data['data']?['dropId']?.toString();
+          final reason = data['data']?['reason']?.toString() ?? data['message']?.toString() ?? 'Censored image';
+          // Show local notification
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'Drop Image Censored',
+            body: data['message'] ?? 'Your drop image was censored',
+            id: 9100,
+            payload: 'drop_censored:${dropId ?? ''}',
+          );
+          if (dropId != null) {
+            onDropCensored?.call(dropId, reason);
+          }
+
+          // Skip generic handler to avoid duplicate toast
+          return;
         }
         
         // Handle ticket message notifications
@@ -234,9 +274,12 @@ class NotificationService extends ChangeNotifier {
             debugPrint('📨 NotificationService: onTicketMessageReceived is null: ${onTicketMessageReceived == null}');
             debugPrint('📨 NotificationService: data[data] is null: ${data['data'] == null}');
           }
-        } else {
-          debugPrint('📨 NotificationService: Received notification of type: ${data['type']} (not ticket_message)');
+          // Skip generic handler to avoid duplicate toast
+          return;
         }
+
+        // Fallback: for other notification types, use the generic handler once
+        debugPrint('📨 NotificationService: Received notification of type: ${data['type']} (generic handler)');
         debugPrint('📨 NotificationService: Raw notification data: $data');
         try {
           final notification = NotificationPayload(
@@ -395,60 +438,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   /// Setup WebSocket event listeners
-  void _setupEventListeners() {
-    if (_socket == null) return;
-
-    // Connection events
-    _socket!.onConnect((_) {
-      _isConnected = true;
-      debugPrint('✅ Connected to notifications server');
-      
-      // Don't automatically request permissions - let user decide
-      // _requestPermissionAndShowWelcome(); // REMOVED - This was causing the issue!
-      
-      onConnectionEstablished?.call();
-      notifyListeners();
-    });
-
-    _socket!.onDisconnect((_) {
-      _isConnected = false;
-      debugPrint('❌ Disconnected from notifications server');
-      onConnectionLost?.call();
-      notifyListeners();
-    });
-
-    _socket!.onConnectError((error) {
-      debugPrint('❌ Connection error: $error');
-      _isConnected = false;
-      notifyListeners();
-    });
-
-    // Notification events
-    _socket!.on('notification', (data) {
-      try {
-        final notification = NotificationPayload.fromJson(data);
-        _handleNotification(notification);
-      } catch (e) {
-        debugPrint('❌ Error parsing notification: $e');
-      }
-    });
-
-    // Force logout event
-    _socket!.on('force_logout', (data) {
-      final reason = data['reason'] ?? 'Session terminated';
-      debugPrint('🚪 Force logout received: $reason');
-      
-      // Show force logout notification
-      _localNotificationService.showForceLogoutNotification(reason: reason);
-      
-      onForceLogout?.call(reason);
-    });
-
-    // Ping/Pong for connection health
-    _socket!.on('pong', (data) {
-      debugPrint('🏓 Pong received: ${data['timestamp']}');
-    });
-  }
+  // Removed unused _setupEventListeners (legacy)
 
   /// Handle incoming notifications
   void _handleNotification(NotificationPayload notification) {
@@ -618,8 +608,8 @@ class NotificationService extends ChangeNotifier {
         return NotificationType.connectionEstablished;
       case 'force_logout':
         return NotificationType.forceLogout;
-        return null;
     }
+    return null;
   }
 
   @override

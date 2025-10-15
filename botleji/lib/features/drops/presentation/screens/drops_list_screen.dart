@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,6 +13,8 @@ import 'package:botleji/features/drops/presentation/screens/edit_drop_screen.dar
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DropsListScreen extends ConsumerStatefulWidget {
   const DropsListScreen({super.key});
@@ -585,6 +589,151 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     final userMode = ref.watch(userModeControllerProvider);
     final dropsState = ref.watch(dropsControllerProvider);
     
+    Future<void> _maybeShowCensoredNotice(List<Drop> drops) async {
+      // Only for household users
+      final modeAsync = ref.read(userModeControllerProvider);
+      if (!mounted) return;
+      modeAsync.whenData((mode) async {
+        if (mode != UserMode.household) return;
+        if (drops.isEmpty) return;
+        
+        // Find first censored drop not previously shown
+        final prefs = await SharedPreferences.getInstance();
+        final censored = drops.firstWhere(
+          (d) => d.isCensored && (prefs.getBool('censor_notice_${d.id}') != true),
+          orElse: () => Drop.empty(),
+        );
+        if (censored.id.isEmpty) return;
+        
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                width: 380,
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.purple, size: 28),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Your drop image was censored',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.info_outline, color: Colors.grey),
+                          tooltip: 'How warnings work',
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Warning System'),
+                                content: const Text(
+                                  'Warnings accumulate and can lead to temporary or permanent account locks.\n\n'+
+                                  '5 warnings: 24h lock\n10 warnings: 3 days\n15 warnings: 1 week\n20 warnings: 1 month\n25+ warnings: Permanent (until admin review).'
+                                ),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))
+                                ],
+                              ),
+                            );
+                          },
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          SizedBox(
+                            height: 160,
+                            width: double.infinity,
+                            child: ImageFiltered(
+                              imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                              child: Image.network(censored.imageUrl, fit: BoxFit.cover),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withOpacity(0.25),
+                              alignment: Alignment.center,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text('CENSORED', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Reason: ${censored.censorReason ?? 'Inappropriate image'}', style: const TextStyle(fontSize: 13, color: Colors.purple)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.recycling, size: 16, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text('${censored.numberOfBottles} bottles, ${censored.numberOfCans} cans', style: const TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text('Created ${DateFormat('MMM d, yyyy – HH:mm').format(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.08),
+                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'A warning was added to your account for this drop. Please make sure future images follow the community guidelines.',
+                        style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        onPressed: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('censor_notice_${censored.id}', true);
+                          if (mounted) Navigator.of(context).pop();
+                        },
+                        child: const Text('Got it'),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      });
+    }
+    
     // Listen to user mode changes and refresh drops
     ref.listen(userModeControllerProvider, (previous, next) {
       next.whenData((mode) {
@@ -595,6 +744,29 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
       });
     });
 
+    // Subscribe to real-time drop_censored events
+    ref.listen(notificationServiceProvider, (prev, next) {
+      final service = next;
+      service.onDropCensored = (dropId, reason) async {
+        // Reload user drops and show the popup immediately for this drop if not shown before
+        final auth = ref.read(authNotifierProvider).value;
+        if (auth?.id != null) {
+          await ref.read(dropsControllerProvider.notifier).loadUserDrops(auth!.id);
+          final drops = ref.read(dropsControllerProvider).maybeWhen(data: (d) => d, orElse: () => <Drop>[]);
+          final censored = drops.firstWhere((d) => d.id == dropId, orElse: () => Drop.empty());
+          if (censored.id.isNotEmpty && mounted) {
+            final prefs = await SharedPreferences.getInstance();
+            if (prefs.getBool('censor_notice_${censored.id}') == true) return;
+            await showDialog(
+              context: context,
+              barrierDismissible: true,
+              builder: (_) => _buildCensorDialog(context, censored),
+            );
+          }
+        }
+      };
+    });
+
     return userMode.when(
       data: (mode) {
         return dropsState.when(
@@ -603,6 +775,8 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             if (_allDrops != drops) {
               _allDrops = drops;
               _applyFilters();
+              // Show censored notice once when entering Drops tab (household)
+              _maybeShowCensoredNotice(drops);
               
               // Sort drops by distance for collectors or by creation date for households after updating
               if (mode == UserMode.collector) {
@@ -613,11 +787,15 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             }
 
             // For collectors, apply both pending status and distance/date filters
+            // Household: show all user drops (including censored) in My Drops list
             final displayDrops = mode == UserMode.household 
-                ? _filteredDrops 
+                ? _filteredDrops
                 : _filteredDrops.where((drop) => drop.status == DropStatus.pending).toList();
             
-            return CustomScrollView(
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: CustomScrollView(
               slivers: [
                 // Sliver App Bar - Collapsible header
                 SliverAppBar(
@@ -739,6 +917,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                   sliver: _buildDropsSliverList(displayDrops, mode),
                 ),
               ],
+            ),
             );
           },
           loading: () => const Center(
@@ -805,6 +984,107 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Dialog _buildCensorDialog(BuildContext context, Drop censored) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 380,
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.purple, size: 28),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Your drop image was censored', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.grey),
+                  tooltip: 'How warnings work',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Warning System'),
+                        content: const Text(
+                          'Warnings accumulate and can lead to temporary or permanent account locks.\n\n'
+                          '5 warnings: 24h lock\n10 warnings: 3 days\n15 warnings: 1 week\n20 warnings: 1 month\n25+ warnings: Permanent (until admin review).'
+                        ),
+                        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
+                      ),
+                    );
+                  },
+                )
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(children: [
+                SizedBox(
+                  height: 160,
+                  width: double.infinity,
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                    child: Image.network(censored.imageUrl, fit: BoxFit.cover),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.25),
+                    alignment: Alignment.center,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.purple.withOpacity(0.9), borderRadius: BorderRadius.circular(6)),
+                      child: const Text('CENSORED', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            Text('Reason: ${censored.censorReason ?? 'Inappropriate image'}', style: const TextStyle(fontSize: 13, color: Colors.purple)),
+            const SizedBox(height: 8),
+            Row(children: [
+              const Icon(Icons.recycling, size: 16, color: Colors.grey),
+              const SizedBox(width: 6),
+              Text('${censored.numberOfBottles} bottles, ${censored.numberOfCans} cans', style: const TextStyle(fontSize: 13)),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+              const SizedBox(width: 6),
+              Text('Created ${DateFormat('MMM d, yyyy – HH:mm').format(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ]),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.08), border: Border.all(color: Colors.orange.withOpacity(0.2)), borderRadius: BorderRadius.circular(8)),
+              child: const Text('A warning was added to your account for this drop. Please make sure future images follow the community guidelines.', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('censor_notice_${censored.id}', true);
+                  if (mounted) Navigator.of(context).pop();
+                },
+                child: const Text('Got it'),
+              ),
+            )
           ],
         ),
       ),

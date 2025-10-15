@@ -73,6 +73,9 @@ class Drop {
   final DateTime modifiedAt;
   final int cancellationCount;
   final bool isSuspicious;
+  final bool isCensored;
+  final String? censorReason;
+  final DateTime? censoredAt;
   final CancellationReason? cancellationReason;
   final List<String> cancelledByCollectorIds;
 
@@ -91,9 +94,28 @@ class Drop {
     required this.modifiedAt,
     this.cancellationCount = 0,
     this.isSuspicious = false,
+    this.isCensored = false,
+    this.censorReason,
+    this.censoredAt,
     this.cancellationReason,
     this.cancelledByCollectorIds = const [],
   });
+
+  // Empty sentinel used for safe optional returns
+  factory Drop.empty() => Drop(
+    id: '',
+    userId: '',
+    imageUrl: '',
+    numberOfBottles: 0,
+    numberOfCans: 0,
+    bottleType: BottleType.plastic,
+    leaveOutside: false,
+    location: const LatLng(0, 0),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    modifiedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    isSuspicious: false,
+    isCensored: false,
+  );
 
   factory Drop.fromJson(Map<String, dynamic> json) {
     return Drop(
@@ -117,6 +139,9 @@ class Drop {
       modifiedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'].toString()) : DateTime.now(),
       cancellationCount: json['cancellationCount'] as int? ?? 0,
       isSuspicious: json['isSuspicious'] as bool? ?? false,
+      isCensored: json['isCensored'] as bool? ?? false,
+      censorReason: json['censorReason']?.toString(),
+      censoredAt: json['censoredAt'] != null ? DateTime.tryParse(json['censoredAt'].toString()) : null,
       cancellationReason: json['cancellationReason'] != null ? CancellationReason.values.firstWhere(
         (e) => e.name == json['cancellationReason'].toString(),
         orElse: () => CancellationReason.other,
@@ -141,6 +166,9 @@ class Drop {
       'updatedAt': modifiedAt.toIso8601String(),
       'cancellationCount': cancellationCount,
       'isSuspicious': isSuspicious,
+      'isCensored': isCensored,
+      'censorReason': censorReason,
+      'censoredAt': censoredAt?.toIso8601String(),
       'cancellationReason': cancellationReason?.name,
       'cancelledByCollectorIds': cancelledByCollectorIds,
     };
@@ -161,6 +189,9 @@ class Drop {
     DateTime? modifiedAt,
     int? cancellationCount,
     bool? isSuspicious,
+    bool? isCensored,
+    String? censorReason,
+    DateTime? censoredAt,
     CancellationReason? cancellationReason,
     List<String>? cancelledByCollectorIds,
   }) {
@@ -179,6 +210,9 @@ class Drop {
       modifiedAt: modifiedAt ?? this.modifiedAt,
       cancellationCount: cancellationCount ?? this.cancellationCount,
       isSuspicious: isSuspicious ?? this.isSuspicious,
+      isCensored: isCensored ?? this.isCensored,
+      censorReason: censorReason ?? this.censorReason,
+      censoredAt: censoredAt ?? this.censoredAt,
       cancellationReason: cancellationReason ?? this.cancellationReason,
       cancelledByCollectorIds: cancelledByCollectorIds ?? this.cancelledByCollectorIds,
     );
@@ -202,6 +236,8 @@ class Drop {
         other.modifiedAt == modifiedAt &&
         other.cancellationCount == cancellationCount &&
         other.isSuspicious == isSuspicious &&
+        other.isCensored == isCensored &&
+        other.censorReason == censorReason &&
         other.cancellationReason == cancellationReason &&
         other.cancelledByCollectorIds == cancelledByCollectorIds;
   }
@@ -223,6 +259,8 @@ class Drop {
       modifiedAt,
       cancellationCount,
       isSuspicious,
+      isCensored,
+      censorReason,
       cancellationReason,
       cancelledByCollectorIds,
     );
