@@ -795,6 +795,18 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             final censoredDrops = isHousehold
                 ? allDropsForTabs.where((d) => d.isCensored).toList()
                 : const <Drop>[];
+
+            // Debug counts to diagnose mismatches
+            if (isHousehold) {
+              // Using microtasks to avoid build spam
+              Future.microtask(() {
+                debugPrint('🔢 Drops tab debug — totals: all=${_allDrops.length}, display=${displayDrops.length}, good=${goodDrops.length}, flagged=${flaggedDrops.length}, censored=${censoredDrops.length}');
+                final badInGood = allDropsForTabs.where((d) =>
+                  (d.isCensored || d.isSuspicious || d.cancellationCount >= 3 || (d.status != DropStatus.pending && d.status != DropStatus.accepted))
+                ).length;
+                debugPrint('🔢 Drops tab debug — invalid in baseline (should be excluded from good): $badInGood');
+              });
+            }
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
