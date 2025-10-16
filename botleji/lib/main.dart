@@ -75,14 +75,20 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   // Global navigator key to access navigator from anywhere
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+
+  @override
+  Widget build(BuildContext context) {
     // Listen for 401 errors globally
     ref.listen(authNotifierProvider, (previous, next) {
       print('🚪 Main: Auth state changed - Previous: ${previous?.value?.id}, Next: ${next.value?.id}');
@@ -137,13 +143,15 @@ class MyApp extends ConsumerWidget {
       navigationController.debugCheckSavedCollection();
     });
 
+    // Removed splash-on-resume behavior per request
+
     return MaterialApp(
       title: 'Bottleji',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ref.watch(themeControllerProvider),
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
+      navigatorKey: MyApp.navigatorKey,
       initialRoute: '/splash',
       home: const SplashScreen(),
       routes: {
@@ -163,8 +171,8 @@ class MyApp extends ConsumerWidget {
 
 
   void _showForceLogoutDialog(BuildContext context, String reason) {
-    if (navigatorKey.currentContext != null) {
-      _showDialogWithContext(navigatorKey.currentContext!, reason);
+    if (MyApp.navigatorKey.currentContext != null) {
+      _showDialogWithContext(MyApp.navigatorKey.currentContext!, reason);
       return;
     }
 
@@ -235,6 +243,8 @@ class MyApp extends ConsumerWidget {
   }
 
 }
+
+// Removed ResumeSplashScreen widget per request
 
 class MainAppScreen extends ConsumerStatefulWidget {
   const MainAppScreen({super.key});
