@@ -1562,9 +1562,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
                     if (mode == UserMode.collector) return drops;
+                    // Household: show only own drops and hide suspicious or 3+ cancellations
+                    final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops
                         .where((drop) =>
-                            drop.userId == ref.read(authNotifierProvider).value?.id)
+                            drop.userId == currentUserId &&
+                            drop.isSuspicious != true &&
+                            (drop.cancellationCount) < 3)
                         .toList();
                   },
                   orElse: () => drops,
@@ -1706,10 +1710,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
                     if (mode == UserMode.collector) return drops;
+                    // Household: show only own drops and hide suspicious or 3+ cancellations
+                    final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops
                         .where((drop) =>
-                            drop.userId ==
-                            ref.read(authNotifierProvider).value?.id)
+                            drop.userId == currentUserId &&
+                            drop.isSuspicious != true &&
+                            (drop.cancellationCount) < 3)
                         .toList();
                   },
                   orElse: () => drops,

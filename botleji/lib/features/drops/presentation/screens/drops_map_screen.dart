@@ -332,10 +332,14 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                   
                   return dropsState.when(
                     data: (drops) {
-                      // Create markers from drops (exclude censored for household creator too)
+                      // Create markers from drops (exclude censored and suspicious / 3+ cancellations for household)
                       Set<Marker> dropMarkers = {};
                       if (drops.isNotEmpty) {
-                        final filteredForMap = drops.where((d) => !d.isCensored).toList();
+                        final filteredForMap = drops.where((d) =>
+                          !d.isCensored &&
+                          !d.isSuspicious &&
+                          (d.cancellationCount) < 3
+                        ).toList();
                         dropMarkers = filteredForMap.map((drop) {
                           return Marker(
                             markerId: MarkerId('drop_${drop.id}'),
