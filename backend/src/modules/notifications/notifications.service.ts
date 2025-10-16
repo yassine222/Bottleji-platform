@@ -13,6 +13,7 @@ export enum NotificationType {
   DROP_COLLECTED = 'drop_collected',
   DROP_CANCELLED = 'drop_cancelled',
   DROP_EXPIRED = 'drop_expired',
+  DROP_FLAGGED = 'drop_flagged',
   NEW_DROP_AVAILABLE = 'new_drop_available',
   
   // Support
@@ -190,6 +191,50 @@ export class NotificationsService {
     } else {
       this.notificationsGateway.sendNotificationToAll(notification);
     }
+  }
+
+  // Training Notifications
+  notifyNewTrainingContent(title: string, message: string, targetRole?: string) {
+    const notification = {
+      type: NotificationType.NEW_TRAINING_CONTENT,
+      title,
+      message,
+      timestamp: new Date()
+    };
+
+    if (targetRole) {
+      this.notificationsGateway.sendNotificationToRole(targetRole, notification);
+    } else {
+      this.notificationsGateway.sendNotificationToAll(notification);
+    }
+  }
+
+  // Drop flagged notification to creator
+  notifyDropFlagged(userId: string, dropId: string, totalCancellations: number, reason?: string, dropTitle?: string) {
+    this.notificationsGateway.sendNotificationToUser(userId, {
+      type: NotificationType.DROP_FLAGGED,
+      title: 'Drop Flagged',
+      message: reason || 'Your drop was flagged due to multiple cancellations. It will be hidden from the map.',
+      data: {
+        dropId,
+        totalCancellations,
+        dropTitle,
+        reason: reason || 'Cancelled by 3 different collectors',
+      },
+      userId,
+      timestamp: new Date(),
+    });
+  }
+
+  notifyTrainingCompleted(userId: string, trainingTitle: string) {
+    this.notificationsGateway.sendNotificationToUser(userId, {
+      type: NotificationType.TRAINING_COMPLETED,
+      title: 'Training Completed',
+      message: `You have completed the training: ${trainingTitle}`,
+      data: { trainingTitle },
+      userId,
+      timestamp: new Date()
+    });
   }
 
   // Utility methods

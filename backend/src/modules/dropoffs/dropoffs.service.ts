@@ -10,6 +10,7 @@ import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
 import { User } from '../users/schemas/user.schema';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class DropoffsService {
@@ -21,6 +22,7 @@ export class DropoffsService {
     @InjectModel(User.name) private userModel: Model<User>,
     @Inject(forwardRef(() => NotificationsGateway))
     private notificationsGateway: NotificationsGateway,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.startCleanupTask();
     this.migrateOldCancellationFields();
@@ -499,6 +501,21 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
+    // Send notification to drop creator
+    this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+      type: 'drop_accepted',
+      title: 'Drop Accepted',
+      message: 'A collector has accepted your drop and is on their way',
+      data: { 
+        dropId: id, 
+        collectorId,
+        dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+      },
+      timestamp: new Date(),
+    });
+
+    console.log(`📱 Drop accepted notification sent to user ${dropoff.userId}`);
+
     return updatedDropoff;
   }
 
@@ -545,6 +562,21 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
+    // Send notification to drop creator
+    this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+      type: 'drop_collected',
+      title: 'Drop Collected',
+      message: 'Your drop has been successfully collected!',
+      data: { 
+        dropId: id, 
+        collectorId: acceptedInteraction.collectorId,
+        dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+      },
+      timestamp: new Date(),
+    });
+
+    console.log(`📱 Drop collected notification sent to user ${dropoff.userId}`);
+
     return updatedDropoff;
   }
 
@@ -558,23 +590,25 @@ export class DropoffsService {
       throw new BadRequestException('Only accepted dropoffs can be cancelled');
     }
 
-    // Increment cancellation count
+    // Increment total cancellation count (historical counter)
     const newCancellationCount = (dropoff.cancellationCount || 0) + 1;
-    
-    // Check if this drop should be marked as suspicious (3 or more cancellations)
-    const isSuspicious = newCancellationCount >= 3;
-    
-    // Determine the new status based on cancellation count
-    let newStatus = DropoffStatus.PENDING; // Default to PENDING
-    if (newCancellationCount >= 3) {
-      newStatus = DropoffStatus.CANCELLED; // Only set to CANCELLED if 3+ cancellations
-    }
 
-    // Add the collector ID to the cancelledByCollectorIds array
+    // Build unique set of collectors who cancelled this drop
     const currentCancelledIds = dropoff.cancelledByCollectorIds || [];
-    const updatedCancelledIds = cancelledByCollectorId 
-      ? [...currentCancelledIds, cancelledByCollectorId]
+    const updatedCancelledIds = cancelledByCollectorId
+      ? Array.from(new Set([...currentCancelledIds, cancelledByCollectorId]))
       : currentCancelledIds;
+
+    const distinctCancellingCollectors = new Set(updatedCancelledIds).size;
+
+    // Flag as suspicious only if cancelled by 3 or more DISTINCT collectors
+    const isSuspicious = distinctCancellingCollectors >= 3;
+
+    // Determine the new status based on DISTINCT cancellations
+    let newStatus = DropoffStatus.PENDING; // Default to PENDING
+    if (isSuspicious) {
+      newStatus = DropoffStatus.CANCELLED; // Only set to CANCELLED if 3+ distinct cancellations
+    }
 
     // Add detailed cancellation history
     const currentCancellationHistory = dropoff.cancellationHistory || [];
@@ -598,6 +632,7 @@ export class DropoffsService {
       cancelledByCollectorId,
       currentCancelledIds,
       updatedCancelledIds,
+      distinctCancellingCollectors,
       cancellationHistoryLength: updatedCancellationHistory.length,
     });
 
@@ -608,6 +643,11 @@ export class DropoffsService {
       cancelledByCollectorIds: updatedCancelledIds,
       cancellationHistory: updatedCancellationHistory,
     };
+
+    // When marking suspicious, set a clear reason
+    if (isSuspicious) {
+      updateData.suspiciousReason = 'Cancelled by 3 different collectors';
+    }
 
     // Only update status if we're setting to CANCELLED
     // Note: We don't clear collectorId or acceptedAt from dropoff since they're in interactions
@@ -659,6 +699,63 @@ export class DropoffsService {
         cancellationReason: interaction.cancellationReason,
         notes: interaction.notes,
       });
+    }
+
+    // Send notification to drop creator every time someone cancels
+    if (cancelledByCollectorId) {
+      const notificationMessage = newStatus === DropoffStatus.CANCELLED 
+        ? 'Your drop was cancelled and flagged as suspicious due to multiple cancellations'
+        : 'A collector cancelled your drop. It\'s now available for others.';
+      
+      this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+        type: 'drop_cancelled',
+        title: 'Drop Cancelled',
+        message: notificationMessage,
+        data: { 
+          dropId: id, 
+          reason: reason || 'No reason provided',
+          dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`,
+          cancelledBy: cancelledByCollectorId,
+          totalCancellations: distinctCancellingCollectors
+        },
+        timestamp: new Date(),
+      });
+
+      console.log(`📱 Drop cancelled notification sent to user ${dropoff.userId} (${distinctCancellingCollectors} total cancellations)`);
+    }
+
+    // If drop just became suspicious (flagged), notify creator once
+    if (isSuspicious && !dropoff.isSuspicious) {
+      try {
+        const notificationsService = (this as any).notificationsService || null;
+        const total = distinctCancellingCollectors;
+        if (notificationsService && notificationsService.notifyDropFlagged) {
+          notificationsService.notifyDropFlagged(
+            dropoff.userId.toString(),
+            id,
+            total,
+            'Cancelled by 3 different collectors',
+            `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+          );
+        } else {
+          // Fallback: send via gateway directly without enum coupling
+          this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+            type: 'drop_flagged',
+            title: 'Drop Flagged',
+            message: 'Your drop was flagged due to multiple cancellations. It will be hidden from the map.',
+            data: {
+              dropId: id,
+              totalCancellations: total,
+              dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`,
+              reason: 'Cancelled by 3 different collectors',
+            },
+            timestamp: new Date(),
+          });
+        }
+        console.log(`📱 Drop flagged notification sent to user ${dropoff.userId} (distinct cancellations: ${total})`);
+      } catch (e) {
+        console.error('Failed to send drop flagged notification', e);
+      }
     }
 
     return updatedDropoff;
@@ -756,6 +853,21 @@ export class DropoffsService {
           });
 
           console.log(`✅ EXPIRED interaction created for drop ${dropoff._id} (penalty added automatically)`);
+          
+          // Send notification to drop creator
+          this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+            type: 'drop_expired',
+            title: 'Drop Expired',
+            message: 'A collector\'s time expired on your drop. It\'s now available for others.',
+            data: { 
+              dropId: dropoff._id.toString(), 
+              collectorId: interaction.collectorId,
+              dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+            },
+            timestamp: new Date(),
+          });
+
+          console.log(`📱 Drop expired notification sent to user ${dropoff.userId}`);
           
           cleanedCount++;
           console.log(`✅ Drop ${dropoff._id} timed out after ${totalTimeoutMinutes} minutes, set back to PENDING`);
