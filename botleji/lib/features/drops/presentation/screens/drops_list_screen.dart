@@ -794,8 +794,8 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             
             // Household: Tabbed view for Good, Cancelled/Flagged, Censored
             final isHousehold = mode == UserMode.household;
-            // Use _allDrops for tab counts (not filtered drops) to get true counts
-            final allDropsForTabs = isHousehold ? _allDrops : displayDrops;
+            // Use the same baseline as the visible list for counts to avoid mismatches
+            final allDropsForTabs = displayDrops;
             // Precompute filtered lists for counts and rendering
             // Good drops: only valid ones (pending/accepted, not suspicious, not censored, <3 cancellations)
             final goodDrops = isHousehold
