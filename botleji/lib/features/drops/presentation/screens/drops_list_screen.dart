@@ -794,18 +794,23 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             
             // Household: Tabbed view for Good, Cancelled/Flagged, Censored
             final isHousehold = mode == UserMode.household;
+            // Use _allDrops for tab counts (not filtered drops) to get true counts
+            final allDropsForTabs = isHousehold ? _allDrops : displayDrops;
             // Precompute filtered lists for counts and rendering
+            // Good drops: only valid ones (pending/accepted, not suspicious, not censored, <3 cancellations)
             final goodDrops = isHousehold
-                ? displayDrops.where((d) =>
-                    !d.isSuspicious && !d.isCensored &&
+                ? allDropsForTabs.where((d) =>
+                    !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
                     (d.status == DropStatus.pending || d.status == DropStatus.accepted)
                   ).toList()
                 : displayDrops;
+            // Flagged/Cancelled: suspicious or cancelled 3+ times
             final flaggedDrops = isHousehold
-                ? displayDrops.where((d) => d.isSuspicious || d.status == DropStatus.cancelled).toList()
+                ? allDropsForTabs.where((d) => d.isSuspicious || (d.cancellationCount) >= 3).toList()
                 : const <Drop>[];
+            // Censored: only censored drops
             final censoredDrops = isHousehold
-                ? displayDrops.where((d) => d.isCensored).toList()
+                ? allDropsForTabs.where((d) => d.isCensored).toList()
                 : const <Drop>[];
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -830,13 +835,19 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                     Expanded(
                       child: TabBarView(
                         children: [
-                          // Tab 1: Good drops (pending/accepted, not suspicious, not censored)
+                          // Tab 1: Good drops (pending/accepted, not suspicious, not censored, <3 cancellations)
                           CustomScrollView(
                             slivers: [
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(goodDrops, mode),
+                                sliver: _buildDropsSliverList(
+                                  allDropsForTabs.where((d) =>
+                                    !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
+                                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
+                                  ).toList(),
+                                  mode,
+                                ),
                               ),
                             ],
                           ),
@@ -846,7 +857,10 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(flaggedDrops, mode),
+                                sliver: _buildDropsSliverList(
+                                  allDropsForTabs.where((d) => d.isSuspicious || (d.cancellationCount) >= 3).toList(),
+                                  mode,
+                                ),
                               ),
                               SliverToBoxAdapter(
                                 child: Padding(
@@ -874,7 +888,10 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(censoredDrops, mode),
+                                sliver: _buildDropsSliverList(
+                                  displayDrops.where((d) => d.isCensored).toList(),
+                                  mode,
+                                ),
                               ),
                             ],
                           ),
