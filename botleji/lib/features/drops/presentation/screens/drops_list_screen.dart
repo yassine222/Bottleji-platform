@@ -62,24 +62,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     // Load drops when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDrops();
-      
-      // Listen for mode changes to reset lock card dismissed flag and show card
-      ref.listen(userModeControllerProvider, (previous, next) {
-        next.whenData((mode) {
-          if (mode == UserMode.collector) {
-            // Reset dismissed flag when switching to collector mode
-            setState(() {
-              _lockCardDismissed = false;
-            });
-            // Check lock status when switching to collector mode
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _checkLockStatus();
-              }
-            });
-          }
-        });
-      });
+      if (mounted) _checkLockStatus();
     });
   }
 

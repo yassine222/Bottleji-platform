@@ -70,24 +70,11 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
     _initializeLocation();
     _loadDropsForMap();
     
-    // Listen for mode changes to reset lock card dismissed flag and show card
+    // Defer lock status check; listen in build via ref.listen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listen(userModeControllerProvider, (previous, next) {
-        next.whenData((mode) {
-          if (mode == UserMode.collector) {
-            // Reset dismissed flag when switching to collector mode
-            setState(() {
-              _lockCardDismissed = false;
-            });
-            // Check lock status when switching to collector mode
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _checkLockStatus();
-              }
-            });
-          }
-        });
-      });
+      if (mounted) {
+        _checkLockStatus();
+      }
     });
     
     // Add a test polyline immediately for debugging
@@ -113,15 +100,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
       });
     });
     
-    // Listen to user mode changes and refresh drops
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listen(userModeControllerProvider, (previous, next) {
-        next.whenData((mode) {
-          // Refresh drops when user mode changes
-          _loadDropsForMap();
-        });
-      });
-    });
+    // Refresh drops handled in build via ref.listen to userMode
   }
 
   Future<void> _initializeLocation() async {
