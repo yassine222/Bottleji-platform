@@ -794,6 +794,19 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             
             // Household: Tabbed view for Good, Cancelled/Flagged, Censored
             final isHousehold = mode == UserMode.household;
+            // Precompute filtered lists for counts and rendering
+            final goodDrops = isHousehold
+                ? displayDrops.where((d) =>
+                    !d.isSuspicious && !d.isCensored &&
+                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
+                  ).toList()
+                : displayDrops;
+            final flaggedDrops = isHousehold
+                ? displayDrops.where((d) => d.isSuspicious || d.status == DropStatus.cancelled).toList()
+                : const <Drop>[];
+            final censoredDrops = isHousehold
+                ? displayDrops.where((d) => d.isCensored).toList()
+                : const <Drop>[];
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
@@ -807,10 +820,10 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                         labelColor: const Color(0xFF00695C),
                         unselectedLabelColor: Colors.grey,
                         indicatorColor: const Color(0xFF00695C),
-                        tabs: const [
-                          Tab(text: 'Drops'),
-                          Tab(text: 'Cancelled/Flagged'),
-                          Tab(text: 'Censored'),
+                        tabs: [
+                          Tab(text: 'Drops (${goodDrops.length})'),
+                          Tab(text: 'Cancelled/Flagged (${flaggedDrops.length})'),
+                          Tab(text: 'Censored (${censoredDrops.length})'),
                         ],
                       ),
                     ),
@@ -823,13 +836,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  displayDrops.where((d) =>
-                                    !d.isSuspicious && !d.isCensored &&
-                                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
-                                  ).toList(),
-                                  mode,
-                                ),
+                                sliver: _buildDropsSliverList(goodDrops, mode),
                               ),
                             ],
                           ),
@@ -839,10 +846,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  displayDrops.where((d) => d.isSuspicious || d.status == DropStatus.cancelled).toList(),
-                                  mode,
-                                ),
+                                sliver: _buildDropsSliverList(flaggedDrops, mode),
                               ),
                               SliverToBoxAdapter(
                                 child: Padding(
@@ -870,10 +874,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                               _buildHeader(mode, displayDrops),
                               SliverPadding(
                                 padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  displayDrops.where((d) => d.isCensored).toList(),
-                                  mode,
-                                ),
+                                sliver: _buildDropsSliverList(censoredDrops, mode),
                               ),
                             ],
                           ),
