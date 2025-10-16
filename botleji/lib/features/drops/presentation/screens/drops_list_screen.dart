@@ -792,48 +792,99 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                 ? _filteredDrops
                 : _filteredDrops.where((drop) => drop.status == DropStatus.pending).toList();
             
+            // Household: Tabbed view for Good, Cancelled/Flagged, Censored
+            final isHousehold = mode == UserMode.household;
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
-              child: CustomScrollView(
-              slivers: [
-                // Sliver App Bar - Collapsible header
-                SliverAppBar(
-                  floating: true,
-                  snap: true,
-                  pinned: false,
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  toolbarHeight: 80,
-                  automaticallyImplyLeading: false, // Remove the back/drawer button
-                  flexibleSpace: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Text(
-                          mode == UserMode.collector ? 'All Drops' : 'My Drops',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF00695C), // Green color
-                          ),
-                        ),
-                        const Spacer(),
-                        // Filter button
-                        IconButton(
-                          icon: const Icon(Icons.filter_list),
-                          onPressed: _showFilterDialog,
-                          color: const Color(0xFF00695C), // Green color
-                        ),
-                        // Refresh button
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          onPressed: _loadDrops,
-                          color: const Color(0xFF00695C), // Green color
-                        ),
-                      ],
+              child: isHousehold ? DefaultTabController(
+                length: 3,
+                child: Column(
+                  children: [
+                    Material(
+                      color: Colors.white,
+                      child: TabBar(
+                        labelColor: const Color(0xFF00695C),
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: const Color(0xFF00695C),
+                        tabs: const [
+                          Tab(text: 'Drops'),
+                          Tab(text: 'Cancelled/Flagged'),
+                          Tab(text: 'Censored'),
+                        ],
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // Tab 1: Good drops (pending/accepted, not suspicious, not censored)
+                          CustomScrollView(
+                            slivers: [
+                              _buildHeader(mode, displayDrops),
+                              SliverPadding(
+                                padding: const EdgeInsets.all(16),
+                                sliver: _buildDropsSliverList(
+                                  displayDrops.where((d) =>
+                                    !d.isSuspicious && !d.isCensored &&
+                                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
+                                  ).toList(),
+                                  mode,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Tab 2: Cancelled/Flagged
+                          CustomScrollView(
+                            slivers: [
+                              _buildHeader(mode, displayDrops),
+                              SliverPadding(
+                                padding: const EdgeInsets.all(16),
+                                sliver: _buildDropsSliverList(
+                                  displayDrops.where((d) => d.isSuspicious || d.status == DropStatus.cancelled).toList(),
+                                  mode,
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Drops in this tab were either cancelled or flagged due to multiple cancellations. Flagged drops are hidden from the map.',
+                                          style: Theme.of(context).textTheme.bodySmall,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                          // Tab 3: Censored
+                          CustomScrollView(
+                            slivers: [
+                              _buildHeader(mode, displayDrops),
+                              SliverPadding(
+                                padding: const EdgeInsets.all(16),
+                                sliver: _buildDropsSliverList(
+                                  displayDrops.where((d) => d.isCensored).toList(),
+                                  mode,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+              ) : CustomScrollView(
+              slivers: [
+                _buildHeader(mode, displayDrops),
                 
                 // Filter summary (if filters are applied)
                 if ((mode == UserMode.household && (_selectedStatus != null || _selectedDateFilter != 'All')) ||
@@ -1186,6 +1237,44 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
           );
         },
         childCount: drops.length,
+      ),
+    );
+  }
+
+  // Shared header used in tabbed and single views
+  SliverAppBar _buildHeader(UserMode mode, List<Drop> displayDrops) {
+    return SliverAppBar(
+      floating: true,
+      snap: true,
+      pinned: false,
+      backgroundColor: Colors.white,
+      elevation: 0,
+      toolbarHeight: 80,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Text(
+              mode == UserMode.collector ? 'All Drops' : 'My Drops',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF00695C),
+                  ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+              color: const Color(0xFF00695C),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadDrops,
+              color: const Color(0xFF00695C),
+            ),
+          ],
+        ),
       ),
     );
   }

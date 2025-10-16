@@ -73,6 +73,7 @@ class Drop {
   final DateTime modifiedAt;
   final int cancellationCount;
   final bool isSuspicious;
+  final String? suspiciousReason;
   final bool isCensored;
   final String? censorReason;
   final DateTime? censoredAt;
@@ -94,6 +95,7 @@ class Drop {
     required this.modifiedAt,
     this.cancellationCount = 0,
     this.isSuspicious = false,
+    this.suspiciousReason,
     this.isCensored = false,
     this.censorReason,
     this.censoredAt,
@@ -139,6 +141,7 @@ class Drop {
       modifiedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'].toString()) : DateTime.now(),
       cancellationCount: json['cancellationCount'] as int? ?? 0,
       isSuspicious: json['isSuspicious'] as bool? ?? false,
+      suspiciousReason: json['suspiciousReason']?.toString(),
       isCensored: json['isCensored'] as bool? ?? false,
       censorReason: json['censorReason']?.toString(),
       censoredAt: json['censoredAt'] != null ? DateTime.tryParse(json['censoredAt'].toString()) : null,
@@ -166,6 +169,7 @@ class Drop {
       'updatedAt': modifiedAt.toIso8601String(),
       'cancellationCount': cancellationCount,
       'isSuspicious': isSuspicious,
+      'suspiciousReason': suspiciousReason,
       'isCensored': isCensored,
       'censorReason': censorReason,
       'censoredAt': censoredAt?.toIso8601String(),
@@ -189,6 +193,7 @@ class Drop {
     DateTime? modifiedAt,
     int? cancellationCount,
     bool? isSuspicious,
+    String? suspiciousReason,
     bool? isCensored,
     String? censorReason,
     DateTime? censoredAt,
@@ -210,6 +215,7 @@ class Drop {
       modifiedAt: modifiedAt ?? this.modifiedAt,
       cancellationCount: cancellationCount ?? this.cancellationCount,
       isSuspicious: isSuspicious ?? this.isSuspicious,
+      suspiciousReason: suspiciousReason ?? this.suspiciousReason,
       isCensored: isCensored ?? this.isCensored,
       censorReason: censorReason ?? this.censorReason,
       censoredAt: censoredAt ?? this.censoredAt,
@@ -236,6 +242,7 @@ class Drop {
         other.modifiedAt == modifiedAt &&
         other.cancellationCount == cancellationCount &&
         other.isSuspicious == isSuspicious &&
+        other.suspiciousReason == suspiciousReason &&
         other.isCensored == isCensored &&
         other.censorReason == censorReason &&
         other.cancellationReason == cancellationReason &&
@@ -259,6 +266,7 @@ class Drop {
       modifiedAt,
       cancellationCount,
       isSuspicious,
+      suspiciousReason,
       isCensored,
       censorReason,
       cancellationReason,
