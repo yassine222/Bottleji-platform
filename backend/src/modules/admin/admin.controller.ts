@@ -144,8 +144,9 @@ export class AdminController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('status') status?: string,
+    @Query('isCensored') isCensored?: string,
   ) {
-    const drops = await this.adminService.getAllDrops(Number(page), Number(limit), status);
+    const drops = await this.adminService.getAllDrops(Number(page), Number(limit), status, isCensored);
     return { success: true, ...drops };
   }
 

@@ -1629,6 +1629,12 @@ function DropsContent() {
   const [loadingReportedDrops, setLoadingReportedDrops] = useState(false);
   const [flaggedDrops, setFlaggedDrops] = useState([]);
   const [loadingFlaggedDrops, setLoadingFlaggedDrops] = useState(false);
+  const [collectedDrops, setCollectedDrops] = useState([]);
+  const [loadingCollectedDrops, setLoadingCollectedDrops] = useState(false);
+  const [staleDrops, setStaleDrops] = useState([]);
+  const [loadingStaleDrops, setLoadingStaleDrops] = useState(false);
+  const [censoredDrops, setCensoredDrops] = useState([]);
+  const [loadingCensoredDrops, setLoadingCensoredDrops] = useState(false);
   const [showCensorModal, setShowCensorModal] = useState(false);
   const [censorTargetDropId, setCensorTargetDropId] = useState<string | null>(null);
   const [selectedCensorReason, setSelectedCensorReason] = useState<string>('inappropriate_image');
@@ -1643,6 +1649,12 @@ function DropsContent() {
   useEffect(() => {
     fetchAllData();
     fetchDropsList();
+    // Load counts for all tabs on initial load
+    fetchReportedDrops();
+    fetchFlaggedDrops();
+    fetchCollectedDrops();
+    fetchStaleDrops();
+    fetchCensoredDrops();
   }, []);
 
   useEffect(() => {
@@ -1655,6 +1667,15 @@ function DropsContent() {
     }
     if (dropsActiveTab === 'flagged-drops') {
       fetchFlaggedDrops();
+    }
+    if (dropsActiveTab === 'collected-drops') {
+      fetchCollectedDrops();
+    }
+    if (dropsActiveTab === 'stale-drops') {
+      fetchStaleDrops();
+    }
+    if (dropsActiveTab === 'censored-drops') {
+      fetchCensoredDrops();
     }
   }, [dropsActiveTab]);
 
@@ -1748,6 +1769,81 @@ function DropsContent() {
     }
   };
 
+  const fetchCollectedDrops = async () => {
+    try {
+      setLoadingCollectedDrops(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      console.log('📋 Fetching collected drops...');
+
+      const response = await axios.get(
+        `${API_URL}/admin/drops?status=collected&limit=1000`,
+        config
+      );
+
+      console.log('📋 Collected drops response:', response.data);
+      console.log('📋 Total collected drops:', response.data.drops?.length);
+
+      setCollectedDrops(response.data.drops || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching collected drops:', error);
+      console.error('❌ Error details:', error.response?.data);
+    } finally {
+      setLoadingCollectedDrops(false);
+    }
+  };
+
+  const fetchStaleDrops = async () => {
+    try {
+      setLoadingStaleDrops(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      console.log('📋 Fetching stale drops...');
+
+      const response = await axios.get(
+        `${API_URL}/admin/drops-management/stale?limit=1000`,
+        config
+      );
+
+      console.log('📋 Stale drops response:', response.data);
+      console.log('📋 Total stale drops:', response.data.drops?.length);
+
+      setStaleDrops(response.data.drops || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching stale drops:', error);
+      console.error('❌ Error details:', error.response?.data);
+    } finally {
+      setLoadingStaleDrops(false);
+    }
+  };
+
+  const fetchCensoredDrops = async () => {
+    try {
+      setLoadingCensoredDrops(true);
+      const token = localStorage.getItem('admin_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      console.log('📋 Fetching censored drops...');
+
+      const response = await axios.get(
+        `${API_URL}/admin/drops?isCensored=true&limit=1000`,
+        config
+      );
+
+      console.log('📋 Censored drops response:', response.data);
+      console.log('📋 Total censored drops:', response.data.drops?.length);
+
+      setCensoredDrops(response.data.drops || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching censored drops:', error);
+      console.error('❌ Error details:', error.response?.data);
+    } finally {
+      setLoadingCensoredDrops(false);
+    }
+  };
+
   const fetchAllData = async () => {
     try {
       setLoading(true);
@@ -1820,6 +1916,11 @@ function DropsContent() {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.get(`${API_URL}/admin/drops-management/details/${dropId}`, config);
+      console.log('🔍 Drop details response:', response.data);
+      console.log('🔍 Image URL from drop:', response.data.drop?.imageUrl);
+      console.log('🔍 Collection attempts:', response.data.collectionAttempts);
+      console.log('🔍 First attempt dropSnapshot:', response.data.collectionAttempts?.[0]?.dropSnapshot);
+      console.log('🔍 Image URL from snapshot:', response.data.collectionAttempts?.[0]?.dropSnapshot?.imageUrl);
       setSelectedDrop(response.data);
     } catch (error) {
       console.error('Error fetching drop details:', error);
@@ -1968,6 +2069,36 @@ function DropsContent() {
             }`}
           >
             Flagged Drops ({flaggedDrops.length})
+          </button>
+          <button
+            onClick={() => setDropsActiveTab('collected-drops')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              dropsActiveTab === 'collected-drops'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Collected Drops ({collectedDrops.length})
+          </button>
+          <button
+            onClick={() => setDropsActiveTab('stale-drops')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              dropsActiveTab === 'stale-drops'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Stale Drops ({staleDrops.length})
+          </button>
+          <button
+            onClick={() => setDropsActiveTab('censored-drops')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              dropsActiveTab === 'censored-drops'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Censored Drops ({censoredDrops.length})
           </button>
         </nav>
       </div>
@@ -2203,7 +2334,7 @@ function DropsContent() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -2462,7 +2593,7 @@ function DropsContent() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cancels</th>
@@ -2526,6 +2657,287 @@ function DropsContent() {
                             Censor
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collected Drops Tab */}
+      {dropsActiveTab === 'collected-drops' && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Collected Drops</h3>
+            <p className="text-gray-600">Drops that have been successfully collected by collectors</p>
+          </div>
+
+          {loadingCollectedDrops ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : collectedDrops.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Collected Drops</h3>
+              <p className="text-gray-500">There are currently no collected drops.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected At</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {collectedDrops.map((drop: any, index: number) => (
+                    <tr key={drop._id || index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {drop.imageUrl ? (
+                          <img
+                            className="h-10 w-10 rounded-lg object-cover"
+                            src={drop.imageUrl}
+                            alt="Drop image"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <span className="text-xs text-gray-500">No Image</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{drop.numberOfBottles || 0} bottles, {drop.numberOfCans || 0} cans</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{drop.collectedBy?.name || 'Unknown'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(drop.collectedAt || drop.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedDrop(drop);
+                            setDropDetailsContext('default');
+                            setShowDropDetails(true);
+                          }}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stale Drops Tab */}
+      {dropsActiveTab === 'stale-drops' && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Stale Drops</h3>
+            <p className="text-gray-600">Drops that have expired and are no longer available for collection</p>
+          </div>
+
+          {loadingStaleDrops ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : staleDrops.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Stale Drops</h3>
+              <p className="text-gray-500">There are currently no stale drops.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expired</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {staleDrops.map((drop: any, index: number) => (
+                    <tr key={drop._id || index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {drop.imageUrl ? (
+                          <img
+                            className="h-10 w-10 rounded-lg object-cover"
+                            src={drop.imageUrl}
+                            alt="Drop image"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <span className="text-xs text-gray-500">No Image</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{drop.numberOfBottles || 0} bottles, {drop.numberOfCans || 0} cans</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(drop.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(drop.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedDrop(drop);
+                            setDropDetailsContext('default');
+                            setShowDropDetails(true);
+                          }}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Censored Drops Tab */}
+      {dropsActiveTab === 'censored-drops' && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Censored Drops</h3>
+            <p className="text-gray-600">Drops that have been censored due to inappropriate content</p>
+          </div>
+
+          {loadingCensoredDrops ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : censoredDrops.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Censored Drops</h3>
+              <p className="text-gray-500">There are currently no censored drops.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Censored By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Censored At</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {censoredDrops.map((drop: any, index: number) => (
+                    <tr key={drop._id || index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {drop.imageUrl ? (
+                          <img
+                            className="h-10 w-10 rounded-lg object-cover"
+                            src={drop.imageUrl}
+                            alt="Drop image"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <span className="text-xs text-gray-500">No Image</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          {drop.censorReason || 'Inappropriate Content'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{drop.censoredBy?.name || 'Admin'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(drop.censoredAt || drop.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedDrop(drop);
+                            setDropDetailsContext('default');
+                            setShowDropDetails(true);
+                          }}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -2730,11 +3142,36 @@ function DropsContent() {
                     {/* Drop Image */}
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-semibold text-gray-900 mb-3">Drop Image</h3>
-                      <img 
-                        src={selectedDrop.drop?.imageUrl} 
-                        alt="Drop" 
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
+                      {(() => {
+                        // Use collection attempt's dropSnapshot if available, otherwise fall back to direct drop data
+                        const imageUrl = selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.imageUrl || selectedDrop.drop?.imageUrl;
+                        console.log('🔍 Image source check:', {
+                          fromSnapshot: selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.imageUrl,
+                          fromDrop: selectedDrop.drop?.imageUrl,
+                          finalImageUrl: imageUrl,
+                          hasCollectionAttempts: selectedDrop.collectionAttempts?.length > 0,
+                          collectionAttemptsLength: selectedDrop.collectionAttempts?.length || 0
+                        });
+                        
+                        return imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt="Drop" 
+                            className="w-full h-64 object-cover rounded-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23e5e7eb" width="400" height="300"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="20">Image Failed to Load</text></svg>';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-gray-500 text-lg mb-2">📷</div>
+                              <div className="text-gray-500">No image available</div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Drop Details */}
@@ -2760,25 +3197,25 @@ function DropsContent() {
                           <span className="text-gray-600">Bottles:</span>
                           <span className="font-medium flex items-center gap-2">
                             <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
-                            {selectedDrop.drop?.numberOfBottles}
+                            {selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.numberOfBottles || selectedDrop.drop?.numberOfBottles}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Cans:</span>
                           <span className="font-medium flex items-center gap-2">
                             <img src="/can.png" alt="Cans" className="w-5 h-5" />
-                            {selectedDrop.drop?.numberOfCans}
+                            {selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.numberOfCans || selectedDrop.drop?.numberOfCans}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Bottle Type:</span>
                           <span className="font-medium capitalize flex items-center gap-2">
                             <img 
-                              src={selectedDrop.drop?.bottleType === 'mixed' ? '/mixed.png' : '/water-bottle.png'} 
-                              alt={selectedDrop.drop?.bottleType} 
+                              src={(selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.bottleType || selectedDrop.drop?.bottleType) === 'mixed' ? '/mixed.png' : '/water-bottle.png'} 
+                              alt={selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.bottleType || selectedDrop.drop?.bottleType} 
                               className="w-5 h-5" 
                             />
-                            {selectedDrop.drop?.bottleType}
+                            {selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.bottleType || selectedDrop.drop?.bottleType}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -2797,10 +3234,10 @@ function DropsContent() {
                             )}
                           </div>
                         )}
-                        {selectedDrop.drop?.notes && (
+                        {(selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.notes || selectedDrop.drop?.notes) && (
                           <div className="pt-2 border-t border-gray-200">
                             <span className="text-gray-600">Notes:</span>
-                            <p className="mt-1 text-gray-900">{selectedDrop.drop.notes}</p>
+                            <p className="mt-1 text-gray-900">{selectedDrop.collectionAttempts?.[0]?.dropSnapshot?.notes || selectedDrop.drop?.notes}</p>
                           </div>
                         )}
                       </div>

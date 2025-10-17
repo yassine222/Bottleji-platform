@@ -887,19 +887,24 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               );
             },
           ),
-          ListTile(
-            leading: Icon(
-              Icons.history_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
-            ),
-            title: const Text('History'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HistoryScreen()),
-              );
-            },
+          // History - Only show for collectors
+          currentUserMode.when(
+            data: (mode) => mode == UserMode.collector ? ListTile(
+              leading: Icon(
+                Icons.history_rounded,
+                color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              ),
+              title: const Text('History'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HistoryScreen()),
+                );
+              },
+            ) : const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
           ListTile(
             leading: Icon(

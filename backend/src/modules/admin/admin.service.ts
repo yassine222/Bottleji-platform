@@ -672,13 +672,22 @@ export class AdminService {
     }
   }
 
-  async getAllDrops(page = 1, limit = 20, status?: string) {
+  async getAllDrops(page = 1, limit = 20, status?: string, isCensored?: string) {
     const skip = (page - 1) * limit;
-    const filter = status ? { status } : {};
+    const filter: any = {};
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    if (isCensored !== undefined) {
+      filter.isCensored = isCensored === 'true';
+    }
     
     const [drops, total] = await Promise.all([
       this.dropoffModel.find(filter)
         .populate('userId', 'name email')
+        .populate('collectedBy', 'name email')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })

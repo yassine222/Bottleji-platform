@@ -86,10 +86,19 @@ export class Dropoff extends Document {
   censorReason?: string;
 
   @Prop()
+  censoredBy?: string;
+
+  @Prop()
   censoredAt?: Date;
 
   @Prop({ type: [String], default: [] })
   cancelledByCollectorIds: string[];
+
+  @Prop()
+  collectedBy?: string;
+
+  @Prop()
+  collectedAt?: Date;
 
   // Timestamp fields (automatically managed by Mongoose)
   @Prop()

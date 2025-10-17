@@ -181,41 +181,16 @@ export class DropoffsService {
   }
 
   private startCleanupTask() {
-    console.log('🚀 Starting cleanup task - will run every 1 minute (TESTING MODE)');
+    console.log('🚫 Automatic cleanup task DISABLED - no longer running cleanup every minute');
     
-    // TESTING: Run cleanup every 1 minute (was 10 minutes)
-    // TODO: Change back to 10 minutes for production
-    setInterval(async () => {
-      try {
-        console.log('⏰ Cleanup task triggered at:', new Date().toISOString());
-        const cleanedCount = await this.cleanupExpiredAcceptedDrops();
-        if (cleanedCount > 0) {
-          console.log(`🧹 Cleaned up ${cleanedCount} expired accepted drops`);
-        } else {
-          console.log('🧹 No expired drops found to clean up');
-        }
-        
-        // Also check for expired account locks
-        await this.checkAndUnlockExpiredAccounts();
-      } catch (error) {
-        console.error('❌ Error during cleanup task:', error);
-      }
-    }, 1 * 60 * 1000); // TESTING: 1 minute (was 10 * 60 * 1000)
+    // DISABLED: Automatic cleanup was causing issues with collection process
+    // The cleanup was running every 1 minute and setting collected drops back to PENDING
+    // This interfered with the normal collection flow
+    // 
+    // If cleanup is needed, it can be run manually via the API endpoint:
+    // POST /dropoffs/cleanup-expired
     
-    // Also run cleanup immediately on startup
-    setTimeout(async () => {
-      try {
-        console.log('🚀 Running initial cleanup check...');
-        const cleanedCount = await this.cleanupExpiredAcceptedDrops();
-        if (cleanedCount > 0) {
-          console.log(`🧹 Initial cleanup: ${cleanedCount} expired drops processed`);
-        } else {
-          console.log('🧹 Initial cleanup: No expired drops found');
-        }
-      } catch (error) {
-        console.error('❌ Error during initial cleanup:', error);
-      }
-    }, 5000); // Run after 5 seconds
+    console.log('💡 Manual cleanup available via: POST /dropoffs/cleanup-expired');
   }
 
   async create(createDropoffDto: CreateDropoffDto) {
@@ -537,7 +512,11 @@ export class DropoffsService {
 
     const updatedDropoff = await this.dropoffModel.findByIdAndUpdate(
       id,
-      { status: DropoffStatus.COLLECTED },
+      { 
+        status: DropoffStatus.COLLECTED,
+        collectedBy: acceptedInteraction.collectorId,
+        collectedAt: new Date(),
+      },
       { new: true },
     ).exec();
 
@@ -561,6 +540,24 @@ export class DropoffsService {
       interactionType: interaction.interactionType,
       notes: interaction.notes,
     });
+
+    // Find and complete the collection attempt
+    const collectionAttempt = await this.collectionAttemptModel.findOne({
+      dropoffId: id,
+      collectorId: acceptedInteraction.collectorId,
+      status: 'active',
+    }).exec();
+
+    if (collectionAttempt) {
+      console.log('Found collection attempt to complete:', collectionAttempt._id);
+      await this.completeCollectionAttempt(collectionAttempt._id.toString(), 'collected', {
+        reason: 'Successfully collected',
+        notes: 'Drop collected successfully',
+        location: dropoff.location,
+      });
+    } else {
+      console.log('No active collection attempt found for this drop');
+    }
 
     // Send notification to drop creator
     this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {

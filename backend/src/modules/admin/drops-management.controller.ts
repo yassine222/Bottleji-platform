@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Body, UseGuards, Query, Param } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, UseGuards, Query, Param, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { DropsManagementService } from './drops-management.service';
@@ -161,8 +161,9 @@ export class DropsManagementController {
    * PUT /admin/drops-management/censor/:id
    */
   @Put('censor/:id')
-  async censorDrop(@Param('id') dropId: string, @Body('reason') reason: string) {
-    const result = await this.dropsManagementService.censorDrop(dropId, reason);
+  async censorDrop(@Param('id') dropId: string, @Body('reason') reason: string, @Req() req: any) {
+    const adminId = req.user?.id || 'Admin';
+    const result = await this.dropsManagementService.censorDrop(dropId, reason, adminId);
     
     // Notify the user
     if (result.user) {

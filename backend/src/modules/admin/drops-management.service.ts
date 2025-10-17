@@ -285,6 +285,7 @@ export class DropsManagementService {
 
     const staleDrops = await this.dropModel
       .find({ status: 'stale' })
+      .populate('userId', 'name email')
       .sort({ modifiedAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -292,20 +293,14 @@ export class DropsManagementService {
 
     const total = await this.dropModel.countDocuments({ status: 'stale' });
 
-    // Manually populate user data
-    const userIds = staleDrops.map(drop => drop.userId);
-    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
-
-    const dropsWithUsers = staleDrops.map(drop => {
-      const user = users.find(u => (u as any)._id.toString() === drop.userId);
-      return {
-        ...drop.toObject(),
-        userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
-      };
-    });
+    console.log('📋 Stale drops found:', staleDrops.length);
+    if (staleDrops.length > 0) {
+      console.log('📋 First drop userId:', staleDrops[0].userId);
+      console.log('📋 First drop full data:', JSON.stringify(staleDrops[0], null, 2));
+    }
 
     return {
-      drops: dropsWithUsers,
+      drops: staleDrops,
       total,
       page,
       limit,
@@ -352,16 +347,30 @@ export class DropsManagementService {
 
     // Get user who created the drop
     const user = await this.userModel.findById(drop.userId).exec();
+    console.log('🔍 User lookup for drop:', {
+      dropId: drop._id,
+      userId: drop.userId,
+      userFound: !!user,
+      userName: user?.name,
+      userEmail: user?.email
+    });
 
     // Get all collection attempts for this drop
-    // IMPORTANT: dropoffId in CollectionAttempt is stored as STRING, not ObjectId
+    // IMPORTANT: dropoffId might be stored as ObjectId or String, so we need to check both
     const dropIdString = (drop as any)._id.toString();
+    const dropIdObjectId = (drop as any)._id;
     console.log('🔍 Searching for collection attempts...');
     console.log('   - Querying with dropoffId (string):', dropIdString);
+    console.log('   - Querying with dropoffId (ObjectId):', dropIdObjectId);
     
-    // Query using string comparison since dropoffId is a string field
+    // Query using both string and ObjectId to handle both cases
     const collectionAttempts = await this.collectionAttemptModel
-      .find({ dropoffId: dropIdString })
+      .find({ 
+        $or: [
+          { dropoffId: dropIdString },
+          { dropoffId: dropIdObjectId }
+        ]
+      })
       .sort({ acceptedAt: -1 })
       .exec();
     
@@ -370,6 +379,8 @@ export class DropsManagementService {
       console.log('   - First attempt dropoffId:', collectionAttempts[0].dropoffId);
       console.log('   - First attempt dropoffId type:', typeof collectionAttempts[0].dropoffId);
       console.log('   - Match:', collectionAttempts[0].dropoffId === dropIdString);
+      console.log('   - First attempt dropSnapshot:', collectionAttempts[0].dropSnapshot);
+      console.log('   - First attempt imageUrl:', collectionAttempts[0].dropSnapshot?.imageUrl);
     } else {
       console.log('   - No attempts found. Checking if any attempts exist in DB...');
       const anyAttempts = await this.collectionAttemptModel.countDocuments();
@@ -437,12 +448,13 @@ export class DropsManagementService {
   /**
    * Censor drop image and add warning to user
    */
-  async censorDrop(dropId: string, reason: string) {
+  async censorDrop(dropId: string, reason: string, adminId?: string) {
     const drop = await this.dropModel.findByIdAndUpdate(
       dropId,
       { 
         isCensored: true, 
         censorReason: reason,
+        censoredBy: adminId || 'Admin',
         censoredAt: new Date(),
       },
       { new: true },
