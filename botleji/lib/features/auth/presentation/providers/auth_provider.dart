@@ -129,21 +129,46 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   Future<void> _setUserModeFromRoles(List<String> roles) async {
     try {
       print('🔄 AuthProvider: Setting user mode from roles: $roles');
+      
+      // Wait for UserModeController to be ready
+      int attempts = 0;
+      while (attempts < 10) { // Max 5 seconds wait
+        final userModeState = _ref.read(userModeControllerProvider);
+        if (userModeState.hasValue) {
+          print('✅ AuthProvider: UserModeController is ready');
+          break;
+        }
+        print('⏳ AuthProvider: UserModeController not ready yet, waiting... (attempt ${attempts + 1}/10)');
+        await Future.delayed(const Duration(milliseconds: 500));
+        attempts++;
+      }
+      
       final userModeController = _ref.read(userModeControllerProvider.notifier);
       
       // Get the current saved mode
       final currentMode = await userModeController.getCurrentMode();
       print('🔍 AuthProvider: Current saved mode: ${currentMode?.name}');
+      print('🔍 AuthProvider: Current mode backend role: ${currentMode?.backendRole}');
+      print('🔍 AuthProvider: User roles: $roles');
+      print('🔍 AuthProvider: Does user have current mode role? ${currentMode != null ? roles.contains(currentMode.backendRole) : false}');
       
       // Check if the current mode is still valid (user still has that role)
       if (currentMode != null && roles.contains(currentMode.backendRole)) {
         // Keep the current mode if it's still valid
         print('✅ AuthProvider: Keeping current mode: ${currentMode.name} (user still has role: ${currentMode.backendRole})');
-        await userModeController.setMode(currentMode);
+        // Don't call setMode again if it's already the correct mode
+        final currentState = _ref.read(userModeControllerProvider);
+        if (currentState.hasValue && currentState.value == currentMode) {
+          print('✅ AuthProvider: Mode is already set correctly, skipping setMode call');
+        } else {
+          print('🔄 AuthProvider: Mode needs to be updated, calling setMode');
+          await userModeController.setMode(currentMode);
+        }
       } else {
         // If no saved mode or invalid mode, default to household for users with both roles
         final mode = UserMode.household;
         print('🔄 AuthProvider: Setting default mode: ${mode.name} (from roles: $roles)');
+        print('🔄 AuthProvider: Reason: ${currentMode == null ? 'No saved mode' : 'Invalid mode for current roles'}');
         await userModeController.setMode(mode);
       }
       
@@ -459,6 +484,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         handleForceLogout(reason);
       };
       
+      // Set up drop status update callback for real-time updates
+      notificationService.onDropStatusUpdate = (dropId, status, data) {
+        print('🔄 AuthProvider: Drop status update received - $status for drop $dropId');
+        // Update drops controller with the status change
+        final dropsController = ref.read(dropsControllerProvider.notifier);
+        dropsController.handleDropStatusUpdate(dropId, status, data);
+      };
+      
       // Connect to WebSocket
       print('🔌 AuthProvider: Calling notificationService.connect()...');
       notificationService.connect(token);
@@ -489,6 +522,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         // Show a dialog and then logout
         handleForceLogout(reason);
         print('🚪 AuthProvider: handleForceLogout completed');
+      };
+      
+      // Set up drop status update callback for real-time updates
+      notificationService.onDropStatusUpdate = (dropId, status, data) {
+        print('🔄 AuthProvider: Drop status update received on startup - $status for drop $dropId');
+        // Update drops controller with the status change
+        final dropsController = _ref.read(dropsControllerProvider.notifier);
+        dropsController.handleDropStatusUpdate(dropId, status, data);
       };
       
       // Set up account lock status update callback

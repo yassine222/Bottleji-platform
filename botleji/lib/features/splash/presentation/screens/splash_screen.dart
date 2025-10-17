@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -53,7 +55,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkFirstTimeUser() async {
-    // Reduced minimum splash duration for smoother transition
+    // Wait for minimum splash duration
     await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
@@ -65,7 +67,50 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // Navigate to onboarding
       Navigator.of(context).pushReplacementNamed('/onboarding');
     } else {
-      // Navigate to main app
+      // Wait for user mode to be loaded before navigating to main app
+      await _waitForUserModeAndNavigate();
+    }
+  }
+
+  Future<void> _waitForUserModeAndNavigate() async {
+    // Wait for both auth and user mode to be ready
+    final authState = ref.read(authNotifierProvider);
+    final userMode = ref.read(userModeControllerProvider);
+    
+    // If both are already loaded, navigate immediately
+    if (authState.hasValue && userMode.hasValue) {
+      print('✅ Splash: Both auth and user mode already loaded, navigating to main');
+      Navigator.of(context).pushReplacementNamed('/main');
+      return;
+    }
+    
+    // Otherwise, wait for both to load
+    print('⏳ Splash: Waiting for auth and user mode to load...');
+    print('⏳ Splash: Auth ready: ${authState.hasValue}, UserMode ready: ${userMode.hasValue}');
+    
+    // Listen to both auth and user mode changes
+    bool hasNavigated = false;
+    
+    ref.listen(authNotifierProvider, (previous, next) {
+      if (mounted && !hasNavigated && next.hasValue && userMode.hasValue) {
+        hasNavigated = true;
+        print('✅ Splash: Auth and user mode loaded, navigating to main');
+        Navigator.of(context).pushReplacementNamed('/main');
+      }
+    });
+    
+    ref.listen(userModeControllerProvider, (previous, next) {
+      if (mounted && !hasNavigated && next.hasValue && authState.hasValue) {
+        hasNavigated = true;
+        print('✅ Splash: Auth and user mode loaded, navigating to main');
+        Navigator.of(context).pushReplacementNamed('/main');
+      }
+    });
+    
+    // Fallback: navigate after maximum wait time
+    await Future.delayed(const Duration(seconds: 5));
+    if (mounted && !hasNavigated) {
+      print('⏰ Splash: Timeout waiting for auth/user mode, navigating anyway');
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

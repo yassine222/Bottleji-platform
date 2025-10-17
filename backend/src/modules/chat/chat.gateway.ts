@@ -153,8 +153,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Broadcast message to all users connected to this ticket
       this.server.to(`ticket:${data.ticketId}`).emit('new_message', message);
 
-      // Send notification to the other party if they're not in the ticket room
-      this.sendMessageNotification(message);
+      // Do not emit push notifications here to avoid duplicates.
+      // Push notifications are handled centrally in SupportTicketsService after DB save.
 
       return { success: true, messageId: message.id };
     } catch (error) {

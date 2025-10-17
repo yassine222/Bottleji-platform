@@ -5,13 +5,11 @@ import 'package:botleji/features/stats/data/models/collector_stats.dart';
 import 'package:botleji/features/stats/data/models/user_drop_stats.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/history/presentation/controllers/history_controller.dart';
-import 'package:botleji/core/theme/app_colors.dart';
 import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
-import 'dart:math' as math;
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -35,9 +33,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       final userMode = ref.read(userModeControllerProvider);
       userMode.whenData((mode) {
         if (mode == UserMode.household) {
-          final authState = ref.read(authNotifierProvider);
-          print('🔍 Stats: Auth state: $authState');
-          authState.whenData((user) {
+          print('🔍 Stats: Auth state: ${ref.read(authNotifierProvider)}');
+          ref.read(authNotifierProvider).whenData((user) {
             print('🔍 Stats: User: $user');
             if (user?.id != null) {
               print('🔍 Stats: Loading drops for household user: ${user!.id}');
@@ -75,7 +72,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   Widget _buildHouseholdStats() {
     final userDropStatsState = ref.watch(userDropStatsProvider(_selectedTimeRange.name));
-    final authState = ref.watch(authNotifierProvider);
     
     return RefreshIndicator(
       onRefresh: () async {
@@ -93,20 +89,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     // Use stats from the API
     final totalDrops = stats.total;
     final pendingDrops = stats.pending;
-    final acceptedDrops = stats.accepted;
     final collectedDrops = stats.collected;
-    final cancelledDrops = stats.cancelled;
-    final expiredDrops = stats.expired;
+    final flaggedDrops = stats.flagged ?? 0;
+    final staleDrops = stats.stale ?? 0;
+    final censoredDrops = stats.censored ?? 0;
     
-    // For now, we'll use placeholder values for bottles/cans since the API doesn't provide this yet
-    final totalBottles = 0; // TODO: Add to API
-    final totalCans = 0; // TODO: Add to API
+    // Get drops data to calculate actual bottle and can counts
+    final dropsState = ref.watch(dropsControllerProvider);
+    final drops = dropsState.maybeWhen(
+      data: (drops) => drops,
+      orElse: () => <Drop>[],
+    );
+    
+    // Calculate actual bottle and can counts from collected drops only
+    int totalBottles = 0;
+    int totalCans = 0;
+    for (final drop in drops) {
+      if (drop.status == DropStatus.collected) {
+        totalBottles += drop.numberOfBottles;
+        totalCans += drop.numberOfCans;
+      }
+    }
     final totalItems = totalBottles + totalCans;
-    
-    final collectionRate = totalDrops > 0 ? (collectedDrops / totalDrops) * 100 : 0.0;
-    
-    // Calculate average collection time (simplified - would need backend support for accurate data)
-    final averageCollectionTime = collectedDrops > 0 ? 24.0 : 0.0; // Placeholder
     
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -139,22 +143,35 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           _buildHouseholdTimeRangeSelector(),
           const SizedBox(height: 24),
           
-          // Overview cards
-          _buildHouseholdOverviewCards(
-            totalDrops: totalDrops,
-            totalItems: totalItems,
-            collectionRate: collectionRate,
-            averageCollectionTime: averageCollectionTime,
+          // Overview section - empty for now
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: const Center(
+              child: Text(
+                'Overview section\n(To be designed)',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           
           // Status breakdown
           _buildHouseholdStatusBreakdown(
             pending: pendingDrops,
-            accepted: acceptedDrops,
             collected: collectedDrops,
-            cancelled: cancelledDrops,
-            expired: expiredDrops,
+            flagged: flaggedDrops,
+            stale: staleDrops,
+            censored: censoredDrops,
             total: totalDrops,
           ),
           const SizedBox(height: 24),
@@ -169,6 +186,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           
           // Recent drops
           _buildHouseholdRecentDropsSection(),
+          
+          // Bottom padding to prevent bottom nav bar interference
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom + 100, // Bottom nav height + extra padding
+          ),
         ],
       ),
     );
@@ -192,10 +214,20 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         startDate = DateTime(now.year - 1, now.month, now.day);
         break;
       case TimeRange.allTime:
-        return drops; // No filtering for all time
+        return _filterActiveDrops(drops); // Filter active drops for all time
     }
     
-    return drops.where((drop) => drop.createdAt.isAfter(startDate)).toList();
+    final timeFilteredDrops = drops.where((drop) => drop.createdAt.isAfter(startDate)).toList();
+    return _filterActiveDrops(timeFilteredDrops);
+  }
+
+  List<Drop> _filterActiveDrops(List<Drop> drops) {
+    // Only show active drops: not flagged, not censored, not stale
+    return drops.where((drop) {
+      return !drop.isSuspicious && 
+             !drop.isCensored && 
+             drop.status != DropStatus.stale;
+    }).toList();
   }
 
   Widget _buildTimeRangeSelector() {
@@ -252,77 +284,71 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildHouseholdTimeRangeSelector() {
-    return GestureDetector(
-      onTap: _showHouseholdTimeRangeDialog,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Time Range',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
         ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              _selectedTimeRange.displayName,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            const Icon(Icons.arrow_drop_down, color: Colors.grey),
-          ],
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: TimeRange.values.map((timeRange) {
+              final isSelected = _selectedTimeRange == timeRange;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(timeRange.displayName),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedTimeRange = timeRange;
+                    });
+                    
+                    // Refresh drops when time range changes (only for household mode)
+                    final userMode = ref.read(userModeControllerProvider);
+                    userMode.whenData((mode) {
+                      if (mode == UserMode.household) {
+                        ref.read(authNotifierProvider).whenData((user) {
+                          if (user?.id != null) {
+                            final dropsController = ref.read(dropsControllerProvider.notifier);
+                            dropsController.loadUserDrops(user!.id!);
+                          }
+                        });
+                      }
+                    });
+                  },
+                  selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+                  checkmarkColor: const Color(0xFF00695C),
+                  labelStyle: TextStyle(
+                    color: isSelected ? const Color(0xFF00695C) : Colors.grey[700],
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  void _showHouseholdTimeRangeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Time Range'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: TimeRange.values.map((timeRange) {
-            return ListTile(
-              title: Text(timeRange.displayName),
-              trailing: _selectedTimeRange == timeRange
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                setState(() {
-                  _selectedTimeRange = timeRange;
-                });
-                Navigator.of(context).pop();
-                
-                // Refresh drops when time range changes (only for household mode)
-                final userMode = ref.read(userModeControllerProvider);
-                userMode.whenData((mode) {
-                  if (mode == UserMode.household) {
-                    final authState = ref.read(authNotifierProvider);
-                    authState.whenData((user) {
-                      if (user?.id != null) {
-                        final dropsController = ref.read(dropsControllerProvider.notifier);
-                        dropsController.loadUserDrops(user!.id!);
-                      }
-                    });
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
 
   Widget _buildHouseholdOverviewCards({
     required int totalDrops,
+    required int pendingDrops,
+    required int collectedDrops,
+    required int flaggedDrops,
+    required int staleDrops,
+    required int censoredDrops,
+    required int totalBottles,
+    required int totalCans,
     required int totalItems,
-    required double collectionRate,
-    required double averageCollectionTime,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,42 +364,21 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildHouseholdStatCard(
-                title: 'Total Drops',
-                value: totalDrops.toString(),
-                icon: Icons.add_location,
-                color: Colors.blue,
+              child: _buildHouseholdDropsOverviewCard(
+                totalDrops: totalDrops,
+                pendingDrops: pendingDrops,
+                collectedDrops: collectedDrops,
+                flaggedDrops: flaggedDrops,
+                staleDrops: staleDrops,
+                censoredDrops: censoredDrops,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildHouseholdStatCard(
-                title: 'Items Recycled',
-                value: _formatLargeNumber(totalItems),
-                icon: Icons.recycling,
-                color: Colors.green,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildHouseholdStatCard(
-                title: 'Collection Rate',
-                value: '${collectionRate.toStringAsFixed(1)}%',
-                icon: Icons.check_circle,
-                color: Colors.orange,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHouseholdStatCard(
-                title: 'Avg. Collection Time',
-                value: '${averageCollectionTime.toStringAsFixed(1)}h',
-                icon: Icons.schedule,
-                color: Colors.purple,
+              child: _buildHouseholdRecyclingOverviewCard(
+                totalBottles: totalBottles,
+                totalCans: totalCans,
+                totalItems: totalItems,
               ),
             ),
           ],
@@ -439,12 +444,151 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
+  Widget _buildHouseholdDropsOverviewCard({
+    required int totalDrops,
+    required int pendingDrops,
+    required int collectedDrops,
+    required int flaggedDrops,
+    required int staleDrops,
+    required int censoredDrops,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.add_location, color: Color(0xFF00695C), size: 20),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            totalDrops.toString(),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF00695C),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Total Drops',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Status breakdown
+          _buildStatusRow('Active', pendingDrops, totalDrops, Colors.orange),
+          const SizedBox(height: 8),
+          _buildStatusRow('Collected', collectedDrops, totalDrops, Colors.green),
+          const SizedBox(height: 8),
+          _buildStatusRow('Flagged', flaggedDrops, totalDrops, Colors.red),
+          const SizedBox(height: 8),
+          _buildStatusRow('Stale', staleDrops, totalDrops, Colors.brown),
+          const SizedBox(height: 8),
+          _buildStatusRow('Censored', censoredDrops, totalDrops, Colors.purple),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHouseholdRecyclingOverviewCard({
+    required int totalBottles,
+    required int totalCans,
+    required int totalItems,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.recycling, color: Colors.green, size: 20),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _formatLargeNumber(totalItems),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Items Recycled',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Item breakdown
+          _buildItemCountWithCustomIcon(
+            'Bottles',
+            totalBottles,
+            'assets/icons/water-bottle.png',
+          ),
+          const SizedBox(height: 8),
+          _buildItemCountWithCustomIcon(
+            'Cans',
+            totalCans,
+            'assets/icons/can.png',
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHouseholdStatusBreakdown({
     required int pending,
-    required int accepted,
     required int collected,
-    required int cancelled,
-    required int expired,
+    required int flagged,
+    required int stale,
+    required int censored,
     required int total,
   }) {
     return Column(
@@ -477,13 +621,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             children: [
               _buildStatusRow('Pending', pending, total, Colors.orange),
               const SizedBox(height: 8),
-              _buildStatusRow('Accepted', accepted, total, Colors.blue),
-              const SizedBox(height: 8),
               _buildStatusRow('Collected', collected, total, Colors.green),
               const SizedBox(height: 8),
-              _buildStatusRow('Cancelled', cancelled, total, Colors.red),
+              _buildStatusRow('Flagged', flagged, total, Colors.red),
               const SizedBox(height: 8),
-              _buildStatusRow('Expired', expired, total, Colors.purple),
+              _buildStatusRow('Stale', stale, total, Colors.brown),
+              const SizedBox(height: 8),
+              _buildStatusRow('Censored', censored, total, Colors.purple),
             ],
           ),
         ),
@@ -1337,10 +1481,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                               runSpacing: 4,
                               children: [
                                 if (dropoff.numberOfBottles > 0) ...[
-                                  _buildItemCount('Bottles', dropoff.numberOfBottles, Icons.water_drop),
+                                  _buildItemCountWithCustomIcon('Bottles', dropoff.numberOfBottles, 'assets/icons/water-bottle.png'),
                                 ],
                                 if (dropoff.numberOfCans > 0) ...[
-                                  _buildItemCount('Cans', dropoff.numberOfCans, Icons.local_drink),
+                                  _buildItemCountWithCustomIcon('Cans', dropoff.numberOfCans, 'assets/icons/can.png'),
                                 ],
                               ],
                             ),
@@ -1505,7 +1649,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       ),);
   }
 
-  Widget _buildItemCount(String label, int count, IconData icon) {
+
+  Widget _buildItemCountWithCustomIcon(String label, int count, String iconPath) {
     // Format large numbers with K, M suffixes
     String formattedCount = _formatLargeNumber(count);
     
@@ -1519,7 +1664,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.grey[600]),
+          Image.asset(
+            iconPath,
+            width: 12,
+            height: 12,
+            color: Colors.grey[600],
+          ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -1534,7 +1684,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         ],
       ),
     );
-
   }
 
   String _formatLargeNumber(int number) {
@@ -2148,40 +2297,6 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
 
 
 
-  Widget _getBottleTypeIcon(String bottleType) {
-  switch (bottleType.toLowerCase()) {
-    case 'glass':
-      return Image.asset(
-        'assets/icons/water-bottle.png',
-        width: 16,
-        height: 16,
-      );
-    case 'plastic':
-      return Image.asset(
-        'assets/icons/water-bottle.png',
-        width: 16,
-        height: 16,
-      );
-    case 'aluminum':
-      return Image.asset(
-        'assets/icons/can.png',
-        width: 16,
-        height: 16,
-      );
-    case 'mixed':
-      return Image.asset(
-        'assets/icons/mixed.png',
-        width: 16,
-        height: 16,
-      );
-    default:
-      return Icon(
-        Icons.info,
-        size: 16,
-        color: Colors.grey[600],
-      );
-  }
-}
 
 
   String _getStaticMapUrl(LatLng location) {

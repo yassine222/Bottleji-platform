@@ -391,7 +391,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     if (mounted) {
       debugPrint('✅ Context is mounted, attempting navigation...');
       try {
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
         debugPrint('✅ Navigation command sent successfully');
       } catch (e) {
         debugPrint('❌ Navigation failed: $e');
@@ -1394,6 +1394,26 @@ void _startLocationStream() {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              // Confirm Collection Button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _confirmCollection(context),
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Confirm Collection'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF00695C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ],
         ),
@@ -1581,6 +1601,7 @@ Widget build(BuildContext context) {
 
                 const SizedBox(height: 12),
 
+
                 // Simple Collection Button (appears under navigation button)
                 if (_showSlideButton)
                   Container(
@@ -1594,12 +1615,12 @@ Widget build(BuildContext context) {
                           final collectorId = authState?.value?.id;
 
                           if (collectorId != null) {
-                            debugPrint('🔘 Updating drop status to collected...');
+                            debugPrint('🔘 Confirming collection (completes attempt and adds to timeline)...');
                             await ref
                                 .read(dropsControllerProvider.notifier)
-                                .updateDropStatus(widget.dropId, DropStatus.collected);
+                                .confirmCollection(widget.dropId);
 
-                            debugPrint('🔘 Drop status updated successfully!');
+                            debugPrint('🔘 Collection confirmed successfully!');
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Drop marked as collected!'),
@@ -1803,7 +1824,7 @@ Widget _buildSlideButton() {
       
       if (collectorId != null) {
         await ref.read(dropsControllerProvider.notifier)
-            .updateDropStatus(widget.dropId, DropStatus.collected);
+            .confirmCollection(widget.dropId);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2158,7 +2179,7 @@ Future<void> _handleCancellation(CancellationReason reason) async {
       );
 
       // Navigate back to home screen
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
   } catch (e) {
     if (mounted) {
@@ -2300,6 +2321,75 @@ Future<void> _handleCancellation(CancellationReason reason) async {
     }
   }
 
+  void _confirmCollection(BuildContext context) async {
+    try {
+      debugPrint('✅ Confirm Collection button pressed!');
+      
+      final authState = ref.read(authNotifierProvider);
+      final collectorId = authState?.value?.id;
+
+      if (collectorId != null) {
+        debugPrint('✅ Confirming collection (completes attempt and adds to timeline)...');
+        
+        // Confirm collection (this completes the collection attempt and adds to timeline)
+        await ref
+            .read(dropsControllerProvider.notifier)
+            .confirmCollection(widget.dropId);
+
+        debugPrint('✅ Collection confirmed successfully!');
+        
+        // Wait a moment for real-time updates to propagate
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Force refresh the drops list to ensure UI updates
+        debugPrint('🔄 Force refreshing drops list...');
+        await ref.read(dropsControllerProvider.notifier).loadDrops();
+        
+        // CRITICAL: Clear the active collection state to stop the timer
+        debugPrint('🧹 Clearing active collection state...');
+        await ref.read(navigationControllerProvider.notifier).completeCollection();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Drop marked as collected!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          // Wait for snackbar to show, then navigate
+          await Future.delayed(const Duration(milliseconds: 1000));
+          
+          if (mounted) {
+            // Navigate back to home screen
+            Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+          }
+        }
+      } else {
+        debugPrint('❌ No collector ID found');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No collector ID found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error confirming collection: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error confirming collection: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _temporaryExit() {
     // Cancel timers
     _timer?.cancel();
@@ -2323,7 +2413,7 @@ Future<void> _handleCancellation(CancellationReason reason) async {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
               },
               child: const Text('Exit'),
             ),

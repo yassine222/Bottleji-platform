@@ -13,6 +13,7 @@ import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart'; // Added import for NavigationScreen
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart'; // Added import for navigationControllerProvider
+import 'package:intl/intl.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
 
 class DropsMapScreen extends ConsumerStatefulWidget {
@@ -317,7 +318,8 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                         final filteredForMap = drops.where((d) =>
                           !d.isCensored &&
                           !d.isSuspicious &&
-                          (d.cancellationCount) < 3
+                          (d.cancellationCount) < 3 &&
+                          d.status != DropStatus.stale
                         ).toList();
                         dropMarkers = filteredForMap.map((drop) {
                           return Marker(
@@ -1363,21 +1365,32 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
         return Colors.red;
       case DropStatus.expired:
         return Colors.red;
+      case DropStatus.stale:
+        return Colors.brown;
     }
   }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final twoDaysAgo = today.subtract(const Duration(days: 2));
+    final threeDaysAgo = today.subtract(const Duration(days: 3));
     
-    if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final timeStr = DateFormat('h:mm a').format(date);
+    
+    if (dateOnly == today) {
+      return 'Today at $timeStr';
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday at $timeStr';
+    } else if (dateOnly == twoDaysAgo) {
+      return '2 days ago';
+    } else if (dateOnly == threeDaysAgo) {
+      return '3 days ago';
     } else {
-      return 'Just now';
+      // More than 3 days ago - show exact date
+      return DateFormat('MMM dd, yyyy').format(date);
     }
   }
 
@@ -1393,6 +1406,8 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
         return BitmapDescriptor.hueRed;
       case DropStatus.expired:
         return BitmapDescriptor.hueRed;
+      case DropStatus.stale:
+        return BitmapDescriptor.hueViolet;
     }
   }
 

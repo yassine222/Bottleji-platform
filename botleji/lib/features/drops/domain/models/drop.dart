@@ -13,6 +13,7 @@ enum DropStatus {
   collected,  // Drop has been collected
   cancelled,  // Drop was cancelled by the household
   expired,    // Drop expired because it wasn't collected within time limit
+  stale,      // Drop is too old and likely collected by external collectors
 }
 
 enum CancellationReason {

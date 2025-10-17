@@ -1289,45 +1289,48 @@ export class DropoffsService {
     
     const userDrops = await this.dropoffModel.find(query).exec();
 
-    // Count drops by their current status
+    // Count drops by their current status and flags
     let pendingCount = 0;
-    let acceptedCount = 0;
     let collectedCount = 0;
-    let cancelledCount = 0;
-    let expiredCount = 0;
+    let flaggedCount = 0;
+    let staleCount = 0;
+    let censoredCount = 0;
 
     userDrops.forEach(drop => {
-      switch (drop.status) {
-        case DropoffStatus.PENDING:
-          pendingCount++;
-          break;
-        case DropoffStatus.ACCEPTED:
-          acceptedCount++;
-          break;
-        case DropoffStatus.COLLECTED:
-          collectedCount++;
-          break;
-        case DropoffStatus.CANCELLED:
-          cancelledCount++;
-          break;
-        case DropoffStatus.EXPIRED:
-          expiredCount++;
-          break;
+      // Check for flagged drops (suspicious or 3+ cancellations)
+      if (drop.isSuspicious || drop.cancellationCount >= 3) {
+        flaggedCount++;
+      }
+      // Check for censored drops
+      else if (drop.isCensored) {
+        censoredCount++;
+      }
+      // Check for stale drops
+      else if (drop.status === DropoffStatus.STALE) {
+        staleCount++;
+      }
+      // Check for pending drops
+      else if (drop.status === DropoffStatus.PENDING) {
+        pendingCount++;
+      }
+      // Check for collected drops
+      else if (drop.status === DropoffStatus.COLLECTED) {
+        collectedCount++;
       }
     });
 
     // Debug logging
     console.log('🔍 User Drop Stats Debug for user:', userId);
     console.log('📊 Total drops created:', userDrops.length);
-    console.log('📊 Status counts - Pending:', pendingCount, 'Accepted:', acceptedCount, 'Collected:', collectedCount, 'Cancelled:', cancelledCount, 'Expired:', expiredCount);
+    console.log('📊 Status counts - Pending:', pendingCount, 'Collected:', collectedCount, 'Flagged:', flaggedCount, 'Stale:', staleCount, 'Censored:', censoredCount);
 
     const stats = {
       total: userDrops.length,
       pending: pendingCount,
-      accepted: acceptedCount,
       collected: collectedCount,
-      cancelled: cancelledCount,
-      expired: expiredCount,
+      flagged: flaggedCount,
+      stale: staleCount,
+      censored: censoredCount,
       timeRange,
     };
 

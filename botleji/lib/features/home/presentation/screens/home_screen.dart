@@ -1568,7 +1568,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         .where((drop) =>
                             drop.userId == currentUserId &&
                             drop.isSuspicious != true &&
-                            (drop.cancellationCount) < 3)
+                            (drop.cancellationCount) < 3 &&
+                            drop.status != DropStatus.stale)
                         .toList();
                   },
                   orElse: () => drops,
@@ -1716,7 +1717,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         .where((drop) =>
                             drop.userId == currentUserId &&
                             drop.isSuspicious != true &&
-                            (drop.cancellationCount) < 3)
+                            (drop.cancellationCount) < 3 &&
+                            drop.status != DropStatus.stale)
                         .toList();
                   },
                   orElse: () => drops,
@@ -1787,6 +1789,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return BitmapDescriptor.hueRed;
       case DropStatus.expired:
         return BitmapDescriptor.hueRed;
+      case DropStatus.stale:
+        return BitmapDescriptor.hueViolet;
     }
   }
 
@@ -3871,6 +3875,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return Colors.red;
       case DropStatus.expired:
         return Colors.red;
+      case DropStatus.stale:
+        return Colors.brown;
     }
   }
 

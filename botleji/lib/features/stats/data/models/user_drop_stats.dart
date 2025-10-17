@@ -1,19 +1,19 @@
 class UserDropStats {
   final int total;
   final int pending;
-  final int accepted;
   final int collected;
-  final int cancelled;
-  final int expired;
+  final int flagged;
+  final int stale;
+  final int censored;
   final String? timeRange;
 
   UserDropStats({
     required this.total,
     required this.pending,
-    required this.accepted,
     required this.collected,
-    required this.cancelled,
-    required this.expired,
+    required this.flagged,
+    required this.stale,
+    required this.censored,
     this.timeRange,
   });
 
@@ -21,10 +21,10 @@ class UserDropStats {
     return UserDropStats(
       total: json['total'] ?? 0,
       pending: json['pending'] ?? 0,
-      accepted: json['accepted'] ?? 0,
       collected: json['collected'] ?? 0,
-      cancelled: json['cancelled'] ?? 0,
-      expired: json['expired'] ?? 0,
+      flagged: json['flagged'] ?? 0,
+      stale: json['stale'] ?? 0,
+      censored: json['censored'] ?? 0,
       timeRange: json['timeRange'],
     );
 
@@ -34,10 +34,10 @@ class UserDropStats {
     return {
       'total': total,
       'pending': pending,
-      'accepted': accepted,
       'collected': collected,
-      'cancelled': cancelled,
-      'expired': expired,
+      'flagged': flagged,
+      'stale': stale,
+      'censored': censored,
       'timeRange': timeRange,
     };
   }

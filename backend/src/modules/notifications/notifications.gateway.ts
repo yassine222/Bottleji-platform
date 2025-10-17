@@ -68,13 +68,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       
       console.log(`✅ User ${userId} connected`);
       
-      // Send welcome notification
-      this.sendNotificationToUser(userId, {
-        type: 'connection',
-        title: 'Connected',
-        message: 'You are now connected to real-time notifications',
-        timestamp: new Date()
-      });
+      // Removed welcome notification - no longer needed for testing
 
     } catch (error) {
       console.error('❌ Connection error:', error);

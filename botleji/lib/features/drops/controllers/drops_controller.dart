@@ -43,7 +43,13 @@ final userDropsCountProvider = Provider<int>((ref) {
       if (mode != UserMode.household) return 0;
       
       return dropsState.when(
-        data: (drops) => drops.where((d) => !d.isCensored).length,
+        data: (drops) => drops.where((d) => 
+          !d.isSuspicious && 
+          !d.isCensored && 
+          d.cancellationCount < 3 &&
+          (d.status == DropStatus.pending || d.status == DropStatus.accepted) &&
+          d.status != DropStatus.stale
+        ).length,
         loading: () => 0,
         error: (_, __) => 0,
       );
@@ -281,6 +287,45 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
+  }
+
+  /// Handle real-time drop status updates from WebSocket notifications
+  void handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) {
+    debugPrint('🔄 DropsController: Handling drop status update - $status for drop $dropId');
+    
+    state.whenData((drops) {
+      final updatedDrops = drops.map((drop) {
+        if (drop.id == dropId) {
+          // Update drop status based on notification
+          DropStatus newStatus;
+          switch (status) {
+            case 'drop_accepted':
+              newStatus = DropStatus.accepted;
+              break;
+            case 'drop_collected':
+              newStatus = DropStatus.collected;
+              break;
+            case 'drop_cancelled':
+              newStatus = DropStatus.cancelled;
+              break;
+            case 'drop_expired':
+              newStatus = DropStatus.expired;
+              break;
+            default:
+              return drop; // No change needed
+          }
+          
+          // Create updated drop with new status
+          final updatedDrop = drop.copyWith(status: newStatus);
+          debugPrint('🔄 DropsController: Updated drop $dropId status to ${newStatus.name}');
+          return updatedDrop;
+        }
+        return drop;
+      }).toList();
+      
+      state = AsyncValue.data(updatedDrops);
+      debugPrint('🔄 DropsController: Drop list updated with new status');
+    });
   }
 
   Future<void> cancelAcceptedDrop(String dropId, String reason, String cancelledByCollectorId) async {

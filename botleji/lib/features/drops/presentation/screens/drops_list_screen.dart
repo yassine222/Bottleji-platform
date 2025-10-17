@@ -27,6 +27,9 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   // Filter states
   DropStatus? _selectedStatus; // For household users
   
+  // Chip filter for household users
+  String _selectedChipFilter = 'Active';
+  
   // Account lock card state
   bool _lockCardDismissed = false;
   String _selectedDateFilter = 'All';
@@ -679,7 +682,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                       children: [
                         const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
                         const SizedBox(width: 6),
-                        Text('Created ${DateFormat('MMM d, yyyy – HH:mm').format(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text('Created ${_formatRelativeDate(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -775,16 +778,16 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                 ? _filteredDrops
                 : _filteredDrops.where((drop) => drop.status == DropStatus.pending).toList();
             
-            // Household: Tabbed view for Good, Cancelled/Flagged, Censored
+            // Household: Modern chip-based filter system
             final isHousehold = mode == UserMode.household;
             // Use the same baseline as the visible list for counts to avoid mismatches
             final allDropsForTabs = displayDrops;
             // Precompute filtered lists for counts and rendering
-            // Good drops: only valid ones (pending/accepted, not suspicious, not censored, <3 cancellations)
+            // Good drops: only active drops (pending or accepted, not suspicious, not censored, not stale, <3 cancellations)
             final goodDrops = isHousehold
                 ? allDropsForTabs.where((d) =>
                     !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
-                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
+                    (d.status == DropStatus.pending || d.status == DropStatus.accepted) && d.status != DropStatus.stale
                   ).toList()
                 : displayDrops;
             // Flagged/Cancelled: suspicious or cancelled 3+ times
@@ -794,6 +797,14 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             // Censored: only censored drops
             final censoredDrops = isHousehold
                 ? allDropsForTabs.where((d) => d.isCensored).toList()
+                : const <Drop>[];
+            // Stale: drops with stale status (excluding censored)
+            final staleDrops = isHousehold
+                ? allDropsForTabs.where((d) => d.status == DropStatus.stale && !d.isCensored).toList()
+                : const <Drop>[];
+            // Collected: drops with collected status
+            final collectedDrops = isHousehold
+                ? allDropsForTabs.where((d) => d.status == DropStatus.collected).toList()
                 : const <Drop>[];
 
             // Debug counts to diagnose mismatches
@@ -810,94 +821,19 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
-              child: isHousehold ? DefaultTabController(
-                length: 3,
-                child: Column(
-                  children: [
-                    Material(
-                      color: Colors.white,
-                      child: TabBar(
-                        labelColor: const Color(0xFF00695C),
-                        unselectedLabelColor: Colors.grey,
-                        indicatorColor: const Color(0xFF00695C),
-                        tabs: [
-                          Tab(text: 'Drops (${goodDrops.length})'),
-                          Tab(text: 'Cancelled/Flagged (${flaggedDrops.length})'),
-                          Tab(text: 'Censored (${censoredDrops.length})'),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          // Tab 1: Good drops (pending/accepted, not suspicious, not censored, <3 cancellations)
-                          CustomScrollView(
-                            slivers: [
-                              _buildHeader(mode, displayDrops),
-                              SliverPadding(
-                                padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  allDropsForTabs.where((d) =>
-                                    !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
-                                    (d.status == DropStatus.pending || d.status == DropStatus.accepted)
-                                  ).toList(),
-                                  mode,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Tab 2: Cancelled/Flagged
-                          CustomScrollView(
-                            slivers: [
-                              _buildHeader(mode, displayDrops),
-                              SliverPadding(
-                                padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  allDropsForTabs.where((d) => d.isSuspicious || (d.cancellationCount) >= 3).toList(),
-                                  mode,
-                                ),
-                              ),
-                              SliverToBoxAdapter(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Icon(Icons.info_outline, color: Colors.red, size: 20),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Drops in this tab were either cancelled or flagged due to multiple cancellations. Flagged drops are hidden from the map.',
-                                          style: Theme.of(context).textTheme.bodySmall,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                          // Tab 3: Censored
-                          CustomScrollView(
-                            slivers: [
-                              _buildHeader(mode, displayDrops),
-                              SliverPadding(
-                                padding: const EdgeInsets.all(16),
-                                sliver: _buildDropsSliverList(
-                                  displayDrops.where((d) => d.isCensored).toList(),
-                                  mode,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: isHousehold ? _buildHouseholdDropsWithChips(
+                mode, 
+                displayDrops, 
+                goodDrops, 
+                flaggedDrops, 
+                censoredDrops, 
+                staleDrops,
+                collectedDrops
               ) : CustomScrollView(
               slivers: [
-                _buildHeader(mode, displayDrops),
+                SliverToBoxAdapter(
+          child: _buildHeader(mode, displayDrops),
+        ),
                 
                 // Filter summary (if filters are applied)
                 if ((mode == UserMode.household && (_selectedStatus != null || _selectedDateFilter != 'All')) ||
@@ -979,6 +915,13 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.all(16),
                   sliver: _buildDropsSliverList(displayDrops, mode),
+                ),
+                
+                // Bottom padding to prevent bottom nav bar interference
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + 100, // Bottom nav height + extra padding
+                  ),
                 ),
               ],
             ),
@@ -1128,7 +1071,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
             Row(children: [
               const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
-              Text('Created ${DateFormat('MMM d, yyyy – HH:mm').format(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text('Created ${_formatRelativeDate(censored.createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ]),
             const SizedBox(height: 12),
             Container(
@@ -1227,6 +1170,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
               showActions: mode == UserMode.collector,
               currentLocation: _currentLocation,
               hasActiveCollection: hasActiveCollection,
+              isHousehold: mode == UserMode.household,
               onStatusUpdate: mode == UserMode.collector 
                   ? (newStatus) async {
                       if (newStatus == DropStatus.accepted) {
@@ -1242,8 +1186,10 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                           .updateDropStatus(drop.id, newStatus);
                       _loadDrops();
                     },
-              onEdit: mode == UserMode.household ? () => _showEditDropDialog(drop) : null,
-              onDelete: mode == UserMode.household && drop.status == DropStatus.pending 
+              onEdit: mode == UserMode.household && !drop.isSuspicious && !drop.isCensored && drop.cancellationCount < 3
+                  ? () => _showEditDropDialog(drop) 
+                  : null,
+              onDelete: mode == UserMode.household && drop.status == DropStatus.pending && !drop.isSuspicious && !drop.isCensored && drop.cancellationCount < 3
                   ? () => _showDeleteConfirmation(drop) 
                   : null,
             ),
@@ -1254,40 +1200,232 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     );
   }
 
-  // Shared header used in tabbed and single views
-  SliverAppBar _buildHeader(UserMode mode, List<Drop> displayDrops) {
-    return SliverAppBar(
-      floating: true,
-      snap: true,
-      pinned: false,
-      backgroundColor: Colors.white,
-      elevation: 0,
-      toolbarHeight: 80,
-      automaticallyImplyLeading: false,
-      flexibleSpace: Container(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Text(
-              mode == UserMode.collector ? 'All Drops' : 'My Drops',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00695C),
-                  ),
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: _showFilterDialog,
-              color: const Color(0xFF00695C),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadDrops,
-              color: const Color(0xFF00695C),
-            ),
-          ],
+  // Simple header widget
+  Widget _buildHeader(UserMode mode, List<Drop> displayDrops) {
+    return Container(
+      decoration: BoxDecoration(
+        
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Text(
+            mode == UserMode.collector ? 'All Drops' : 'My Drops',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C),
+                ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterDialog,
+            color: const Color(0xFF00695C),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadDrops,
+            color: const Color(0xFF00695C),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final twoDaysAgo = today.subtract(const Duration(days: 2));
+    final threeDaysAgo = today.subtract(const Duration(days: 3));
+    
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final timeStr = DateFormat('h:mm a').format(date);
+    
+    if (dateOnly == today) {
+      return 'Today at $timeStr';
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday at $timeStr';
+    } else if (dateOnly == twoDaysAgo) {
+      return '2 days ago';
+    } else if (dateOnly == threeDaysAgo) {
+      return '3 days ago';
+    } else {
+      // More than 3 days ago - show exact date
+      return DateFormat('MMM dd, yyyy').format(date);
+    }
+  }
+
+  Widget _buildHouseholdDropsWithChips(
+    UserMode mode,
+    List<Drop> displayDrops,
+    List<Drop> goodDrops,
+    List<Drop> flaggedDrops,
+    List<Drop> censoredDrops,
+    List<Drop> staleDrops,
+    List<Drop> collectedDrops,
+  ) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _buildHeader(mode, displayDrops),
         ),
+        
+        // Info message based on selected filter - moved to top for better visibility
+        if (_selectedChipFilter != 'Active')
+          SliverToBoxAdapter(
+            child: _buildInfoMessage(),
+          ),
+        
+        // Modern chip filter section
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                // Filter chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip('Active', goodDrops.length),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Collected', collectedDrops.length),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Flagged', flaggedDrops.length),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Censored', censoredDrops.length),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Stale', staleDrops.length),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+        
+        // Drops list based on selected filter
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: _buildFilteredDropsList(),
+        ),
+        
+        
+        // Bottom padding to prevent bottom nav bar interference
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: MediaQuery.of(context).padding.bottom + 100, // Bottom nav height + extra padding
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, int count) {
+    final isSelected = _selectedChipFilter == label;
+    return FilterChip(
+      label: Text('$label ($count)'),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedChipFilter = selected ? label : 'Active';
+        });
+      },
+      selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+      checkmarkColor: const Color(0xFF00695C),
+      labelStyle: TextStyle(
+        color: isSelected ? const Color(0xFF00695C) : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? const Color(0xFF00695C) : Colors.grey[300]!,
+        width: isSelected ? 2 : 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+    );
+  }
+
+  Widget _buildFilteredDropsList() {
+    List<Drop> filteredDrops = [];
+    
+    switch (_selectedChipFilter) {
+      case 'All':
+        filteredDrops = _allDrops;
+        break;
+      case 'Active':
+        filteredDrops = _allDrops.where((d) =>
+          !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
+          (d.status == DropStatus.pending || d.status == DropStatus.accepted) && d.status != DropStatus.stale
+        ).toList();
+        break;
+      case 'Collected':
+        filteredDrops = _allDrops.where((d) => d.status == DropStatus.collected).toList();
+        break;
+      case 'Flagged':
+        filteredDrops = _allDrops.where((d) => d.isSuspicious || (d.cancellationCount) >= 3).toList();
+        break;
+      case 'Censored':
+        filteredDrops = _allDrops.where((d) => d.isCensored).toList();
+        break;
+      case 'Stale':
+        filteredDrops = _allDrops.where((d) => d.status == DropStatus.stale && !d.isCensored).toList();
+        break;
+    }
+    
+    return _buildDropsSliverList(filteredDrops, UserMode.household);
+  }
+
+  Widget _buildInfoMessage() {
+    String message = '';
+    Color iconColor = Colors.grey;
+    
+    switch (_selectedChipFilter) {
+      case 'Collected':
+        message = 'Drops in this filter have been successfully collected by a collector. These drops show your recycling impact and cannot be edited.';
+        iconColor = Colors.green;
+        break;
+      case 'Flagged':
+        message = 'Drops in this filter were flagged due to multiple cancellations or suspicious activity. Flagged drops are hidden from the map and cannot be edited.';
+        iconColor = Colors.red;
+        break;
+      case 'Censored':
+        message = 'Drops in this filter were censored due to inappropriate content. Censored drops are hidden from the map and cannot be edited.';
+        iconColor = Colors.orange;
+        break;
+      case 'Stale':
+        message = 'Drops in this filter were marked as stale because they were older than 3 days and likely collected by external collectors. Stale drops are hidden from the map and cannot be edited.';
+        iconColor = Colors.brown;
+        break;
+    }
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: iconColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: iconColor, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: iconColor.withOpacity(0.8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

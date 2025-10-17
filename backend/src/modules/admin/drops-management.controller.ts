@@ -81,9 +81,9 @@ export class DropsManagementController {
     // Send notifications to affected users
     for (const userId of result.userIds) {
       this.notificationsGateway.sendNotificationToUser(userId, {
-        type: 'drop_removed',
-        title: 'Drop Removed',
-        message: 'Your drop has been removed as it was older than 3 days and not collected.',
+        type: 'drop_stale',
+        title: 'Drop Marked as Stale',
+        message: 'Your drop has been marked as stale as it was older than 3 days and likely collected by external collectors.',
         data: {},
         timestamp: new Date(),
       });
@@ -94,6 +94,22 @@ export class DropsManagementController {
       hiddenCount: result.hiddenCount,
       notificationsSent: result.userIds.length,
     };
+  }
+
+  /**
+   * Get stale drops
+   * GET /admin/drops/stale
+   */
+  @Get('stale')
+  async getStaleDrops(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const result = await this.dropsManagementService.getStaleDrops({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
+    });
+    return { success: true, ...result };
   }
 
   /**

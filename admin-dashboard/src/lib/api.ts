@@ -111,6 +111,9 @@ export const usersAPI = {
   unbanUser: (userId: string) =>
     api.put(`/admin/users/${userId}/unban`),
   
+  resetUserWarnings: (userId: string) =>
+    api.put(`/admin/users/${userId}/reset-warnings`),
+  
   deleteUser: (userId: string) =>
     api.delete(`/admin/users/${userId}`),
   

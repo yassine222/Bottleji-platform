@@ -56,6 +56,9 @@ function TicketDetailModal({ ticket, onClose, onMessageSent, onStatusChange }: T
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [socketRef, setSocketRef] = useState<any>(null);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -84,6 +87,60 @@ function TicketDetailModal({ ticket, onClose, onMessageSent, onStatusChange }: T
       setError(err.response?.data?.message || 'Failed to update status');
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleConnectToChat = async () => {
+    if (connecting || connected) return;
+    try {
+      setConnecting(true);
+      setError(null);
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      if (!token) {
+        setError('Missing admin token. Please re-login.');
+        setConnecting(false);
+        return;
+      }
+
+      const { io } = await import('socket.io-client');
+      const socket = io('http://localhost:3000/chat', {
+        auth: { token },
+        transports: ['websocket'],
+        timeout: 10000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('Connection timeout')), 10000);
+        socket.on('connect', () => {
+          clearTimeout(t);
+          resolve();
+        });
+        socket.on('connect_error', (err: any) => {
+          clearTimeout(t);
+          reject(err);
+        });
+      });
+
+      // Join the ticket room as agent
+      socket.emit('join_ticket', { ticketId: ticket.id, senderType: 'agent' });
+
+      // Optional: listen for confirmation/events
+      socket.on('chat_connected', () => {
+        // no-op
+      });
+
+      setSocketRef(socket);
+      setConnected(true);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to connect to chat');
+    } finally {
+      setConnecting(false);
     }
   };
 
@@ -158,6 +215,16 @@ function TicketDetailModal({ ticket, onClose, onMessageSent, onStatusChange }: T
                 <option value="closed">Closed</option>
                 <option value="on_hold">On Hold</option>
               </select>
+
+              <button
+                type="button"
+                onClick={handleConnectToChat}
+                disabled={connecting || connected}
+                className={`px-4 py-2 rounded-lg text-white text-sm font-semibold transition-all shadow ${connected ? 'bg-green-600 cursor-default' : 'bg-blue-600 hover:bg-blue-700'}`}
+                title={connected ? 'Connected to chat' : 'Connect to chat for this ticket'}
+              >
+                {connected ? 'Connected to Chat' : (connecting ? 'Connecting…' : 'Connect to Chat')}
+              </button>
             </div>
           </div>
 

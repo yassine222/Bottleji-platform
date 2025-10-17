@@ -42,10 +42,11 @@ export class DropsManagementService {
       isSuspicious: true,
     });
 
-    // Old drops (>3 days, not collected)
+    // Old drops (>3 days, not collected, not stale)
     const oldDrops = await this.dropModel.countDocuments({
       createdAt: { $lt: threeDaysAgo },
-      status: { $ne: 'collected' },
+      status: { $in: ['pending', 'accepted', 'cancelled', 'expired'] },
+      isSuspicious: { $ne: true },
     });
 
     // Drops by status
@@ -222,7 +223,7 @@ export class DropsManagementService {
     const oldDrops = await this.dropModel
       .find({
         createdAt: { $lt: threeDaysAgo },
-        status: { $ne: 'collected' },
+        status: { $in: ['pending', 'accepted', 'cancelled', 'expired'] }, // Only include drops that can be marked as stale
         isSuspicious: { $ne: true }, // Don't include already flagged drops
       })
       .sort({ createdAt: 1 })
@@ -256,10 +257,13 @@ export class DropsManagementService {
   async hideOldDrops(dropIds: string[]) {
     const drops = await this.dropModel.find({ _id: { $in: dropIds } }).exec();
 
-    // Mark drops as suspicious (hidden)
+    // Mark drops as stale (hidden from active view)
     await this.dropModel.updateMany(
       { _id: { $in: dropIds } },
-      { isSuspicious: true, suspiciousReason: 'Drop older than 3 days and not collected' },
+      { 
+        status: 'stale',
+        modifiedAt: new Date()
+      },
     );
 
     // Return user IDs for notification
@@ -269,6 +273,43 @@ export class DropsManagementService {
       hiddenCount: drops.length,
       userIds,
       drops,
+    };
+  }
+
+  /**
+   * Get stale drops
+   */
+  async getStaleDrops(filters: { page: number; limit: number }) {
+    const { page, limit } = filters;
+    const skip = (page - 1) * limit;
+
+    const staleDrops = await this.dropModel
+      .find({ status: 'stale' })
+      .sort({ modifiedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    const total = await this.dropModel.countDocuments({ status: 'stale' });
+
+    // Manually populate user data
+    const userIds = staleDrops.map(drop => drop.userId);
+    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
+
+    const dropsWithUsers = staleDrops.map(drop => {
+      const user = users.find(u => (u as any)._id.toString() === drop.userId);
+      return {
+        ...drop.toObject(),
+        userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
+      };
+    });
+
+    return {
+      drops: dropsWithUsers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 

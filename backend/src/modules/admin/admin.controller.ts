@@ -121,6 +121,12 @@ export class AdminController {
     return { success: true, user };
   }
 
+  @Put('users/:id/reset-warnings')
+  async resetUserWarnings(@Param('id') userId: string) {
+    const user = await this.adminService.resetUserWarnings(userId);
+    return { success: true, user };
+  }
+
   @Put('/users/:id/restore')
   async restoreUser(@Param('id') userId: string, @Request() req) {
     const adminId = req.user.id;

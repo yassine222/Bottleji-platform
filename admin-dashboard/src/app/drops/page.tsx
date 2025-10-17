@@ -108,6 +108,7 @@ const COLORS = {
   collected: '#4CAF50',
   cancelled: '#9E9E9E',
   expired: '#FF5722',
+  stale: '#795548',
 };
 
 export default function DropsManagementPage() {
@@ -204,6 +205,7 @@ export default function DropsManagementPage() {
     { name: 'Collected', value: stats.dropsByStatus['collected'] || 0, color: COLORS.collected },
     { name: 'Cancelled', value: stats.dropsByStatus['cancelled'] || 0, color: COLORS.cancelled },
     { name: 'Expired', value: stats.dropsByStatus['expired'] || 0, color: COLORS.expired },
+    { name: 'Stale', value: stats.dropsByStatus['stale'] || 0, color: COLORS.stale },
   ];
 
   return (

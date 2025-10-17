@@ -1466,6 +1466,8 @@ Widget _buildCollectorHistory(BuildContext context) {
         return Colors.red;
       case DropStatus.expired:
         return Colors.red;
+      case DropStatus.stale:
+        return Colors.brown;
     }
   }
 
@@ -1481,6 +1483,8 @@ Widget _buildCollectorHistory(BuildContext context) {
         return '❌ Cancelled';
       case DropStatus.expired:
         return '⏰ Expired';
+      case DropStatus.stale:
+        return '🟤 Stale';
     }
   }
 

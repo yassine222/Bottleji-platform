@@ -102,8 +102,13 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     }
   }
 
-  Color _getStatusColor(DropStatus status) {
-    switch (status) {
+  Color _getStatusColor(Drop drop) {
+    // If drop is suspicious (flagged), use red color
+    if (drop.isSuspicious) {
+      return Colors.red;
+    }
+    
+    switch (drop.status) {
       case DropStatus.pending:
         return Colors.orange;
       case DropStatus.accepted:
@@ -114,11 +119,34 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
         return Colors.red;
       case DropStatus.expired:
         return Colors.grey;
+      case DropStatus.stale:
+        return Colors.brown;
     }
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+
+  String _formatRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final twoDaysAgo = today.subtract(const Duration(days: 2));
+    final threeDaysAgo = today.subtract(const Duration(days: 3));
+    
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final timeStr = DateFormat('h:mm a').format(date);
+    
+    if (dateOnly == today) {
+      return 'Today at $timeStr';
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday at $timeStr';
+    } else if (dateOnly == twoDaysAgo) {
+      return '2 days ago';
+    } else if (dateOnly == threeDaysAgo) {
+      return '3 days ago';
+    } else {
+      // More than 3 days ago - show exact date
+      return DateFormat('MMM dd, yyyy').format(date);
+    }
   }
 
   @override
@@ -187,7 +215,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       const SizedBox(height: 16),
                       
                       // Hero Image with overlay info
-                      if (widget.drop.imageUrl?.isNotEmpty == true)
+                      if (widget.drop.imageUrl.isNotEmpty)
                         _buildHeroImage()
                       else
                         _buildNoImagePlaceholder(),
@@ -236,7 +264,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           height: 220,
           width: double.infinity,
           child: Image.network(
-            widget.drop.imageUrl ?? '',
+            widget.drop.imageUrl,
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
@@ -276,41 +304,12 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           bottom: 20,
           child: Row(
             children: [
-              // Item count badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.local_drink, size: 18, color: Color(0xFF00695C)),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${widget.drop.numberOfBottles + widget.drop.numberOfCans} items',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const Spacer(),
               // Status badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(widget.drop.status),
+                  color: _getStatusColor(widget.drop),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -321,7 +320,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   ],
                 ),
                 child: Text(
-                  widget.drop.status.name.toUpperCase(),
+                  _getStatusDisplayText(widget.drop),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -373,46 +372,18 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
               ],
             ),
           ),
-          // Status and item count at bottom
+          // Status badge at bottom
           Positioned(
             left: 20,
             right: 20,
             bottom: 20,
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.local_drink, size: 18, color: Color(0xFF00695C)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${widget.drop.numberOfBottles + widget.drop.numberOfCans} items',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(widget.drop.status),
+                    color: _getStatusColor(widget.drop),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -423,7 +394,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                     ],
                   ),
                   child: Text(
-                    widget.drop.status.name.toUpperCase(),
+                    _getStatusDisplayText(widget.drop),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -763,11 +734,14 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       color: Colors.grey[600],
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      userData['phoneNumber'] ?? 'N/A',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 14,
+                    Expanded(
+                      child: Text(
+                        userData['phoneNumber'] ?? 'N/A',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -821,22 +795,32 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           const SizedBox(height: 16),
           
           // Info grid
-          _buildInfoRow(
-            icon: Icons.category_outlined,
+          _buildInfoRowWithCustomIcon(
             label: 'Bottle Type',
             value: widget.drop.bottleType.name.toUpperCase(),
+            customIcon: _getBottleTypeIcon(widget.drop.bottleType),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.local_drink_outlined,
+          _buildInfoRowWithCustomIcon(
             label: 'Plastic Bottles',
             value: '${widget.drop.numberOfBottles}',
+            customIcon: Image.asset(
+              'assets/icons/water-bottle.png',
+              width: 18,
+              height: 18,
+              color: const Color(0xFF00695C),
+            ),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.recycling_outlined,
+          _buildInfoRowWithCustomIcon(
             label: 'Cans',
             value: '${widget.drop.numberOfCans}',
+            customIcon: Image.asset(
+              'assets/icons/can.png',
+              width: 18,
+              height: 18,
+              color: const Color(0xFF00695C),
+            ),
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
@@ -855,7 +839,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           _buildInfoRow(
             icon: Icons.calendar_today_outlined,
             label: 'Created',
-            value: _formatDate(widget.drop.createdAt),
+            value: _formatRelativeDate(widget.drop.createdAt),
           ),
           
           // Notes (if any)
@@ -934,16 +918,106 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
             ),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.grey[900],
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? Colors.grey[900],
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildInfoRowWithCustomIcon({
+    required String label,
+    required String value,
+    Color? valueColor,
+    Widget? customIcon,
+  }) {
+    return Row(
+      children: [
+        if (customIcon != null) ...[
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: customIcon,
+          ),
+          const SizedBox(width: 12),
+        ] else ...[
+          Icon(
+            Icons.info_outline,
+            size: 18,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? Colors.grey[900],
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _getBottleTypeIcon(BottleType bottleType) {
+    switch (bottleType) {
+      case BottleType.plastic:
+        return Image.asset(
+          'assets/icons/water-bottle.png',
+          width: 18,
+          height: 18,
+          color: const Color(0xFF00695C),
+        );
+      case BottleType.can:
+        return Image.asset(
+          'assets/icons/can.png',
+          width: 18,
+          height: 18,
+          color: const Color(0xFF00695C),
+        );
+      case BottleType.mixed:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/icons/water-bottle.png',
+              width: 12,
+              height: 12,
+              color: const Color(0xFF00695C),
+            ),
+            const SizedBox(width: 2),
+            Image.asset(
+              'assets/icons/can.png',
+              width: 12,
+              height: 12,
+              color: const Color(0xFF00695C),
+            ),
+          ],
+        );
+    }
   }
 
   Widget _buildActionButtons() {
@@ -1191,6 +1265,15 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
       error: (error, stack) => const SizedBox.shrink(),
     );
   }
+
+  String _getStatusDisplayText(Drop drop) {
+    // If drop is suspicious (flagged), show "FLAGGED" regardless of actual status
+    if (drop.isSuspicious) {
+      return 'FLAGGED';
+    }
+    return drop.status.name.toUpperCase();
+  }
+
 
   @override
   void dispose() {

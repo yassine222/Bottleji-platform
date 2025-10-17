@@ -13,6 +13,7 @@ export enum DropoffStatus {
   COLLECTED = 'collected',
   CANCELLED = 'cancelled',
   EXPIRED = 'expired',
+  STALE = 'stale',
 }
 
 export enum CancellationReason {

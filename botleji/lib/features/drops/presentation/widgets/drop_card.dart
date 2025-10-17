@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
-import 'dart:math'; // Added for pow
 import 'dart:ui'; // For ImageFilter.blur
+import 'package:intl/intl.dart';
 import 'report_drop_dialog.dart';
 
 class DropCard extends StatelessWidget {
@@ -14,6 +14,7 @@ class DropCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final LatLng? currentLocation;
   final bool hasActiveCollection; // Add parameter to check for active collection
+  final bool isHousehold; // Add parameter to determine if user is household
 
   const DropCard({
     super.key,
@@ -24,20 +25,55 @@ class DropCard extends StatelessWidget {
     this.onDelete,
     this.currentLocation,
     this.hasActiveCollection = false, // Default to false
+    this.isHousehold = true, // Default to household for backward compatibility
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: Colors.grey.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             if (drop.isCensored) ...[
               Container(
                 width: double.infinity,
@@ -63,105 +99,143 @@ class DropCard extends StatelessWidget {
                 ),
               ),
             ],
-            // Header with image and map side by side
+            
+            // Modern header with image and map
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drop image
-                ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: Stack(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: ImageFiltered(
-                          imageFilter: drop.isCensored
-                              ? ImageFilter.blur(sigmaX: 6, sigmaY: 6)
-                              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                          child: Image.network(
-                            drop.imageUrl,
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                                ),
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                // Drop image with modern styling
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      if (drop.isCensored)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black.withOpacity(0.25),
-                            alignment: Alignment.center,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'CENSORED',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: ImageFiltered(
+                            imageFilter: drop.isCensored
+                                ? ImageFilter.blur(sigmaX: 6, sigmaY: 6)
+                                : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                            child: Image.network(
+                              drop.imageUrl,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.grey.shade100,
+                                        Colors.grey.shade200,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey.shade400,
+                                    size: 32,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
-                    ],
+                        if (drop.isCensored)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'CENSORED',
+                                  style: TextStyle(
+                                    color: Colors.white, 
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 
-                // Map with pin
+                // Map with modern styling
                 Expanded(
                   child: Container(
-                    height: 120,
+                    height: 100,
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(Radius.circular(8)),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                      borderRadius: BorderRadius.circular(12),
                       child: Stack(
                         children: [
                           // Static map image
                           Image.network(
                             _getStaticMapUrl(drop.location),
                             width: double.infinity,
-                            height: 120,
+                            height: 100,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 width: double.infinity,
-                                height: 120,
+                                height: 100,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[200],
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.blue.shade50,
+                                      Colors.blue.shade100,
+                                    ],
+                                  ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.map,
-                                    size: 24,
-                                    color: Colors.grey[600],
+                                    size: 28,
+                                    color: Colors.blue.shade300,
                                   ),
                                 ),
                               );
                             },
                           ),
-                          // Custom pin overlay (always visible)
+                          // Custom pin overlay with modern styling
                           Positioned(
                             left: 0,
                             top: 0,
@@ -169,16 +243,16 @@ class DropCard extends StatelessWidget {
                             bottom: 0,
                             child: Center(
                               child: Container(
-                                width: 24,
-                                height: 24,
+                                width: 20,
+                                height: 20,
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
+                                  color: const Color(0xFF00695C),
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.3),
-                                      blurRadius: 4,
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
                                   ],
@@ -187,12 +261,44 @@ class DropCard extends StatelessWidget {
                                   child: Icon(
                                     Icons.location_on,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 12,
                                   ),
                                 ),
                               ),
                             ),
                           ),
+                          // Distance overlay (only for collectors)
+                          if (showActions && currentLocation != null)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatDistance(drop.location),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -201,176 +307,299 @@ class DropCard extends StatelessWidget {
               ],
             ),
             
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             
-            // Item counts and leave outside indicator
-            Row(
-              children: [
-                // Item counts
-                Expanded(
-                  child: Wrap(
+            // Modern item counts section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Compact item counts
+                  Wrap(
                     spacing: 8,
-                    runSpacing: 4,
+                    runSpacing: 8,
                     children: [
                       // Bottles count
                       if (drop.numberOfBottles > 0)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/icons/water-bottle.png',
-                              width: 16,
-                              height: 16,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00695C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFF00695C).withOpacity(0.3),
+                              width: 1,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${drop.numberOfBottles}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue[600],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/icons/water-bottle.png',
+                                width: 16,
+                                height: 16,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                '${drop.numberOfBottles}',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF00695C),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       // Cans count
                       if (drop.numberOfCans > 0)
-                        Row(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00695C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFF00695C).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/icons/can.png',
+                                width: 16,
+                                height: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${drop.numberOfCans}',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF00695C),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Total count
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00695C).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF00695C).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Image.asset(
-                              'assets/icons/can.png',
-                              width: 16,
-                              height: 16,
+                            Icon(
+                              Icons.inventory,
+                              size: 16,
+                              color: const Color(0xFF00695C),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${drop.numberOfCans}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange[600],
+                              '${drop.numberOfBottles + drop.numberOfCans}',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00695C),
                               ),
                             ),
                           ],
                         ),
-                      // Total count
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      ),
+                      // Leave outside indicator
+                      if (drop.leaveOutside)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00695C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFF00695C).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.door_front_door,
+                                size: 16,
+                                color: const Color(0xFF00695C),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Outside',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF00695C),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Status badge (hide for censored drops since they have overlay)
+                      if (!drop.isCensored)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(drop).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: _getStatusColor(drop).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getStatusIcon(drop),
+                                size: 16,
+                                color: _getStatusColor(drop),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _getStatusDisplayText(drop),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: _getStatusColor(drop),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            
+            // Modern notes section
+            if (drop.notes?.isNotEmpty == true) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF00695C).withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00695C).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.note_alt,
+                        size: 18,
+                        color: const Color(0xFF00695C),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Total ${drop.numberOfBottles + drop.numberOfCans}',
+                            'Note',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF00695C),
                               fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            drop.notes!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF00695C).withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                
-                // Leave outside indicator
-                if (drop.leaveOutside)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.orange.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'Leave Outside',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.orange[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
             
-            // Status badge and distance info
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                // Status badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(drop.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    drop.status.name.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _getStatusColor(drop.status),
-                    ),
-                  ),
-                ),
-                
-                const Spacer(),
-                
-                // Distance info (only show for collectors when location is available)
-                if (showActions && currentLocation != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.blue.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.blue[700],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatDistance(drop.location),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+            // Timeline section for drop progression (household only)
+            if (isHousehold && (drop.status == DropStatus.pending || drop.status == DropStatus.accepted)) ...[
+              const SizedBox(height: 16),
+              _buildTimelineSection(),
+            ],
             
-            // Notes (if any)
-            if (drop.notes?.isNotEmpty == true) ...[
-              const SizedBox(height: 8),
+            // Collection issues alert for drops with issues (household only)
+            if (isHousehold && (drop.isSuspicious || drop.cancellationCount >= 1)) ...[
+              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.red.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.note,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.warning,
+                        color: Colors.red,
+                        size: 18,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        drop.notes!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Collection issues',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[700],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Cancelled ${drop.cancellationCount} times',
+                            style: TextStyle(
+                              color: Colors.red[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -426,11 +655,7 @@ class DropCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.category,
-                            size: 14,
-                            color: Colors.green[700],
-                          ),
+                          _getBottleTypeIcon(drop.bottleType, size: 14),
                           const SizedBox(width: 4),
                           Text(
                             drop.bottleType.name,
@@ -531,38 +756,6 @@ class DropCard extends StatelessWidget {
               ],
             ],
             
-            // Edit and Delete buttons for household users (only for pending drops)
-            if ((onEdit != null || onDelete != null) && drop.status == DropStatus.pending) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  if (onEdit != null)
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  if (onEdit != null && onDelete != null)
-                    const SizedBox(width: 8),
-                  if (onDelete != null)
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete, size: 16),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
             
             // Completed status for accepted drops
             if (drop.status == DropStatus.accepted) ...[
@@ -625,16 +818,72 @@ class DropCard extends StatelessWidget {
                 ),
               ),
             ],
-          ],
+            
+            // Compact edit and delete buttons at bottom right (only for pending drops)
+            if ((onEdit != null || onDelete != null) && drop.status == DropStatus.pending) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onEdit != null)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      child: IconButton(
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit, size: 20),
+                        style: IconButton.styleFrom(
+                          foregroundColor: const Color(0xFF00695C),
+                          backgroundColor: const Color(0xFF00695C).withOpacity(0.1),
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
+                    ),
+                  if (onDelete != null)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      child: IconButton(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete, size: 20),
+                        style: IconButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+                ],
+              ),
+            ),
+          
         ),
       ),
+      
+    ),
     );
   }
 
-  Color _getStatusColor(DropStatus status) {
-    switch (status) {
+  String _getStatusDisplayText(Drop drop) {
+    // If drop is suspicious (flagged), show "FLAGGED" regardless of actual status
+    if (drop.isSuspicious) {
+      return 'FLAGGED';
+    }
+    return drop.status.name.toUpperCase();
+  }
+
+  Color _getStatusColor(Drop drop) {
+    // If drop is suspicious (flagged), use red color
+    if (drop.isSuspicious) {
+      return Colors.red;
+    }
+    
+    switch (drop.status) {
       case DropStatus.pending:
-        return Colors.orange;
+        return const Color(0xFF00695C);
       case DropStatus.accepted:
         return Colors.green;
       case DropStatus.collected:
@@ -643,6 +892,30 @@ class DropCard extends StatelessWidget {
         return Colors.red;
       case DropStatus.expired:
         return Colors.red;
+      case DropStatus.stale:
+        return Colors.brown;
+    }
+  }
+
+  IconData _getStatusIcon(Drop drop) {
+    // If drop is suspicious (flagged), use flag icon
+    if (drop.isSuspicious) {
+      return Icons.flag;
+    }
+    
+    switch (drop.status) {
+      case DropStatus.pending:
+        return Icons.schedule;
+      case DropStatus.accepted:
+        return Icons.check_circle;
+      case DropStatus.collected:
+        return Icons.done_all;
+      case DropStatus.cancelled:
+        return Icons.cancel;
+      case DropStatus.expired:
+        return Icons.timer_off;
+      case DropStatus.stale:
+        return Icons.hourglass_empty;
     }
   }
 
@@ -665,16 +938,25 @@ class DropCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final twoDaysAgo = today.subtract(const Duration(days: 2));
+    final threeDaysAgo = today.subtract(const Duration(days: 3));
     
-    if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final timeStr = DateFormat('h:mm a').format(date);
+    
+    if (dateOnly == today) {
+      return 'Today at $timeStr';
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday at $timeStr';
+    } else if (dateOnly == twoDaysAgo) {
+      return '2 days ago';
+    } else if (dateOnly == threeDaysAgo) {
+      return '3 days ago';
     } else {
-      return 'Just now';
+      // More than 3 days ago - show exact date
+      return DateFormat('MMM dd, yyyy').format(date);
     }
   }
 
@@ -692,24 +974,245 @@ class DropCard extends StatelessWidget {
     return queryParameters.toString();
   }
 
-  // Calculate pin position based on coordinates
-  Offset _calculatePinPosition(LatLng dropLocation, LatLng mapCenter, double zoom) {
-    // Map dimensions
-    const mapWidth = 600.0;
-    const mapHeight = 400.0;
+
+  Widget _getBottleTypeIcon(BottleType bottleType, {double size = 18}) {
+    switch (bottleType) {
+      case BottleType.plastic:
+        return Image.asset(
+          'assets/icons/water-bottle.png',
+          width: size,
+          height: size,
+          color: Colors.green[700],
+        );
+      case BottleType.can:
+        return Image.asset(
+          'assets/icons/can.png',
+          width: size,
+          height: size,
+          color: Colors.green[700],
+        );
+      case BottleType.mixed:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/icons/water-bottle.png',
+              width: size * 0.7,
+              height: size * 0.7,
+              color: Colors.green[700],
+            ),
+            const SizedBox(width: 2),
+            Image.asset(
+              'assets/icons/can.png',
+              width: size * 0.7,
+              height: size * 0.7,
+              color: Colors.green[700],
+            ),
+          ],
+        );
+    }
+  }
+
+  Widget _buildTimelineSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00695C).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF00695C).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.timeline,
+                  color: const Color(0xFF00695C),
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Drop Progress',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C),
+                  fontSize: 14,
+                ),
+              ),
+              const Spacer(),
+              // Animated waiting indicator
+              if (drop.status == DropStatus.pending) ...[
+                _buildWaitingIndicator(),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Timeline steps - compact horizontal layout
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // Created step
+              _buildTimelineStep(
+                icon: Icons.add_circle,
+                iconColor: const Color(0xFF00695C),
+                title: 'Created',
+                subtitle: _formatDate(drop.createdAt),
+                isCompleted: true,
+              ),
+              // Arrow
+              Icon(
+                Icons.arrow_forward,
+                color: Colors.grey[400],
+                size: 12,
+              ),
+              // Accepted step
+              _buildTimelineStep(
+                icon: drop.status == DropStatus.accepted ? Icons.check_circle : Icons.assignment_turned_in,
+                iconColor: drop.status == DropStatus.accepted ? const Color(0xFF00695C) : Colors.grey,
+                title: 'Accepted',
+                subtitle: drop.status == DropStatus.accepted ? _formatDate(drop.createdAt) : 'Waiting...',
+                isCompleted: drop.status == DropStatus.accepted,
+              ),
+              // Arrow
+              Icon(
+                Icons.arrow_forward,
+                color: Colors.grey[400],
+                size: 12,
+              ),
+              // Collected step
+              _buildTimelineStep(
+                icon: Icons.recycling,
+                iconColor: Colors.grey,
+                title: 'Collected',
+                subtitle: 'Not yet collected',
+                isCompleted: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isCompleted,
+  }) {
+    return Flexible(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isCompleted ? iconColor.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isCompleted ? const Color(0xFF00695C) : Colors.grey[600],
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: isCompleted ? const Color(0xFF00695C).withOpacity(0.8) : Colors.grey[600],
+              fontSize: 8,
+              fontWeight: isCompleted ? FontWeight.w500 : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaitingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00695C).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: _AnimatedHourglass(),
+    );
+  }
+}
+
+class _AnimatedHourglass extends StatefulWidget {
+  @override
+  _AnimatedHourglassState createState() => _AnimatedHourglassState();
+}
+
+class _AnimatedHourglassState extends State<_AnimatedHourglass>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_controller);
     
-    // Calculate the difference in coordinates
-    final latDiff = dropLocation.latitude - mapCenter.latitude;
-    final lngDiff = dropLocation.longitude - mapCenter.longitude;
-    
-    // Convert to pixels based on zoom level
-    // At zoom 16, 1 degree is approximately 256 pixels
-    final pixelsPerDegree = 256.0 * pow(2, zoom - 1);
-    
-    // Calculate pixel positions
-    final x = (mapWidth / 2) + (lngDiff * pixelsPerDegree);
-    final y = (mapHeight / 2) - (latDiff * pixelsPerDegree);
-    
-    return Offset(x, y);
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _animation.value * 2 * 3.14159,
+          child: Icon(
+            Icons.hourglass_empty,
+            color: const Color(0xFF00695C),
+            size: 16,
+          ),
+        );
+      },
+    );
   }
 } 

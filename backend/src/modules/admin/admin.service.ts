@@ -469,6 +469,39 @@ export class AdminService {
     return user;
   }
 
+  async resetUserWarnings(userId: string) {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { 
+        warningCount: 0,
+        warnings: [],
+        isAccountLocked: false,
+        accountLockedUntil: null,
+      },
+      { new: true }
+    ).select('-password');
+    
+    if (user) {
+      console.log(`🔄 Admin reset all warnings for user: ${userId}`);
+      
+      // Emit WebSocket event for real-time notification
+      this.notificationsGateway.sendNotificationToUser(userId, {
+        type: 'warnings_reset',
+        title: 'Warnings Reset',
+        message: 'All your warnings have been cleared by an administrator. Your account is now clean!',
+        data: {
+          warningCount: 0,
+          warnings: [],
+          isAccountLocked: false,
+          accountLockedUntil: null,
+        },
+        timestamp: new Date(),
+      });
+    }
+    
+    return user;
+  }
+
   async deleteUser(userId: string, deletedByAdminId: string) {
     try {
       // 1. Soft delete the user

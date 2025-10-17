@@ -98,6 +98,7 @@ class NotificationService extends ChangeNotifier {
   Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
   Function(bool isLocked, DateTime? lockedUntil, int warningCount)? onAccountLockStatusUpdate;
   Function(String dropId, String reason)? onDropCensored;
+  Function(String dropId, String status, Map<String, dynamic> data)? onDropStatusUpdate;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -443,6 +444,18 @@ class NotificationService extends ChangeNotifier {
   /// Handle incoming notifications
   void _handleNotification(NotificationPayload notification) {
     debugPrint('📨 Notification received: ${notification.type} - ${notification.title}');
+    
+    // Handle drop status updates for real-time updates
+    if (notification.type == 'drop_accepted' || 
+        notification.type == 'drop_collected' || 
+        notification.type == 'drop_cancelled' || 
+        notification.type == 'drop_expired') {
+      final dropId = notification.data?['dropId']?.toString();
+      if (dropId != null) {
+        debugPrint('🔄 Drop status update: ${notification.type} for drop $dropId');
+        onDropStatusUpdate?.call(dropId, notification.type, notification.data ?? {});
+      }
+    }
     
     // Add to notifications list
     _notifications.insert(0, notification);
