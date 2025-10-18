@@ -625,50 +625,42 @@ export class DropoffsService {
              totalDropsCreated: householdRewardResult.totalDropsCreated
            });
 
-           // Send household tier upgrade notification if applicable
-           if (householdRewardResult.tierUpgraded) {
-             this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
-               type: 'tier_upgrade',
-               title: '🏠 Tier Upgraded!',
-               message: `Congratulations! You've reached ${householdRewardResult.newTier.name}! You now earn ${householdRewardResult.newTier.pointsPerDrop} points when your drops are collected.`,
-               data: { 
-                 newTier: householdRewardResult.newTier,
-                 totalPoints: householdRewardResult.totalPoints,
-                 totalDropsCreated: householdRewardResult.totalDropsCreated
-               },
-               timestamp: new Date(),
-             });
-           } else {
-             // Send household points earned notification
-             this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
-               type: 'household_points_earned',
-               title: '🏠 Drop Collected!',
-               message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points for contributing to recycling.`,
-               data: { 
-                 pointsAwarded: householdRewardResult.pointsAwarded,
-                 totalPoints: householdRewardResult.totalPoints,
-                 currentTier: householdRewardResult.newTier.name
-               },
-               timestamp: new Date(),
-             });
-           }
+         // Send combined notification for drop collected + rewards
+         if (householdRewardResult.tierUpgraded) {
+           this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+             type: 'drop_collected_with_tier_upgrade',
+             title: '🏠 Drop Collected & Tier Upgraded!',
+             message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points and reached ${householdRewardResult.newTier.name}!`,
+             data: { 
+               dropId: dropoff._id.toString(),
+               pointsAwarded: householdRewardResult.pointsAwarded,
+               totalPoints: householdRewardResult.totalPoints,
+               newTier: householdRewardResult.newTier,
+               tierUpgraded: true
+             },
+             timestamp: new Date(),
+           });
+         } else {
+           this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+             type: 'drop_collected_with_rewards',
+             title: '🏠 Drop Collected!',
+             message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points for contributing to recycling.`,
+             data: { 
+               dropId: dropoff._id.toString(),
+               pointsAwarded: householdRewardResult.pointsAwarded,
+               totalPoints: householdRewardResult.totalPoints,
+               currentTier: householdRewardResult.newTier.name,
+               tierUpgraded: false
+             },
+             timestamp: new Date(),
+           });
+         }
          } catch (error) {
            console.error('❌ Error awarding household points:', error);
            // Don't fail the collection if household reward system fails
          }
 
-    // Send notification to drop creator
-    this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
-      type: 'drop_collected',
-      title: 'Drop Collected',
-      message: 'Your drop has been successfully collected!',
-      data: { 
-        dropId: id, 
-        collectorId: acceptedInteraction.collectorId,
-        dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
-      },
-      timestamp: new Date(),
-    });
+    // Drop creator notification is now sent with rewards below (combined notification)
 
     console.log(`📱 Drop collected notification sent to user ${dropoff.userId}`);
 
