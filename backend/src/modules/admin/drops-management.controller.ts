@@ -329,5 +329,27 @@ export class DropsManagementController {
     );
     return { success: true, report };
   }
+
+  /**
+   * Handle admin action on a reported drop
+   * PUT /admin/drops-management/reports/:reportId/action/:dropId
+   */
+  @Put('reports/:reportId/action/:dropId')
+  async handleReportedDropAction(
+    @Param('reportId') reportId: string,
+    @Param('dropId') dropId: string,
+    @Body() body: { action: 'approve' | 'censor' | 'delete'; reason?: string },
+    @Req() req: any,
+  ) {
+    const adminId = req.user?.id || 'Admin';
+    const result = await this.dropsManagementService.handleReportedDropAction(
+      reportId,
+      dropId,
+      body.action,
+      adminId,
+      body.reason,
+    );
+    return { success: true, ...result };
+  }
 }
 

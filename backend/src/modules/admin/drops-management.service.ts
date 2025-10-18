@@ -771,44 +771,77 @@ export class DropsManagementService {
       this.userModel.find({ _id: { $in: collectorIds } }).exec(),
     ]);
 
-    // Only return reports for drops that still exist
-    const reportsWithDetails = reports
-      .map(report => {
-        const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
-        const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
-        
-        return {
-          ...report.toObject(),
-          drop: drop ? {
-            id: drop._id,
-            imageUrl: drop.imageUrl,
-            status: drop.status,
-            numberOfBottles: drop.numberOfBottles,
-            numberOfCans: drop.numberOfCans,
-          } : null,
-          reporter: collector ? {
-            name: collector.name,
-            email: collector.email,
-          } : null,
-        };
-      })
-      .filter(report => report.drop !== null); // Only include reports where drop still exists
-
-    console.log(`📋 Filtered reported drops: ${reportsWithDetails.length} out of ${reports.length} (${reports.length - reportsWithDetails.length} drops were deleted)`);
-
-    // Optional: Clean up orphaned reports (reports for deleted drops)
-    const orphanedReports = reports.filter(report => {
+    // Return all reports with their drop details
+    // Drops should NOT be deleted when reported - they should remain for admin review
+    const reportsWithDetails = reports.map(report => {
       const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
-      return !drop; // Report exists but drop doesn't
+      const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
+      
+      return {
+        ...report.toObject(),
+        drop: drop ? {
+          id: drop._id,
+          imageUrl: drop.imageUrl,
+          status: drop.status,
+          numberOfBottles: drop.numberOfBottles,
+          numberOfCans: drop.numberOfCans,
+          bottleType: drop.bottleType,
+          location: drop.location,
+          address: drop.address,
+          notes: drop.notes,
+          createdAt: drop.createdAt,
+          userId: drop.userId,
+        } : null,
+        reporter: collector ? {
+          name: collector.name,
+          email: collector.email,
+        } : null,
+      };
     });
 
-    if (orphanedReports.length > 0) {
-      console.log(`🧹 Found ${orphanedReports.length} orphaned reports for deleted drops`);
-      // Uncomment the next line to automatically clean up orphaned reports
-      // await this.dropReportModel.deleteMany({ _id: { $in: orphanedReports.map(r => r._id) } });
-    }
+    console.log(`📋 Reported drops: ${reportsWithDetails.length} reports found`);
+    console.log(`   - Drops with valid data: ${reportsWithDetails.filter(r => r.drop).length}`);
+    console.log(`   - Drops missing from database: ${reportsWithDetails.filter(r => !r.drop).length}`);
 
     return reportsWithDetails;
+  }
+
+  /**
+   * Handle admin action on a reported drop
+   */
+  async handleReportedDropAction(reportId: string, dropId: string, action: 'approve' | 'censor' | 'delete', adminId: string, reason?: string) {
+    console.log(`🔍 Admin action on reported drop: ${action} for drop ${dropId}, report ${reportId}`);
+    
+    // Update the report status
+    await this.dropReportModel.findByIdAndUpdate(reportId, {
+      status: 'reviewed',
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      adminAction: action,
+      adminNotes: reason,
+    }).exec();
+
+    // Take action on the drop based on admin decision
+    switch (action) {
+      case 'approve':
+        // Drop is approved - no action needed, just mark report as reviewed
+        console.log(`✅ Drop ${dropId} approved - no changes needed`);
+        break;
+        
+      case 'censor':
+        // Censor the drop
+        await this.censorDrop(dropId, reason || 'Censored due to report', adminId);
+        console.log(`🚫 Drop ${dropId} censored due to report`);
+        break;
+        
+      case 'delete':
+        // Delete the drop
+        await this.dropoffModel.findByIdAndDelete(dropId).exec();
+        console.log(`🗑️ Drop ${dropId} deleted due to report`);
+        break;
+    }
+
+    return { success: true, action, dropId, reportId };
   }
 
   /**

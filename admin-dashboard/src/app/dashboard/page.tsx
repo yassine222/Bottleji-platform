@@ -462,6 +462,42 @@ function UsersContent() {
     }
   };
 
+  const handleReportedDropAction = async (reportId: string, dropId: string, action: 'approve' | 'censor' | 'delete') => {
+    const actionMessages = {
+      approve: 'Approve this drop? This will dismiss the report and keep the drop active.',
+      censor: 'Censor this drop? This will hide it from public view but keep it in the system.',
+      delete: 'Delete this drop? This will permanently remove it from the system.'
+    };
+
+    const confirmed = window.confirm(actionMessages[action]);
+    
+    if (confirmed) {
+      try {
+        const response = await fetch(`/api/admin/drops-management/reports/${reportId}/action/${dropId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+          },
+          body: JSON.stringify({ action })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to process action');
+        }
+
+        // Reload reported drops to reflect the change
+        await fetchReportedDrops();
+        
+        // Show success message
+        alert(`Drop ${action}d successfully!`);
+      } catch (err: any) {
+        console.error(`Error ${action}ing drop:`, err);
+        alert(`Failed to ${action} drop. Please try again.`);
+      }
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -2542,21 +2578,22 @@ function DropsContent() {
                             View Drop
                           </button>
                           <button
-                            onClick={() => openCensorModal(report.dropId)}
-                            className="text-red-600 hover:text-red-800"
+                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'approve')}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'censor')}
+                            className="text-yellow-600 hover:text-yellow-800"
                           >
                             Censor
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Dismiss this report? No action will be taken on the drop.')) {
-                                // TODO: Implement dismiss report functionality
-                                alert('Dismiss functionality will be implemented');
-                              }
-                            }}
-                            className="text-gray-600 hover:text-gray-800"
+                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'delete')}
+                            className="text-red-600 hover:text-red-800"
                           >
-                            Dismiss
+                            Delete
                           </button>
                         </div>
                       </td>
