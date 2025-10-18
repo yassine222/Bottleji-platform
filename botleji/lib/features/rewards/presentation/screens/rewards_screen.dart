@@ -515,123 +515,169 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.emoji_events, color: Color(0xFF00695C)),
-            const SizedBox(width: 8),
-            const Text('Tier System'),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00695C).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.emoji_events, color: Color(0xFF00695C), size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Tier System',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Current Tier Highlight
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00695C).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF00695C)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, color: Color(0xFF00695C), size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Current: ${_getTierName(stats.currentTier)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF00695C),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // All Tiers List
-              ...List.generate(5, (index) {
-                final tier = index + 1;
-                final isCurrentTier = tier == stats.currentTier;
-                final isUnlocked = tier <= stats.currentTier;
-                final dropsRequired = _getDropsRequired(tier);
-                final pointsPerDrop = _getPointsPerDrop(tier);
-                
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+          height: 400, // Fixed height to prevent long scrolling
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Current Tier Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isCurrentTier 
-                        ? const Color(0xFF00695C).withOpacity(0.1)
-                        : isUnlocked 
-                            ? Colors.green[50]
-                            : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isCurrentTier 
-                          ? const Color(0xFF00695C)
-                          : isUnlocked 
-                              ? Colors.green
-                              : Colors.grey[300]!,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00695C), Color(0xFF004D40)],
                     ),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        isCurrentTier 
-                            ? Icons.star
-                            : isUnlocked 
-                                ? Icons.check_circle
-                                : Icons.lock,
-                        color: isCurrentTier 
-                            ? const Color(0xFF00695C)
-                            : isUnlocked 
-                                ? Colors.green
-                                : Colors.grey,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _getTierName(tier),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isCurrentTier 
-                                    ? const Color(0xFF00695C)
-                                    : isUnlocked 
-                                        ? Colors.green[700]
-                                        : Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              mode == UserMode.collector
-                                ? 'Earn $pointsPerDrop points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}'
-                                : 'Earn ${(pointsPerDrop * 0.5).round()} points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                      const Icon(Icons.star, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Current: ${_getTierName(stats.currentTier)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                );
-              }),
-            ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Compact Tiers Grid
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    childAspectRatio: 4.5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: 5,
+                  itemBuilder: (context, index) {
+                    final tier = index + 1;
+                    final isCurrentTier = tier == stats.currentTier;
+                    final isUnlocked = tier <= stats.currentTier;
+                    final dropsRequired = _getDropsRequired(tier);
+                    final pointsPerDrop = _getPointsPerDrop(tier);
+                    
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isCurrentTier 
+                            ? const Color(0xFF00695C).withOpacity(0.1)
+                            : isUnlocked 
+                                ? Colors.green[50]
+                                : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isCurrentTier 
+                              ? const Color(0xFF00695C)
+                              : isUnlocked 
+                                  ? Colors.green[300]!
+                                  : Colors.grey[300]!,
+                          width: isCurrentTier ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Tier Icon
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isCurrentTier 
+                                  ? const Color(0xFF00695C)
+                                  : isUnlocked 
+                                      ? Colors.green
+                                      : Colors.grey,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              isCurrentTier 
+                                  ? Icons.star
+                                  : isUnlocked 
+                                      ? Icons.check
+                                      : Icons.lock,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          
+                          // Tier Info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _getTierName(tier),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: isCurrentTier 
+                                        ? const Color(0xFF00695C)
+                                        : isUnlocked 
+                                            ? Colors.green[700]
+                                            : Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  mode == UserMode.collector
+                                    ? '$pointsPerDrop pts/drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops"}'
+                                    : '${(pointsPerDrop * 0.5).round()} pts/drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops"}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'Close',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
