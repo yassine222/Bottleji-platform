@@ -8,10 +8,16 @@ class RewardService {
   // Get user reward stats
   static Future<Map<String, dynamic>> getUserRewardStats(String userId) async {
     try {
+      print('🎯 RewardService: Starting getUserRewardStats for userId: $userId');
+      
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
       
+      print('🎯 RewardService: Token found: ${token != null}');
+      print('🎯 RewardService: Base URL: $baseUrl');
+      
       if (token == null) {
+        print('🎯 RewardService: No authentication token found');
         throw Exception('No authentication token found');
       }
 
@@ -26,15 +32,22 @@ class RewardService {
         },
       ));
 
+      print('🎯 RewardService: Making request to: $baseUrl/rewards/stats/$userId');
       final response = await dio.get('/rewards/stats/$userId');
+      
+      print('🎯 RewardService: Response status: ${response.statusCode}');
+      print('🎯 RewardService: Response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        return response.data['stats'] ?? {};
+        final stats = response.data['stats'] ?? {};
+        print('🎯 RewardService: Returning stats: $stats');
+        return stats;
       } else {
+        print('🎯 RewardService: Failed with status: ${response.statusCode}');
         throw Exception('Failed to load reward stats: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching reward stats: $e');
+      print('🎯 RewardService: Error fetching reward stats: $e');
       rethrow;
     }
   }

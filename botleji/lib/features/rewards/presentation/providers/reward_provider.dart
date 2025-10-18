@@ -5,15 +5,27 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 
 // Reward stats provider
 final rewardStatsProvider = FutureProvider<RewardStats>((ref) async {
+  print('🎯 RewardProvider: Starting rewardStatsProvider');
+  
   final authState = ref.watch(authNotifierProvider);
+  print('🎯 RewardProvider: Auth state: ${authState.runtimeType}');
+  
   final user = authState.value;
+  print('🎯 RewardProvider: User: ${user?.email}');
   
   if (user == null) {
+    print('🎯 RewardProvider: User not authenticated');
     throw Exception('User not authenticated');
   }
 
+  print('🎯 RewardProvider: Calling RewardService.getUserRewardStats with userId: ${user.id}');
   final stats = await RewardService.getUserRewardStats(user.id);
-  return RewardStats.fromJson(stats);
+  print('🎯 RewardProvider: Got stats from service: $stats');
+  
+  final rewardStats = RewardStats.fromJson(stats);
+  print('🎯 RewardProvider: Created RewardStats: ${rewardStats.currentPoints} points, tier ${rewardStats.currentTier}');
+  
+  return rewardStats;
 });
 
 // Tiers provider
