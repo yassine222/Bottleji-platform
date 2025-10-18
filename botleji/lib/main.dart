@@ -17,6 +17,8 @@ import 'package:botleji/features/auth/services/mode_switch_service.dart';
 import 'package:botleji/features/splash/presentation/screens/splash_screen.dart';
 import 'package:botleji/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:botleji/features/onboarding/presentation/screens/permissions_screen.dart';
+import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
+import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -328,7 +330,32 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
           print('🏠 MainAppScreen: Reusing cached HomeScreen instance');
         }
         
-        return _cachedHomeScreen!;
+        return Stack(
+          children: [
+            _cachedHomeScreen!,
+            // Collection Success Popup
+            Consumer(
+              builder: (context, ref, child) {
+                final collectionSuccessState = ref.watch(collectionSuccessProvider);
+                
+                if (collectionSuccessState.showPopup) {
+                  return CollectionSuccessPopup(
+                    pointsAwarded: collectionSuccessState.pointsAwarded,
+                    tierName: collectionSuccessState.tierName,
+                    currentTier: collectionSuccessState.currentTier,
+                    totalPoints: collectionSuccessState.totalPoints,
+                    tierUpgraded: collectionSuccessState.tierUpgraded,
+                    onDismiss: () {
+                      ref.read(collectionSuccessProvider.notifier).dismissPopup();
+                    },
+                  );
+                }
+                
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        );
       },
       loading: () {
         // This should not be reached due to the check above, but keeping for safety

@@ -488,4 +488,13 @@ class DropRepository {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> getUserRewardStats() async {
+    try {
+      final response = await _dio.get('/rewards/stats/${_getCurrentUserId()}');
+      return response.data['stats'] ?? {};
+    } catch (e) {
+      throw Exception('Failed to load reward stats: $e');
+    }
+  }
 }

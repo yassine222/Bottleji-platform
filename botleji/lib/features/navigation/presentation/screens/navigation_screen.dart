@@ -16,6 +16,8 @@ import 'dart:math';
 import 'package:botleji/core/services/local_notification_service.dart';
 import 'package:botleji/features/home/presentation/screens/home_screen.dart';
 import 'package:botleji/features/drops/presentation/widgets/report_drop_dialog.dart';
+import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
+import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
 
 // Navigation step model
 class NavigationStep {
@@ -2331,12 +2333,32 @@ Future<void> _handleCancellation(CancellationReason reason) async {
       if (collectorId != null) {
         debugPrint('✅ Confirming collection (completes attempt and adds to timeline)...');
         
-        // Confirm collection (this completes the collection attempt and adds to timeline)
-        await ref
+        // Confirm collection and get reward information
+        final rewardData = await ref
             .read(dropsControllerProvider.notifier)
-            .confirmCollection(widget.dropId);
+            .confirmCollectionWithRewards(widget.dropId);
 
         debugPrint('✅ Collection confirmed successfully!');
+        
+        // Show collection success popup with reward information
+        if (rewardData != null && mounted) {
+          final currentTier = rewardData['currentTier']?['tier'] ?? 1;
+          final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
+          final totalPoints = rewardData['totalPoints'] ?? 0;
+          final currentPoints = rewardData['currentPoints'] ?? 0;
+          final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+          
+          debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
+          
+          // Show the collection success popup
+          ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
+            pointsAwarded: pointsAwarded,
+            tierName: tierName,
+            currentTier: currentTier,
+            totalPoints: totalPoints,
+            tierUpgraded: false, // TODO: Implement tier upgrade detection
+          );
+        }
         
         // Wait a moment for real-time updates to propagate
         await Future.delayed(const Duration(milliseconds: 500));
@@ -2350,16 +2372,8 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         await ref.read(navigationControllerProvider.notifier).completeCollection();
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Drop marked as collected!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          
-          // Wait for snackbar to show, then navigate
-          await Future.delayed(const Duration(milliseconds: 1000));
+          // Wait for popup to show, then navigate
+          await Future.delayed(const Duration(milliseconds: 3000));
           
           if (mounted) {
             // Navigate back to home screen

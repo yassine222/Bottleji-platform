@@ -289,6 +289,35 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
     }
   }
 
+  Future<Map<String, dynamic>?> confirmCollectionWithRewards(String dropId) async {
+    try {
+      final updatedDrop = await _repository.confirmCollection(dropId);
+      
+      // Update the drop in the current list
+      state.whenData((drops) {
+        final updatedDrops = drops.map((drop) {
+          if (drop.id == dropId) {
+            return updatedDrop;
+          }
+          return drop;
+        }).toList();
+        state = AsyncValue.data(updatedDrops);
+      });
+
+      // Fetch updated reward stats after collection
+      try {
+        final rewardStats = await _repository.getUserRewardStats();
+        return rewardStats;
+      } catch (e) {
+        debugPrint('Error fetching reward stats: $e');
+        return null;
+      }
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      return null;
+    }
+  }
+
   /// Handle real-time drop status updates from WebSocket notifications
   void handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) {
     debugPrint('🔄 DropsController: Handling drop status update - $status for drop $dropId');
