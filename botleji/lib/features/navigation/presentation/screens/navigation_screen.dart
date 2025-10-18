@@ -1618,11 +1618,33 @@ Widget build(BuildContext context) {
 
                           if (collectorId != null) {
                             debugPrint('🔘 Confirming collection (completes attempt and adds to timeline)...');
-                            await ref
+                            final rewardData = await ref
                                 .read(dropsControllerProvider.notifier)
-                                .confirmCollection(widget.dropId);
+                                .confirmCollectionWithRewards(widget.dropId);
 
                             debugPrint('🔘 Collection confirmed successfully!');
+                            
+                            // Show collection success popup with reward information
+                            if (rewardData != null && mounted) {
+                              final currentTier = rewardData['currentTier']?['tier'] ?? 1;
+                              final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
+                              final totalPoints = rewardData['totalPoints'] ?? 0;
+                              final currentPoints = rewardData['currentPoints'] ?? 0;
+                              final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+                              
+                              debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
+          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
+                              
+                              // Show the collection success popup
+                              ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
+                                pointsAwarded: pointsAwarded,
+                                tierName: tierName,
+                                currentTier: currentTier,
+                                totalPoints: totalPoints,
+                                tierUpgraded: false,
+                              );
+                            }
+                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Drop marked as collected!'),
@@ -1825,8 +1847,30 @@ Widget _buildSlideButton() {
       final collectorId = authState?.value?.id;
       
       if (collectorId != null) {
-        await ref.read(dropsControllerProvider.notifier)
-            .confirmCollection(widget.dropId);
+        final rewardData = await ref.read(dropsControllerProvider.notifier)
+            .confirmCollectionWithRewards(widget.dropId);
+        
+        // Show collection success popup with reward information
+        debugPrint('🎉 Raw reward data: $rewardData');
+        if (rewardData != null && mounted) {
+          final currentTier = rewardData['currentTier']?['tier'] ?? 1;
+          final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
+          final totalPoints = rewardData['totalPoints'] ?? 0;
+          final currentPoints = rewardData['currentPoints'] ?? 0;
+          final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+          
+          debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
+          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
+          
+          // Show the collection success popup
+          ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
+            pointsAwarded: pointsAwarded,
+            tierName: tierName,
+            currentTier: currentTier,
+            totalPoints: totalPoints,
+            tierUpgraded: false,
+          );
+        }
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2219,8 +2263,28 @@ Future<void> _handleCancellation(CancellationReason reason) async {
       }
       
       debugPrint('🧪 DEBUG: Confirming collection for drop: ${widget.dropId}');
-      await ref.read(dropsControllerProvider.notifier)
-          .confirmCollection(widget.dropId);
+      final rewardData = await ref.read(dropsControllerProvider.notifier)
+          .confirmCollectionWithRewards(widget.dropId);
+      
+      // Show collection success popup with reward information
+      if (rewardData != null && mounted) {
+        final currentTier = rewardData['currentTier']?['tier'] ?? 1;
+        final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
+        final totalPoints = rewardData['totalPoints'] ?? 0;
+        final currentPoints = rewardData['currentPoints'] ?? 0;
+        final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+        
+        debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
+        
+        // Show the collection success popup
+        ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
+          pointsAwarded: pointsAwarded,
+          tierName: tierName,
+          currentTier: currentTier,
+          totalPoints: totalPoints,
+          tierUpgraded: false,
+        );
+      }
       
       debugPrint('🧪 DEBUG: Collection confirmed, clearing state...');
       // Clear the persistent collection state
@@ -2341,6 +2405,7 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         debugPrint('✅ Collection confirmed successfully!');
         
         // Show collection success popup with reward information
+        debugPrint('🎉 Raw reward data: $rewardData');
         if (rewardData != null && mounted) {
           final currentTier = rewardData['currentTier']?['tier'] ?? 1;
           final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
@@ -2349,6 +2414,7 @@ Future<void> _handleCancellation(CancellationReason reason) async {
           final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
           
           debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
+          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
           
           // Show the collection success popup
           ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(

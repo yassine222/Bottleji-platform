@@ -491,10 +491,21 @@ class DropRepository {
 
   Future<Map<String, dynamic>> getUserRewardStats() async {
     try {
-      final response = await _dio.get('/rewards/stats/${_getCurrentUserId()}');
+      final userId = await _getCurrentUserId();
+      final response = await _dio.get('/rewards/stats/$userId');
       return response.data['stats'] ?? {};
     } catch (e) {
       throw Exception('Failed to load reward stats: $e');
     }
+  }
+
+  Future<String> _getCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final authData = prefs.getString('auth_data');
+    if (authData != null) {
+      final userData = jsonDecode(authData);
+      return userData['id'] as String;
+    }
+    throw Exception('User not authenticated');
   }
 }
