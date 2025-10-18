@@ -371,7 +371,11 @@ export class DropsManagementService {
           { dropoffId: dropIdObjectId }
         ]
       })
-      .sort({ acceptedAt: -1 })
+      .sort({ 
+        // First sort by outcome: expired/cancelled first, then collected
+        outcome: 1, // expired/cancelled will come first alphabetically
+        acceptedAt: -1 // Then by date (newest first)
+      })
       .exec();
     
     console.log('✅ Found collection attempts:', collectionAttempts.length);
@@ -381,6 +385,10 @@ export class DropsManagementService {
       console.log('   - Match:', collectionAttempts[0].dropoffId === dropIdString);
       console.log('   - First attempt dropSnapshot:', collectionAttempts[0].dropSnapshot);
       console.log('   - First attempt imageUrl:', collectionAttempts[0].dropSnapshot?.imageUrl);
+      console.log('   - Timeline order (outcome, acceptedAt):');
+      collectionAttempts.forEach((attempt, index) => {
+        console.log(`     ${index + 1}. Outcome: ${attempt.outcome}, Status: ${attempt.status}, Accepted: ${attempt.acceptedAt}`);
+      });
     } else {
       console.log('   - No attempts found. Checking if any attempts exist in DB...');
       const anyAttempts = await this.collectionAttemptModel.countDocuments();
