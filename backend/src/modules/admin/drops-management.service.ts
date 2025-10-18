@@ -451,7 +451,7 @@ export class DropsManagementService {
       console.log('   - First attempt dropSnapshot imageUrl:', result.collectionAttempts[0].dropSnapshot?.imageUrl);
       console.log('   - First attempt outcome:', result.collectionAttempts[0].outcome);
     } else {
-      console.log('   - No collection attempts found - this might be the issue!');
+      console.log('   - No collection attempts found - will use dropoff data directly');
     }
     
     return result;
@@ -771,25 +771,42 @@ export class DropsManagementService {
       this.userModel.find({ _id: { $in: collectorIds } }).exec(),
     ]);
 
-    const reportsWithDetails = reports.map(report => {
+    // Only return reports for drops that still exist
+    const reportsWithDetails = reports
+      .map(report => {
+        const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
+        const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
+        
+        return {
+          ...report.toObject(),
+          drop: drop ? {
+            id: drop._id,
+            imageUrl: drop.imageUrl,
+            status: drop.status,
+            numberOfBottles: drop.numberOfBottles,
+            numberOfCans: drop.numberOfCans,
+          } : null,
+          reporter: collector ? {
+            name: collector.name,
+            email: collector.email,
+          } : null,
+        };
+      })
+      .filter(report => report.drop !== null); // Only include reports where drop still exists
+
+    console.log(`📋 Filtered reported drops: ${reportsWithDetails.length} out of ${reports.length} (${reports.length - reportsWithDetails.length} drops were deleted)`);
+
+    // Optional: Clean up orphaned reports (reports for deleted drops)
+    const orphanedReports = reports.filter(report => {
       const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
-      const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
-      
-      return {
-        ...report.toObject(),
-        drop: drop ? {
-          id: drop._id,
-          imageUrl: drop.imageUrl,
-          status: drop.status,
-          numberOfBottles: drop.numberOfBottles,
-          numberOfCans: drop.numberOfCans,
-        } : null,
-        reporter: collector ? {
-          name: collector.name,
-          email: collector.email,
-        } : null,
-      };
+      return !drop; // Report exists but drop doesn't
     });
+
+    if (orphanedReports.length > 0) {
+      console.log(`🧹 Found ${orphanedReports.length} orphaned reports for deleted drops`);
+      // Uncomment the next line to automatically clean up orphaned reports
+      // await this.dropReportModel.deleteMany({ _id: { $in: orphanedReports.map(r => r._id) } });
+    }
 
     return reportsWithDetails;
   }

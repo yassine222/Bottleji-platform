@@ -1921,6 +1921,8 @@ function DropsContent() {
       console.log('🔍 Collection attempts:', response.data.collectionAttempts);
       console.log('🔍 First attempt dropSnapshot:', response.data.collectionAttempts?.[0]?.dropSnapshot);
       console.log('🔍 Image URL from snapshot:', response.data.collectionAttempts?.[0]?.dropSnapshot?.imageUrl);
+      console.log('🔍 Full drop object:', response.data.drop);
+      console.log('🔍 Drop keys:', Object.keys(response.data.drop || {}));
       setSelectedDrop(response.data);
     } catch (error) {
       console.error('Error fetching drop details:', error);
