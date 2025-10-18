@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
+import 'package:botleji/features/rewards/presentation/widgets/tier_upgrade_popup.dart';
+import 'package:botleji/features/rewards/data/models/reward_models.dart';
 
 class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
@@ -10,71 +13,108 @@ class RewardsScreen extends ConsumerStatefulWidget {
 }
 
 class _RewardsScreenState extends ConsumerState<RewardsScreen> {
+  RewardStats? _previousStats;
+
   @override
   Widget build(BuildContext context) {
     final userMode = ref.watch(userModeControllerProvider);
+    final rewardStats = ref.watch(rewardStatsProvider);
+    final tierUpgradeState = ref.watch(tierUpgradeProvider);
+    
+    // Check for tier upgrades
+    rewardStats.whenData((stats) {
+      if (_previousStats != null && _previousStats!.currentTier < stats.currentTier) {
+        // Tier upgrade detected!
+        ref.read(tierUpgradeProvider.notifier).showTierUpgrade(
+          TierInfo(
+            tier: stats.currentTier,
+            name: _getTierName(stats.currentTier),
+            dropsRequired: _getDropsRequired(stats.currentTier),
+            pointsPerDrop: _getPointsPerDrop(stats.currentTier),
+          ),
+          stats.currentPoints - (_previousStats?.currentPoints ?? 0),
+        );
+      }
+      _previousStats = stats;
+    });
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: userMode.when(
-        data: (mode) => _buildRewardsContent(context, mode),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error loading user mode: $error'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRewardsContent(BuildContext context, UserMode mode) {
-    return CustomScrollView(
-      slivers: [
-        // App Bar
-        SliverAppBar(
-          expandedHeight: 120,
-          floating: false,
-          pinned: true,
-          backgroundColor: const Color(0xFF00695C),
-          flexibleSpace: FlexibleSpaceBar(
-            title: const Text(
-              'Rewards',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            background: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF00695C),
-                    Color(0xFF004D40),
+      body: Stack(
+        children: [
+          userMode.when(
+            data: (mode) => rewardStats.when(
+              data: (stats) => _buildRewardsContent(context, mode, stats),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load rewards',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please try again later',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.invalidate(rewardStatsProvider),
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
             ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Text('Error loading user mode: $error'),
+            ),
           ),
-        ),
+          
+          // Tier Upgrade Popup
+          if (tierUpgradeState.showPopup && tierUpgradeState.newTier != null)
+            TierUpgradePopup(
+              newTier: tierUpgradeState.newTier!,
+              pointsAwarded: tierUpgradeState.pointsAwarded ?? 0,
+              onDismiss: () {
+                ref.read(tierUpgradeProvider.notifier).dismissPopup();
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildRewardsContent(BuildContext context, UserMode mode, RewardStats stats) {
+    return CustomScrollView(
+      slivers: [
         // Points & Tier Section
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildPointsCard(context),
-                const SizedBox(height: 16),
-                _buildTierCard(context, mode),
-                const SizedBox(height: 16),
-                _buildInfoCard(context, mode),
-                const SizedBox(height: 24),
-                _buildRewardShopHeader(context),
-                const SizedBox(height: 16),
-              ],
-            ),
+              child: Column(
+                children: [
+                  _buildPointsCard(context, stats),
+                  const SizedBox(height: 16),
+                  _buildTierCard(context, mode, stats),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(context, mode),
+                  const SizedBox(height: 24),
+                  _buildRewardShopHeader(context),
+                  const SizedBox(height: 16),
+                ],
+              ),
           ),
         ),
 
@@ -94,7 +134,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
     );
   }
 
-  Widget _buildPointsCard(BuildContext context) {
+  Widget _buildPointsCard(BuildContext context, RewardStats stats) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -133,9 +173,9 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '1,250', // TODO: Replace with actual user points
-                    style: TextStyle(
+                  Text(
+                    '${stats.currentPoints.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -158,16 +198,16 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildProgressBar(),
+          _buildProgressBar(stats),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar() {
-    const currentPoints = 1250;
-    const nextTierPoints = 2000;
-    final progress = currentPoints / nextTierPoints;
+  Widget _buildProgressBar(RewardStats stats) {
+    final currentPoints = stats.currentPoints;
+    final nextTierPoints = _getNextTierPoints(stats.currentTier);
+    final progress = nextTierPoints > 0 ? currentPoints / nextTierPoints : 0.0;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +223,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
               ),
             ),
             Text(
-              '${nextTierPoints - currentPoints} points to go',
+              '${(nextTierPoints - currentPoints).clamp(0, nextTierPoints)} points to go',
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -205,7 +245,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
     );
   }
 
-  Widget _buildTierCard(BuildContext context, UserMode mode) {
+  Widget _buildTierCard(BuildContext context, UserMode mode, RewardStats stats) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -240,7 +280,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Silver Collector', // TODO: Replace with actual tier
+                  _getTierName(stats.currentTier),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF00695C),
@@ -249,8 +289,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   mode == UserMode.collector 
-                    ? 'Earn 20 points per drop collected'
-                    : 'Earn 10 points when your drops are collected',
+                    ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
+                    : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -384,5 +424,74 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
         ),
       ],
     );
+  }
+
+  // Helper methods for tier calculations
+  String _getTierName(int tier) {
+    switch (tier) {
+      case 1:
+        return 'Bronze Collector';
+      case 2:
+        return 'Silver Collector';
+      case 3:
+        return 'Gold Collector';
+      case 4:
+        return 'Platinum Collector';
+      case 5:
+        return 'Diamond Collector';
+      default:
+        return 'Tier $tier';
+    }
+  }
+
+  int _getPointsPerDrop(int tier) {
+    switch (tier) {
+      case 1:
+        return 10;
+      case 2:
+        return 20;
+      case 3:
+        return 30;
+      case 4:
+        return 40;
+      case 5:
+        return 50;
+      default:
+        return 10;
+    }
+  }
+
+  int _getDropsRequired(int tier) {
+    switch (tier) {
+      case 1:
+        return 0;
+      case 2:
+        return 1000;
+      case 3:
+        return 2000;
+      case 4:
+        return 3000;
+      case 5:
+        return 4000;
+      default:
+        return 0;
+    }
+  }
+
+  int _getNextTierPoints(int currentTier) {
+    switch (currentTier) {
+      case 1:
+        return 1000;
+      case 2:
+        return 2000;
+      case 3:
+        return 3000;
+      case 4:
+        return 4000;
+      case 5:
+        return 5000; // Max tier
+      default:
+        return 1000;
+    }
   }
 }
