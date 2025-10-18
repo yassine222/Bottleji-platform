@@ -16,6 +16,15 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   RewardStats? _previousStats;
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh reward data every time the screen is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(rewardStatsProvider);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final userMode = ref.watch(userModeControllerProvider);
     final rewardStats = ref.watch(rewardStatsProvider);
@@ -97,40 +106,47 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   }
 
   Widget _buildRewardsContent(BuildContext context, UserMode mode, RewardStats stats) {
-    return CustomScrollView(
-      slivers: [
-        // Points & Tier Section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildPointsCard(context, stats),
-                  const SizedBox(height: 16),
-                  _buildTierCard(context, mode, stats),
-                  const SizedBox(height: 16),
-                  _buildInfoCard(context, mode),
-                  const SizedBox(height: 24),
-                  _buildRewardShopHeader(context),
-                  const SizedBox(height: 16),
-                ],
-              ),
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Refresh reward data when user pulls down
+        ref.invalidate(rewardStatsProvider);
+        await Future.delayed(const Duration(milliseconds: 500)); // Small delay for better UX
+      },
+      child: CustomScrollView(
+        slivers: [
+          // Points & Tier Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildPointsCard(context, stats),
+                    const SizedBox(height: 16),
+                    _buildTierCard(context, mode, stats),
+                    const SizedBox(height: 16),
+                    _buildInfoCard(context, mode),
+                    const SizedBox(height: 24),
+                    _buildRewardShopHeader(context),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+            ),
           ),
-        ),
 
-        // Reward Shop Items
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildRewardShop(context, mode),
+          // Reward Shop Items
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildRewardShop(context, mode),
+            ),
           ),
-        ),
 
         // Bottom spacing
         const SliverToBoxAdapter(
           child: SizedBox(height: 100),
         ),
-      ],
+        ],
+      ),
     );
   }
 
