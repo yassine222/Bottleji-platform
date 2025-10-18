@@ -2438,11 +2438,13 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         await ref.read(navigationControllerProvider.notifier).completeCollection();
         
         if (mounted) {
-          // Wait for popup to show, then navigate
-          await Future.delayed(const Duration(milliseconds: 3000));
+          // Wait longer for popup to show and be visible
+          debugPrint('⏳ Waiting for popup to display...');
+          await Future.delayed(const Duration(milliseconds: 5000));
           
           if (mounted) {
             // Navigate back to home screen
+            debugPrint('🏠 Navigating to home screen...');
             Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
           }
         }

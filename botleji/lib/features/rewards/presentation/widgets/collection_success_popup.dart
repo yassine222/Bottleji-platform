@@ -33,6 +33,7 @@ class _CollectionSuccessPopupState extends State<CollectionSuccessPopup>
   @override
   void initState() {
     super.initState();
+    print('🎉 CollectionSuccessPopup: initState called with points: ${widget.pointsAwarded}');
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,

@@ -339,6 +339,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
                 final collectionSuccessState = ref.watch(collectionSuccessProvider);
                 
                 if (collectionSuccessState.showPopup) {
+                  print('🎉 MainApp: Rendering CollectionSuccessPopup with ${collectionSuccessState.pointsAwarded} points');
                   return CollectionSuccessPopup(
                     pointsAwarded: collectionSuccessState.pointsAwarded,
                     tierName: collectionSuccessState.tierName,
@@ -349,6 +350,8 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
                       ref.read(collectionSuccessProvider.notifier).dismissPopup();
                     },
                   );
+                } else {
+                  print('🎉 MainApp: Popup not showing, showPopup: ${collectionSuccessState.showPopup}');
                 }
                 
                 return const SizedBox.shrink();

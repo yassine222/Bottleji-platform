@@ -46,6 +46,7 @@ class CollectionSuccessNotifier extends StateNotifier<CollectionSuccessState> {
     required int totalPoints,
     required bool tierUpgraded,
   }) {
+    print('🎉 CollectionSuccessProvider: showCollectionSuccess called with $pointsAwarded points');
     state = state.copyWith(
       showPopup: true,
       pointsAwarded: pointsAwarded,
@@ -54,6 +55,7 @@ class CollectionSuccessNotifier extends StateNotifier<CollectionSuccessState> {
       totalPoints: totalPoints,
       tierUpgraded: tierUpgraded,
     );
+    print('🎉 CollectionSuccessProvider: State updated, showPopup: ${state.showPopup}');
   }
 
   void dismissPopup() {
