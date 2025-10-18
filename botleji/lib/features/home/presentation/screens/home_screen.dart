@@ -18,7 +18,7 @@ import 'package:botleji/core/theme/app_colors.dart';
 import 'package:botleji/features/navigation/presentation/widgets/bottom_nav_bar.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/features/stats/presentation/screens/stats_screen.dart';
-import 'package:botleji/features/tips/presentation/screens/tips_screen.dart';
+import 'package:botleji/features/rewards/presentation/screens/rewards_screen.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
@@ -1381,7 +1381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         case 1:
           return const DropsListScreen();
         case 2:
-          return const TipsScreen();
+          return const RewardsScreen();
         case 3:
           return const StatsScreen();
         default:
