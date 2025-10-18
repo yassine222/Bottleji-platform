@@ -9,10 +9,10 @@ import { User } from '../users/schemas/user.schema';
 @Injectable()
 export class DropsManagementService {
   constructor(
-    @InjectModel('Dropoff') private dropModel: Model<Dropoff>,
-    @InjectModel('CollectionAttempt') private collectionAttemptModel: Model<CollectionAttempt>,
-    @InjectModel('DropReport') private dropReportModel: Model<DropReport>,
-    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel(Dropoff.name) private dropoffModel: Model<Dropoff>,
+    @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
+    @InjectModel(DropReport.name) private dropReportModel: Model<DropReport>,
+    @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
   /**
@@ -25,32 +25,32 @@ export class DropsManagementService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Total drops
-    const totalDrops = await this.dropModel.countDocuments();
+    const totalDrops = await this.dropoffModel.countDocuments();
 
     // Active drops (pending, accepted)
-    const activeDrops = await this.dropModel.countDocuments({
+    const activeDrops = await this.dropoffModel.countDocuments({
       status: { $in: ['pending', 'accepted'] },
     });
 
     // Completed drops
-    const completedDrops = await this.dropModel.countDocuments({
+    const completedDrops = await this.dropoffModel.countDocuments({
       status: 'collected',
     });
 
     // Flagged/Suspicious drops
-    const flaggedDrops = await this.dropModel.countDocuments({
+    const flaggedDrops = await this.dropoffModel.countDocuments({
       isSuspicious: true,
     });
 
     // Old drops (>3 days, not collected, not stale)
-    const oldDrops = await this.dropModel.countDocuments({
+    const oldDrops = await this.dropoffModel.countDocuments({
       createdAt: { $lt: threeDaysAgo },
       status: { $in: ['pending', 'accepted', 'cancelled', 'expired'] },
       isSuspicious: { $ne: true },
     });
 
     // Drops by status
-    const dropsByStatus = await this.dropModel.aggregate([
+    const dropsByStatus = await this.dropoffModel.aggregate([
       {
         $group: {
           _id: '$status',
@@ -60,12 +60,12 @@ export class DropsManagementService {
     ]);
 
     // Drops created in last 7 days
-    const dropsLast7Days = await this.dropModel.countDocuments({
+    const dropsLast7Days = await this.dropoffModel.countDocuments({
       createdAt: { $gte: sevenDaysAgo },
     });
 
     // Drops created in last 30 days
-    const dropsLast30Days = await this.dropModel.countDocuments({
+    const dropsLast30Days = await this.dropoffModel.countDocuments({
       createdAt: { $gte: thirtyDaysAgo },
     });
 
@@ -184,13 +184,13 @@ export class DropsManagementService {
     }
 
     const [drops, total] = await Promise.all([
-      this.dropModel
+      this.dropoffModel
         .find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.dropModel.countDocuments(query),
+      this.dropoffModel.countDocuments(query),
     ]);
 
     // Manually populate user data since userId is a string, not a reference
@@ -220,7 +220,7 @@ export class DropsManagementService {
   async analyzeOldDrops() {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
-    const oldDrops = await this.dropModel
+    const oldDrops = await this.dropoffModel
       .find({
         createdAt: { $lt: threeDaysAgo },
         status: { $in: ['pending', 'accepted', 'cancelled', 'expired'] }, // Only include drops that can be marked as stale
@@ -255,10 +255,10 @@ export class DropsManagementService {
    * Hide old drops and send notifications
    */
   async hideOldDrops(dropIds: string[]) {
-    const drops = await this.dropModel.find({ _id: { $in: dropIds } }).exec();
+    const drops = await this.dropoffModel.find({ _id: { $in: dropIds } }).exec();
 
     // Mark drops as stale (hidden from active view)
-    await this.dropModel.updateMany(
+    await this.dropoffModel.updateMany(
       { _id: { $in: dropIds } },
       { 
         status: 'stale',
@@ -283,7 +283,7 @@ export class DropsManagementService {
     const { page, limit } = filters;
     const skip = (page - 1) * limit;
 
-    const staleDrops = await this.dropModel
+    const staleDrops = await this.dropoffModel
       .find({ status: 'stale' })
       .populate('userId', 'name email')
       .sort({ modifiedAt: -1 })
@@ -291,7 +291,7 @@ export class DropsManagementService {
       .limit(limit)
       .exec();
 
-    const total = await this.dropModel.countDocuments({ status: 'stale' });
+    const total = await this.dropoffModel.countDocuments({ status: 'stale' });
 
     console.log('📋 Stale drops found:', staleDrops.length);
     if (staleDrops.length > 0) {
@@ -312,7 +312,7 @@ export class DropsManagementService {
    * Get flagged/suspicious drops
    */
   async getFlaggedDrops() {
-    const flaggedDrops = await this.dropModel
+    const flaggedDrops = await this.dropoffModel
       .find({ isSuspicious: true })
       .sort({ createdAt: -1 })
       .exec();
@@ -338,20 +338,15 @@ export class DropsManagementService {
   async getDropDetails(dropId: string) {
     console.log('🔍 getDropDetails called with dropId:', dropId);
     
-    // First try to find in drop collection
-    let drop = await this.dropModel.findById(dropId).exec();
-    let isDropoffRecord = false;
+    // First try to find in dropoff collection (for collected drops)
+    let drop = await this.dropoffModel.findById(dropId).exec();
+    let isDropoffRecord = true;
     
-    // If not found in drop collection, try dropoff collection (for collected drops)
-    if (!drop) {
-      console.log('🔍 Drop not found in drop collection, checking dropoff collection...');
-      drop = await this.dropoffModel.findById(dropId).exec();
-      isDropoffRecord = true;
-      if (drop) {
-        console.log('✅ Found in dropoff collection:', drop._id);
-      }
+    if (drop) {
+      console.log('✅ Found in dropoff collection:', drop._id);
     } else {
-      console.log('✅ Found in drop collection:', drop._id);
+      console.log('🔍 Drop not found in dropoff collection');
+      isDropoffRecord = false;
     }
     
     if (!drop) {
@@ -453,7 +448,7 @@ export class DropsManagementService {
    * Remove flag from drop
    */
   async unflagDrop(dropId: string) {
-    const drop = await this.dropModel.findByIdAndUpdate(
+    const drop = await this.dropoffModel.findByIdAndUpdate(
       dropId,
       { isSuspicious: false, suspiciousReason: null },
       { new: true },
@@ -466,7 +461,7 @@ export class DropsManagementService {
    * Flag drop as suspicious
    */
   async flagDrop(dropId: string, reason: string) {
-    const drop = await this.dropModel.findByIdAndUpdate(
+    const drop = await this.dropoffModel.findByIdAndUpdate(
       dropId,
       { isSuspicious: true, suspiciousReason: reason },
       { new: true },
@@ -479,7 +474,7 @@ export class DropsManagementService {
    * Censor drop image and add warning to user
    */
   async censorDrop(dropId: string, reason: string, adminId?: string) {
-    const drop = await this.dropModel.findByIdAndUpdate(
+    const drop = await this.dropoffModel.findByIdAndUpdate(
       dropId,
       { 
         isCensored: true, 
@@ -522,7 +517,7 @@ export class DropsManagementService {
    * Delete drop permanently
    */
   async deleteDrop(dropId: string) {
-    const drop = await this.dropModel.findByIdAndDelete(dropId).exec();
+    const drop = await this.dropoffModel.findByIdAndDelete(dropId).exec();
     return drop;
   }
 
@@ -537,7 +532,7 @@ export class DropsManagementService {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
-    const stats = await this.dropModel.aggregate([
+    const stats = await this.dropoffModel.aggregate([
       { $match: query },
       {
         $group: {
@@ -574,7 +569,7 @@ export class DropsManagementService {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
-    const collectedDrops = await this.dropModel.find(query).exec();
+    const collectedDrops = await this.dropoffModel.find(query).exec();
 
     if (collectedDrops.length === 0) {
       return {
@@ -606,7 +601,7 @@ export class DropsManagementService {
    * Analytics: Popular Locations
    */
   async getPopularLocations(limit = 10) {
-    const locations = await this.dropModel.aggregate([
+    const locations = await this.dropoffModel.aggregate([
       {
         $group: {
           _id: {
@@ -635,7 +630,7 @@ export class DropsManagementService {
    * Analytics: Peak Times
    */
   async getPeakTimes() {
-    const dropsByHour = await this.dropModel.aggregate([
+    const dropsByHour = await this.dropoffModel.aggregate([
       {
         $group: {
           _id: { $hour: '$createdAt' },
@@ -645,7 +640,7 @@ export class DropsManagementService {
       { $sort: { _id: 1 } },
     ]);
 
-    const dropsByDayOfWeek = await this.dropModel.aggregate([
+    const dropsByDayOfWeek = await this.dropoffModel.aggregate([
       {
         $group: {
           _id: { $dayOfWeek: '$createdAt' },
@@ -712,7 +707,7 @@ export class DropsManagementService {
       if (endDate) matchStage.createdAt.$lte = new Date(endDate);
     }
 
-    const rankings = await this.dropModel.aggregate([
+    const rankings = await this.dropoffModel.aggregate([
       { $match: matchStage },
       {
         $group: {
@@ -759,7 +754,7 @@ export class DropsManagementService {
     const collectorIds = reports.map(r => r.reportedBy);
     
     const [drops, collectors] = await Promise.all([
-      this.dropModel.find({ _id: { $in: dropIds } }).exec(),
+      this.dropoffModel.find({ _id: { $in: dropIds } }).exec(),
       this.userModel.find({ _id: { $in: collectorIds } }).exec(),
     ]);
 
@@ -817,16 +812,16 @@ export class DropsManagementService {
 
     // This week vs last week
     const [thisWeek, lastWeek] = await Promise.all([
-      this.dropModel.countDocuments({ createdAt: { $gte: weekAgo } }),
-      this.dropModel.countDocuments({
+      this.dropoffModel.countDocuments({ createdAt: { $gte: weekAgo } }),
+      this.dropoffModel.countDocuments({
         createdAt: { $gte: twoWeeksAgo, $lt: weekAgo },
       }),
     ]);
 
     // This month vs last month
     const [thisMonth, lastMonth] = await Promise.all([
-      this.dropModel.countDocuments({ createdAt: { $gte: monthAgo } }),
-      this.dropModel.countDocuments({
+      this.dropoffModel.countDocuments({ createdAt: { $gte: monthAgo } }),
+      this.dropoffModel.countDocuments({
         createdAt: { $gte: twoMonthsAgo, $lt: monthAgo },
       }),
     ]);
