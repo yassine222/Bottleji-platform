@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:botleji/core/config/server_config.dart';
 
@@ -16,17 +15,21 @@ class RewardService {
         throw Exception('No authentication token found');
       }
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/rewards/stats/$userId'),
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ));
+
+      final response = await dio.get('/rewards/stats/$userId');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['stats'] ?? {};
+        return response.data['stats'] ?? {};
       } else {
         throw Exception('Failed to load reward stats: ${response.statusCode}');
       }
@@ -46,17 +49,21 @@ class RewardService {
         throw Exception('No authentication token found');
       }
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/rewards/tiers'),
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ));
+
+      final response = await dio.get('/rewards/tiers');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['tiers'] ?? []);
+        return List<Map<String, dynamic>>.from(response.data['tiers'] ?? []);
       } else {
         throw Exception('Failed to load tiers: ${response.statusCode}');
       }
@@ -76,20 +83,24 @@ class RewardService {
         throw Exception('No authentication token found');
       }
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/rewards/spend/$userId'),
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'points': points,
-          'reason': reason,
-        }),
-      );
+      ));
+
+      final response = await dio.post('/rewards/spend/$userId', data: {
+        'points': points,
+        'reason': reason,
+      });
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        return response.data;
       } else {
         throw Exception('Failed to spend points: ${response.statusCode}');
       }
