@@ -1850,6 +1850,11 @@ Widget _buildSlideButton() {
         final rewardData = await ref.read(dropsControllerProvider.notifier)
             .confirmCollectionWithRewards(widget.dropId);
         
+        // IMMEDIATELY stop the timer
+        debugPrint('⏰ Stopping timer immediately...');
+        _timer?.cancel();
+        _hasTimedOut = true; // Prevent timer from continuing
+        
         // Show collection success popup with reward information
         debugPrint('🎉 Raw reward data: $rewardData');
         if (rewardData != null && mounted) {
@@ -2404,6 +2409,16 @@ Future<void> _handleCancellation(CancellationReason reason) async {
 
         debugPrint('✅ Collection confirmed successfully!');
         
+        // IMMEDIATELY stop the timer
+        debugPrint('⏰ Stopping timer immediately...');
+        _timer?.cancel();
+        _hasTimedOut = true; // Prevent timer from continuing
+        
+        // IMMEDIATELY stop the timer
+        debugPrint('⏰ Stopping timer immediately...');
+        _timer?.cancel();
+        _hasTimedOut = true; // Prevent timer from continuing
+        
         // Show collection success popup with reward information
         debugPrint('🎉 Raw reward data: $rewardData');
         if (rewardData != null && mounted) {
@@ -2416,15 +2431,18 @@ Future<void> _handleCancellation(CancellationReason reason) async {
           debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
           debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
           
-          // Show the collection success popup
-          ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
+          // Show the collection success popup as a dialog
+          _showCollectionSuccessDialog(
             pointsAwarded: pointsAwarded,
             tierName: tierName,
             currentTier: currentTier,
             totalPoints: totalPoints,
-            tierUpgraded: false, // TODO: Implement tier upgrade detection
           );
         }
+        
+        // CRITICAL: Clear the active collection state to stop the timer
+        debugPrint('🧹 Clearing active collection state...');
+        await ref.read(navigationControllerProvider.notifier).completeCollection();
         
         // Wait a moment for real-time updates to propagate
         await Future.delayed(const Duration(milliseconds: 500));
@@ -2433,21 +2451,8 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         debugPrint('🔄 Force refreshing drops list...');
         await ref.read(dropsControllerProvider.notifier).loadDrops();
         
-        // CRITICAL: Clear the active collection state to stop the timer
-        debugPrint('🧹 Clearing active collection state...');
-        await ref.read(navigationControllerProvider.notifier).completeCollection();
-        
-        if (mounted) {
-          // Wait longer for popup to show and be visible
-          debugPrint('⏳ Waiting for popup to display...');
-          await Future.delayed(const Duration(milliseconds: 5000));
-          
-          if (mounted) {
-            // Navigate back to home screen
-            debugPrint('🏠 Navigating to home screen...');
-            Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-          }
-        }
+        // Dialog will handle navigation, no need to wait here
+        debugPrint('✅ Collection success dialog should be showing now');
       } else {
         debugPrint('❌ No collector ID found');
         if (mounted) {
@@ -2470,6 +2475,168 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         );
       }
     }
+  }
+
+  void _showCollectionSuccessDialog({
+    required int pointsAwarded,
+    required String tierName,
+    required int currentTier,
+    required int totalPoints,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success Icon
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                  ),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Success Title
+              Text(
+                'Drop Collected!',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2E7D32),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Points Awarded
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00695C), Color(0xFF004D40)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.stars, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '+$pointsAwarded Points Earned!',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Tier Information
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF00695C).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00695C),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.emoji_events, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tierName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF00695C),
+                            ),
+                          ),
+                          Text(
+                            'Current Tier',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Total Points',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        Text(
+                          '$totalPoints',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF00695C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Dismiss Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Navigate to home screen
+                    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00695C),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Awesome!',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _temporaryExit() {
