@@ -246,11 +246,6 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   }
 
   Widget _buildTierCard(BuildContext context, UserMode mode, RewardStats stats) {
-    final nextTier = stats.currentTier < 5 ? stats.currentTier + 1 : stats.currentTier;
-    final nextTierName = _getTierName(nextTier);
-    final nextTierPoints = _getPointsPerDrop(nextTier);
-    final dropsToNextTier = _getDropsRequired(nextTier) - (stats.totalDropsCollected);
-    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -265,100 +260,60 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Current Tier Row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00695C).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.emoji_events,
-                  color: Color(0xFF00695C),
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getTierName(stats.currentTier),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF00695C),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mode == UserMode.collector 
-                        ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
-                        : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00695C).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.emoji_events,
+              color: Color(0xFF00695C),
+              size: 32,
+            ),
           ),
-          
-          // Next Tier Info
-          if (stats.currentTier < 5) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.blue[200]!,
-                  width: 1,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getTierName(stats.currentTier),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF00695C),
+                  ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  mode == UserMode.collector 
+                    ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
+                    : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Info Icon
+          GestureDetector(
+            onTap: () => _showTiersInfoDialog(context, mode, stats),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.trending_up,
-                    color: Colors.blue[700],
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Next: $nextTierName',
-                          style: TextStyle(
-                            color: Colors.blue[700],
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          mode == UserMode.collector
-                            ? 'Earn $nextTierPoints points per drop • ${dropsToNextTier.clamp(0, 9999)} drops to go'
-                            : 'Earn ${(nextTierPoints * 0.5).round()} points per drop • ${dropsToNextTier.clamp(0, 9999)} drops to go',
-                          style: TextStyle(
-                            color: Colors.blue[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: const Icon(
+                Icons.info_outline,
+                color: Colors.grey,
+                size: 20,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -554,5 +509,132 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
       default:
         return 1000;
     }
+  }
+
+  void _showTiersInfoDialog(BuildContext context, UserMode mode, RewardStats stats) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.emoji_events, color: Color(0xFF00695C)),
+            const SizedBox(width: 8),
+            const Text('Tier System'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Current Tier Highlight
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF00695C)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Color(0xFF00695C), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Current: ${_getTierName(stats.currentTier)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00695C),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // All Tiers List
+              ...List.generate(5, (index) {
+                final tier = index + 1;
+                final isCurrentTier = tier == stats.currentTier;
+                final isUnlocked = tier <= stats.currentTier;
+                final dropsRequired = _getDropsRequired(tier);
+                final pointsPerDrop = _getPointsPerDrop(tier);
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isCurrentTier 
+                        ? const Color(0xFF00695C).withOpacity(0.1)
+                        : isUnlocked 
+                            ? Colors.green[50]
+                            : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isCurrentTier 
+                          ? const Color(0xFF00695C)
+                          : isUnlocked 
+                              ? Colors.green
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isCurrentTier 
+                            ? Icons.star
+                            : isUnlocked 
+                                ? Icons.check_circle
+                                : Icons.lock,
+                        color: isCurrentTier 
+                            ? const Color(0xFF00695C)
+                            : isUnlocked 
+                                ? Colors.green
+                                : Colors.grey,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getTierName(tier),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isCurrentTier 
+                                    ? const Color(0xFF00695C)
+                                    : isUnlocked 
+                                        ? Colors.green[700]
+                                        : Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              mode == UserMode.collector
+                                ? 'Earn $pointsPerDrop points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}'
+                                : 'Earn ${(pointsPerDrop * 0.5).round()} points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }
