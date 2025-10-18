@@ -1288,18 +1288,21 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                 // Filter chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('Active', goodDrops.length),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Collected', collectedDrops.length),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Flagged', flaggedDrops.length),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Censored', censoredDrops.length),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Stale', staleDrops.length),
-                    ],
+                  child: IntrinsicWidth(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFilterChip('Active', goodDrops.length),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Collected', collectedDrops.length),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Flagged', flaggedDrops.length),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Censored', censoredDrops.length),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Stale', staleDrops.length),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),

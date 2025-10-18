@@ -349,7 +349,7 @@ export class DropsManagementController {
       adminId,
       body.reason,
     );
-    return { success: true, ...result };
+    return result;
   }
 }
 
