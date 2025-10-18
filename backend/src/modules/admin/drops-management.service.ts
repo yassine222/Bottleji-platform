@@ -338,12 +338,25 @@ export class DropsManagementService {
   async getDropDetails(dropId: string) {
     console.log('🔍 getDropDetails called with dropId:', dropId);
     
-    // Get the drop
-    const drop = await this.dropModel.findById(dropId).exec();
+    // First try to find in drop collection
+    let drop = await this.dropModel.findById(dropId).exec();
+    let isDropoffRecord = false;
+    
+    // If not found in drop collection, try dropoff collection (for collected drops)
     if (!drop) {
-      throw new Error('Drop not found');
+      console.log('🔍 Drop not found in drop collection, checking dropoff collection...');
+      drop = await this.dropoffModel.findById(dropId).exec();
+      isDropoffRecord = true;
+      if (drop) {
+        console.log('✅ Found in dropoff collection:', drop._id);
+      }
+    } else {
+      console.log('✅ Found in drop collection:', drop._id);
     }
-    console.log('✅ Drop found:', drop._id);
+    
+    if (!drop) {
+      throw new Error('Drop not found in either drop or dropoff collection');
+    }
 
     // Get user who created the drop
     const user = await this.userModel.findById(drop.userId).exec();
@@ -360,6 +373,7 @@ export class DropsManagementService {
     const dropIdString = (drop as any)._id.toString();
     const dropIdObjectId = (drop as any)._id;
     console.log('🔍 Searching for collection attempts...');
+    console.log('   - Is dropoff record:', isDropoffRecord);
     console.log('   - Querying with dropoffId (string):', dropIdString);
     console.log('   - Querying with dropoffId (ObjectId):', dropIdObjectId);
     
@@ -408,7 +422,7 @@ export class DropsManagementService {
       };
     });
 
-    return {
+    const result = {
       drop: {
         ...drop.toObject(),
         user: user ? { 
@@ -425,6 +439,14 @@ export class DropsManagementService {
       cancelledAttempts: enrichedAttempts.filter(a => a.outcome === 'cancelled').length,
       expiredAttempts: enrichedAttempts.filter(a => a.outcome === 'expired').length,
     };
+
+    console.log('🔍 Final result structure:');
+    console.log('   - Drop imageUrl:', result.drop.imageUrl);
+    console.log('   - Drop user:', result.drop.user?.name);
+    console.log('   - Collection attempts count:', result.collectionAttempts.length);
+    console.log('   - Is dropoff record:', isDropoffRecord);
+    
+    return result;
   }
 
   /**
