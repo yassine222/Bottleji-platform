@@ -1970,13 +1970,10 @@ function DropsContent() {
   };
 
   const flagDrop = async (dropId: string) => {
-    const reason = prompt('Enter reason for flagging this drop:');
-    if (!reason) return;
-    
     try {
       const token = localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/flag/${dropId}`, { reason }, config);
+      await axios.put(`${API_URL}/admin/drops-management/flag/${dropId}`, { reason: 'Flagged by admin' }, config);
       alert('Drop flagged successfully!');
       setShowDropDetails(false);
       fetchDropsList();
