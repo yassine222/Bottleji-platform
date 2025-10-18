@@ -55,46 +55,17 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Widget build(BuildContext context) {
     final userMode = ref.watch(userModeControllerProvider);
     
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: userMode.when(
-        data: (mode) {
-          if (mode == UserMode.household) {
-            return _buildHouseholdStats();
-          } else {
-            return _buildCollectorStats();
-          }
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Failed to load stats',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please try again later',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(userModeControllerProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+    return userMode.when(
+      data: (mode) {
+        if (mode == UserMode.household) {
+          return _buildHouseholdStats();
+        } else {
+          return _buildCollectorStats();
+        }
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Text('Error: $error'),
       ),
     );
   }
@@ -141,121 +112,84 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     }
     final totalItems = totalBottles + totalCans;
     
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.read(userDropStatsProvider(_selectedTimeRange.name).notifier).refresh();
-        await Future.delayed(const Duration(milliseconds: 500));
-      },
-      child: CustomScrollView(
-        slivers: [
-          // Header with title and refresh button
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Text(
-                    'My Stats',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF00695C),
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.refresh_rounded),
-                      onPressed: () {
-                        ref.read(userDropStatsProvider(_selectedTimeRange.name).notifier).refresh();
-                      },
-                      color: const Color(0xFF00695C),
-                    ),
-                  ),
-                ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title with reload button
+          Row(
+            children: [
+              Text(
+                'My Stats',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C),
+                ),
               ),
-            ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  ref.read(userDropStatsProvider(_selectedTimeRange.name).notifier).refresh();
+                },
+                color: const Color(0xFF00695C),
+              ),
+            ],
           ),
+          const SizedBox(height: 16),
           
           // Time range selector
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHouseholdTimeRangeSelector(),
+          _buildHouseholdTimeRangeSelector(),
+          const SizedBox(height: 24),
+          
+          // Overview section - empty for now
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
             ),
-          ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-          
-          // Overview Cards
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHouseholdOverviewCards(
-                totalDrops: totalDrops,
-                collectedDrops: collectedDrops,
-                pendingDrops: pendingDrops,
-                totalItems: totalItems,
+            child: const Center(
+              child: Text(
+                'Overview section\n(To be designed)',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          const SizedBox(height: 24),
           
           // Status breakdown
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHouseholdStatusBreakdown(
-                pending: pendingDrops,
-                collected: collectedDrops,
-                flagged: flaggedDrops,
-                stale: staleDrops,
-                censored: censoredDrops,
-                total: totalDrops,
-              ),
-            ),
+          _buildHouseholdStatusBreakdown(
+            pending: pendingDrops,
+            collected: collectedDrops,
+            flagged: flaggedDrops,
+            stale: staleDrops,
+            censored: censoredDrops,
+            total: totalDrops,
           ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          const SizedBox(height: 24),
           
           // Recycling impact
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHouseholdRecyclingImpact(
-                totalBottles: totalBottles,
-                totalCans: totalCans,
-                totalItems: totalItems,
-              ),
-            ),
+          _buildHouseholdRecyclingImpact(
+            totalBottles: totalBottles,
+            totalCans: totalCans,
+            totalItems: totalItems,
           ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          const SizedBox(height: 24),
           
           // Recent drops
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHouseholdRecentDropsSection(),
-            ),
-          ),
+          _buildHouseholdRecentDropsSection(),
           
           // Bottom padding to prevent bottom nav bar interference
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: MediaQuery.of(context).padding.bottom + 100, // Bottom nav height + extra padding
-            ),
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom + 100, // Bottom nav height + extra padding
           ),
         ],
       ),
@@ -596,112 +530,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             'Cans',
             totalCans,
             'assets/icons/can.png',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHouseholdOverviewCards({
-    required int totalDrops,
-    required int collectedDrops,
-    required int pendingDrops,
-    required int totalItems,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Overview',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF00695C),
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
-          children: [
-            _buildModernStatCard(
-              'Total Drops',
-              totalDrops.toString(),
-              Icons.inventory_2_rounded,
-              const Color(0xFF00695C),
-            ),
-            _buildModernStatCard(
-              'Collected',
-              collectedDrops.toString(),
-              Icons.check_circle_rounded,
-              Colors.green,
-            ),
-            _buildModernStatCard(
-              'Pending',
-              pendingDrops.toString(),
-              Icons.hourglass_empty_rounded,
-              Colors.orange,
-            ),
-            _buildModernStatCard(
-              'Items Recycled',
-              totalItems.toString(),
-              Icons.recycling_rounded,
-              Colors.blue,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModernStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              size: 28,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -1139,104 +967,46 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildStatsContent(CollectorStats stats) {
-    return CustomScrollView(
-      slivers: [
-        // Header with title and refresh button
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Text(
-                  'My Stats',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00695C),
-                  ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title with reload button
+          Row(
+            children: [
+              Text(
+                'My Stats',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C), // Green color
                 ),
-                const Spacer(),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.refresh_rounded),
-                    onPressed: () {
-                      // Refresh both stats and history
-                      ref.read(collectorStatsProvider(_selectedTimeRange.apiValue).notifier).refresh();
-                      ref.read(historyControllerProvider.notifier).refresh();
-                    },
-                    color: const Color(0xFF00695C),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  // Refresh both stats and history
+                  ref.read(collectorStatsProvider(_selectedTimeRange.apiValue).notifier).refresh();
+                  ref.read(historyControllerProvider.notifier).refresh();
+                },
+                color: const Color(0xFF00695C), // Green color
+              ),
+            ],
           ),
-        ),
-        
-        // Time range selector
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildTimeRangeSelector(),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        
-        // Overview Cards
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildOverviewCards(stats),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        
-        // Performance Metrics
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildPerformanceMetrics(stats),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        
-        // Cancellation Reasons
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildCancellationReasons(stats),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        
-        // Collection History
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildCollectionHistory(),
-          ),
-        ),
-        
-        // Bottom padding to prevent bottom nav bar interference
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: MediaQuery.of(context).padding.bottom + 100,
-          ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          _buildTimeRangeSelector(),
+          const SizedBox(height: 24),
+          _buildOverviewCards(stats),
+          const SizedBox(height: 24),
+          _buildPerformanceMetrics(stats),
+          const SizedBox(height: 24),
+          _buildCancellationReasons(stats),
+          const SizedBox(height: 24),
+          _buildCollectionHistory(),
+        ],
+      ),
     );
   }
 
@@ -1246,9 +1016,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       children: [
         Text(
           'Overview',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF00695C),
+            color: const Color(0xFF00695C), // Green color
           ),
         ),
         const SizedBox(height: 16),
@@ -1258,30 +1028,30 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
+          childAspectRatio: 1.2,
           children: [
-            _buildModernStatCard(
+            _buildStatCard(
               'Accepted',
               stats.accepted.toString(),
-              Icons.check_circle_rounded,
+              Icons.check_circle,
               Colors.green,
             ),
-            _buildModernStatCard(
+            _buildStatCard(
               'Collected',
               stats.collected.toString(),
-              Icons.recycling_rounded,
+              Icons.recycling,
               Colors.blue,
             ),
-            _buildModernStatCard(
+            _buildStatCard(
               'Cancelled',
               stats.cancelled.toString(),
-              Icons.cancel_rounded,
+              Icons.cancel,
               Colors.red,
             ),
-            _buildModernStatCard(
+            _buildStatCard(
               'Expired',
               stats.expired.toString(),
-              Icons.timer_off_rounded,
+              Icons.timer_off,
               Colors.purple,
             ),
           ],
@@ -1326,87 +1096,36 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildPerformanceMetrics(CollectorStats stats) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Performance Metrics',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF00695C),
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildModernMetricRow(
-            'Collection Rate',
-            '${stats.collectionRate.toStringAsFixed(1)}%',
-            Icons.trending_up_rounded,
-            Colors.green,
-          ),
-          const SizedBox(height: 16),
-          _buildModernMetricRow(
-            'Avg Collection Time',
-            _formatDuration(stats.averageCollectionTime),
-            Icons.access_time_rounded,
-            Colors.blue,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernMetricRow(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Performance Metrics',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF00695C), // Green color
               ),
             ),
-          ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+            const SizedBox(height: 16),
+            _buildMetricRow(
+              'Collection Rate',
+              '${stats.collectionRate.toStringAsFixed(1)}%',
+              Icons.trending_up,
+              Colors.green,
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            _buildMetricRow(
+              'Avg Collection Time',
+              _formatDuration(stats.averageCollectionTime),
+              Icons.access_time,
+              Colors.blue,
+            ),
+          ],
+        ),
       ),
     );
   }
