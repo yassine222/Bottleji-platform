@@ -440,6 +440,16 @@ export class DropsManagementService {
     console.log('   - Drop user:', result.drop.user?.name);
     console.log('   - Collection attempts count:', result.collectionAttempts.length);
     console.log('   - Is dropoff record:', isDropoffRecord);
+    console.log('   - Drop status:', result.drop.status);
+    console.log('   - Drop collectedBy:', result.drop.collectedBy);
+    console.log('   - Drop collectedAt:', result.drop.collectedAt);
+    
+    if (result.collectionAttempts.length > 0) {
+      console.log('   - First attempt dropSnapshot imageUrl:', result.collectionAttempts[0].dropSnapshot?.imageUrl);
+      console.log('   - First attempt outcome:', result.collectionAttempts[0].outcome);
+    } else {
+      console.log('   - No collection attempts found - this might be the issue!');
+    }
     
     return result;
   }

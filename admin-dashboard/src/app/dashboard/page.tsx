@@ -2742,9 +2742,8 @@ function DropsContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
-                            setSelectedDrop(drop);
                             setDropDetailsContext('default');
-                            setShowDropDetails(true);
+                            viewDropDetails(drop._id || drop.id);
                           }}
                           className="text-primary hover:text-primary-dark"
                         >
@@ -2835,9 +2834,8 @@ function DropsContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
-                            setSelectedDrop(drop);
                             setDropDetailsContext('default');
-                            setShowDropDetails(true);
+                            viewDropDetails(drop._id || drop.id);
                           }}
                           className="text-primary hover:text-primary-dark"
                         >
@@ -2930,9 +2928,8 @@ function DropsContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
-                            setSelectedDrop(drop);
                             setDropDetailsContext('default');
-                            setShowDropDetails(true);
+                            viewDropDetails(drop._id || drop.id);
                           }}
                           className="text-primary hover:text-primary-dark"
                         >
