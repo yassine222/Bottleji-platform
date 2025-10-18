@@ -2570,32 +2570,12 @@ function DropsContent() {
                         {new Date(report.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => { setDropDetailsContext('default'); viewDropDetails(report.dropId); }}
-                            className="text-primary hover:text-primary-dark"
-                          >
-                            View Drop
-                          </button>
-                          <button
-                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'approve')}
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'censor')}
-                            className="text-yellow-600 hover:text-yellow-800"
-                          >
-                            Censor
-                          </button>
-                          <button
-                            onClick={() => handleReportedDropAction(report._id, report.dropId, 'delete')}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => { setDropDetailsContext('default'); viewDropDetails(report.dropId); }}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          View Drop
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -2667,37 +2647,12 @@ function DropsContent() {
                         {drop.createdAt ? new Date(drop.createdAt).toLocaleDateString() : '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => { setDropDetailsContext('flagged'); viewDropDetails(drop._id || drop.id); }}
-                            className="text-primary hover:text-primary-dark"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const token = localStorage.getItem('admin_token');
-                                const config = { headers: { Authorization: `Bearer ${token}` } };
-                                await axios.put(`${API_URL}/admin/drops-management/unflag/${drop._id || drop.id}`, {}, config);
-                                alert('Drop unflagged successfully');
-                                fetchFlaggedDrops();
-                                fetchDropsList();
-                              } catch (e) {
-                                alert('Failed to unflag drop');
-                              }
-                            }}
-                            className="text-gray-600 hover:text-gray-800"
-                          >
-                            Unflag
-                          </button>
-                          <button
-                            onClick={() => openCensorModal(drop._id || drop.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            Censor
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => { setDropDetailsContext('flagged'); viewDropDetails(drop._id || drop.id); }}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          View
+                        </button>
                       </td>
                     </tr>
                   ))}
