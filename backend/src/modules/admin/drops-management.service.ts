@@ -755,6 +755,7 @@ export class DropsManagementService {
 
   /**
    * Get all reported drops with report details
+   * Only shows reports for drops that haven't been censored or flagged (admin action taken)
    */
   async getReportedDrops() {
     const reports = await this.dropReportModel
@@ -771,37 +772,49 @@ export class DropsManagementService {
       this.userModel.find({ _id: { $in: collectorIds } }).exec(),
     ]);
 
-    // Return all reports with their drop details
-    // Drops should NOT be deleted when reported - they should remain for admin review
-    const reportsWithDetails = reports.map(report => {
-      const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
-      const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
-      
-      return {
-        ...report.toObject(),
-        drop: drop ? {
-          id: drop._id,
-          imageUrl: drop.imageUrl,
-          status: drop.status,
-          numberOfBottles: drop.numberOfBottles,
-          numberOfCans: drop.numberOfCans,
-          bottleType: drop.bottleType,
-          location: drop.location,
-          address: drop.address,
-          notes: drop.notes,
-          createdAt: drop.createdAt,
-          userId: drop.userId,
-        } : null,
-        reporter: collector ? {
-          name: collector.name,
-          email: collector.email,
-        } : null,
-      };
-    });
+    // Filter out reports for drops that have been censored or flagged (admin action taken)
+    const reportsWithDetails = reports
+      .map(report => {
+        const drop = drops.find(d => (d as any)._id.toString() === report.dropId);
+        const collector = collectors.find(c => (c as any)._id.toString() === report.reportedBy);
+        
+        return {
+          ...report.toObject(),
+          drop: drop ? {
+            id: drop._id,
+            imageUrl: drop.imageUrl,
+            status: drop.status,
+            numberOfBottles: drop.numberOfBottles,
+            numberOfCans: drop.numberOfCans,
+            bottleType: drop.bottleType,
+            location: drop.location,
+            address: drop.address,
+            notes: drop.notes,
+            createdAt: drop.createdAt,
+            userId: drop.userId,
+            isCensored: drop.isCensored,
+            isSuspicious: drop.isSuspicious,
+          } : null,
+          reporter: collector ? {
+            name: collector.name,
+            email: collector.email,
+          } : null,
+        };
+      })
+      .filter(report => {
+        // Only include reports for drops that haven't been censored or flagged
+        if (!report.drop) return false; // Drop doesn't exist
+        
+        const hasAdminAction = report.drop.isCensored || report.drop.isSuspicious;
+        return !hasAdminAction;
+      });
 
-    console.log(`📋 Reported drops: ${reportsWithDetails.length} reports found`);
+    console.log(`📋 Reported drops: ${reportsWithDetails.length} reports found (filtered from ${reports.length} total)`);
     console.log(`   - Drops with valid data: ${reportsWithDetails.filter(r => r.drop).length}`);
-    console.log(`   - Drops missing from database: ${reportsWithDetails.filter(r => !r.drop).length}`);
+    console.log(`   - Drops with admin action taken (censored/flagged): ${reports.filter(r => {
+      const drop = drops.find(d => (d as any)._id.toString() === r.dropId);
+      return drop && (drop.isCensored || drop.isSuspicious);
+    }).length}`);
 
     return reportsWithDetails;
   }
