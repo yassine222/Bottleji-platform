@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
 import { CollectorInteraction } from './schemas/collector-interaction.schema';
 import { CollectionAttempt } from './schemas/collection-attempt.schema';
-import { DropReport } from './schemas/drop-report.schema';
+import { DropReport, ReportStatus } from './schemas/drop-report.schema';
 import { CreateDropoffDto } from './dto/create-dropoff.dto';
 import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
@@ -1992,7 +1992,7 @@ export class DropoffsService {
       reportedBy: collectorId,
       reason,
       details,
-      status: 'pending',
+      status: ReportStatus.PENDING,
     });
 
     console.log(`📢 Drop ${dropId} reported by collector ${collectorId} for: ${reason}`);
