@@ -1814,7 +1814,7 @@ function DropsContent() {
       console.log('📋 Fetching collected drops...');
 
       const response = await axios.get(
-        `${API_URL}/admin/drops?status=collected&limit=1000`,
+        `${API_URL}/admin/drops-management/list?status=collected&limit=1000`,
         config
       );
 

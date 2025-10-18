@@ -193,15 +193,19 @@ export class DropsManagementService {
       this.dropoffModel.countDocuments(query),
     ]);
 
-    // Manually populate user data since userId is a string, not a reference
+    // Manually populate user data since userId and collectedBy are strings, not references
     const userIds = drops.map(drop => drop.userId);
-    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
+    const collectedByIds = drops.map(drop => drop.collectedBy).filter(Boolean);
+    const allUserIds = [...new Set([...userIds, ...collectedByIds])];
+    const users = await this.userModel.find({ _id: { $in: allUserIds } }).exec();
     
     const dropsWithUsers = drops.map(drop => {
       const user = users.find(u => (u as any)._id.toString() === drop.userId);
+      const collector = drop.collectedBy ? users.find(u => (u as any)._id.toString() === drop.collectedBy) : null;
       return {
         ...drop.toObject(),
         userId: user ? { name: user.name, email: user.email } : { name: 'Unknown', email: 'N/A' },
+        collectedBy: collector ? { name: collector.name, email: collector.email } : null,
       };
     });
 
