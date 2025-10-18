@@ -6,7 +6,7 @@ class ServerConfig {
   static const String tunnelUrl = 'https://circuits-institutions-holds-axis.trycloudflare.com';
   
   // Local network IP (slow WiFi fallback)
-  static const String serverIp = '172.20.10.12';
+  static const String serverIp = 'localhost';
   static const String serverPort = '3000';
   
   // Base URLs - choose based on useTunnel flag

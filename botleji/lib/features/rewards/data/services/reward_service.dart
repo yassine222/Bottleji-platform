@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:botleji/core/config/server_config.dart';
 
 class RewardService {
-  static const String baseUrl = 'http://localhost:3000/api'; // TODO: Replace with your backend URL
+  static String get baseUrl => ServerConfig.apiBaseUrl;
   
   // Get user reward stats
   static Future<Map<String, dynamic>> getUserRewardStats(String userId) async {
