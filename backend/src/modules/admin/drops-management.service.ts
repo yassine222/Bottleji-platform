@@ -350,7 +350,10 @@ export class DropsManagementService {
     }
     
     if (!drop) {
-      throw new Error('Drop not found in either drop or dropoff collection');
+      console.log('❌ Drop not found in either collection. This might be a deleted drop or invalid ID.');
+      console.log('   - DropId:', dropId);
+      console.log('   - This could happen if the drop was deleted but reports still reference it');
+      throw new Error('Drop not found - this drop may have been deleted or the ID is invalid');
     }
 
     // Get user who created the drop

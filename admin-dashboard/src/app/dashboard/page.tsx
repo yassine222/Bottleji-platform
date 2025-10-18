@@ -1924,6 +1924,8 @@ function DropsContent() {
       setSelectedDrop(response.data);
     } catch (error) {
       console.error('Error fetching drop details:', error);
+      alert('Unable to load drop details. This drop may have been deleted or is no longer available.');
+      setShowDropDetails(false);
     } finally {
       setDropDetailsLoading(false);
     }
