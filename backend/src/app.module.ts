@@ -14,6 +14,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module';
 import { TrainingModule } from './modules/training/training.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { RewardsModule } from './modules/rewards/rewards.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChatModule } from './modules/chat/chat.module';
     SupportTicketsModule,
     TrainingModule,
     ChatModule,
+    RewardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,6 +11,7 @@ import { InteractionType } from './schemas/collector-interaction.schema';
 import { User } from '../users/schemas/user.schema';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RewardsService } from '../rewards/rewards.service';
 
 @Injectable()
 export class DropoffsService {
@@ -23,6 +24,7 @@ export class DropoffsService {
     @Inject(forwardRef(() => NotificationsGateway))
     private notificationsGateway: NotificationsGateway,
     private readonly notificationsService: NotificationsService,
+    private readonly rewardsService: RewardsService,
   ) {
     this.startCleanupTask();
     this.migrateOldCancellationFields();
@@ -557,6 +559,54 @@ export class DropoffsService {
       });
     } else {
       console.log('No active collection attempt found for this drop');
+    }
+
+    // Award points to collector for successful collection
+    try {
+      const rewardResult = await this.rewardsService.awardPointsForCollection(
+        acceptedInteraction.collectorId.toString(),
+        id
+      );
+      
+      console.log('🎉 Reward system - Points awarded:', {
+        collectorId: acceptedInteraction.collectorId,
+        pointsAwarded: rewardResult.pointsAwarded,
+        newTier: rewardResult.newTier.name,
+        tierUpgraded: rewardResult.tierUpgraded,
+        totalPoints: rewardResult.totalPoints,
+        totalDrops: rewardResult.totalDrops
+      });
+
+      // Send tier upgrade notification if applicable
+      if (rewardResult.tierUpgraded) {
+        this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+          type: 'tier_upgrade',
+          title: '🎉 Tier Upgraded!',
+          message: `Congratulations! You've reached ${rewardResult.newTier.name}! You now earn ${rewardResult.newTier.pointsPerDrop} points per drop.`,
+          data: { 
+            newTier: rewardResult.newTier,
+            totalPoints: rewardResult.totalPoints,
+            totalDrops: rewardResult.totalDrops
+          },
+          timestamp: new Date(),
+        });
+      } else {
+        // Send points earned notification
+        this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+          type: 'points_earned',
+          title: 'Points Earned!',
+          message: `You earned ${rewardResult.pointsAwarded} points for collecting this drop!`,
+          data: { 
+            pointsAwarded: rewardResult.pointsAwarded,
+            totalPoints: rewardResult.totalPoints,
+            currentTier: rewardResult.newTier.name
+          },
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error awarding points:', error);
+      // Don't fail the collection if reward system fails
     }
 
     // Send notification to drop creator

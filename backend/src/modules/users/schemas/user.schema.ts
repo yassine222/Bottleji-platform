@@ -139,6 +139,25 @@ export class User extends Document {
   @Prop()
   sessionInvalidatedAt?: Date;
 
+  // Reward System Fields
+  @Prop({ default: 0 })
+  totalDropsCollected: number;
+
+  @Prop({ default: 0 })
+  totalPointsEarned: number;
+
+  @Prop({ default: 0 })
+  currentPoints: number;
+
+  @Prop({ default: 1 })
+  currentTier: number;
+
+  @Prop({ default: Date.now })
+  lastDropCollectedAt?: Date;
+
+  @Prop({ type: [Object], default: [] })
+  rewardHistory: any[];
+
   @Prop({ default: Date.now })
   createdAt: Date;
 

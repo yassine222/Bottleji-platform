@@ -8,6 +8,7 @@ import { CollectionAttempt, CollectionAttemptSchema } from './schemas/collection
 import { DropReport, DropReportSchema } from './schemas/drop-report.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { RewardsModule } from '../rewards/rewards.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: User.name, schema: UserSchema },
     ]),
     forwardRef(() => NotificationsModule),
+    RewardsModule,
   ],
   controllers: [DropoffsController],
   providers: [DropoffsService],
