@@ -405,53 +405,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
 
-  Widget _buildHouseholdOverviewCards({
-    required int totalDrops,
-    required int pendingDrops,
-    required int collectedDrops,
-    required int flaggedDrops,
-    required int staleDrops,
-    required int censoredDrops,
-    required int totalBottles,
-    required int totalCans,
-    required int totalItems,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Overview',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF00695C),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildHouseholdDropsOverviewCard(
-                totalDrops: totalDrops,
-                pendingDrops: pendingDrops,
-                collectedDrops: collectedDrops,
-                flaggedDrops: flaggedDrops,
-                staleDrops: staleDrops,
-                censoredDrops: censoredDrops,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHouseholdRecyclingOverviewCard(
-                totalBottles: totalBottles,
-                totalCans: totalCans,
-                totalItems: totalItems,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
   Widget _buildHouseholdStatCard({
     required String title,
