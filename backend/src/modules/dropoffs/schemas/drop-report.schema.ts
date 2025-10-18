@@ -4,6 +4,7 @@ import { Document } from 'mongoose';
 export enum ReportReason {
   INAPPROPRIATE_IMAGE = 'inappropriate_image',
   FAKE_DROP = 'fake_drop',
+  AMOUNT_MISMATCH = 'amount_mismatch',
   WRONG_LOCATION = 'wrong_location',
   ALREADY_COLLECTED = 'already_collected',
   DANGEROUS_LOCATION = 'dangerous_location',
