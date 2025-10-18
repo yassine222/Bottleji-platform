@@ -1820,6 +1820,18 @@ function DropsContent() {
 
       console.log('📋 Collected drops response:', response.data);
       console.log('📋 Total collected drops:', response.data.drops?.length);
+      
+      // Debug: Check the first drop's data structure
+      if (response.data.drops && response.data.drops.length > 0) {
+        const firstDrop = response.data.drops[0];
+        console.log('📋 First collected drop data:', {
+          id: firstDrop._id,
+          userId: firstDrop.userId,
+          collectedBy: firstDrop.collectedBy,
+          status: firstDrop.status,
+          collectedAt: firstDrop.collectedAt
+        });
+      }
 
       setCollectedDrops(response.data.drops || []);
     } catch (error: any) {
