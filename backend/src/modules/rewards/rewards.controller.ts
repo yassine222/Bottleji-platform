@@ -57,6 +57,6 @@ export class RewardsController {
       body.points,
       body.reason
     );
-    return { success: true, ...result };
+    return result;
   }
 }
