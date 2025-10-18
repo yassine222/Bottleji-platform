@@ -535,8 +535,9 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
         ),
         content: SizedBox(
           width: double.maxFinite,
-          height: 400, // Fixed height to prevent long scrolling
+          height: 380, // Reduced height slightly
           child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 8), // Add bottom padding
             child: Column(
               children: [
                 // Current Tier Badge
@@ -564,7 +565,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16), // Reduced spacing
                 
                 // Compact Tiers Grid
                 GridView.builder(
@@ -572,9 +573,9 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 1,
-                    childAspectRatio: 4.5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    childAspectRatio: 4.8, // Slightly taller items
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6, // Reduced spacing
                   ),
                   itemCount: 5,
                   itemBuilder: (context, index) {
