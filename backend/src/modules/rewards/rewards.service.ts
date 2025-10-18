@@ -302,11 +302,4 @@ export class RewardsService {
     // Household points are lower than collector points to reflect the effort difference
     return Math.floor(tier.pointsPerDrop * 0.5); // 50% of collector points
   }
-
-  /**
-   * Get all tiers information
-   */
-  getAllTiers(): TierInfo[] {
-    return this.TIERS;
-  }
 }
