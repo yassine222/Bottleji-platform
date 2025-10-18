@@ -629,12 +629,15 @@ class DropCard extends StatelessWidget {
                             color: Colors.grey[600],
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            _formatDate(drop.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                          Flexible(
+                            child: Text(
+                              _formatDate(drop.createdAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -657,12 +660,15 @@ class DropCard extends StatelessWidget {
                         children: [
                           _getBottleTypeIcon(drop.bottleType, size: 14),
                           const SizedBox(width: 4),
-                          Text(
-                            drop.bottleType.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.w500,
+                          Flexible(
+                            child: Text(
+                              drop.bottleType.name,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
