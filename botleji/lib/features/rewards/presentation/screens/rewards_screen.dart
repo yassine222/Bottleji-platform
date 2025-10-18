@@ -246,6 +246,11 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   }
 
   Widget _buildTierCard(BuildContext context, UserMode mode, RewardStats stats) {
+    final nextTier = stats.currentTier < 5 ? stats.currentTier + 1 : stats.currentTier;
+    final nextTierName = _getTierName(nextTier);
+    final nextTierPoints = _getPointsPerDrop(nextTier);
+    final dropsToNextTier = _getDropsRequired(nextTier) - (stats.totalDropsCollected);
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -260,44 +265,100 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00695C).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.emoji_events,
-              color: Color(0xFF00695C),
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getTierName(stats.currentTier),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00695C),
-                  ),
+          // Current Tier Row
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  mode == UserMode.collector 
-                    ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
-                    : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                child: const Icon(
+                  Icons.emoji_events,
+                  color: Color(0xFF00695C),
+                  size: 32,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getTierName(stats.currentTier),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF00695C),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mode == UserMode.collector 
+                        ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
+                        : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          
+          // Next Tier Info
+          if (stats.currentTier < 5) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blue[200]!,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.trending_up,
+                    color: Colors.blue[700],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Next: $nextTierName',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          mode == UserMode.collector
+                            ? 'Earn $nextTierPoints points per drop • ${dropsToNextTier.clamp(0, 9999)} drops to go'
+                            : 'Earn ${(nextTierPoints * 0.5).round()} points per drop • ${dropsToNextTier.clamp(0, 9999)} drops to go',
+                          style: TextStyle(
+                            color: Colors.blue[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
