@@ -90,7 +90,7 @@ export class RewardsService {
   }
 
   /**
-   * Award points for a successful drop collection
+   * Award points for a successful drop collection (Collector role)
    */
   async awardPointsForCollection(collectorId: string, dropId: string): Promise<{
     pointsAwarded: number;
@@ -230,5 +230,83 @@ export class RewardsService {
       remainingPoints: newPoints,
       pointsSpent: pointsToSpend,
     };
+  }
+
+  /**
+   * Award points to household user when their drop is successfully collected
+   */
+  async awardPointsForDropCollected(householdUserId: string, dropId: string): Promise<{
+    pointsAwarded: number;
+    newTier: TierInfo;
+    tierUpgraded: boolean;
+    totalPoints: number;
+    totalDropsCreated: number;
+  }> {
+    const user = await this.userModel.findById(householdUserId).exec();
+    if (!user) {
+      throw new Error('Household user not found');
+    }
+
+    // Get current stats
+    const currentDropsCreated = user.totalDropsCreated || 0;
+    const currentPoints = user.currentPoints || 0;
+    const currentTier = user.currentTier || 1;
+
+    // Calculate new stats
+    const newDropsCreated = currentDropsCreated + 1;
+    const pointsForThisDrop = this.calculatePointsForHouseholdDrop(currentDropsCreated);
+    const newTotalPoints = currentPoints + pointsForThisDrop;
+    const newTier = this.calculateTier(newDropsCreated);
+    const tierUpgraded = newTier.tier > currentTier;
+
+    // Update user
+    await this.userModel.findByIdAndUpdate(householdUserId, {
+      totalDropsCreated: newDropsCreated,
+      totalPointsEarned: (user.totalPointsEarned || 0) + pointsForThisDrop,
+      currentPoints: newTotalPoints,
+      currentTier: newTier.tier,
+      lastDropCreatedAt: new Date(),
+      $push: {
+        rewardHistory: {
+          dropId,
+          pointsAwarded: pointsForThisDrop,
+          tier: newTier.tier,
+          tierUpgraded,
+          type: 'household_drop_collected',
+          collectedAt: new Date(),
+        }
+      }
+    }).exec();
+
+    console.log(`🏠 Household reward - Points awarded to user ${householdUserId}:`);
+    console.log(`   - Points awarded: ${pointsForThisDrop}`);
+    console.log(`   - New tier: ${newTier.name} (Tier ${newTier.tier})`);
+    console.log(`   - Tier upgraded: ${tierUpgraded}`);
+    console.log(`   - Total drops created: ${newDropsCreated}`);
+    console.log(`   - Total points: ${newTotalPoints}`);
+
+    return {
+      pointsAwarded: pointsForThisDrop,
+      newTier,
+      tierUpgraded,
+      totalPoints: newTotalPoints,
+      totalDropsCreated: newDropsCreated,
+    };
+  }
+
+  /**
+   * Calculate points for household drop collection (different from collector points)
+   */
+  calculatePointsForHouseholdDrop(dropsCreated: number): number {
+    const tier = this.calculateTier(dropsCreated);
+    // Household points are lower than collector points to reflect the effort difference
+    return Math.floor(tier.pointsPerDrop * 0.5); // 50% of collector points
+  }
+
+  /**
+   * Get all tiers information
+   */
+  getAllTiers(): TierInfo[] {
+    return this.TIERS;
   }
 }

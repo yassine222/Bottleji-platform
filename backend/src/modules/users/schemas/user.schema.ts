@@ -139,9 +139,12 @@ export class User extends Document {
   @Prop()
   sessionInvalidatedAt?: Date;
 
-  // Reward System Fields
+  // Reward System Fields (Unified for both Collector and Household roles)
   @Prop({ default: 0 })
   totalDropsCollected: number;
+
+  @Prop({ default: 0 })
+  totalDropsCreated: number;
 
   @Prop({ default: 0 })
   totalPointsEarned: number;
@@ -154,6 +157,9 @@ export class User extends Document {
 
   @Prop({ default: Date.now })
   lastDropCollectedAt?: Date;
+
+  @Prop({ default: Date.now })
+  lastDropCreatedAt?: Date;
 
   @Prop({ type: [Object], default: [] })
   rewardHistory: any[];

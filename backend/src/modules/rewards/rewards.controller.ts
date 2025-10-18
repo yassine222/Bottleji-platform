@@ -1,19 +1,23 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { RewardsService } from './rewards.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/schemas/user.schema';
 
 @Controller('rewards')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
 
   /**
-   * Get collector's reward stats
-   * GET /rewards/stats/:collectorId
+   * Get user's reward stats (works for both collectors and households)
+   * GET /rewards/stats/:userId
    */
-  @Get('stats/:collectorId')
-  async getCollectorStats(@Param('collectorId') collectorId: string) {
-    const stats = await this.rewardsService.getCollectorStats(collectorId);
+  @Get('stats/:userId')
+  @Roles(UserRole.COLLECTOR, UserRole.HOUSEHOLD, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async getUserStats(@Param('userId') userId: string) {
+    const stats = await this.rewardsService.getCollectorStats(userId);
     return { success: true, stats };
   }
 
@@ -22,6 +26,7 @@ export class RewardsController {
    * GET /rewards/tiers
    */
   @Get('tiers')
+  @Roles(UserRole.COLLECTOR, UserRole.HOUSEHOLD, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async getAllTiers() {
     const tiers = this.rewardsService.getAllTiers();
     return { success: true, tiers };
@@ -45,15 +50,16 @@ export class RewardsController {
 
   /**
    * Spend points (for reward shop)
-   * POST /rewards/spend/:collectorId
+   * POST /rewards/spend/:userId
    */
-  @Post('spend/:collectorId')
+  @Post('spend/:userId')
+  @Roles(UserRole.COLLECTOR, UserRole.HOUSEHOLD, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async spendPoints(
-    @Param('collectorId') collectorId: string,
+    @Param('userId') userId: string,
     @Body() body: { points: number; reason: string }
   ) {
     const result = await this.rewardsService.spendPoints(
-      collectorId,
+      userId,
       body.points,
       body.reason
     );

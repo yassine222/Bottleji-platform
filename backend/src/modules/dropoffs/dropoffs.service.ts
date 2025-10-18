@@ -561,53 +561,101 @@ export class DropoffsService {
       console.log('No active collection attempt found for this drop');
     }
 
-    // Award points to collector for successful collection
-    try {
-      const rewardResult = await this.rewardsService.awardPointsForCollection(
-        acceptedInteraction.collectorId.toString(),
-        id
-      );
-      
-      console.log('🎉 Reward system - Points awarded:', {
-        collectorId: acceptedInteraction.collectorId,
-        pointsAwarded: rewardResult.pointsAwarded,
-        newTier: rewardResult.newTier.name,
-        tierUpgraded: rewardResult.tierUpgraded,
-        totalPoints: rewardResult.totalPoints,
-        totalDrops: rewardResult.totalDrops
-      });
+         // Award points to collector for successful collection
+         try {
+           const rewardResult = await this.rewardsService.awardPointsForCollection(
+             acceptedInteraction.collectorId.toString(),
+             id
+           );
+           
+           console.log('🎉 Collector reward - Points awarded:', {
+             collectorId: acceptedInteraction.collectorId,
+             pointsAwarded: rewardResult.pointsAwarded,
+             newTier: rewardResult.newTier.name,
+             tierUpgraded: rewardResult.tierUpgraded,
+             totalPoints: rewardResult.totalPoints,
+             totalDrops: rewardResult.totalDrops
+           });
 
-      // Send tier upgrade notification if applicable
-      if (rewardResult.tierUpgraded) {
-        this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
-          type: 'tier_upgrade',
-          title: '🎉 Tier Upgraded!',
-          message: `Congratulations! You've reached ${rewardResult.newTier.name}! You now earn ${rewardResult.newTier.pointsPerDrop} points per drop.`,
-          data: { 
-            newTier: rewardResult.newTier,
-            totalPoints: rewardResult.totalPoints,
-            totalDrops: rewardResult.totalDrops
-          },
-          timestamp: new Date(),
-        });
-      } else {
-        // Send points earned notification
-        this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
-          type: 'points_earned',
-          title: 'Points Earned!',
-          message: `You earned ${rewardResult.pointsAwarded} points for collecting this drop!`,
-          data: { 
-            pointsAwarded: rewardResult.pointsAwarded,
-            totalPoints: rewardResult.totalPoints,
-            currentTier: rewardResult.newTier.name
-          },
-          timestamp: new Date(),
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error awarding points:', error);
-      // Don't fail the collection if reward system fails
-    }
+           // Send tier upgrade notification if applicable
+           if (rewardResult.tierUpgraded) {
+             this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+               type: 'tier_upgrade',
+               title: '🎉 Tier Upgraded!',
+               message: `Congratulations! You've reached ${rewardResult.newTier.name}! You now earn ${rewardResult.newTier.pointsPerDrop} points per drop.`,
+               data: { 
+                 newTier: rewardResult.newTier,
+                 totalPoints: rewardResult.totalPoints,
+                 totalDrops: rewardResult.totalDrops
+               },
+               timestamp: new Date(),
+             });
+           } else {
+             // Send points earned notification
+             this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+               type: 'points_earned',
+               title: 'Points Earned!',
+               message: `You earned ${rewardResult.pointsAwarded} points for collecting this drop!`,
+               data: { 
+                 pointsAwarded: rewardResult.pointsAwarded,
+                 totalPoints: rewardResult.totalPoints,
+                 currentTier: rewardResult.newTier.name
+               },
+               timestamp: new Date(),
+             });
+           }
+         } catch (error) {
+           console.error('❌ Error awarding collector points:', error);
+           // Don't fail the collection if reward system fails
+         }
+
+         // Award points to household user for their drop being collected
+         try {
+           const householdRewardResult = await this.rewardsService.awardPointsForDropCollected(
+             dropoff.userId.toString(),
+             id
+           );
+           
+           console.log('🏠 Household reward - Points awarded:', {
+             householdUserId: dropoff.userId,
+             pointsAwarded: householdRewardResult.pointsAwarded,
+             newTier: householdRewardResult.newTier.name,
+             tierUpgraded: householdRewardResult.tierUpgraded,
+             totalPoints: householdRewardResult.totalPoints,
+             totalDropsCreated: householdRewardResult.totalDropsCreated
+           });
+
+           // Send household tier upgrade notification if applicable
+           if (householdRewardResult.tierUpgraded) {
+             this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+               type: 'tier_upgrade',
+               title: '🏠 Tier Upgraded!',
+               message: `Congratulations! You've reached ${householdRewardResult.newTier.name}! You now earn ${householdRewardResult.newTier.pointsPerDrop} points when your drops are collected.`,
+               data: { 
+                 newTier: householdRewardResult.newTier,
+                 totalPoints: householdRewardResult.totalPoints,
+                 totalDropsCreated: householdRewardResult.totalDropsCreated
+               },
+               timestamp: new Date(),
+             });
+           } else {
+             // Send household points earned notification
+             this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+               type: 'household_points_earned',
+               title: '🏠 Drop Collected!',
+               message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points for contributing to recycling.`,
+               data: { 
+                 pointsAwarded: householdRewardResult.pointsAwarded,
+                 totalPoints: householdRewardResult.totalPoints,
+                 currentTier: householdRewardResult.newTier.name
+               },
+               timestamp: new Date(),
+             });
+           }
+         } catch (error) {
+           console.error('❌ Error awarding household points:', error);
+           // Don't fail the collection if household reward system fails
+         }
 
     // Send notification to drop creator
     this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
