@@ -121,10 +121,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     _hasTimedOut = false;
     
     // Calculate timeout based on route duration + buffer
-    int routeDurationMinutes = 0;
+    int routeDurationMinutes = 20; // Default fallback - 20 minutes for realistic testing
     
     // Parse route duration from the calculated route
-    if (_routeDuration != null) {
+    if (_routeDuration != null && _routeDuration!.isNotEmpty) {
       final durationParts = _routeDuration!.split(' ');
       if (durationParts.length >= 2) {
         if (durationParts[1].contains('hour')) {
@@ -133,8 +133,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
             routeDurationMinutes += int.parse(durationParts[2]);
           }
         } else {
-          // For testing, use 20 seconds instead of parsing minutes
-          routeDurationMinutes = 0; // 20 seconds
+          // Parse minutes from duration text like "15 mins"
+          routeDurationMinutes = int.parse(durationParts[0]);
         }
       }
     }
@@ -162,7 +162,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       
       // Ensure remaining time is not negative
       if (_remainingSeconds <= 0) {
-        _remainingSeconds = _totalTimeoutSeconds; // For testing, always start with full time
+        _remainingSeconds = 0; // Timer already expired
       }
     } else {
       _remainingSeconds = _totalTimeoutSeconds;
