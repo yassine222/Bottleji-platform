@@ -1761,8 +1761,8 @@ Widget build(BuildContext context) {
 
           // Slide handle
           Positioned(
-            left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress - 30).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 60),
-            top: 8,
+            left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress - 10).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 20),
+            top: 18,
             child: GestureDetector(
               onPanStart: (_) {
                 setState(() {
@@ -1778,7 +1778,7 @@ Widget build(BuildContext context) {
 
                 // Effective width where handle can move
                 final trackWidth = MediaQuery.of(context).size.width * 0.8;
-                final handleSize = 40.0;
+                final handleSize = 20.0;
                 final effective = trackWidth - handleSize;
 
                 // Progress is handle-left within [0, effective] normalized to [0..1]
@@ -1801,27 +1801,12 @@ Widget build(BuildContext context) {
                   }
                 });
               },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.arrow_forward,
-                  color: _slideProgress > 0.5
-                      ? Colors.white
-                      : const Color(0xFF00695C),
-                  size: 20,
-                ),
+              child: Icon(
+                Icons.arrow_forward,
+                color: _slideProgress > 0.5
+                    ? Colors.white
+                    : const Color(0xFF00695C),
+                size: 20,
               ),
             ),
           ),
@@ -1890,8 +1875,8 @@ Widget build(BuildContext context) {
 
           // Slide handle
           Positioned(
-            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress - 30).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 60),
-            top: 8,
+            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress - 10).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 20),
+            top: 18,
             child: GestureDetector(
               onPanStart: (_) {
                 setState(() {
@@ -1907,7 +1892,7 @@ Widget build(BuildContext context) {
 
                 // Effective width where handle can move
                 final trackWidth = MediaQuery.of(context).size.width * 0.8;
-                final handleSize = 40.0;
+                final handleSize = 20.0;
                 final effective = trackWidth - handleSize;
 
                 // Progress is handle-left within [0, effective] normalized to [0..1]
@@ -1930,27 +1915,12 @@ Widget build(BuildContext context) {
                   }
                 });
               },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.cancel,
-                  color: _cancelSlideProgress > 0.5
-                      ? Colors.white
-                      : Colors.red,
-                  size: 20,
-                ),
+              child: Icon(
+                Icons.cancel,
+                color: _cancelSlideProgress > 0.5
+                    ? Colors.white
+                    : Colors.red,
+                size: 20,
               ),
             ),
           ),
