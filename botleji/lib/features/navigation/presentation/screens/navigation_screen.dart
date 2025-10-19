@@ -1527,7 +1527,7 @@ void _startLocationStream() {
                 ],
               ),
             ] else ...[
-              // Show slide button when close to drop, otherwise show cancel button
+              // Show slide button when close to drop, otherwise show nothing
               if (_showSlideButton) ...[
                 // Slide to Collect Button (when close to drop)
                 Container(
@@ -1539,13 +1539,6 @@ void _startLocationStream() {
                 const SizedBox(height: 12),
                 
                 // Cancel Collection Button (when slide button is visible) - Slidable
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildCancelSlideButton(),
-                ),
-              ] else ...[
-                // Cancel Button (when far from drop - handles both cancel and exit logic)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
