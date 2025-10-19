@@ -694,9 +694,9 @@ void _startLocationStream() {
         
         setState(() {
           _distanceToDestination = remainingDistance;
-          // Only consider "reached destination" when very close (within 10m)
+          // Only consider "reached destination" when very close (within 5m)
           // This prevents the "You have arrived" card from showing too early
-          _hasReachedDestination = remainingDistance <= 10.0;
+          _hasReachedDestination = remainingDistance <= 5.0;
           
           // Show slide button when collector is within threshold distance
           // This ensures button appears even for very close drops
@@ -1643,9 +1643,10 @@ Widget build(BuildContext context) {
           Positioned(
             bottom: 20,
             right: 20,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child: SizedBox(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 // My Location button
                 FloatingActionButton(
                   heroTag: 'my_location_nav_fab',
@@ -1756,6 +1757,7 @@ Widget build(BuildContext context) {
                     ),
                   ),
               ],
+            ),
             ),
           ),
         ],
