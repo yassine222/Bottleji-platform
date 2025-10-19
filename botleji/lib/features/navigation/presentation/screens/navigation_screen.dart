@@ -1761,8 +1761,8 @@ Widget build(BuildContext context) {
 
           // Slide handle
           Positioned(
-            left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress - 10).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 20),
-            top: 18,
+            left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress + 8).clamp(8.0, MediaQuery.of(context).size.width * 0.8 - 28),
+            top: 16,
             child: GestureDetector(
               onPanStart: (_) {
                 setState(() {
@@ -1778,11 +1778,11 @@ Widget build(BuildContext context) {
 
                 // Effective width where handle can move
                 final trackWidth = MediaQuery.of(context).size.width * 0.8;
-                final handleSize = 20.0;
-                final effective = trackWidth - handleSize;
+                final handleSize = 24.0;
+                final effective = trackWidth - handleSize - 16; // 8px padding on each side
 
                 // Progress is handle-left within [0, effective] normalized to [0..1]
-                final px = (local.dx - handleSize / 2).clamp(0.0, effective);
+                final px = (local.dx - handleSize / 2 - 8).clamp(0.0, effective);
                 final progress = (px / effective).clamp(0.0, 1.0);
 
                 setState(() {
@@ -1806,7 +1806,7 @@ Widget build(BuildContext context) {
                 color: _slideProgress > 0.5
                     ? Colors.white
                     : const Color(0xFF00695C),
-                size: 20,
+                size: 24,
               ),
             ),
           ),
@@ -1875,8 +1875,8 @@ Widget build(BuildContext context) {
 
           // Slide handle
           Positioned(
-            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress - 10).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 20),
-            top: 18,
+            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress + 8).clamp(8.0, MediaQuery.of(context).size.width * 0.8 - 28),
+            top: 16,
             child: GestureDetector(
               onPanStart: (_) {
                 setState(() {
@@ -1892,11 +1892,11 @@ Widget build(BuildContext context) {
 
                 // Effective width where handle can move
                 final trackWidth = MediaQuery.of(context).size.width * 0.8;
-                final handleSize = 20.0;
-                final effective = trackWidth - handleSize;
+                final handleSize = 24.0;
+                final effective = trackWidth - handleSize - 16; // 8px padding on each side
 
                 // Progress is handle-left within [0, effective] normalized to [0..1]
-                final px = (local.dx - handleSize / 2).clamp(0.0, effective);
+                final px = (local.dx - handleSize / 2 - 8).clamp(0.0, effective);
                 final progress = (px / effective).clamp(0.0, 1.0);
 
                 setState(() {
@@ -1920,7 +1920,7 @@ Widget build(BuildContext context) {
                 color: _cancelSlideProgress > 0.5
                     ? Colors.white
                     : Colors.red,
-                size: 20,
+                size: 24,
               ),
             ),
           ),
