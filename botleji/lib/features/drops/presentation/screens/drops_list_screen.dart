@@ -273,6 +273,13 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
           if (distance > maxDistance) return false;
         }
         
+        // Hide very close drops (< 100m) for collectors to prevent navigation crashes
+        final userMode = ref.read(userModeControllerProvider);
+        if (userMode.value == UserMode.collector && _currentLocation != null) {
+          final distance = _calculateDistance(drop.location);
+          if (distance < 100.0) return false; // Hide drops less than 100m
+        }
+        
         // Note: 3-day cutoff is only for support tickets, not for user's own drops
         return true;
       }).toList();
