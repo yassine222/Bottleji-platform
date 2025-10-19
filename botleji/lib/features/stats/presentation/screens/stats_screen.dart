@@ -2096,13 +2096,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _formatDate(DateTime date) {
+    // Convert to local timezone if the date is in UTC
+    final localDate = date.isUtc ? date.toLocal() : date;
+    
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    final dateOnly = DateTime(localDate.year, localDate.month, localDate.day);
     
     // Format time as HH:mm
-    final timeString = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final timeString = '${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
     
     if (dateOnly == today) {
       return 'Today at $timeString';
@@ -2114,7 +2117,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       if (difference < 7) {
         // Show day name for recent dates
         final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        final dayName = dayNames[date.weekday - 1];
+        final dayName = dayNames[localDate.weekday - 1];
         return '$dayName at $timeString';
       } else if (difference < 30) {
         // Show "X days ago" for older dates
@@ -2123,8 +2126,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         // Show full date for very old dates
         final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        final monthName = monthNames[date.month - 1];
-        return '$monthName ${date.day} at $timeString';
+        final monthName = monthNames[localDate.month - 1];
+        return '$monthName ${localDate.day} at $timeString';
       }
     }
   }
