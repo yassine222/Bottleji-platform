@@ -51,7 +51,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
     _collectionStartTime = DateTime.now();
     
     // Parse route duration from the active collection's route info
-    int routeDurationMinutes = 0; // Default fallback - 20 seconds for testing
+    int routeDurationMinutes = 20; // Default fallback - 20 minutes for realistic testing
     
     if (activeCollection.routeDuration != null) {
       final durationText = activeCollection.routeDuration!;
@@ -67,8 +67,8 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
               routeDurationMinutes += int.parse(durationParts[2]);
             }
           } else {
-            // For testing, use 20 seconds instead of parsing minutes
-            routeDurationMinutes = 0; // 20 seconds
+            // Parse minutes from duration text like "15 mins"
+            routeDurationMinutes = int.parse(durationParts[0]);
           }
         }
       }
@@ -84,9 +84,9 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       bufferMinutes = 20; // Long routes: +20 minutes
     }
     
-    // For testing: use 1 minute total
-    const totalTimeoutMinutes = 1.0; // 1 minute
-    const totalTimeoutSeconds = 60; // 60 seconds for testing
+    // Calculate total timeout based on route duration + buffer
+    final totalTimeoutMinutes = routeDurationMinutes + bufferMinutes;
+    final totalTimeoutSeconds = totalTimeoutMinutes * 60;
     
     // Calculate how much time has already passed since collection was accepted
     final timeElapsed = DateTime.now().difference(activeCollection.acceptedAt);
