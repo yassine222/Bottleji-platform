@@ -1676,6 +1676,22 @@ Widget build(BuildContext context) {
                 ),
 
                 const SizedBox(height: 12),
+
+                // Test Slide Button (for testing purposes)
+                FloatingActionButton(
+                  heroTag: 'test_slide_fab',
+                  onPressed: () {
+                    debugPrint('🧪 Test button pressed - forcing slide button to appear');
+                    setState(() {
+                      _showSlideButton = true;
+                    });
+                  },
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  child: const Icon(Icons.slide),
+                ),
+
+                const SizedBox(height: 12),
               ],
             ),
           ),
