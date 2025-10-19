@@ -706,11 +706,14 @@ void _startLocationStream() {
           // Show slide button when collector is within threshold distance
           // For very close drops (< 10m), always show button for testing
           // For normal drops, show button when within threshold
-          if (remainingDistance < 10.0 || remainingDistance <= _arrivalThreshold) {
-            _showSlideButton = true;
-          } else {
-            _showSlideButton = false;
+          final shouldShowSlideButton = remainingDistance < 10.0 || remainingDistance <= _arrivalThreshold;
+          
+          // Auto-expand card when slide button appears
+          if (shouldShowSlideButton && !_showSlideButton) {
+            _isNavigationCardMinimized = false;
           }
+          
+          _showSlideButton = shouldShowSlideButton;
         });
         
         debugPrint('📍 Distance to destination: ${remainingDistance.toStringAsFixed(2)} meters');
