@@ -2096,8 +2096,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _formatDate(DateTime date) {
-    // Convert to local timezone if the date is in UTC
-    final localDate = date.isUtc ? date.toLocal() : date;
+    // Debug: Print the original date and timezone info
+    print('🕐 Original date: $date');
+    print('🕐 Is UTC: ${date.isUtc}');
+    print('🕐 Timezone offset: ${date.timeZoneOffset}');
+    
+    // Always treat the date as local time since backend might be sending local times
+    final localDate = date;
     
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -2106,6 +2111,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     
     // Format time as HH:mm
     final timeString = '${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    
+    print('🕐 Formatted time: $timeString');
+    print('🕐 Current time: ${now.hour}:${now.minute}');
     
     if (dateOnly == today) {
       return 'Today at $timeString';
