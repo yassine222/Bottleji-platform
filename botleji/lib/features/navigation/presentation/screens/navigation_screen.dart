@@ -1404,23 +1404,23 @@ void _startLocationStream() {
 
               const SizedBox(height: 12),
 
-              // Confirm Collection Button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _confirmCollection(context),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Confirm Collection'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF00695C),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
+              // TESTING BUTTON - COMMENTED OUT FOR TESTING LOCATION-BASED BUTTON
+              // SizedBox(
+              //   width: double.infinity,
+              //   child: FilledButton.icon(
+              //     onPressed: () => _confirmCollection(context),
+              //     icon: const Icon(Icons.check_circle),
+              //     label: const Text('Confirm Collection'),
+              //     style: FilledButton.styleFrom(
+              //       backgroundColor: const Color(0xFF00695C),
+              //       foregroundColor: Colors.white,
+              //       padding: const EdgeInsets.symmetric(vertical: 16),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //     ),
+              //   ),
+              // ),
             ],
           ],
         ),
