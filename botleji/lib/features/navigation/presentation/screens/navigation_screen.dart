@@ -1527,9 +1527,9 @@ void _startLocationStream() {
                 ],
               ),
             ] else ...[
-              // Show slide button when within arrival threshold, otherwise show exit button
+              // Always show slide button - behavior changes based on distance
               if (_showSlideButton) ...[
-                // Slide to Collect Button
+                // Slide to Collect Button (when close to drop)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1538,35 +1538,18 @@ void _startLocationStream() {
                 
                 const SizedBox(height: 12),
                 
-           // Cancel Collection Button (when slide button is visible) - Slidable
-           Container(
-             width: double.infinity,
-             padding: const EdgeInsets.symmetric(horizontal: 20),
-             child: _buildCancelSlideButton(),
-           ),
-              ] else ...[
-                // Exit Navigation Button (when not within arrival threshold)
-                SizedBox(
+                // Cancel Collection Button (when slide button is visible) - Slidable
+                Container(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showCancellationDialog(context),
-                    icon: const Icon(Icons.exit_to_app),
-                    label: const Text('Exit Navigation'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                      side: BorderSide(
-                        color: isDark
-                            ? AppColors.darkTextSecondary.withOpacity(0.3)
-                            : AppColors.lightTextSecondary.withOpacity(0.3),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildCancelSlideButton(),
+                ),
+              ] else ...[
+                // Slide to Cancel Button (when far from drop - triggers cancel dialog)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildCancelSlideButton(),
                 ),
               ],
             ],
@@ -1908,6 +1891,10 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildCancelSlideButton() {
+    final isCloseToDrop = _showSlideButton;
+    final buttonText = isCloseToDrop ? 'Slide to Cancel' : 'Slide to Exit Navigation';
+    final releaseText = isCloseToDrop ? 'Release to Cancel' : 'Release to Exit';
+    
     return Container(
       width: double.infinity,
       height: 56, // Match the height of OutlinedButton with vertical padding 16
@@ -2005,7 +1992,7 @@ Widget build(BuildContext context) {
           Positioned.fill(
             child: Center(
               child: Text(
-                _cancelSlideProgress > 0.5 ? 'Release to Cancel' : 'Slide to Cancel',
+                _cancelSlideProgress > 0.5 ? releaseText : buttonText,
                 style: TextStyle(
                   color: _cancelSlideProgress > 0.5
                       ? Colors.white
@@ -2041,8 +2028,14 @@ Widget build(BuildContext context) {
   }
 
   void _completeCancelSlide() async {
-    // Show cancellation dialog when cancel slide is completed
-    _showCancellationDialog(context);
+    // Show appropriate dialog based on distance to drop
+    if (_showSlideButton) {
+      // Close to drop - show collection cancellation dialog with reason selection
+      _showCancellationDialog(context);
+    } else {
+      // Far from drop - show simple exit navigation dialog
+      _temporaryExit();
+    }
     
     // Reset the cancel slide progress
     setState(() {
