@@ -1764,7 +1764,13 @@ Widget build(BuildContext context) {
                   onPressed: () {
                     debugPrint('🧪 Test button pressed - toggling slide button');
                     setState(() {
+                      final wasSlideButtonVisible = _showSlideButton;
                       _showSlideButton = !_showSlideButton;
+                      
+                      // Auto-expand card when slide button becomes visible
+                      if (_showSlideButton && !wasSlideButtonVisible) {
+                        _isNavigationCardMinimized = false;
+                      }
                     });
                   },
                   backgroundColor: _showSlideButton ? Colors.red : Colors.orange,
