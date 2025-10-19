@@ -1527,7 +1527,7 @@ void _startLocationStream() {
                 ],
               ),
             ] else ...[
-              // Always show slide button - behavior changes based on distance
+              // Show slide button when close to drop, otherwise show cancel button
               if (_showSlideButton) ...[
                 // Slide to Collect Button (when close to drop)
                 Container(
@@ -1545,7 +1545,7 @@ void _startLocationStream() {
                   child: _buildCancelSlideButton(),
                 ),
               ] else ...[
-                // Slide to Cancel Button (when far from drop - triggers cancel dialog)
+                // Cancel Button (when far from drop - handles both cancel and exit logic)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1891,9 +1891,9 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildCancelSlideButton() {
-    final isCloseToDrop = _showSlideButton;
-    final buttonText = isCloseToDrop ? 'Slide to Cancel' : 'Slide to Exit Navigation';
-    final releaseText = isCloseToDrop ? 'Release to Cancel' : 'Release to Exit';
+    // Always show "Slide to Cancel" text
+    const buttonText = 'Slide to Cancel';
+    const releaseText = 'Release to Cancel';
     
     return Container(
       width: double.infinity,
@@ -2028,7 +2028,7 @@ Widget build(BuildContext context) {
   }
 
   void _completeCancelSlide() async {
-    // Show appropriate dialog based on distance to drop
+    // Handle both cancellation and exit navigation logic
     if (_showSlideButton) {
       // Close to drop - show collection cancellation dialog with reason selection
       _showCancellationDialog(context);
