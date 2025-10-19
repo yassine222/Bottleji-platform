@@ -85,7 +85,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   bool _hasTimedOut = false;
 
   // Proximity and slide button variables
-  static const double _arrivalThreshold = 50.0; // 50 meters threshold
+  static const double _arrivalThreshold = 100.0; // 100 meters threshold - increased for better UX
   static const double _movementThreshold = 5.0;
   static const Duration _fastUpdateInterval = Duration(seconds: 1);
   static const Duration _slowUpdateInterval = Duration(seconds: 3);
@@ -685,19 +685,24 @@ void _startLocationStream() {
           _distanceToDestination = remainingDistance;
           _hasReachedDestination = remainingDistance <= _arrivalThreshold;
           
-          // Only show slide button automatically if not very close (use test button for close drops)
-          if (remainingDistance <= _arrivalThreshold && remainingDistance > 5.0) {
+          // Show slide button when collector is within threshold distance
+          // This ensures button appears even for very close drops
+          if (remainingDistance <= _arrivalThreshold) {
             _showSlideButton = true;
-          } else if (remainingDistance > _arrivalThreshold) {
+          } else {
             _showSlideButton = false;
           }
-          // If very close (≤5m), keep current state (use test button to control)
         });
         
         debugPrint('📍 Distance to destination: ${remainingDistance.toStringAsFixed(2)} meters');
         debugPrint('📍 Arrival threshold: $_arrivalThreshold meters');
         debugPrint('📍 Has reached destination: $_hasReachedDestination');
         debugPrint('📍 Show slide button: $_showSlideButton');
+        
+        // Additional logging for close drops
+        if (remainingDistance <= 50.0) {
+          debugPrint('🎯 Close drop detected: ${remainingDistance.toStringAsFixed(2)}m - Button should be visible');
+        }
       }
     } catch (e) {
       debugPrint('Error updating distance: $e');
