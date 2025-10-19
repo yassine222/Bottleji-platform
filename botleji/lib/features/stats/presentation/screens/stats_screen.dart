@@ -1254,13 +1254,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   );
                 }
 
-                // Group interactions by dropoffId to show progression
-                final groupedInteractions = _groupInteractionsByDrop(history.interactions);
+                // Filter to only collected interactions and sort by collection date (most recent first)
+                final collectedInteractions = history.interactions
+                    .where((interaction) => interaction.interactionType == 'collected')
+                    .toList()
+                  ..sort((a, b) => b.interactionTime.compareTo(a.interactionTime));
                 
-                // Always use timeline format, even if grouping creates many groups
+                if (collectedInteractions.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No completed collections yet',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  );
+                }
+                
+                // Show the 3 most recent collections
                 return Column(
-                  children: groupedInteractions.take(3).map((dropGroup) {
-                    return _buildDropTimeline(dropGroup);
+                  children: collectedInteractions.take(3).map((interaction) {
+                    return _buildRecentCollectionCard(interaction);
                   }).toList(),
                 );
               },
@@ -1279,6 +1294,201 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentCollectionCard(CollectorInteraction interaction) {
+    final dropoff = interaction.dropoff;
+    
+    if (dropoff == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Drop image
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: dropoff.imageUrl != null && dropoff.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      dropoff.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey,
+                        size: 24,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Collection details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Item counts
+                Row(
+                  children: [
+                    if (dropoff.numberOfBottles > 0) ...[
+                      Image.asset(
+                        'assets/icons/water-bottle.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${dropoff.numberOfBottles}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[600],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    if (dropoff.numberOfCans > 0) ...[
+                      Image.asset(
+                        'assets/icons/can.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${dropoff.numberOfCans}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[600],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Text(
+                      'Total: ${dropoff.numberOfBottles + dropoff.numberOfCans}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                
+                // Bottle type and special instructions
+                Row(
+                  children: [
+                    Text(
+                      dropoff.bottleType.toUpperCase(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (dropoff.leaveOutside) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Leave Outside',
+                          style: TextStyle(
+                            color: Colors.orange[700],
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                
+                // Collection date
+                Text(
+                  'Collected ${_formatDate(interaction.interactionTime)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'COLLECTED',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
