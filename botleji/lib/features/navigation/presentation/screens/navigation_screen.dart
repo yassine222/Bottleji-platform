@@ -606,10 +606,21 @@ void _startLocationStream() {
         }
       }
       
-      // Calculate remaining route distance if we have route data
+      // Calculate straight-line distance first
+      final straightLineDistance = Geolocator.distanceBetween(
+        currentLatLng.latitude,
+        currentLatLng.longitude,
+        widget.destination.latitude,
+        widget.destination.longitude,
+      );
+      
       double remainingDistance = 0;
       
-      if (_navigationSteps.isNotEmpty) {
+      // For close drops (< 50m), always use straight-line distance
+      if (straightLineDistance < 50.0) {
+        remainingDistance = straightLineDistance;
+        debugPrint('🎯 Using straight-line distance for close drop: ${remainingDistance.toStringAsFixed(2)}m');
+      } else if (_navigationSteps.isNotEmpty) {
         // Find the closest point on the route to current position
         double minDistance = double.infinity;
         LatLng closestPoint = _navigationSteps.first.polylinePoints.first;
@@ -719,9 +730,56 @@ void _startLocationStream() {
     }
   }
 
+  void _createStraightLineRoute(LatLng origin, LatLng destination, double distance) {
+    debugPrint('🎯 Creating straight-line route for close drop');
+    
+    // Create a simple straight-line polyline
+    final points = <LatLng>[origin, destination];
+    
+    // Create polyline
+    final polyline = Polyline(
+      polylineId: const PolylineId('straight_line_route'),
+      points: points,
+      color: const Color(0xFF00695C),
+      width: 4,
+      patterns: [],
+    );
+    
+    // Update state
+    setState(() {
+      _polylines = {polyline};
+      _navigationSteps = [];
+      _currentStepIndex = 0;
+      _nextTurnInstruction = 'Walk straight to destination';
+      _nextTurnDistance = '${distance.toStringAsFixed(0)}m';
+      _nextStreetName = 'Direct route';
+      _routeDistance = '${distance.toStringAsFixed(0)}m';
+      _routeDuration = '1 min'; // Estimated walking time
+    });
+    
+    debugPrint('✅ Straight-line route created: ${distance.toStringAsFixed(2)}m');
+  }
+
   Future<void> _calculateRoute(LatLng origin, LatLng destination) async {
     try {
       debugPrint('Calculating route from ${origin.latitude}, ${origin.longitude} to ${destination.latitude}, ${destination.longitude}');
+      
+      // Calculate straight-line distance first
+      final straightLineDistance = Geolocator.distanceBetween(
+        origin.latitude,
+        origin.longitude,
+        destination.latitude,
+        destination.longitude,
+      );
+      
+      debugPrint('📏 Straight-line distance: ${straightLineDistance.toStringAsFixed(2)} meters');
+      
+      // For very close drops (< 50m), use straight-line route instead of driving directions
+      if (straightLineDistance < 50.0) {
+        debugPrint('🎯 Very close drop detected (${straightLineDistance.toStringAsFixed(2)}m) - Using straight-line route');
+        _createStraightLineRoute(origin, destination, straightLineDistance);
+        return;
+      }
       
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/directions/json?'
