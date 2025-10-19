@@ -1464,6 +1464,26 @@ void _startLocationStream() {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _buildSlideButton(),
                 ),
+                
+                const SizedBox(height: 12),
+                
+                // Cancel Collection Button (when slide button is visible)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showCancellationDialog(context),
+                    icon: const Icon(Icons.cancel),
+                    label: const Text('Cancel Collection'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
               ] else ...[
                 // Exit Navigation Button (when not within arrival threshold)
                 SizedBox(
@@ -1681,14 +1701,14 @@ Widget build(BuildContext context) {
                 FloatingActionButton(
                   heroTag: 'test_slide_fab',
                   onPressed: () {
-                    debugPrint('🧪 Test button pressed - forcing slide button to appear');
+                    debugPrint('🧪 Test button pressed - toggling slide button');
                     setState(() {
-                      _showSlideButton = true;
+                      _showSlideButton = !_showSlideButton;
                     });
                   },
-                  backgroundColor: Colors.orange,
+                  backgroundColor: _showSlideButton ? Colors.red : Colors.orange,
                   foregroundColor: Colors.white,
-                  child: const Icon(Icons.swipe),
+                  child: Icon(_showSlideButton ? Icons.close : Icons.swipe),
                 ),
 
                 const SizedBox(height: 12),
