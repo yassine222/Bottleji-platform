@@ -10,6 +10,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
+import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -1211,7 +1213,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildCollectionHistory() {
-    final historyAsync = ref.watch(historyControllerProvider);
+    final recentCollectionsAsync = ref.watch(recentCompletedCollectionsProvider);
 
     return Card(
       elevation: 2,
@@ -1240,27 +1242,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            historyAsync.when(
-              data: (history) {
-                if (history.interactions.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No recent collections',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  );
-                }
-
-                // Filter to only collected interactions and sort by collection date (most recent first)
-                final collectedInteractions = history.interactions
-                    .where((interaction) => interaction.interactionType == 'collected')
-                    .toList()
-                  ..sort((a, b) => b.interactionTime.compareTo(a.interactionTime));
-                
-                if (collectedInteractions.isEmpty) {
+            recentCollectionsAsync.when(
+              data: (collections) {
+                if (collections.isEmpty) {
                   return const Center(
                     child: Text(
                       'No completed collections yet',
@@ -1274,8 +1258,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 
                 // Show the 3 most recent collections
                 return Column(
-                  children: collectedInteractions.take(3).map((interaction) {
-                    return _buildRecentCollectionCard(interaction);
+                  children: collections.take(3).map((attempt) {
+                    return _buildRecentCollectionAttemptCard(attempt);
                   }).toList(),
                 );
               },
@@ -1287,13 +1271,191 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               ),
               error: (error, stack) => Center(
                 child: Text(
-                  'Error loading history: ${error.toString()}',
+                  'Error loading collections: ${error.toString()}',
                   style: const TextStyle(color: Colors.red),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentCollectionAttemptCard(CollectionAttempt attempt) {
+    final dropSnapshot = attempt.dropSnapshot;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Drop image placeholder (since DropSnapshot doesn't have imageUrl)
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.recycling,
+              color: Colors.grey,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Collection details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Item counts
+                Row(
+                  children: [
+                    if (dropSnapshot.numberOfBottles > 0) ...[
+                      Image.asset(
+                        'assets/icons/water-bottle.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${dropSnapshot.numberOfBottles}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[600],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    if (dropSnapshot.numberOfCans > 0) ...[
+                      Image.asset(
+                        'assets/icons/can.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${dropSnapshot.numberOfCans}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[600],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Text(
+                      'Total: ${dropSnapshot.totalItems}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                
+                // Bottle type and special instructions
+                Row(
+                  children: [
+                    Text(
+                      dropSnapshot.bottleType.toUpperCase(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (dropSnapshot.notes?.contains('leave outside') == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Leave Outside',
+                          style: TextStyle(
+                            color: Colors.orange[700],
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                
+                // Collection date and duration
+                Row(
+                  children: [
+                    Text(
+                      'Collected ${_formatDate(attempt.completedAt ?? attempt.updatedAt)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (attempt.durationMinutes != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '(${attempt.durationDisplay})',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[400],
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'COLLECTED',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
