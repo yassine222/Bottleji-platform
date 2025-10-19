@@ -94,6 +94,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   bool _showSlideButton = false;
   double _slideProgress = 0.0;
   bool _isSliding = false;
+  double _cancelSlideProgress = 0.0;
+  bool _isCancelSliding = false;
   late AnimationController _slideAnimationController;
   late Animation<double> _slideAnimation;
 
@@ -1467,23 +1469,12 @@ void _startLocationStream() {
                 
                 const SizedBox(height: 12),
                 
-                // Cancel Collection Button (when slide button is visible)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showCancellationDialog(context),
-                    icon: const Icon(Icons.cancel),
-                    label: const Text('Cancel Collection'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
+           // Cancel Collection Button (when slide button is visible) - Slidable
+           Container(
+             width: double.infinity,
+             padding: const EdgeInsets.symmetric(horizontal: 20),
+             child: _buildCancelSlideButton(),
+           ),
               ] else ...[
                 // Exit Navigation Button (when not within arrival threshold)
                 SizedBox(
@@ -1723,137 +1714,266 @@ Widget build(BuildContext context) {
 }
 
   
-Widget _buildSlideButton() {
-  final theme = Theme.of(context);
-  final isDark = theme.brightness == Brightness.dark;
-  
-  return Container(
-    width: double.infinity,
-    height: 56, // Match the height of OutlinedButton with vertical padding 16
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: const Color(0xFF00695C),
-        width: 1,
+  Widget _buildSlideButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      height: 56, // Match the height of OutlinedButton with vertical padding 16
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF00695C),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Stack(
-      children: [
-        // Background track
-        Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade100,
+      child: Stack(
+        children: [
+          // Background track
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.shade100,
+            ),
           ),
-        ),
 
-        // Progress fill
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: (MediaQuery.of(context).size.width * 0.8 * _slideProgress).clamp(0.0, MediaQuery.of(context).size.width * 0.8),
-          height: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFF00695C),
+          // Progress fill
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: (MediaQuery.of(context).size.width * 0.8 * _slideProgress).clamp(0.0, MediaQuery.of(context).size.width * 0.8),
+            height: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFF00695C),
+            ),
           ),
-        ),
 
-        // Slide handle
-        Positioned(
-          left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress - 30).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 60),
-          top: 8,
-          child: GestureDetector(
-            onPanStart: (_) {
-              setState(() {
-                _isSliding = true;
-              });
-            },
-            onPanUpdate: (details) {
-              if (!_isSliding) return;
+          // Slide handle
+          Positioned(
+            left: (MediaQuery.of(context).size.width * 0.8 * _slideProgress - 30).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 60),
+            top: 8,
+            child: GestureDetector(
+              onPanStart: (_) {
+                setState(() {
+                  _isSliding = true;
+                });
+              },
+              onPanUpdate: (details) {
+                if (!_isSliding) return;
 
-              // Convert to local x within the track
-              final box = context.findRenderObject() as RenderBox;
-              final local = box.globalToLocal(details.globalPosition);
+                // Convert to local x within the track
+                final box = context.findRenderObject() as RenderBox;
+                final local = box.globalToLocal(details.globalPosition);
 
-              // Effective width where handle can move
-              final trackWidth = MediaQuery.of(context).size.width * 0.8;
-              final handleSize = 40.0;
-              final effective = trackWidth - handleSize;
+                // Effective width where handle can move
+                final trackWidth = MediaQuery.of(context).size.width * 0.8;
+                final handleSize = 40.0;
+                final effective = trackWidth - handleSize;
 
-              // Progress is handle-left within [0, effective] normalized to [0..1]
-              final px = (local.dx - handleSize / 2).clamp(0.0, effective);
-              final progress = (px / effective).clamp(0.0, 1.0);
+                // Progress is handle-left within [0, effective] normalized to [0..1]
+                final px = (local.dx - handleSize / 2).clamp(0.0, effective);
+                final progress = (px / effective).clamp(0.0, 1.0);
 
-              setState(() {
-                _slideProgress = progress;
-              });
+                setState(() {
+                  _slideProgress = progress;
+                });
 
-              if (_slideProgress >= 0.95) {
-                _completeSlideCollection();
-              }
-            },
-            onPanEnd: (_) {
-              setState(() {
-                _isSliding = false;
-                if (_slideProgress < 0.95) {
-                  _slideProgress = 0.0;
+                if (_slideProgress >= 0.95) {
+                  _completeSlideCollection();
                 }
-              });
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_forward,
-                color: _slideProgress > 0.5
-                    ? Colors.white
-                    : const Color(0xFF00695C),
-                size: 20,
+              },
+              onPanEnd: (_) {
+                setState(() {
+                  _isSliding = false;
+                  if (_slideProgress < 0.95) {
+                    _slideProgress = 0.0;
+                  }
+                });
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.arrow_forward,
+                  color: _slideProgress > 0.5
+                      ? Colors.white
+                      : const Color(0xFF00695C),
+                  size: 20,
+                ),
               ),
             ),
           ),
-        ),
 
-        // Text overlay
-        Positioned.fill(
-          child: Center(
-            child: Text(
-              _slideProgress > 0.5 ? 'Release to Collect' : 'Slide to Collect',
-              style: TextStyle(
-                color: _slideProgress > 0.5
-                    ? Colors.white
-                    : Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+          // Text overlay
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                _slideProgress > 0.5 ? 'Release to Collect' : 'Slide to Collect',
+                style: TextStyle(
+                  color: _slideProgress > 0.5
+                      ? Colors.white
+                      : Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCancelSlideButton() {
+    return Container(
+      width: double.infinity,
+      height: 56, // Match the height of OutlinedButton with vertical padding 16
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.red,
+          width: 1,
         ),
-      ],
-    ),
-  );
-}
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background track
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.shade100,
+            ),
+          ),
+
+          // Progress fill
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress).clamp(0.0, MediaQuery.of(context).size.width * 0.8),
+            height: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.red,
+            ),
+          ),
+
+          // Slide handle
+          Positioned(
+            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress - 30).clamp(0.0, MediaQuery.of(context).size.width * 0.8 - 60),
+            top: 8,
+            child: GestureDetector(
+              onPanStart: (_) {
+                setState(() {
+                  _isCancelSliding = true;
+                });
+              },
+              onPanUpdate: (details) {
+                if (!_isCancelSliding) return;
+
+                // Convert to local x within the track
+                final box = context.findRenderObject() as RenderBox;
+                final local = box.globalToLocal(details.globalPosition);
+
+                // Effective width where handle can move
+                final trackWidth = MediaQuery.of(context).size.width * 0.8;
+                final handleSize = 40.0;
+                final effective = trackWidth - handleSize;
+
+                // Progress is handle-left within [0, effective] normalized to [0..1]
+                final px = (local.dx - handleSize / 2).clamp(0.0, effective);
+                final progress = (px / effective).clamp(0.0, 1.0);
+
+                setState(() {
+                  _cancelSlideProgress = progress;
+                });
+
+                if (_cancelSlideProgress >= 0.95) {
+                  _completeCancelSlide();
+                }
+              },
+              onPanEnd: (_) {
+                setState(() {
+                  _isCancelSliding = false;
+                  if (_cancelSlideProgress < 0.95) {
+                    _cancelSlideProgress = 0.0;
+                  }
+                });
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.cancel,
+                  color: _cancelSlideProgress > 0.5
+                      ? Colors.white
+                      : Colors.red,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+
+          // Text overlay
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                _cancelSlideProgress > 0.5 ? 'Release to Cancel' : 'Slide to Cancel',
+                style: TextStyle(
+                  color: _cancelSlideProgress > 0.5
+                      ? Colors.white
+                      : Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   
 
@@ -1868,10 +1988,21 @@ Widget _buildSlideButton() {
         backgroundColor: Color(0xFF00695C),
         duration: Duration(seconds: 1),
       ),
-      );
+    );
 
     // Use the existing _confirmCollection method to avoid duplicate reward calculations
-    await _confirmCollection(context);
+    _confirmCollection(context);
+  }
+
+  void _completeCancelSlide() async {
+    // Show cancellation dialog when cancel slide is completed
+    _showCancellationDialog(context);
+    
+    // Reset the cancel slide progress
+    setState(() {
+      _cancelSlideProgress = 0.0;
+      _isCancelSliding = false;
+    });
   }
 
   
