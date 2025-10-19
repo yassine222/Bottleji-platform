@@ -151,8 +151,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     _totalTimeoutSeconds = (routeDurationMinutes + bufferMinutes) * 60;
     
-    // For testing, use 1 minute (60 seconds)
-    _totalTimeoutSeconds = 60;
+    // Use the calculated timeout instead of hardcoded 1 minute
+    // _totalTimeoutSeconds = 60; // Removed hardcoded 1 minute for testing
     
     // Calculate remaining time based on elapsed time since accepted
     final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
@@ -683,7 +683,9 @@ void _startLocationStream() {
         
         setState(() {
           _distanceToDestination = remainingDistance;
-          _hasReachedDestination = remainingDistance <= _arrivalThreshold;
+          // Only consider "reached destination" when very close (within 10m)
+          // This prevents the "You have arrived" card from showing too early
+          _hasReachedDestination = remainingDistance <= 10.0;
           
           // Show slide button when collector is within threshold distance
           // This ensures button appears even for very close drops
@@ -703,6 +705,13 @@ void _startLocationStream() {
         if (remainingDistance <= 50.0) {
           debugPrint('🎯 Close drop detected: ${remainingDistance.toStringAsFixed(2)}m - Button should be visible');
         }
+        
+        // Debug the button visibility logic
+        debugPrint('🔍 Button visibility check:');
+        debugPrint('🔍 remainingDistance: ${remainingDistance}');
+        debugPrint('🔍 _arrivalThreshold: $_arrivalThreshold');
+        debugPrint('🔍 remainingDistance <= _arrivalThreshold: ${remainingDistance <= _arrivalThreshold}');
+        debugPrint('🔍 _showSlideButton will be: ${remainingDistance <= _arrivalThreshold}');
       }
     } catch (e) {
       debugPrint('Error updating distance: $e');
