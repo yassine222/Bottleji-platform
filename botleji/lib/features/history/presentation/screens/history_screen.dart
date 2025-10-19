@@ -123,14 +123,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     data: (userMode) {
       final isHousehold = userMode == UserMode.household;
 
-      print('HistoryScreen: User mode detected: $userMode');
-      print('HistoryScreen: Is household: $isHousehold');
-
       if (isHousehold) {
-        print('HistoryScreen: Building household history');
         return _buildHouseholdHistory();
       } else {
-        print('HistoryScreen: Building collector history');
         return _buildCollectorHistory(context);
       }
     },
@@ -417,15 +412,11 @@ Widget _buildCollectorHistory(BuildContext context) {
 
     // Apply status filter
     if (selectedStatus != null && selectedStatus != 'All') {
-      print('🔍 Filtering by status: $selectedStatus');
       filtered = filtered.where((interaction) {
         final interactionType = interaction.interactionType.toLowerCase();
         final selectedStatusLower = selectedStatus!.toLowerCase();
-        final matches = interactionType == selectedStatusLower;
-        print('  📍 Interaction: ${interaction.interactionType} (${interactionType}) vs Selected: $selectedStatus ($selectedStatusLower) = $matches');
-        return matches;
+        return interactionType == selectedStatusLower;
       }).toList();
-      print('🔍 After status filter: ${filtered.length} interactions');
     }
 
     // Apply time range filter
@@ -567,11 +558,6 @@ Widget _buildCollectorHistory(BuildContext context) {
 
   Widget _buildHistoryCard(CollectorInteraction interaction) {
     final dropoff = interaction.dropoff;
-    
-    print('🖼️ Building history card:');
-    print('   dropoff: ${dropoff != null}');
-    print('   imageUrl: ${dropoff?.imageUrl}');
-    print('   imageUrl isEmpty: ${dropoff?.imageUrl?.isEmpty}');
 
     return InkWell(
       onTap: () => _showInteractionDetails(interaction),
@@ -2448,45 +2434,25 @@ Widget _buildCollectorHistory(BuildContext context) {
   List<List<CollectorInteraction>> _groupInteractionsByDrop(List<CollectorInteraction> interactions) {
     final Map<String, List<CollectorInteraction>> grouped = {};
     
-    print('🔍 Grouping ${interactions.length} interactions...');
-    
     for (final interaction in interactions) {
       // Try to get a unique identifier for the drop
       String dropKey = '';
       
-      print('  🔎 Processing interaction ${interaction.id} (${interaction.interactionType})');
-      print('    - dropoff?.id: ${interaction.dropoff?.id}');
-      print('    - dropoffId: ${interaction.dropoffId}');
-      
       // ALWAYS prefer dropoff.id if available (most reliable)
       if (interaction.dropoff?.id.isNotEmpty == true) {
         dropKey = interaction.dropoff!.id;
-        print('  📍 Using dropoff.id: $dropKey');
       } else if (interaction.dropoffId.isNotEmpty) {
         // Use dropoffId as fallback
         dropKey = interaction.dropoffId;
-        print('  📍 Using interaction.dropoffId: $dropKey');
       } else {
         // Last resort: use interaction id (this means ungrouped)
         dropKey = interaction.id;
-        print('  ⚠️ Using interaction.id as fallback: $dropKey (UNGROUPED!)');
       }
       
       if (dropKey.isNotEmpty) {
         grouped.putIfAbsent(dropKey, () => []).add(interaction);
-        print('  ✅ Added ${interaction.interactionType} to group $dropKey');
-      } else {
-        print('  ❌ No dropKey found for interaction ${interaction.id}');
       }
     }
-    
-    print('🔍 Created ${grouped.length} groups:');
-    grouped.forEach((key, interactions) {
-      print('  📦 Group $key: ${interactions.length} interactions');
-      interactions.forEach((interaction) {
-        print('    - ${interaction.interactionType} at ${interaction.interactionTime}');
-      });
-    });
     
     // Sort each group by interaction time
     for (final group in grouped.values) {
@@ -2525,11 +2491,9 @@ Widget _buildCollectorHistory(BuildContext context) {
           // Create a pair: [accepted, nextInteraction] (if nextInteraction exists)
           if (nextInteraction != null) {
             pairs.add([accepted, nextInteraction]);
-            print('  🔗 Created pair: ${accepted.interactionType} → ${nextInteraction.interactionType}');
           } else {
             // If no subsequent interaction, just show the accepted one
             pairs.add([accepted]);
-            print('  🔗 Created single: ${accepted.interactionType}');
           }
         }
       } else {
@@ -2539,7 +2503,6 @@ Widget _buildCollectorHistory(BuildContext context) {
               interaction.interactionType == 'collected' || 
               interaction.interactionType == 'expired') {
             pairs.add([interaction]);
-            print('  🔗 Created standalone: ${interaction.interactionType}');
           }
         }
       }
@@ -2547,8 +2510,6 @@ Widget _buildCollectorHistory(BuildContext context) {
     
     // Sort pairs by the most recent interaction time (descending order)
     pairs.sort((a, b) => b.last.interactionTime.compareTo(a.last.interactionTime));
-    
-    print('🔍 Final result: ${pairs.length} pairs');
     
     return pairs;
   }

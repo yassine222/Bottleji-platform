@@ -67,25 +67,11 @@ class HistoryController extends StateNotifier<AsyncValue<CollectorHistory>> {
       // Convert time range to API format
       String? apiTimeRange = _convertTimeRangeToApiFormat(_currentTimeRange);
       
-      print('🔍 Loading history for user: ${user!.id}');
-      print('🔍 Status filter: $_currentStatus');
-      print('🔍 Time range filter: $_currentTimeRange (API: $apiTimeRange)');
-      
       final history = await _repository.getCollectorHistory(
         user.id!,
         status: _currentStatus,
         timeRange: apiTimeRange,
         );
-      print('🔍 History loaded successfully');
-      print('🔍 Total interactions: ${history.interactions.length}');
-      print('🔍 Interactions by type:');
-      final typeCounts = <String, int>{};
-      for (final interaction in history.interactions) {
-        typeCounts[interaction.interactionType] = (typeCounts[interaction.interactionType] ?? 0) + 1;
-      }
-      typeCounts.forEach((type, count) {
-        print('   - $type: $count');
-      });
       
       // Sort interactions by most recent first
       final sortedInteractions = List<CollectorInteraction>.from(history.interactions);
@@ -95,10 +81,8 @@ class HistoryController extends StateNotifier<AsyncValue<CollectorHistory>> {
         interactions: sortedInteractions,
         pagination: history.pagination,
         );
-      print('🔍 Sorted interactions by most recent first');
       state = AsyncValue.data(sortedHistory);
     } catch (e) {
-      print('❌ Error loading history: $e');
       state = AsyncValue.error(e, StackTrace.current);
     } finally {
       _isLoading = false;
