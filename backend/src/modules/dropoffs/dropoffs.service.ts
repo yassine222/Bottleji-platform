@@ -878,14 +878,19 @@ export class DropoffsService {
       console.log(`⏰ Current time: ${now}`);
 
       // Calculate dynamic timeout based on route duration
-      // FOR TESTING: Using 1 minute timeout
-      // TODO: Change back to dynamic calculation for production
-      const routeDurationMinutes = 1; // TESTING: 1 minute (was 20 minutes)
+      // Use Google Maps API to get actual route duration
+      const routeDurationMinutes = await this.calculateRouteDuration(
+        interaction.collectorLocation,
+        dropoff.location
+      );
       
       // Fixed buffer based on route duration
-      let bufferMinutes = 0; // TESTING: No buffer (was 10-20 minutes)
+      let bufferMinutes = 10; // 10 minutes buffer for unexpected delays
+      if (routeDurationMinutes > 30) {
+        bufferMinutes = 20; // 20 minutes buffer for longer routes
+      }
       
-      const totalTimeoutMinutes = routeDurationMinutes + bufferMinutes; // TESTING: 1 minute total
+      const totalTimeoutMinutes = routeDurationMinutes + bufferMinutes;
       
       const timeoutThreshold = new Date(interaction.interactionTime.getTime() + (totalTimeoutMinutes * 60 * 1000));
       
@@ -1326,6 +1331,41 @@ export class DropoffsService {
     });
 
     return stats;
+  }
+
+  private async calculateRouteDuration(
+    collectorLocation: { lat: number; lng: number },
+    dropoffLocation: { lat: number; lng: number }
+  ): Promise<number> {
+    try {
+      // Use Google Maps Distance Matrix API to get route duration
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn('⚠️ Google Maps API key not found, using default 20 minutes');
+        return 20; // Default fallback
+      }
+
+      const origin = `${collectorLocation.lat},${collectorLocation.lng}`;
+      const destination = `${dropoffLocation.lat},${dropoffLocation.lng}`;
+      
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=driving&key=${apiKey}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.rows[0]?.elements[0]?.duration) {
+        const durationSeconds = data.rows[0].elements[0].duration.value;
+        const durationMinutes = Math.ceil(durationSeconds / 60); // Round up to next minute
+        console.log(`🗺️ Route duration calculated: ${durationMinutes} minutes`);
+        return durationMinutes;
+      } else {
+        console.warn('⚠️ Failed to get route duration from Google Maps API, using default 20 minutes');
+        return 20; // Default fallback
+      }
+    } catch (error) {
+      console.error('❌ Error calculating route duration:', error);
+      return 20; // Default fallback
+    }
   }
 
   private getStatusPriority(status: string): number {
