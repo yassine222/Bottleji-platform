@@ -99,6 +99,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   late AnimationController _slideAnimationController;
   late Animation<double> _slideAnimation;
 
+  // Navigation card minimize/expand variables
+  bool _isNavigationCardMinimized = false;
+
   @override
   void initState() {
     super.initState();
@@ -1251,6 +1254,19 @@ void _startLocationStream() {
                   ),
                 ),
                 IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isNavigationCardMinimized = !_isNavigationCardMinimized;
+                    });
+                  },
+                  icon: Icon(
+                    _isNavigationCardMinimized ? Icons.expand_more : Icons.expand_less,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                  ),
+                ),
+                IconButton(
                   onPressed: () => _temporaryExit(),
                   icon: Icon(
                     Icons.close,
@@ -1264,8 +1280,58 @@ void _startLocationStream() {
 
             const SizedBox(height: 16),
 
-            /// ---------------- NEXT TURN ----------------
-            if (_nextTurnInstruction != null) ...[
+            /// ---------------- CONDITIONAL CONTENT (MINIMIZED/EXPANDED) ----------------
+            if (_isNavigationCardMinimized) ...[
+              /// ---------------- MINIMIZED CONTENT ----------------
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.my_location,
+                      color: const Color(0xFF00695C),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_formatDistance(_distanceToDestination)} remaining',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _remainingSeconds < 300
+                            ? Colors.orange.withOpacity(0.2)
+                            : const Color(0xFF00695C).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _formatTime(_remainingSeconds),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: _remainingSeconds < 300
+                              ? Colors.orange
+                              : const Color(0xFF00695C),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              /// ---------------- NEXT TURN ----------------
+              if (_nextTurnInstruction != null) ...[
               Row(
                 children: [
                   Container(
@@ -1500,6 +1566,7 @@ void _startLocationStream() {
                   ),
                 ),
               ],
+            ],
             ],
           ],
         ),
