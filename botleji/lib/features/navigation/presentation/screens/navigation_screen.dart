@@ -1693,9 +1693,9 @@ Widget build(BuildContext context) {
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     child: FilledButton.icon(
-                      onPressed: () async {
+                      onPressed: () {
                         debugPrint('🧪 Testing button pressed for close drop!');
-                        await _confirmCollection(context);
+                        _confirmCollection(context);
                       },
                       icon: const Icon(Icons.check_circle),
                       label: const Text('Test: Confirm Collection'),
@@ -1790,7 +1790,6 @@ Widget build(BuildContext context) {
                     ),
                   ),
               ],
-            ),
             ),
           ),
         ],
