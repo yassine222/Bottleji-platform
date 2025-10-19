@@ -699,8 +699,9 @@ void _startLocationStream() {
           _hasReachedDestination = remainingDistance <= 5.0;
           
           // Show slide button when collector is within threshold distance
-          // This ensures button appears even for very close drops
-          if (remainingDistance <= _arrivalThreshold) {
+          // For very close drops (< 10m), always show button for testing
+          // For normal drops, show button when within threshold
+          if (remainingDistance < 10.0 || remainingDistance <= _arrivalThreshold) {
             _showSlideButton = true;
           } else {
             _showSlideButton = false;
@@ -711,6 +712,15 @@ void _startLocationStream() {
         debugPrint('📍 Arrival threshold: $_arrivalThreshold meters');
         debugPrint('📍 Has reached destination: $_hasReachedDestination');
         debugPrint('📍 Show slide button: $_showSlideButton');
+        
+        // Debug button type
+        if (remainingDistance < 10.0) {
+          debugPrint('🧪 Very close drop detected - showing TESTING button');
+        } else if (_showSlideButton) {
+          debugPrint('🎯 Normal drop within threshold - showing LOCATION-BASED button');
+        } else {
+          debugPrint('📏 Drop too far - no button shown');
+        }
         
         // Additional logging for close drops
         if (remainingDistance <= 50.0) {
@@ -1677,8 +1687,31 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 12),
 
 
-                // Simple Collection Button (appears under navigation button)
-                if (_showSlideButton)
+                // Testing Button for very close drops (< 10m)
+                if (_distanceToDestination < 10.0)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        debugPrint('🧪 Testing button pressed for close drop!');
+                        await _confirmCollection(context);
+                      },
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Test: Confirm Collection'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.orange, // Different color for testing
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Location-based Collection Button (appears when within threshold)
+                if (_showSlideButton && _distanceToDestination >= 10.0)
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 20),
