@@ -1456,48 +1456,39 @@ void _startLocationStream() {
                 ],
               ),
             ] else ...[
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _showCancellationDialog(context),
-                  icon: const Icon(Icons.exit_to_app),
-                  label: const Text('Exit Navigation'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
-                    side: BorderSide(
-                      color: isDark
-                          ? AppColors.darkTextSecondary.withOpacity(0.3)
-                          : AppColors.lightTextSecondary.withOpacity(0.3),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Show slide button when within arrival threshold, otherwise show exit button
+              if (_showSlideButton) ...[
+                // Slide to Collect Button
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildSlideButton(),
+                ),
+              ] else ...[
+                // Exit Navigation Button (when not within arrival threshold)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showCancellationDialog(context),
+                    icon: const Icon(Icons.exit_to_app),
+                    label: const Text('Exit Navigation'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
+                      side: BorderSide(
+                        color: isDark
+                            ? AppColors.darkTextSecondary.withOpacity(0.3)
+                            : AppColors.lightTextSecondary.withOpacity(0.3),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // TESTING BUTTON - COMMENTED OUT FOR TESTING LOCATION-BASED BUTTON
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: FilledButton.icon(
-              //     onPressed: () => _confirmCollection(context),
-              //     icon: const Icon(Icons.check_circle),
-              //     label: const Text('Confirm Collection'),
-              //     style: FilledButton.styleFrom(
-              //       backgroundColor: const Color(0xFF00695C),
-              //       foregroundColor: Colors.white,
-              //       padding: const EdgeInsets.symmetric(vertical: 16),
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(12),
-              //       ),
-              //     ),
-              //   ),
-              // ),
+              ],
             ],
           ],
         ),
@@ -1685,110 +1676,6 @@ Widget build(BuildContext context) {
                 ),
 
                 const SizedBox(height: 12),
-
-
-                // Testing Button for very close drops (< 10m)
-                if (_distanceToDestination < 10.0)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        debugPrint('🧪 Testing button pressed for close drop!');
-                        _confirmCollection(context);
-                      },
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Test: Confirm Collection'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.orange, // Different color for testing
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Location-based Collection Button (appears when within threshold)
-                if (_showSlideButton && _distanceToDestination >= 10.0)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    child: FilledButton(
-                      onPressed: () async {
-                        debugPrint('🔘 Confirm Collection button pressed!');
-                        try {
-                          final authState = ref.read(authNotifierProvider);
-                          final collectorId = authState?.value?.id;
-
-                          if (collectorId != null) {
-                            debugPrint('🔘 Confirming collection (completes attempt and adds to timeline)...');
-                            final rewardData = await ref
-                                .read(dropsControllerProvider.notifier)
-                                .confirmCollectionWithRewards(widget.dropId);
-
-                            debugPrint('🔘 Collection confirmed successfully!');
-                            
-                            // Show collection success popup with reward information
-                            if (rewardData != null && mounted) {
-                              final currentTier = rewardData['currentTier']?['tier'] ?? 1;
-                              final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
-                              final totalPoints = rewardData['totalPoints'] ?? 0;
-                              final currentPoints = rewardData['currentPoints'] ?? 0;
-                              final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
-                              
-                              debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
-          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
-                              
-                              // Show the collection success popup
-                              ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
-                                pointsAwarded: pointsAwarded,
-                                tierName: tierName,
-                                currentTier: currentTier,
-                                totalPoints: totalPoints,
-                                tierUpgraded: false,
-                              );
-                            }
-                            
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Drop marked as collected!'),
-                                backgroundColor: Colors.green,
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          } else {
-                            debugPrint('🔘 Error: No collector ID found');
-                          }
-                        } catch (e) {
-                          debugPrint('🔘 Error marking drop as collected: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF00695C),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Confirm Collection',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
