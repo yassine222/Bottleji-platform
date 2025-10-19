@@ -1538,11 +1538,11 @@ void _startLocationStream() {
                 
                 const SizedBox(height: 12),
                 
-                // Cancel Collection Button (when slide button is visible) - Slidable
+                // Cancel Collection Button (when slide button is visible) - Clickable
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildCancelSlideButton(),
+                  child: _buildCancelButton(),
                 ),
               ],
             ],
@@ -1883,120 +1883,30 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildCancelSlideButton() {
-    // Always show "Slide to Cancel" text
-    const buttonText = 'Slide to Cancel';
-    const releaseText = 'Release to Cancel';
-    
-    return Container(
+  Widget _buildCancelButton() {
+    return SizedBox(
       width: double.infinity,
-      height: 56, // Match the height of OutlinedButton with vertical padding 16
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.red,
-          width: 1,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          // Handle both cancellation and exit navigation logic
+          if (_showSlideButton) {
+            // Close to drop - show collection cancellation dialog with reason selection
+            _showCancellationDialog(context);
+          } else {
+            // Far from drop - show simple exit navigation dialog
+            _temporaryExit();
+          }
+        },
+        icon: const Icon(Icons.cancel),
+        label: const Text('Cancel Collection'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.red,
+          side: const BorderSide(color: Colors.red),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Background track
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade100,
-            ),
-          ),
-
-          // Progress fill
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress).clamp(0.0, MediaQuery.of(context).size.width * 0.8),
-            height: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.red,
-            ),
-          ),
-
-          // Slide handle
-          Positioned(
-            left: (MediaQuery.of(context).size.width * 0.8 * _cancelSlideProgress + 8).clamp(8.0, MediaQuery.of(context).size.width * 0.8 - 28),
-            top: 16,
-            child: GestureDetector(
-              onPanStart: (_) {
-                setState(() {
-                  _isCancelSliding = true;
-                });
-              },
-              onPanUpdate: (details) {
-                if (!_isCancelSliding) return;
-
-                // Convert to local x within the track
-                final box = context.findRenderObject() as RenderBox;
-                final local = box.globalToLocal(details.globalPosition);
-
-                // Effective width where handle can move
-                final trackWidth = MediaQuery.of(context).size.width * 0.8;
-                final handleSize = 24.0;
-                final effective = trackWidth - handleSize - 16; // 8px padding on each side
-
-                // Progress is handle-left within [0, effective] normalized to [0..1]
-                final px = (local.dx - handleSize / 2 - 8).clamp(0.0, effective);
-                final progress = (px / effective).clamp(0.0, 1.0);
-
-                setState(() {
-                  _cancelSlideProgress = progress;
-                });
-
-                if (_cancelSlideProgress >= 0.95) {
-                  _completeCancelSlide();
-                }
-              },
-              onPanEnd: (_) {
-                setState(() {
-                  _isCancelSliding = false;
-                  if (_cancelSlideProgress < 0.95) {
-                    _cancelSlideProgress = 0.0;
-                  }
-                });
-              },
-              child: Icon(
-                Icons.cancel,
-                color: _cancelSlideProgress > 0.5
-                    ? Colors.white
-                    : Colors.red,
-                size: 24,
-              ),
-            ),
-          ),
-
-          // Text overlay
-          Positioned.fill(
-            child: Center(
-              child: Text(
-                _cancelSlideProgress > 0.5 ? releaseText : buttonText,
-                style: TextStyle(
-                  color: _cancelSlideProgress > 0.5
-                      ? Colors.white
-                      : Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2020,22 +1930,6 @@ Widget build(BuildContext context) {
     _confirmCollection(context);
   }
 
-  void _completeCancelSlide() async {
-    // Handle both cancellation and exit navigation logic
-    if (_showSlideButton) {
-      // Close to drop - show collection cancellation dialog with reason selection
-      _showCancellationDialog(context);
-    } else {
-      // Far from drop - show simple exit navigation dialog
-      _temporaryExit();
-    }
-    
-    // Reset the cancel slide progress
-    setState(() {
-      _cancelSlideProgress = 0.0;
-      _isCancelSliding = false;
-    });
-  }
 
   
   void _showDropDetailsCard(BuildContext context) {
