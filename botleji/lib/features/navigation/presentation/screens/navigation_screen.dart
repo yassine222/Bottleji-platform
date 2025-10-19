@@ -83,6 +83,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   DateTime? _collectionStartTime;
   int _totalTimeoutSeconds = 0;
   bool _hasTimedOut = false;
+  bool _warningNotificationSent = false;
 
   // Proximity and slide button variables
   static const double _arrivalThreshold = 100.0; // 100 meters threshold - increased for better UX
@@ -187,6 +188,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           _remainingSeconds--;
         });
         debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
+        
+        // Check for warning notification at 30% of total time remaining
+        final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
+        if (_remainingSeconds <= warningThreshold && !_warningNotificationSent) {
+          debugPrint('⚠️ Warning threshold reached: ${_remainingSeconds}s <= ${warningThreshold}s (30% of ${_totalTimeoutSeconds}s)');
+          _showWarningNotification();
+        }
       } else if (_remainingSeconds <= 0 && !_hasTimedOut) {
         // Timeout reached - only handle once
         debugPrint('⏰ TIMEOUT REACHED - Calling _handleTimeout()');
@@ -2226,6 +2234,57 @@ Widget build(BuildContext context) {
       ),
     ),
   );
+}
+
+void _showWarningNotification() async {
+  if (_warningNotificationSent) return;
+  
+  _warningNotificationSent = true;
+  debugPrint('⚠️ Showing warning notification - Timer at 30% remaining');
+  
+  final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
+  if (activeCollection != null) {
+    try {
+      // Show in-app notification (SnackBar) when in foreground
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Collection timer running low: ${_formatTime(_remainingSeconds)} remaining'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () {
+                // Navigate to navigation screen if not already there
+                debugPrint('⚠️ User tapped view on warning notification');
+              },
+            ),
+          ),
+        );
+      }
+      
+      // Also show system notification for background cases
+      await LocalNotificationService().showNotification(
+        title: 'Collection Timer Warning',
+        body: 'Your collection timer is running low: ${_formatTime(_remainingSeconds)} remaining',
+        id: 2000,
+        payload: 'timer_warning:${activeCollection.dropoffId}',
+      );
+      
+      debugPrint('⚠️ Warning notification sent successfully');
+    } catch (e) {
+      debugPrint('❌ Error sending warning notification: $e');
+    }
+  }
 }
 
 Future<void> _handleCancellation(CancellationReason reason) async {
