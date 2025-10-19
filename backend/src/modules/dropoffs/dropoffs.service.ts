@@ -632,7 +632,7 @@ export class DropoffsService {
              title: '🏠 Drop Collected & Tier Upgraded!',
              message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points and reached ${householdRewardResult.newTier.name}!`,
              data: { 
-               dropId: dropoff._id.toString(),
+                dropId: (dropoff._id as any).toString(),
                pointsAwarded: householdRewardResult.pointsAwarded,
                totalPoints: householdRewardResult.totalPoints,
                newTier: householdRewardResult.newTier,
@@ -646,7 +646,7 @@ export class DropoffsService {
              title: '🏠 Drop Collected!',
              message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points for contributing to recycling.`,
              data: { 
-               dropId: dropoff._id.toString(),
+                dropId: (dropoff._id as any).toString(),
                pointsAwarded: householdRewardResult.pointsAwarded,
                totalPoints: householdRewardResult.totalPoints,
                currentTier: householdRewardResult.newTier.name,
@@ -880,7 +880,10 @@ export class DropoffsService {
       // Calculate dynamic timeout based on route duration
       // Use Google Maps API to get actual route duration
       const routeDurationMinutes = await this.calculateRouteDuration(
-        interaction.collectorLocation,
+        interaction.location ? {
+          lat: interaction.location.coordinates[1],
+          lng: interaction.location.coordinates[0]
+        } : { lat: 0, lng: 0 },
         dropoff.location
       );
       
@@ -952,7 +955,7 @@ export class DropoffsService {
             title: 'Drop Expired',
             message: 'A collector\'s time expired on your drop. It\'s now available for others.',
             data: { 
-              dropId: dropoff._id.toString(), 
+                dropId: (dropoff._id as any).toString(),
               collectorId: interaction.collectorId,
               dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
             },
