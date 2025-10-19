@@ -1688,7 +1688,7 @@ Widget build(BuildContext context) {
                   },
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
-                  child: const Icon(Icons.slide),
+                  child: const Icon(Icons.swipe),
                 ),
 
                 const SizedBox(height: 12),
@@ -1704,135 +1704,27 @@ Widget build(BuildContext context) {
 
   
 Widget _buildSlideButton() {
-  final trackWidth = MediaQuery.of(context).size.width * 0.8;
-  const handleSize = 60.0;
-  final handleLeft = (trackWidth * _slideProgress - handleSize / 2)
-      .clamp(0.0, trackWidth - handleSize);
-
-  return AnimatedBuilder(
-    animation: _slideAnimation,
-    builder: (context, child) {
-      return Container(
-        height: handleSize,
-        width: trackWidth,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(handleSize / 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+  
+  return SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      onPressed: () {
+        // For testing - complete collection immediately
+        _completeSlideCollection();
+      },
+      icon: const Icon(Icons.swipe),
+      label: const Text('Slide to Collect'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF00695C),
+        side: const BorderSide(color: Color(0xFF00695C)),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Stack(
-          children: [
-            // Background track
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(handleSize / 2),
-                color: Colors.grey.shade200,
-              ),
-            ),
-
-            // Progress fill
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: (trackWidth * _slideProgress).clamp(0.0, trackWidth),
-              height: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(handleSize / 2),
-                color: const Color(0xFF00695C),
-              ),
-            ),
-
-            // Slide handle
-            Positioned(
-              left: handleLeft,
-              top: 0,
-              child: GestureDetector(
-                onPanStart: (_) {
-                  setState(() {
-                    _isSliding = true;
-                  });
-                },
-                onPanUpdate: (details) {
-                  if (!_isSliding) return;
-
-                  // Convert to local x within the track
-                  final box = context.findRenderObject() as RenderBox;
-                  final local = box.globalToLocal(details.globalPosition);
-
-                  // Effective width where handle can move (track minus handle)
-                  final effective = trackWidth - handleSize;
-
-                  // Progress is handle-left within [0, effective] normalized to [0..1]
-                  final px = (local.dx - handleSize / 2).clamp(0.0, effective);
-                  final progress = (px / effective).clamp(0.0, 1.0);
-
-                  setState(() {
-                    _slideProgress = progress;
-                  });
-
-                  if (_slideProgress >= 0.95) {
-                    _completeSlideCollection();
-                  }
-                },
-                onPanEnd: (_) {
-                  setState(() {
-                    _isSliding = false;
-                    if (_slideProgress < 0.95) {
-                      _slideProgress = 0.0;
-                    }
-                  });
-                },
-                child: Container(
-                  width: handleSize,
-                  height: handleSize,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(handleSize / 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward,
-                    color: _slideProgress > 0.5
-                        ? Colors.white
-                        : const Color(0xFF00695C),
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-
-            // Text overlay
-            Positioned.fill(
-              child: Center(
-                child: Text(
-                  _slideProgress > 0.5 ? 'Release to Collect' : 'Slide to Collect',
-                  style: TextStyle(
-                    color: _slideProgress > 0.5
-                        ? Colors.white
-                        : Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    },
+      ),
+    ),
   );
 }
 
