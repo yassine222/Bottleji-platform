@@ -1850,63 +1850,8 @@ Widget _buildSlideButton() {
       ),
       );
 
-    // Mark the drop as collected
-    try {
-      final authState = ref.read(authNotifierProvider);
-      final collectorId = authState?.value?.id;
-      
-      if (collectorId != null) {
-        final rewardData = await ref.read(dropsControllerProvider.notifier)
-            .confirmCollectionWithRewards(widget.dropId);
-        
-        // IMMEDIATELY stop the timer
-        debugPrint('⏰ Stopping timer immediately...');
-        _timer?.cancel();
-        _hasTimedOut = true; // Prevent timer from continuing
-        
-        // Show collection success popup with reward information
-        debugPrint('🎉 Raw reward data: $rewardData');
-        if (rewardData != null && mounted) {
-          final currentTier = rewardData['currentTier']?['tier'] ?? 1;
-          final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
-          final totalPoints = rewardData['totalPoints'] ?? 0;
-          final currentPoints = rewardData['currentPoints'] ?? 0;
-          final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
-          
-          debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
-          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
-          
-          // Show the collection success popup
-          ref.read(collectionSuccessProvider.notifier).showCollectionSuccess(
-            pointsAwarded: pointsAwarded,
-            tierName: tierName,
-            currentTier: currentTier,
-            totalPoints: totalPoints,
-            tierUpgraded: false,
-          );
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Drop marked as collected!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error marking drop as collected: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-        );
-    }
-    
-    // Complete the collection
-    await _handleCollectionCompletion();
+    // Use the existing _confirmCollection method to avoid duplicate reward calculations
+    await _confirmCollection(context);
   }
 
   
