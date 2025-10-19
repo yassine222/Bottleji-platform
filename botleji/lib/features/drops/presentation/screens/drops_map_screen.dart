@@ -222,6 +222,17 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
     return null;
   }
 
+  double _calculateDistance(LatLng dropLocation) {
+    if (_currentLocation == null) return double.infinity;
+    
+    return Geolocator.distanceBetween(
+      _currentLocation!.latitude,
+      _currentLocation!.longitude,
+      dropLocation.latitude,
+      dropLocation.longitude,
+    );
+  }
+
   Future<void> _loadDropsForMap() async {
     try {
       // Clear drops first to prevent showing cached drops from other modes
@@ -315,12 +326,21 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                       // Create markers from drops (exclude censored and suspicious / 3+ cancellations for household)
                       Set<Marker> dropMarkers = {};
                       if (drops.isNotEmpty) {
-                        final filteredForMap = drops.where((d) =>
-                          !d.isCensored &&
-                          !d.isSuspicious &&
-                          (d.cancellationCount) < 3 &&
-                          d.status != DropStatus.stale
-                        ).toList();
+                        final filteredForMap = drops.where((d) {
+                          // Basic filters
+                          if (d.isCensored || d.isSuspicious || (d.cancellationCount) >= 3 || d.status == DropStatus.stale) {
+                            return false;
+                          }
+                          
+                          // Hide very close drops (< 100m) for collectors to prevent navigation crashes
+                          final userMode = ref.read(userModeControllerProvider);
+                          if (userMode.value == UserMode.collector && _currentLocation != null) {
+                            final distance = _calculateDistance(d.location);
+                            if (distance < 100.0) return false; // Hide drops less than 100m
+                          }
+                          
+                          return true;
+                        }).toList();
                         dropMarkers = filteredForMap.map((drop) {
                           return Marker(
                             markerId: MarkerId('drop_${drop.id}'),
