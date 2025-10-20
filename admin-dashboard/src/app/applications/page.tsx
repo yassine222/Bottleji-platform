@@ -158,15 +158,8 @@ export default function ApplicationsPage() {
     );
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // Import centralized date utilities
+  const { formatDateTime, formatDateOnly, formatRelativeTime } = require('../../lib/dateUtils');
 
   return (
     <div className="space-y-6">
@@ -270,10 +263,10 @@ export default function ApplicationsPage() {
                       {getStatusBadge(application.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(application.appliedAt)}
+                      {formatDateTime(application.appliedAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {application.reviewedAt ? formatDate(application.reviewedAt) : '-'}
+                      {application.reviewedAt ? formatDateTime(application.reviewedAt) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button

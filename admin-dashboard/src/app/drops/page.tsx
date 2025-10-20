@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import AdminLayout from '@/components/layout/AdminLayout';
 import {
   BarChart,
   Bar,
@@ -33,7 +34,12 @@ import {
   Search,
   Download,
   Eye,
-  EyeOff
+  EyeOff,
+  BarChart3,
+  ClipboardList,
+  GraduationCap,
+  MessageCircle,
+  Settings
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://172.20.10.12:3000/api';
@@ -209,12 +215,22 @@ export default function DropsManagementPage() {
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Drops Management</h1>
-        <p className="text-gray-600">Monitor, analyze, and manage all drops in the system</p>
-      </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Package className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Drops Management</h1>
+                <p className="text-gray-600">Monitor, analyze, and manage all drops in the system</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
       {/* Stats Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -239,7 +255,7 @@ export default function DropsManagementPage() {
           color="bg-orange-500"
         />
         <StatCard
-          title="Old Drops (>3 days)"
+          title="Old Drops (&gt;3 days)"
           value={stats.oldDrops}
           icon={<XCircle className="w-6 h-6" />}
           color="bg-red-500"
@@ -313,7 +329,7 @@ export default function DropsManagementPage() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                 outerRadius={80}
                 dataKey="value"
               >
@@ -398,7 +414,7 @@ export default function DropsManagementPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Old Drops Analysis (>3 days)</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Old Drops Analysis (&gt;3 days)</h2>
                 <button
                   onClick={() => setShowOldDropsModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -475,9 +491,10 @@ export default function DropsManagementPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
-}
+} 
 
 function StatCard({ 
   title, 

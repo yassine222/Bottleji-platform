@@ -486,8 +486,8 @@ function UsersContent() {
           throw new Error('Failed to process action');
         }
 
-        // Reload reported drops to reflect the change
-        await fetchReportedDrops();
+        // Reload data to reflect the change
+        // Note: This will be handled by the parent component
         
         // Show success message
         alert(`Drop ${action}d successfully!`);
