@@ -9,6 +9,7 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math' as math;
+import 'package:botleji/core/services/timezone_service.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -421,7 +422,7 @@ Widget _buildCollectorHistory(BuildContext context) {
 
     // Apply time range filter
     if (selectedTimeRange != null && selectedTimeRange != 'All Time') {
-      final now = DateTime.now();
+      final now = TimezoneService.now();
       DateTime? startDate;
 
       switch (selectedTimeRange) {
@@ -505,7 +506,7 @@ Widget _buildCollectorHistory(BuildContext context) {
 
     // Apply time range filter
     if (selectedTimeRange != null && selectedTimeRange != 'All Time') {
-      final now = DateTime.now();
+      final now = TimezoneService.now();
       DateTime? startDate;
 
       switch (selectedTimeRange) {
@@ -1482,8 +1483,8 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   String _getLastUpdateText(Drop drop) {
-    final now = DateTime.now();
-    final diff = now.difference(drop.modifiedAt);
+    final now = TimezoneService.now();
+    final diff = now.difference(TimezoneService.toGermanTime(drop.modifiedAt));
     
     if (diff.inMinutes < 1) {
       return 'Just now';
@@ -1516,7 +1517,7 @@ Widget _buildCollectorHistory(BuildContext context) {
 
   String _getEstimatedTime() {
     // Simulate estimated arrival time
-    final now = DateTime.now();
+    final now = TimezoneService.now();
     final estimated = now.add(const Duration(minutes: 15));
     return '${estimated.hour.toString().padLeft(2, '0')}:${estimated.minute.toString().padLeft(2, '0')}';
   }
@@ -2319,13 +2320,18 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
+    print('🕐 HistoryScreen._formatDate: Input date: $date');
+    final germanDate = TimezoneService.toGermanTime(date);
+    print('🕐 HistoryScreen._formatDate: German date: $germanDate');
+    final now = TimezoneService.now();
+    print('🕐 HistoryScreen._formatDate: Current German time: $now');
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    final dateOnly = DateTime(germanDate.year, germanDate.month, germanDate.day);
     
     // Format time as HH:mm
-    final timeString = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final timeString = '${germanDate.hour.toString().padLeft(2, '0')}:${germanDate.minute.toString().padLeft(2, '0')}';
+    print('🕐 HistoryScreen._formatDate: Time string: $timeString');
     
     if (dateOnly == today) {
       return 'Today at $timeString';
@@ -2337,7 +2343,7 @@ Widget _buildCollectorHistory(BuildContext context) {
       if (difference < 7) {
         // Show day name for recent dates
         final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        final dayName = dayNames[date.weekday - 1];
+        final dayName = dayNames[germanDate.weekday - 1];
         return '$dayName at $timeString';
       } else if (difference < 30) {
         // Show "X days ago" for older dates
@@ -2346,8 +2352,8 @@ Widget _buildCollectorHistory(BuildContext context) {
         // Show full date for very old dates
         final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        final monthName = monthNames[date.month - 1];
-        return '$monthName ${date.day} at $timeString';
+        final monthName = monthNames[germanDate.month - 1];
+        return '$monthName ${germanDate.day} at $timeString';
       }
     }
   }

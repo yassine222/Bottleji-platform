@@ -1,3 +1,5 @@
+import 'package:botleji/core/services/timezone_service.dart';
+
 class CollectionAttempt {
   final String id;
   final String dropoffId;
@@ -38,9 +40,9 @@ class CollectionAttempt {
       collectorId: json['collectorId'],
       status: json['status'],
       outcome: json['outcome'],
-      acceptedAt: DateTime.parse(json['acceptedAt']),
+      acceptedAt: TimezoneService.parseToGermanTime(json['acceptedAt']),
       completedAt: json['completedAt'] != null 
-          ? DateTime.parse(json['completedAt']) 
+          ? TimezoneService.parseToGermanTime(json['completedAt']) 
           : null,
       durationMinutes: json['durationMinutes'],
       dropSnapshot: DropSnapshot.fromJson(json['dropSnapshot']),
@@ -49,8 +51,8 @@ class CollectionAttempt {
           .toList(),
       attemptNumber: json['attemptNumber'],
       cancellationCount: json['cancellationCount'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: TimezoneService.parseToGermanTime(json['createdAt']),
+      updatedAt: TimezoneService.parseToGermanTime(json['updatedAt']),
     );
   }
 
@@ -113,6 +115,7 @@ class DropSnapshot {
   final Map<String, double> location;
   final String? address;
   final String? notes;
+  final String? imageUrl;
   final UserInfo createdBy;
   final DateTime createdAt;
 
@@ -123,19 +126,23 @@ class DropSnapshot {
     required this.location,
     this.address,
     this.notes,
+    this.imageUrl,
     required this.createdBy,
     required this.createdAt,
   });
 
   factory DropSnapshot.fromJson(Map<String, dynamic> json) {
     return DropSnapshot(
-      numberOfBottles: json['numberOfBottles'],
-      numberOfCans: json['numberOfCans'],
-      bottleType: json['bottleType'],
-      location: Map<String, double>.from(json['location']),
+      numberOfBottles: json['numberOfBottles'] ?? 0,
+      numberOfCans: json['numberOfCans'] ?? 0,
+      bottleType: json['bottleType'] ?? 'mixed',
+      location: json['location'] != null 
+          ? Map<String, double>.from(json['location']) 
+          : {'latitude': 0.0, 'longitude': 0.0},
       address: json['address'],
       notes: json['notes'],
-      createdBy: UserInfo.fromJson(json['createdBy']),
+      imageUrl: json['imageUrl'],
+      createdBy: UserInfo.fromJson(json['createdBy'] ?? {}),
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -148,6 +155,7 @@ class DropSnapshot {
       'location': location,
       'address': address,
       'notes': notes,
+      'imageUrl': imageUrl,
       'createdBy': createdBy.toJson(),
       'createdAt': createdAt.toIso8601String(),
     };
@@ -169,9 +177,9 @@ class UserInfo {
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? 'Unknown',
+      email: json['email'] ?? '',
     );
   }
 
@@ -199,10 +207,12 @@ class TimelineEvent {
 
   factory TimelineEvent.fromJson(Map<String, dynamic> json) {
     return TimelineEvent(
-      event: json['event'],
-      timestamp: DateTime.parse(json['timestamp']),
-      collector: UserInfo.fromJson(json['collector']),
-      details: Map<String, dynamic>.from(json['details']),
+      event: json['event'] ?? 'unknown',
+      timestamp: TimezoneService.parseToGermanTime(json['timestamp']),
+      collector: UserInfo.fromJson(json['collector'] ?? {}),
+      details: json['details'] != null 
+          ? Map<String, dynamic>.from(json['details']) 
+          : {},
     );
   }
 

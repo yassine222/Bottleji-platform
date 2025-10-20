@@ -11,37 +11,10 @@ final collectionAttemptApiClientProvider = Provider<CollectionAttemptApiClient>(
   return CollectionAttemptApiClient(dio);
 });
 
-// Collection Attempts List Response
-class CollectionAttemptsListResponse {
-  final List<CollectionAttempt> attempts;
-  final int total;
-  final int page;
-  final int limit;
-  final bool hasMore;
-
-  CollectionAttemptsListResponse({
-    required this.attempts,
-    required this.total,
-    required this.page,
-    required this.limit,
-    required this.hasMore,
-  });
-
-  factory CollectionAttemptsListResponse.fromJson(Map<String, dynamic> json) {
-    return CollectionAttemptsListResponse(
-      attempts: (json['attempts'] as List)
-          .map((e) => CollectionAttempt.fromJson(e))
-          .toList(),
-      total: json['total'],
-      page: json['page'],
-      limit: json['limit'],
-      hasMore: json['hasMore'],
-    );
-  }
-}
+// Use the existing CollectionAttemptListResponse from the models
 
 // Collection Attempts Controller
-class CollectionAttemptsController extends StateNotifier<AsyncValue<CollectionAttemptsListResponse>> {
+class CollectionAttemptsController extends StateNotifier<AsyncValue<CollectionAttemptListResponse>> {
   final CollectionAttemptApiClient _apiClient;
   final AsyncValue<UserData?> _authState;
 
@@ -57,15 +30,14 @@ class CollectionAttemptsController extends StateNotifier<AsyncValue<CollectionAt
         return;
       }
 
-      // For now, we'll create a simple list response
-      // TODO: Implement proper API endpoint for getting collector attempts
-      state = AsyncValue.data(CollectionAttemptsListResponse(
-        attempts: [],
-        total: 0,
+      // Call the API to get collection attempts
+      final response = await _apiClient.getCollectorAttempts(
+        collectorId: user!.id!,
         page: 1,
-        limit: 10,
-        hasMore: false,
-      ));
+        limit: 100, // Get more attempts for charts
+      );
+      
+      state = AsyncValue.data(response);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
     }
@@ -78,11 +50,26 @@ class CollectionAttemptsController extends StateNotifier<AsyncValue<CollectionAt
 }
 
 // Provider for collection attempts
-final collectionAttemptsProvider = StateNotifierProvider<CollectionAttemptsController, AsyncValue<CollectionAttemptsListResponse>>((ref) {
+final collectionAttemptsProvider = StateNotifierProvider<CollectionAttemptsController, AsyncValue<CollectionAttemptListResponse>>((ref) {
   final apiClient = ref.watch(collectionAttemptApiClientProvider);
   final authState = ref.watch(authNotifierProvider);
   
   return CollectionAttemptsController(apiClient, authState);
+});
+
+// Provider for chart data (daily collection attempts for last 7 days)
+final chartDataProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final apiClient = ref.watch(collectionAttemptApiClientProvider);
+  final authState = ref.watch(authNotifierProvider);
+  
+  final user = authState.value;
+  if (user?.id == null) {
+    throw Exception('User not authenticated');
+  }
+  
+  final dailyData = await apiClient.getDailyCollectionAttempts(collectorId: user!.id!);
+  
+  return dailyData;
 });
 
 // Provider for recent completed collections (for stats screen)

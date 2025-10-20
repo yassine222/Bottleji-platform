@@ -68,7 +68,7 @@ class HistoryController extends StateNotifier<AsyncValue<CollectorHistory>> {
       String? apiTimeRange = _convertTimeRangeToApiFormat(_currentTimeRange);
       
       final history = await _repository.getCollectorHistory(
-        user.id!,
+        user!.id!,
         status: _currentStatus,
         timeRange: apiTimeRange,
         );

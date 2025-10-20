@@ -1,3 +1,5 @@
+import 'package:botleji/core/services/timezone_service.dart';
+
 class CollectorStats {
   final int accepted;
   final int collected;
@@ -133,12 +135,12 @@ class CollectorInteraction {
         interactionType: json['interactionType']?.toString() ?? '',
         cancellationReason: json['cancellationReason']?.toString(),
         notes: json['notes']?.toString(),
-        interactionTime: DateTime.parse(json['interactionTime']?.toString() ?? DateTime.now().toIso8601String()),
+        interactionTime: TimezoneService.parseToGermanTime(json['interactionTime']?.toString() ?? DateTime.now().toIso8601String()),
         dropoff: dropoffData,
-        acceptedAt: json['acceptedAt'] != null ? DateTime.parse(json['acceptedAt'].toString()) : null,
-        cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt'].toString()) : null,
-        collectedAt: json['collectedAt'] != null ? DateTime.parse(json['collectedAt'].toString()) : null,
-        expiredAt: json['expiredAt'] != null ? DateTime.parse(json['expiredAt'].toString()) : null,);
+        acceptedAt: json['acceptedAt'] != null ? TimezoneService.parseToGermanTime(json['acceptedAt'].toString()) : null,
+        cancelledAt: json['cancelledAt'] != null ? TimezoneService.parseToGermanTime(json['cancelledAt'].toString()) : null,
+        collectedAt: json['collectedAt'] != null ? TimezoneService.parseToGermanTime(json['collectedAt'].toString()) : null,
+        expiredAt: json['expiredAt'] != null ? TimezoneService.parseToGermanTime(json['expiredAt'].toString()) : null,);
     } catch (e) {
       print('❌ Error parsing CollectorInteraction: $e');
       print('❌ JSON data: $json');
@@ -216,10 +218,10 @@ class DropoffInfo {
         status: json['status']?.toString() ?? '',
         collectorId: json['collectorId']?.toString(),
         cancellationCount: json['cancellationCount'] ?? 0,
-        acceptedAt: json['acceptedAt'] != null ? DateTime.parse(json['acceptedAt'].toString()) : null,
+        acceptedAt: json['acceptedAt'] != null ? TimezoneService.parseToGermanTime(json['acceptedAt'].toString()) : null,
         isSuspicious: json['isSuspicious'] ?? false,
         cancelledByCollectorIds: _parseStringList(json['cancelledByCollectorIds']),
-        createdAt: DateTime.parse(json['createdAt']?.toString() ?? DateTime.now().toIso8601String()),);
+        createdAt: TimezoneService.parseToGermanTime(json['createdAt']?.toString() ?? DateTime.now().toIso8601String()),);
     } catch (e) {
       print('❌ Error parsing DropoffInfo: $e');
       print('❌ JSON data: $json');
@@ -313,7 +315,6 @@ class PaginationInfo {
 }
 
 enum TimeRange {
-  today,
   week,
   month,
   year,
@@ -321,8 +322,6 @@ enum TimeRange {
 
   String get displayName {
     switch (this) {
-      case TimeRange.today:
-        return 'Today';
       case TimeRange.week:
         return 'This Week';
       case TimeRange.month:
@@ -336,8 +335,6 @@ enum TimeRange {
 
   String get apiValue {
     switch (this) {
-      case TimeRange.today:
-        return 'today';
       case TimeRange.week:
         return 'week';
       case TimeRange.month:

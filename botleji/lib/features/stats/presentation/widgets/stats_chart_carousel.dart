@@ -1,17 +1,20 @@
-import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/stats/data/models/collector_stats.dart';
+import 'package:botleji/features/stats/controllers/stats_controller.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
-import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/features/collection/data/models/collection_attempt.dart';
+import 'package:botleji/core/services/timezone_service.dart';
 
 class StatsChartCarousel extends ConsumerStatefulWidget {
   final CollectorStats stats;
+  final String timeRange;
 
   const StatsChartCarousel({
     super.key,
     required this.stats,
+    required this.timeRange,
   });
 
   @override
@@ -38,7 +41,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
         
         // Chart carousel
         SizedBox(
-          height: 260,
+          height: 320,
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -81,7 +84,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   Widget _buildCollectedChart() {
     return _buildChartContent(
       title: 'Collected',
-      value: widget.stats.collected,
+      value: _getWeeklyCount('collected'),
       color: Colors.green,
       icon: Icons.recycling,
       chart: _buildAreaChart(
@@ -95,7 +98,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   Widget _buildExpiredChart() {
     return _buildChartContent(
       title: 'Expired',
-      value: widget.stats.expired,
+      value: _getWeeklyCount('expired'),
       color: Colors.purple,
       icon: Icons.timer_off,
       chart: _buildAreaChart(
@@ -109,7 +112,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   Widget _buildCancelledChart() {
     return _buildChartContent(
       title: 'Cancelled',
-      value: widget.stats.cancelled,
+      value: _getWeeklyCount('cancelled'),
       color: Colors.red,
       icon: Icons.cancel,
       chart: _buildAreaChart(
@@ -159,7 +162,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
                       ),
                     ),
                     Text(
-                      '$value total',
+                      '$value total ${_getTimeRangeText()}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -173,7 +176,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
           
           // Chart
           SizedBox(
-            height: 150,
+            height: 200,
             child: chart,
           ),
         ],
@@ -191,7 +194,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
       child: LineChart(
         LineChartData(
           minY: 0,
-          maxY: data.map((spot) => spot.y).reduce((a, b) => a > b ? a : b) + 2,
+          maxY: data.isEmpty ? 5.0 : (data.map((spot) => spot.y).reduce((a, b) => a > b ? a : b) * 1.2).ceil().toDouble(),
           lineBarsData: [
             LineChartBarData(
               spots: data,
@@ -225,24 +228,11 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
                 reservedSize: 35,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index >= 0 && index < 7) {
-                    final now = DateTime.now();
-                    final date = now.subtract(Duration(days: 6 - index));
-                    final today = now.weekday;
-                    final yesterday = today == 1 ? 7 : today - 1; // Handle Sunday as 1
-                    
-                    String dayLabel;
-                    if (date.weekday == today) {
-                      dayLabel = 'Today';
-                    } else if (date.weekday == yesterday) {
-                      dayLabel = 'Yesterday';
-                    } else {
-                      final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                      dayLabel = dayNames[date.weekday - 1];
-                    }
-                    
+                  final dataPoints = _getDataPointsForTimeRange();
+                  
+                  if (index >= 0 && index < dataPoints) {
                     return Text(
-                      dayLabel,
+                      _getXAxisLabel(index),
                       style: const TextStyle(fontSize: 9),
                     );
                   }
@@ -271,83 +261,212 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   List<FlSpot> _generateCollectedData() {
-    return _generateRealDailyData('collected');
+    return _generateRealData('collected');
   }
 
   List<FlSpot> _generateExpiredData() {
-    return _generateRealDailyData('expired');
+    return _generateRealData('expired');
   }
 
   List<FlSpot> _generateCancelledData() {
-    return _generateRealDailyData('cancelled');
+    return _generateRealData('cancelled');
   }
 
-
-  List<FlSpot> _generateRealDailyData(String outcome) {
+  int _getWeeklyCount(String outcome) {
     try {
-      // Get collection attempts from the provider (read only, don't watch)
       final attemptsAsync = ref.read(collectionAttemptsProvider);
       
       return attemptsAsync.when(
         data: (response) {
-          return _generateRealDailyDataFromResponse(response, outcome);
+          if (response.attempts.isEmpty) {
+            return 0;
+          }
+          return _getWeeklyCountFromCollectionAttempts(response.attempts, outcome);
         },
-        loading: () {
-          return List.generate(7, (index) => FlSpot(index.toDouble(), 0.0));
-        },
-        error: (error, stack) {
-          return List.generate(7, (index) => FlSpot(index.toDouble(), 0.0));
-        },
+        loading: () => 0,
+        error: (error, stack) => 0,
       );
     } catch (e) {
-      // Return empty data on error
-      return List.generate(7, (index) => FlSpot(index.toDouble(), 0.0));
+      return 0;
     }
   }
 
-  List<FlSpot> _generateRealDailyDataFromResponse(CollectionAttemptsListResponse response, String outcome) {
+  int _getWeeklyCountFromCollectionAttempts(List<CollectionAttempt> attempts, String outcome) {
+    final now = TimezoneService.now();
+    int count = 0;
     
-    // Group attempts by date and outcome
-    final Map<DateTime, int> dailyCounts = {};
-    
-    // Initialize last 7 days with 0 counts
-    final now = DateTime.now();
-    for (int i = 0; i < 7; i++) {
-      final date = now.subtract(Duration(days: 6 - i));
-      final dateOnly = DateTime(date.year, date.month, date.day);
-      dailyCounts[dateOnly] = 0;
-    }
-    
-    // Count attempts by date and outcome
-    int matchingAttempts = 0;
-    for (final attempt in response.attempts) {
-      if (attempt.outcome == outcome && attempt.completedAt != null) {
-        matchingAttempts++;
-        final completedDate = attempt.completedAt!.toLocal();
+    for (final attempt in attempts) {
+      if (attempt.outcome == outcome) {
+        final completedDate = TimezoneService.toGermanTime(attempt.completedAt ?? attempt.updatedAt);
         final dateOnly = DateTime(completedDate.year, completedDate.month, completedDate.day);
         
         // Check if this date is within the last 7 days
         final daysDiff = now.difference(dateOnly).inDays;
+        
         if (daysDiff >= 0 && daysDiff < 7) {
-          dailyCounts[dateOnly] = (dailyCounts[dateOnly] ?? 0) + 1;
-          print('🕐 Found $outcome attempt on ${dateOnly.toString().split(' ')[0]}');
+          count++;
         }
       }
     }
     
-    print('🕐 Found $matchingAttempts $outcome attempts in last 7 days');
+    return count;
+  }
+
+
+  List<FlSpot> _generateRealData(String outcome) {
+    try {
+      // Get chart attempts from the collection attempts provider
+      final attemptsAsync = ref.read(collectionAttemptsProvider);
+      
+      return attemptsAsync.when(
+        data: (response) {
+          if (response.attempts.isEmpty) {
+            return _getEmptyDataForTimeRange();
+          }
+          return _generateDataFromCollectionAttempts(response.attempts, outcome);
+        },
+        loading: () {
+          return _getEmptyDataForTimeRange();
+        },
+        error: (error, stack) {
+          return _getEmptyDataForTimeRange();
+        },
+      );
+    } catch (e) {
+      // Return empty data on error
+      return _getEmptyDataForTimeRange();
+    }
+  }
+
+  List<FlSpot> _getEmptyDataForTimeRange() {
+    final dataPoints = _getDataPointsForTimeRange();
+    return List.generate(dataPoints, (index) => FlSpot(index.toDouble(), 0.0));
+  }
+
+  int _getDataPointsForTimeRange() {
+    switch (widget.timeRange) {
+      case 'week':
+        return 7; // 7 days
+      case 'month':
+        return TimezoneService.now().day; // Days in current month
+      case 'year':
+        return 12; // 12 months
+      case '':
+        return 12; // All time - show last 12 months
+      default:
+        return 7;
+    }
+  }
+
+  List<FlSpot> _generateDataFromCollectionAttempts(List<CollectionAttempt> attempts, String outcome) {
+    final now = TimezoneService.now();
+    final dataPoints = _getDataPointsForTimeRange();
+    final Map<String, int> counts = {};
     
-    // Generate chart data for last 7 days
+    // Initialize counts
+    for (int i = 0; i < dataPoints; i++) {
+      counts[_getKeyForIndex(i)] = 0;
+    }
+    
+    // Count attempts by outcome and time period
+    for (final attempt in attempts) {
+      if (attempt.outcome == outcome) {
+        final completedDate = TimezoneService.toGermanTime(attempt.completedAt ?? attempt.updatedAt);
+        final key = _getKeyForDate(completedDate);
+        if (counts.containsKey(key)) {
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+      }
+    }
+    
+    // Generate chart data
     final List<FlSpot> chartData = [];
-    for (int i = 0; i < 7; i++) {
-      final date = now.subtract(Duration(days: 6 - i));
-      final dateOnly = DateTime(date.year, date.month, date.day);
-      final count = dailyCounts[dateOnly] ?? 0;
+    for (int i = 0; i < dataPoints; i++) {
+      final key = _getKeyForIndex(i);
+      final count = counts[key] ?? 0;
       chartData.add(FlSpot(i.toDouble(), count.toDouble()));
-      print('🕐 Day $i: ${dateOnly.toString().split(' ')[0]} = $count $outcome');
     }
     
     return chartData;
+  }
+
+  String _getKeyForIndex(int index) {
+    final now = TimezoneService.now();
+    switch (widget.timeRange) {
+      case 'week':
+        final date = now.subtract(Duration(days: 6 - index));
+        return '${date.year}-${date.month}-${date.day}';
+      case 'month':
+        return '${now.year}-${now.month}-${index + 1}';
+      case 'year':
+        return '${now.year}-${index + 1}';
+      case '':
+        final monthsAgo = 11 - index;
+        final date = DateTime(now.year, now.month - monthsAgo, 1);
+        return '${date.year}-${date.month}';
+      default:
+        return index.toString();
+    }
+  }
+
+  String _getKeyForDate(DateTime date) {
+    switch (widget.timeRange) {
+      case 'week':
+        return '${date.year}-${date.month}-${date.day}';
+      case 'month':
+        return '${date.year}-${date.month}-${date.day}';
+      case 'year':
+        return '${date.year}-${date.month}';
+      case '':
+        return '${date.year}-${date.month}';
+      default:
+        return date.toString();
+    }
+  }
+
+  String _getXAxisLabel(int index) {
+    final now = TimezoneService.now();
+    switch (widget.timeRange) {
+      case 'week':
+        final date = now.subtract(Duration(days: 6 - index));
+        if (date.weekday == now.weekday) {
+          return 'Today';
+        } else if (date.weekday == (now.weekday == 1 ? 7 : now.weekday - 1)) {
+          return 'Yesterday';
+        } else {
+          final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          return dayNames[date.weekday - 1];
+        }
+      case 'month':
+        return '${index + 1}';
+      case 'year':
+        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return monthNames[index];
+      case '':
+        final monthsAgo = 11 - index;
+        final date = DateTime(now.year, now.month - monthsAgo, 1);
+        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return monthNames[date.month - 1];
+      default:
+        return index.toString();
+    }
+  }
+
+  String _getTimeRangeText() {
+    switch (widget.timeRange) {
+      case 'week':
+        return 'this week';
+      case 'month':
+        return 'this month';
+      case 'year':
+        return 'this year';
+      case '':
+        return 'all time';
+      default:
+        return 'this week';
+    }
   }
 
 }

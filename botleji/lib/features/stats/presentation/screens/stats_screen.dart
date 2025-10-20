@@ -12,6 +12,8 @@ import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/collection/data/models/collection_attempt.dart';
+import 'package:botleji/features/stats/presentation/widgets/stats_chart_carousel.dart';
+import 'package:botleji/core/services/timezone_service.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -21,7 +23,7 @@ class StatsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
-  TimeRange _selectedTimeRange = TimeRange.allTime;
+  TimeRange _selectedTimeRange = TimeRange.week;
 
   @override
   void initState() {
@@ -31,23 +33,20 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       final historyController = ref.read(historyControllerProvider.notifier);
       historyController.loadHistory(status: null, timeRange: 'today');
       
+      // Refresh collection attempts for charts - ensure this happens first
+      final attemptsController = ref.read(collectionAttemptsProvider.notifier);
+      attemptsController.refresh();
+      
       // Only load user drops if in household mode
       final userMode = ref.read(userModeControllerProvider);
       userMode.whenData((mode) {
         if (mode == UserMode.household) {
-          print('🔍 Stats: Auth state: ${ref.read(authNotifierProvider)}');
           ref.read(authNotifierProvider).whenData((user) {
-            print('🔍 Stats: User: $user');
             if (user?.id != null) {
-              print('🔍 Stats: Loading drops for household user: ${user!.id}');
               final dropsController = ref.read(dropsControllerProvider.notifier);
               dropsController.loadUserDrops(user!.id!);
-            } else {
-              print('🔍 Stats: No user ID found');
             }
           });
-        } else {
-          print('🔍 Stats: In collector mode, not loading user drops');
         }
       });
     });
@@ -203,9 +202,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     DateTime startDate;
     
     switch (_selectedTimeRange) {
-      case TimeRange.today:
-        startDate = DateTime(now.year, now.month, now.day);
-        break;
       case TimeRange.week:
         startDate = now.subtract(const Duration(days: 7));
         break;
@@ -992,6 +988,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   // Refresh both stats and history
                   ref.read(collectorStatsProvider(_selectedTimeRange.apiValue).notifier).refresh();
                   ref.read(historyControllerProvider.notifier).refresh();
+                  ref.read(collectionAttemptsProvider.notifier).refresh();
                 },
                 color: const Color(0xFF00695C), // Green color
               ),
@@ -1024,40 +1021,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.2,
-          children: [
-            _buildStatCard(
-              'Accepted',
-              stats.accepted.toString(),
-              Icons.check_circle,
-              Colors.green,
-            ),
-            _buildStatCard(
-              'Collected',
-              stats.collected.toString(),
-              Icons.recycling,
-              Colors.blue,
-            ),
-            _buildStatCard(
-              'Cancelled',
-              stats.cancelled.toString(),
-              Icons.cancel,
-              Colors.red,
-            ),
-            _buildStatCard(
-              'Expired',
-              stats.expired.toString(),
-              Icons.timer_off,
-              Colors.purple,
-            ),
-          ],
-        ),
+        // Use the new chart carousel instead of static cards
+        StatsChartCarousel(stats: stats, timeRange: _selectedTimeRange.apiValue),
       ],
     );
   }
@@ -1213,7 +1178,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildCollectionHistory() {
-    final recentCollectionsAsync = ref.watch(recentCompletedCollectionsProvider);
+    // Use collection attempts directly
+    final recentCollectionsAsync = ref.watch(collectionAttemptsProvider);
 
     return Card(
       elevation: 2,
@@ -1234,7 +1200,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    print('Stats: View All button pressed for collection history');
                     Navigator.pushNamed(context, AppRoutes.history);
                   },
                   child: const Text('View All'),
@@ -1243,8 +1208,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             ),
             const SizedBox(height: 16),
             recentCollectionsAsync.when(
-              data: (collections) {
-                if (collections.isEmpty) {
+              data: (response) {
+                // Filter for completed collections and sort by completion date
+                final completedAttempts = response.attempts
+                    .where((attempt) => attempt.outcome == 'collected')
+                    .toList()
+                  ..sort((a, b) {
+                    final aTime = a.completedAt ?? a.updatedAt;
+                    final bTime = b.completedAt ?? b.updatedAt;
+                    return bTime.compareTo(aTime);
+                  });
+                
+                if (completedAttempts.isEmpty) {
                   return const Center(
                     child: Text(
                       'No completed collections yet',
@@ -1258,8 +1233,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 
                 // Show the 3 most recent collections
                 return Column(
-                  children: collections.take(3).map((attempt) {
-                    return _buildRecentCollectionAttemptCard(attempt);
+                  children: completedAttempts.take(3).map((attempt) {
+                    return _buildRecentCollectionCardFromCollectionAttempt(attempt);
                   }).toList(),
                 );
               },
@@ -1269,18 +1244,20 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) => Center(
-                child: Text(
-                  'Error loading collections: ${error.toString()}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
+              error: (error, stack) {
+                return Center(
+                  child: Text(
+                    'Error loading collections: ${error.toString()}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
-  }
+}
 
   Widget _buildRecentCollectionAttemptCard(CollectionAttempt attempt) {
     final dropSnapshot = attempt.dropSnapshot;
@@ -2096,16 +2073,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _formatDate(DateTime date) {
-    // Convert UTC to local timezone if needed
-    final localDate = date.isUtc ? date.toLocal() : date;
+    // Convert to German timezone
+    final germanDate = TimezoneService.toGermanTime(date);
     
-    final now = DateTime.now();
+    final now = TimezoneService.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(localDate.year, localDate.month, localDate.day);
+    final dateOnly = DateTime(germanDate.year, germanDate.month, germanDate.day);
     
     // Format time as HH:mm
-    final timeString = '${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    final timeString = '${germanDate.hour.toString().padLeft(2, '0')}:${germanDate.minute.toString().padLeft(2, '0')}';
     
     if (dateOnly == today) {
       return 'Today at $timeString';
@@ -2117,7 +2094,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       if (difference < 7) {
         // Show day name for recent dates
         final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        final dayName = dayNames[localDate.weekday - 1];
+        final dayName = dayNames[germanDate.weekday - 1];
         return '$dayName at $timeString';
       } else if (difference < 30) {
         // Show "X days ago" for older dates
@@ -2126,8 +2103,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         // Show full date for very old dates
         final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        final monthName = monthNames[localDate.month - 1];
-        return '$monthName ${localDate.day} at $timeString';
+        final monthName = monthNames[germanDate.month - 1];
+        return '$monthName ${germanDate.day} at $timeString';
       }
     }
   }
@@ -2670,4 +2647,324 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
   );
 }
 
+  Widget _buildRecentCollectionCardFromCollectionAttempt(CollectionAttempt attempt) {
+    final dropSnapshot = attempt.dropSnapshot;
+    final completedAt = attempt.completedAt ?? attempt.updatedAt;
+    
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drop image and map side by side
+            Row(
+              children: [
+                // Drop image
+                if (dropSnapshot.imageUrl != null && dropSnapshot.imageUrl!.isNotEmpty)
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        dropSnapshot.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                              size: 60,
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                      size: 60,
+                    ),
+                  ),
+                
+                // Small map with pin - always show map
+                const SizedBox(width: 4), // Small gap between image and map
+                Expanded(
+                  child: Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          // Static map image - using same approach as history page
+                          if (dropSnapshot.location.isNotEmpty && 
+                              dropSnapshot.location.containsKey('lat') && 
+                              dropSnapshot.location.containsKey('lng')) ...[
+                            Builder(
+                              builder: (context) {
+                                final latLng = LatLng(
+                                  dropSnapshot.location['lat']!,
+                                  dropSnapshot.location['lng']!,
+                                );
+                                final mapUrl = _getStaticMapUrl(latLng);
+                                return Image.network(
+                                  mapUrl,
+                                  width: double.infinity,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.map,
+                                          size: 24,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ]
+                          else
+                            Container(
+                              width: double.infinity,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.map,
+                                  size: 24,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          // Custom pin overlay (always visible)
+                          Positioned(
+                            left: 0,
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Location coordinates in bottom right (if available)
+                          if (dropSnapshot.location.isNotEmpty && 
+                              dropSnapshot.location.containsKey('lat') && 
+                              dropSnapshot.location.containsKey('lng'))
+                            Positioned(
+                              bottom: 4,
+                              right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${dropSnapshot.location['lat']!.toStringAsFixed(4)}, ${dropSnapshot.location['lng']!.toStringAsFixed(4)}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Drop information under image and map
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                // Plastic bottles count
+                if (dropSnapshot.numberOfBottles > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icons/water-bottle.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatLargeNumber(dropSnapshot.numberOfBottles),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                // Cans count
+                if (dropSnapshot.numberOfCans > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icons/can.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatLargeNumber(dropSnapshot.numberOfCans),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                // Total amount
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total ${_formatLargeNumber(dropSnapshot.numberOfBottles + dropSnapshot.numberOfCans)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ],
+                ),
+                // Date
+                Text(
+                  _formatDate(completedAt),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Status badge
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'COLLECTED',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper function to parse DateTime from various types
+  DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue is DateTime) {
+      return dateValue;
+    } else if (dateValue is String) {
+      return DateTime.parse(dateValue);
+    } else {
+      return DateTime.parse(dateValue.toString());
+    }
+  }
+
+
+
 } 
+

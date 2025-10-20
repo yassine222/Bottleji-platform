@@ -114,4 +114,56 @@ class CollectionAttemptApiClient {
       throw Exception('Failed to fetch collection attempt stats: $e');
     }
   }
+
+  /// Get daily collection attempts for charts (last 7 days)
+  Future<List<Map<String, dynamic>>> getDailyCollectionAttempts({
+    required String collectorId,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/dropoffs/collector/$collectorId/attempts/daily',
+        queryParameters: {
+          'days': 7,
+        },
+      );
+
+      // Return the data as a list of daily counts
+      if (response.data is List) {
+        return List<Map<String, dynamic>>.from(response.data);
+      } else if (response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        if (data.containsKey('dailyData')) {
+          return List<Map<String, dynamic>>.from(data['dailyData']);
+        }
+      }
+      
+      // If no data, return empty list
+      return [];
+    } catch (e) {
+      print('📊 Chart API: Error fetching daily attempts: $e');
+      // Return mock data for development
+      return _generateMockDailyData();
+    }
+  }
+
+  /// Generate mock data for development/testing
+  List<Map<String, dynamic>> _generateMockDailyData() {
+    final now = DateTime.now();
+    final List<Map<String, dynamic>> mockData = [];
+    
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = date.toIso8601String().split('T')[0];
+      
+      mockData.add({
+        'date': dateStr,
+        'collected': (i % 3 == 0) ? 2 : (i % 2 == 0) ? 1 : 0,
+        'cancelled': (i % 4 == 0) ? 1 : 0,
+        'expired': (i % 5 == 0) ? 1 : 0,
+      });
+    }
+    
+    print('📊 Chart API: Using mock data for development');
+    return mockData;
+  }
 }

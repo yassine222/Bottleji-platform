@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:botleji/core/utils/json_converters.dart';
+import 'package:botleji/core/services/timezone_service.dart';
 
 enum BottleType {
   plastic,
@@ -138,8 +139,8 @@ class Drop {
         (e) => e.name == (json['status']?.toString() ?? 'pending'),
         orElse: () => DropStatus.pending,
       ),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'].toString()) : DateTime.now(),
-      modifiedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'].toString()) : DateTime.now(),
+      createdAt: json['createdAt'] != null ? TimezoneService.parseToGermanTime(json['createdAt'].toString()) : TimezoneService.now(),
+      modifiedAt: json['updatedAt'] != null ? TimezoneService.parseToGermanTime(json['updatedAt'].toString()) : TimezoneService.now(),
       cancellationCount: json['cancellationCount'] as int? ?? 0,
       isSuspicious: json['isSuspicious'] as bool? ?? false,
       suspiciousReason: json['suspiciousReason']?.toString(),
