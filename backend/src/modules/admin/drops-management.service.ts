@@ -684,33 +684,39 @@ export class DropsManagementService {
       if (endDate) matchStage.completedAt.$lte = new Date(endDate);
     }
 
-    const leaderboard = await this.collectionAttemptModel.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: '$collectorId',
-          totalCollections: { $sum: 1 },
-          totalDuration: { $sum: '$durationMinutes' },
+    // Get all collectors with their points and sort by points
+    const users = await this.userModel.find({ 
+      roles: { $in: ['collector'] } 
+    }).sort({ totalPointsEarned: -1 }).limit(limit).exec();
+
+    const leaderboard = await Promise.all(users.map(async (user) => {
+      // Get collection stats for this collector
+      const stats = await this.collectionAttemptModel.aggregate([
+        { $match: { ...matchStage, collectorId: user._id } },
+        {
+          $group: {
+            _id: '$collectorId',
+            totalCollections: { $sum: 1 },
+            totalDuration: { $sum: '$durationMinutes' },
+          },
         },
-      },
-      { $sort: { totalCollections: -1 } },
-      { $limit: limit },
-    ]);
-
-    // Populate user details
-    const collectorIds = leaderboard.map(item => item._id);
-    const users = await this.userModel.find({ _id: { $in: collectorIds } }).exec();
-
-    return leaderboard.map(item => {
-      const user = users.find(u => (u as any)._id.toString() === item._id.toString());
+      ]);
+      
+      const collectionStats = stats[0] || { totalCollections: 0, totalDuration: 0 };
+      
       return {
-        collectorId: item._id,
-        collectorName: user?.name || 'Unknown',
-        collectorEmail: user?.email || 'Unknown',
-        totalCollections: item.totalCollections,
-        averageDuration: item.totalDuration > 0 ? Math.round(item.totalDuration / item.totalCollections) : 0,
+        collectorId: user._id,
+        collectorName: user.name || 'Unknown',
+        collectorEmail: user.email || 'Unknown',
+        totalCollections: collectionStats.totalCollections,
+        averageDuration: collectionStats.totalDuration > 0 ? Math.round(collectionStats.totalDuration / collectionStats.totalCollections) : 0,
+        totalPointsEarned: user.totalPointsEarned || 0,
+        currentPoints: user.currentPoints || 0,
+        currentTier: user.currentTier || 1,
       };
-    });
+    }));
+
+    return leaderboard;
   }
 
   /**
@@ -724,37 +730,43 @@ export class DropsManagementService {
       if (endDate) matchStage.createdAt.$lte = new Date(endDate);
     }
 
-    const rankings = await this.dropoffModel.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: '$userId',
-          totalDrops: { $sum: 1 },
-          collectedDrops: {
-            $sum: { $cond: [{ $eq: ['$status', 'collected'] }, 1, 0] },
+    // Get all households with their points and sort by points
+    const users = await this.userModel.find({ 
+      roles: { $in: ['household'] } 
+    }).sort({ totalPointsEarned: -1 }).limit(limit).exec();
+
+    const rankings = await Promise.all(users.map(async (user) => {
+      // Get drop stats for this household
+      const stats = await this.dropoffModel.aggregate([
+        { $match: { ...matchStage, userId: user._id } },
+        {
+          $group: {
+            _id: '$userId',
+            totalDrops: { $sum: 1 },
+            collectedDrops: {
+              $sum: { $cond: [{ $eq: ['$status', 'collected'] }, 1, 0] },
+            },
           },
         },
-      },
-      { $sort: { totalDrops: -1 } },
-      { $limit: limit },
-    ]);
-
-    // Populate user details
-    const userIds = rankings.map(item => item._id);
-    const users = await this.userModel.find({ _id: { $in: userIds } }).exec();
-
-    return rankings.map(item => {
-      const user = users.find(u => (u as any)._id.toString() === item._id.toString());
-      const successRate = item.totalDrops > 0 ? (item.collectedDrops / item.totalDrops) * 100 : 0;
+      ]);
+      
+      const dropStats = stats[0] || { totalDrops: 0, collectedDrops: 0 };
+      const successRate = dropStats.totalDrops > 0 ? (dropStats.collectedDrops / dropStats.totalDrops) * 100 : 0;
+      
       return {
-        userId: item._id,
-        userName: user?.name || 'Unknown',
-        userEmail: user?.email || 'Unknown',
-        totalDrops: item.totalDrops,
-        collectedDrops: item.collectedDrops,
+        userId: user._id,
+        userName: user.name || 'Unknown',
+        userEmail: user.email || 'Unknown',
+        totalDrops: dropStats.totalDrops,
+        collectedDrops: dropStats.collectedDrops,
         successRate: Math.round(successRate * 10) / 10,
+        totalPointsEarned: user.totalPointsEarned || 0,
+        currentPoints: user.currentPoints || 0,
+        currentTier: user.currentTier || 1,
       };
-    });
+    }));
+
+    return rankings;
   }
 
   /**
