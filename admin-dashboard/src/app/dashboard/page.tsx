@@ -1917,6 +1917,10 @@ function DropsContent() {
       setSuccessRate(successRes.data.stats);
       setCollectorLeaderboard(collectorRes.data.leaderboard);
       setHouseholdRankings(householdRes.data.rankings);
+      
+      // Debug: Log the data structure to see available fields
+      console.log('🔍 Collector Leaderboard Full Response:', collectorRes.data);
+      console.log('🔍 Household Rankings Full Response:', householdRes.data);
     } catch (error) {
       console.error('Error fetching drops data:', error);
     } finally {
@@ -2081,9 +2085,14 @@ function DropsContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Drops Management</h2>
-        <p className="text-gray-600">Monitor, analyze, and manage all drops in the system</p>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <h1 className="text-4xl font-bold">Drops Management</h1>
+        </div>
+        <p className="text-blue-100 text-lg">Monitor, analyze, and manage all drops in the system</p>
       </div>
 
       {/* Tabs */}
@@ -2156,113 +2165,106 @@ function DropsContent() {
       {dropsActiveTab === 'all-drops' && (
         <>
           {/* Stats Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
         {/* Total Drops */}
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-blue-500 p-3 rounded-lg text-white">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-blue-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
             {timeBasedStats && (
-              <div className={`flex items-center gap-1 text-sm ${timeBasedStats.weekChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`flex items-center gap-1 text-xs ${timeBasedStats.weekChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {timeBasedStats.weekChange > 0 ? '↑' : '↓'}
                 {Math.abs(timeBasedStats.weekChange).toFixed(1)}%
               </div>
             )}
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Drops</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalDrops.toLocaleString()}</p>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Total Drops</h3>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalDrops.toLocaleString()}</p>
         </div>
 
         {/* Active Drops */}
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-green-500 p-3 rounded-lg text-white">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-green-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Active Drops</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.activeDrops.toLocaleString()}</p>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Active Drops</h3>
+          <p className="text-2xl font-bold text-gray-900">{stats.activeDrops.toLocaleString()}</p>
         </div>
 
         {/* Flagged Drops */}
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-orange-500 p-3 rounded-lg text-white">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-orange-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Flagged Drops</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.flaggedDrops.toLocaleString()}</p>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Flagged Drops</h3>
+          <p className="text-2xl font-bold text-gray-900">{stats.flaggedDrops.toLocaleString()}</p>
         </div>
 
         {/* Old Drops */}
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-red-500 p-3 rounded-lg text-white">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-red-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Old Drops (&gt;3 days)</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.oldDrops.toLocaleString()}</p>
-          <button
-            onClick={analyzeOldDrops}
-            className="mt-3 w-full bg-white text-red-600 border border-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
-          >
-            Analyze Old Drops
-          </button>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Old Drops</h3>
+          <p className="text-2xl font-bold text-gray-900">{stats.oldDrops.toLocaleString()}</p>
         </div>
-      </div>
 
-      {/* Success Rate & Status Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Success Rate */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">Drop Success Rate</h3>
-          {successRate && (
-            <div className="space-y-4">
-              <div className="flex justify-around">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">{successRate.successRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">Collected</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-gray-600">{successRate.cancellationRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">Cancelled</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-orange-600">{successRate.expirationRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">Expired</p>
-                </div>
-              </div>
+        {/* Reported Drops */}
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-red-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+              </svg>
             </div>
-          )}
+          </div>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Reported</h3>
+          <p className="text-2xl font-bold text-gray-900">{reportedDrops.length || 0}</p>
         </div>
 
-        {/* Status Distribution */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">Status Distribution</h3>
-          <div className="space-y-2">
-            {statusData.map((status) => (
-              <div key={status.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: status.color }}></div>
-                  <span className="text-sm text-gray-700">{status.name}</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900">{status.value}</span>
-              </div>
-            ))}
+        {/* Collected Drops */}
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-green-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Collected</h3>
+          <p className="text-2xl font-bold text-gray-900">{collectedDrops.length || 0}</p>
+        </div>
+
+        {/* Censored Drops */}
+        <div className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="bg-purple-500 p-2 rounded-lg text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-xs font-medium mb-1">Censored</h3>
+          <p className="text-2xl font-bold text-gray-900">{dropsList.filter(drop => drop.isCensored).length || 0}</p>
         </div>
       </div>
+
+
 
       {/* Leaderboards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2288,8 +2290,9 @@ function DropsContent() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-green-600">{collector.totalCollections}</p>
-                  <p className="text-xs text-gray-500">collections</p>
+                  <p className="font-bold text-green-600">{collector.totalPointsEarned || 0}</p>
+                  <p className="text-xs text-gray-500">points</p>
+                  <p className="text-xs font-medium text-blue-600">Tier {collector.currentTier || 1}</p>
                 </div>
               </div>
             ))}
@@ -2318,8 +2321,9 @@ function DropsContent() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-green-600">{household.successRate}%</p>
-                  <p className="text-xs text-gray-500">success rate</p>
+                  <p className="font-bold text-green-600">{household.totalPointsEarned || 0}</p>
+                  <p className="text-xs text-gray-500">points</p>
+                  <p className="text-xs font-medium text-blue-600">Tier {household.currentTier || 1}</p>
                 </div>
               </div>
             ))}
@@ -4670,14 +4674,24 @@ function TrainingContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Training Content</h2>
-        <button
-          onClick={handleCreate}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          + Create Content
-        </button>
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <div>
+              <h1 className="text-4xl font-bold">Training Content Management</h1>
+              <p className="text-purple-100 text-lg">Create and manage training materials for users</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCreate}
+            className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 font-semibold"
+          >
+            + Create Content
+          </button>
+        </div>
       </div>
 
       {/* Stats - Enhanced */}
@@ -5993,15 +6007,15 @@ function SupportContent() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-0">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl shadow-xl p-8 text-white">
           <div className="flex items-center gap-3 mb-2">
             <ChatBubbleLeftRightIcon className="h-10 w-10" />
             <h1 className="text-4xl font-bold">Support Tickets</h1>
           </div>
-          <p className="text-blue-100 text-lg">Manage and respond to user support requests</p>
+          <p className="text-orange-100 text-lg">Manage and respond to user support requests</p>
         </div>
 
         {/* Stats Cards */}

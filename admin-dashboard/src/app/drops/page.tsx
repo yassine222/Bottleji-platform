@@ -39,7 +39,10 @@ import {
   ClipboardList,
   GraduationCap,
   MessageCircle,
-  Settings
+  Settings,
+  Flag,
+  Shield,
+  Ban
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://172.20.10.12:3000/api';
@@ -50,6 +53,9 @@ interface DropsStats {
   completedDrops: number;
   flaggedDrops: number;
   oldDrops: number;
+  reportedDrops: number;
+  collectedDrops: number;
+  censoredDrops: number;
   dropsByStatus: Record<string, number>;
   dropsLast7Days: number;
   dropsLast30Days: number;
@@ -265,6 +271,46 @@ export default function DropsManagementPage() {
               className="mt-3 w-full bg-white text-red-600 border border-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
             >
               Analyze Old Drops
+            </button>
+          }
+        />
+      </div>
+
+      {/* Additional Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <StatCard
+          title="Reported Drops"
+          value={stats.reportedDrops || 0}
+          icon={<Flag className="w-6 h-6" />}
+          color="bg-red-500"
+          description="Drops reported by users for issues"
+          action={
+            <button className="mt-3 w-full bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium">
+              View Reports
+            </button>
+          }
+        />
+        <StatCard
+          title="Collected Drops"
+          value={stats.collectedDrops || 0}
+          icon={<CheckCircle className="w-6 h-6" />}
+          color="bg-green-500"
+          description="Successfully collected drops"
+          action={
+            <button className="mt-3 w-full bg-green-50 text-green-600 border border-green-200 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium">
+              View Collections
+            </button>
+          }
+        />
+        <StatCard
+          title="Censored Drops"
+          value={stats.censoredDrops || 0}
+          icon={<Ban className="w-6 h-6" />}
+          color="bg-purple-500"
+          description="Drops that have been censored"
+          action={
+            <button className="mt-3 w-full bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium">
+              Manage Censorship
             </button>
           }
         />
@@ -503,7 +549,8 @@ function StatCard({
   color, 
   trend, 
   trendUp, 
-  action 
+  action,
+  description
 }: { 
   title: string; 
   value: number; 
@@ -512,6 +559,7 @@ function StatCard({
   trend?: string; 
   trendUp?: boolean;
   action?: React.ReactNode;
+  description?: string;
 }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -528,6 +576,9 @@ function StatCard({
       </div>
       <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
       <p className="text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
+      {description && (
+        <p className="text-xs text-gray-500 mt-2">{description}</p>
+      )}
       {action && action}
     </div>
   );
