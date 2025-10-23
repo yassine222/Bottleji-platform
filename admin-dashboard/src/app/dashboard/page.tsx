@@ -6055,10 +6055,8 @@ function SupportContent() {
             >
               <option value="">All Statuses</option>
               <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
-              <option value="on_hold">On Hold</option>
             </select>
             <select
               value={selectedCategory}
