@@ -5957,7 +5957,6 @@ function SupportContent() {
   const calculatedStats = stats || {
     total: tickets.length,
     open: tickets.filter((t: any) => t.status === 'open').length,
-    inProgress: tickets.filter((t: any) => t.status === 'in_progress').length,
     resolved: tickets.filter((t: any) => t.status === 'resolved').length,
     closed: tickets.filter((t: any) => t.status === 'closed').length,
   };
@@ -5982,13 +5981,6 @@ function SupportContent() {
       icon: ClockIcon,
       bgColor: 'bg-yellow-50',
       iconColor: 'text-yellow-600',
-    },
-    {
-      name: 'In Progress',
-      value: calculatedStats.inProgress,
-      icon: SparklesIcon,
-      bgColor: 'bg-indigo-50',
-      iconColor: 'text-indigo-600',
     },
     {
       name: 'Resolved',
