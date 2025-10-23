@@ -5336,12 +5336,12 @@ function SupportContent() {
       
       console.log('🔍 Calling supportTicketsAPI.getAllTickets with params:', {
         page: 1,
-        limit: 50,
-        status: selectedStatus,
-        category: selectedCategory
+        limit: 100, // Fetch more tickets for client-side filtering
+        status: '', // Don't filter on server, do it client-side
+        category: ''
       });
       
-      const response = await supportTicketsAPI.getAllTickets(1, 50, selectedStatus, selectedCategory);
+      const response = await supportTicketsAPI.getAllTickets(1, 100, '', '');
       
       console.log('✅ Support tickets API response:', response);
       console.log('✅ Response data:', response.data);
@@ -5375,7 +5375,7 @@ function SupportContent() {
     console.log('🔍 useEffect triggered - fetching tickets');
     fetchTickets();
     fetchStats();
-  }, [selectedStatus, selectedCategory]);
+  }, []); // Only fetch once on component mount
 
   // Real-time Socket.IO connection for support tickets with retry logic
   useEffect(() => {
@@ -6078,7 +6078,16 @@ function SupportContent() {
           </div>
         </div>
 
-        {tickets.length === 0 ? (
+        {(() => {
+          // Client-side filtering
+          const filteredTickets = tickets.filter(ticket => {
+            const statusMatch = !selectedStatus || ticket.status === selectedStatus;
+            const categoryMatch = !selectedCategory || ticket.category === selectedCategory;
+            return statusMatch && categoryMatch;
+          });
+
+          if (filteredTickets.length === 0) {
+            return (
           <div className="bg-white rounded-xl shadow-md border border-gray-100">
             <div className="px-6 py-16">
               <div className="text-center">
@@ -6094,9 +6103,12 @@ function SupportContent() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {tickets.map((ticket) => (
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 gap-4">
+              {filteredTickets.map((ticket) => (
               <div
                 key={ticket._id || ticket.id}
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
@@ -6160,9 +6172,10 @@ function SupportContent() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Ticket Details Modal */}
