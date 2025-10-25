@@ -25,7 +25,7 @@ export interface NotificationPayload {
 
 @WebSocketGateway({
   cors: {
-    origin: ["http://localhost:3001", "http://172.20.10.12:3001", "http://172.20.10.12:3000"],
+    origin: ["http://localhost:3001", "http://172.20.10.12:3001", "http://172.20.10.12:3000", "http://192.168.1.14:3001", "http://192.168.1.14:3000"],
     credentials: true
   },
   namespace: '/notifications'
