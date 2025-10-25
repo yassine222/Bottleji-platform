@@ -44,14 +44,17 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
     String? category,
     String? subCategory,
   }) async {
+    print('🎯 RewardShopProvider: Starting loadRewardItems with category: $category, subCategory: $subCategory');
     state = state.copyWith(isLoading: true, error: null);
     
     try {
+      print('🎯 RewardShopProvider: Calling RewardService.getRewardItems...');
       final itemsData = await RewardService.getRewardItems(
         category: category,
         subCategory: subCategory,
         isActive: true, // Only show active items
       );
+      print('🎯 RewardShopProvider: Got ${itemsData.length} items from service');
 
       final items = itemsData.map((json) => RewardItem.fromJson(json)).toList();
       
@@ -62,6 +65,7 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
         selectedSubCategory: subCategory,
       );
     } catch (e) {
+      print('🎯 RewardShopProvider: Error loading reward items: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),

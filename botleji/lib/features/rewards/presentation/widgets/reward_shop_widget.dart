@@ -19,8 +19,16 @@ class RewardShopWidget extends ConsumerWidget {
 
     // Load reward items on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🎯 RewardShopWidget: Checking if should load items...');
+      print('🎯 RewardShopWidget: Items count: ${shopState.items.length}');
+      print('🎯 RewardShopWidget: Is loading: ${shopState.isLoading}');
+      print('🎯 RewardShopWidget: Error: ${shopState.error}');
+      
       if (shopState.items.isEmpty && !shopState.isLoading) {
+        print('🎯 RewardShopWidget: Loading reward items...');
         ref.read(rewardShopProvider.notifier).loadRewardItems();
+      } else {
+        print('🎯 RewardShopWidget: Not loading items - items: ${shopState.items.length}, loading: ${shopState.isLoading}');
       }
     });
 
