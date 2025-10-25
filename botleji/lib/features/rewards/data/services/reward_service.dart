@@ -154,12 +154,12 @@ class RewardService {
       if (subCategory != null) queryParams['subCategory'] = subCategory;
       if (isActive != null) queryParams['isActive'] = isActive;
 
-      final response = await dio.get('/rewards/shop', queryParameters: queryParams);
+      final response = await dio.get('/rewards/items', queryParameters: queryParams);
 
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data is Map && data.containsKey('data') && data['data'] is Map) {
-          return List<Map<String, dynamic>>.from(data['data']['items'] ?? []);
+        if (data is Map && data.containsKey('data')) {
+          return List<Map<String, dynamic>>.from(data['data'] ?? []);
         } else if (data is List) {
           return List<Map<String, dynamic>>.from(data);
         } else {
