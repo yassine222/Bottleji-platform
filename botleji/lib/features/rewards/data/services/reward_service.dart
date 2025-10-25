@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:botleji/core/config/server_config.dart';
 
 class RewardService {
-  static String get baseUrl => ServerConfig.apiBaseUrl;
+  static String get baseUrl => ServerConfig.apiBaseUrlSync;
   
   // Get user reward stats
   static Future<Map<String, dynamic>> getUserRewardStats(String userId) async {
@@ -119,6 +119,133 @@ class RewardService {
       }
     } catch (e) {
       print('Error spending points: $e');
+      rethrow;
+    }
+  }
+
+  // Reward Shop Methods
+  static Future<List<Map<String, dynamic>>> getRewardItems({
+    String? category,
+    String? subCategory,
+    bool? isActive,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ));
+
+      // Build query parameters
+      final queryParams = <String, dynamic>{};
+      if (category != null) queryParams['category'] = category;
+      if (subCategory != null) queryParams['subCategory'] = subCategory;
+      if (isActive != null) queryParams['isActive'] = isActive;
+
+      final response = await dio.get('/rewards/shop', queryParameters: queryParams);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map && data.containsKey('data') && data['data'] is Map) {
+          return List<Map<String, dynamic>>.from(data['data']['items'] ?? []);
+        } else if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else {
+          return [];
+        }
+      } else {
+        throw Exception('Failed to load reward items: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching reward items: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> redeemReward(String userId, String rewardItemId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ));
+
+      final response = await dio.post('/rewards/shop/redeem', data: {
+        'userId': userId,
+        'rewardItemId': rewardItemId,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      } else {
+        throw Exception('Failed to redeem reward: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error redeeming reward: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getUserRedemptions(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ));
+
+      final response = await dio.get('/rewards/shop/redemptions/$userId');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data is Map && data.containsKey('data')) {
+          return List<Map<String, dynamic>>.from(data['data'] ?? []);
+        } else {
+          return [];
+        }
+      } else {
+        throw Exception('Failed to load redemptions: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching redemptions: $e');
       rethrow;
     }
   }

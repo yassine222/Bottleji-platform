@@ -6,7 +6,7 @@ import '../../../../core/config/server_config.dart';
 
 class AuthApiClient {
   final Dio _dio;
-  static String get baseUrl => ServerConfig.apiBaseUrl;
+  static String get baseUrl => ServerConfig.apiBaseUrlSync;
 
   AuthApiClient(this._dio) {
     // Add global interceptor to handle 401 errors

@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dio_factory.dart';
 
 class ApiClientConfig {
-  static String get baseUrl => ServerConfig.apiBaseUrl;
+  static String get baseUrl => ServerConfig.apiBaseUrlSync;
 
   static Dio createDio() {
-    final dio = DioFactory.getDio();
+    final dio = DioFactory.getDioSync();
 
     // Add Auth Interceptor
     dio.interceptors.add(

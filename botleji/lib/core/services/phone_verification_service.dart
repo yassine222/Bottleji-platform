@@ -244,7 +244,7 @@ class PhoneVerificationService {
       print('🔍 PhoneVerificationService: Auth token preview: ${authToken.substring(0, 50)}...');
       
       final dio = Dio(BaseOptions(
-        baseUrl: ServerConfig.apiBaseUrl,
+        baseUrl: ServerConfig.apiBaseUrlSync,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {

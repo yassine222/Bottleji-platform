@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/tier_upgrade_popup.dart';
+import 'package:botleji/features/rewards/presentation/widgets/reward_shop_widget.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 
 class RewardsScreen extends ConsumerStatefulWidget {
@@ -405,57 +406,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   }
 
   Widget _buildRewardShop(BuildContext context, UserMode mode) {
-    return Column(
-      children: [
-        Text(
-          mode == UserMode.collector
-            ? 'Collector Rewards - Coming Soon!'
-            : 'Household Rewards - Coming Soon!',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.grey[300]!,
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.store_outlined,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Reward Shop Coming Soon',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Exciting rewards and items will be available soon!',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return const RewardShopWidget();
   }
 
   // Helper methods for tier calculations

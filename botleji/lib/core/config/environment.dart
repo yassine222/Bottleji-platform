@@ -8,10 +8,20 @@ enum Environment {
 class EnvironmentConfig {
   static Environment environment = Environment.dev;
 
-  static String get apiBaseUrl {
+  static Future<String> get apiBaseUrl async {
     switch (environment) {
       case Environment.dev:
-        return ServerConfig.apiBaseUrl;
+        return await ServerConfig.apiBaseUrl;
+      case Environment.prod:
+        return 'https://your-production-api.com/api'; // Replace with your production URL
+    }
+  }
+  
+  // Synchronous fallback for backward compatibility
+  static String get apiBaseUrlSync {
+    switch (environment) {
+      case Environment.dev:
+        return 'http://localhost:3000/api'; // Fallback URL
       case Environment.prod:
         return 'https://your-production-api.com/api'; // Replace with your production URL
     }

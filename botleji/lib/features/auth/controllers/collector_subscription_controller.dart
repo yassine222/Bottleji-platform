@@ -38,7 +38,7 @@ class CollectorSubscriptionController extends StateNotifier<AsyncValue<String>> 
 
       // Get user data from the database
       final response = await _dio.get(
-        '${ServerConfig.apiBaseUrl}/auth/profile',
+        '${ServerConfig.apiBaseUrlSync}/auth/profile',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -106,7 +106,7 @@ class CollectorSubscriptionController extends StateNotifier<AsyncValue<String>> 
 
       // Update subscription type in backend
       final response = await _dio.put(
-        '${ServerConfig.apiBaseUrl}/auth/update-collector-subscription',
+        '${ServerConfig.apiBaseUrlSync}/auth/update-collector-subscription',
         data: {'subscriptionType': type},
         options: Options(
           headers: {
@@ -142,7 +142,7 @@ class CollectorSubscriptionController extends StateNotifier<AsyncValue<String>> 
       debugPrint('Refreshing user profile with token: ${token.substring(0, 10)}...');
 
       final response = await _dio.get(
-        '${ServerConfig.apiBaseUrl}/auth/profile',
+        '${ServerConfig.apiBaseUrlSync}/auth/profile',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

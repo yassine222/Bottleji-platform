@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:botleji/features/rewards/data/models/reward_models.dart';
 
 class CollectionSuccessPopup extends StatefulWidget {
   final int pointsAwarded;

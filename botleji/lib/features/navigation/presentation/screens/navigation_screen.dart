@@ -274,7 +274,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         
         if (collectorId.isNotEmpty) {
           debugPrint('🚀 Creating expired interaction...');
-          debugPrint('🚀 API URL: ${ApiConfig.baseUrl}/dropoffs/interactions');
+          debugPrint('🚀 API URL: ${ApiConfig.baseUrlSync}/dropoffs/interactions');
           debugPrint('🚀 Request data: ${jsonEncode({
             'collectorId': collectorId,
             'dropoffId': activeCollection.dropoffId,
@@ -291,7 +291,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
             // Find the active collection attempt for this drop
             debugPrint('🔍 Getting active collection attempt...');
             final attemptsResponse = await dio.get(
-              '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
+              '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/attempts',
               options: Options(
                 headers: {
                   'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
             // Complete it as expired
             debugPrint('🔄 Completing attempt as expired...');
             final completeResponse = await dio.patch(
-              '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
+              '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
               data: {
                 'outcome': 'expired',
                 'notes': 'Collection expired - timer timeout',
@@ -347,9 +347,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           
           // Also update the drop status back to pending
           debugPrint('🔄 Updating drop status to pending...');
-          debugPrint('🔄 API URL: ${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/status');
+          debugPrint('🔄 API URL: ${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/status');
           final updateResponse = await dio.patch(
-            '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/status',
+            '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/status',
             data: {
               'status': 'pending',
             },

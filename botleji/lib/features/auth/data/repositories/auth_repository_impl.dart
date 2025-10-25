@@ -12,7 +12,7 @@ class AuthRepository {
 
   AuthRepository({AuthApiClient? apiClient}) : _apiClient = apiClient ?? AuthApiClient(
     Dio(BaseOptions(
-      baseUrl: ServerConfig.apiBaseUrl,
+      baseUrl: ServerConfig.apiBaseUrlSync,
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 3),
       contentType: 'application/json',
@@ -34,7 +34,7 @@ class AuthRepository {
       print('Sending login request data: $requestData');
       
       final dio = Dio(BaseOptions(
-        baseUrl: ServerConfig.apiBaseUrl,
+        baseUrl: ServerConfig.apiBaseUrlSync,
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         contentType: 'application/json',
@@ -123,7 +123,7 @@ class AuthRepository {
       print('Repository: Signup request data: $requestData');
       
       final dio = Dio(BaseOptions(
-        baseUrl: ServerConfig.apiBaseUrl,
+        baseUrl: ServerConfig.apiBaseUrlSync,
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         contentType: 'application/json',
@@ -198,7 +198,7 @@ class AuthRepository {
       print('Repository: OTP verification request data: $requestData');
       
       final dio = Dio(BaseOptions(
-        baseUrl: ServerConfig.apiBaseUrl,
+        baseUrl: ServerConfig.apiBaseUrlSync,
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         contentType: 'application/json',
@@ -598,7 +598,7 @@ class AuthRepository {
       }
       
       final dio = Dio(BaseOptions(
-        baseUrl: ServerConfig.apiBaseUrl,
+        baseUrl: ServerConfig.apiBaseUrlSync,
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         contentType: 'application/json',

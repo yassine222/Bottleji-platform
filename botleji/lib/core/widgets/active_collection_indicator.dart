@@ -147,7 +147,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       // Find the active collection attempt for this drop
       debugPrint('🔍 Getting active collection attempt...');
       final attemptsResponse = await dio.get(
-        '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts',
+        '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/attempts',
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       // Complete it as expired
       debugPrint('🔄 Completing attempt as expired...');
       final completeResponse = await dio.patch(
-        '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
+        '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/attempts/$attemptId/complete',
         data: {
           'outcome': 'expired',
           'notes': 'Collection expired - timer timeout',
@@ -190,7 +190,7 @@ class _ActiveCollectionIndicatorState extends ConsumerState<ActiveCollectionIndi
       // Also update the drop status back to pending
       debugPrint('🔄 Updating drop status to pending...');
       final updateResponse = await dio.patch(
-        '${ApiConfig.baseUrl}/dropoffs/${activeCollection.dropoffId}/status',
+        '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/status',
         data: {
           'status': 'pending',
         },

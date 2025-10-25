@@ -14,6 +14,7 @@ import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/services/local_notification_service.dart';
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/core/services/network_initialization_service.dart';
 import 'package:botleji/features/auth/services/mode_switch_service.dart';
 import 'package:botleji/features/splash/presentation/screens/splash_screen.dart';
 import 'package:botleji/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -30,6 +31,9 @@ void main() async {
 
   // Initialize timezone service for German timezone
   await TimezoneService.initialize();
+
+  // Initialize network detection service for automatic IP detection
+  await NetworkInitializationService.initialize();
 
   // Initialize local notification service
   await LocalNotificationService().initialize();
