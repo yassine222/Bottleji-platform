@@ -86,6 +86,11 @@ class UserData {
   final DateTime? collectorApplicationAppliedAt;
   final DateTime? collectorApplicationReviewedAt;
   final String? collectorApplicationRejectionReason;
+  
+  // Reward system fields
+  final int? currentPoints;
+  final int? totalPointsEarned;
+  final int? currentTier;
 
   const UserData({
     required this.id,
@@ -112,6 +117,9 @@ class UserData {
     this.collectorApplicationAppliedAt,
     this.collectorApplicationReviewedAt,
     this.collectorApplicationRejectionReason,
+    this.currentPoints,
+    this.totalPointsEarned,
+    this.currentTier,
   });
 
   // Helper getters for backward compatibility
@@ -238,6 +246,9 @@ class UserData {
       'isAccountLocked': isAccountLocked,
       'accountLockedUntil': accountLockedUntil?.toIso8601String(),
       'warningCount': warningCount,
+      'currentPoints': json['currentPoints'],
+      'totalPointsEarned': json['totalPointsEarned'],
+      'currentTier': json['currentTier'],
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     });
