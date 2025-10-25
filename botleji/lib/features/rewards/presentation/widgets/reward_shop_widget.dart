@@ -17,6 +17,13 @@ class RewardShopWidget extends ConsumerWidget {
       return const Center(child: Text('Please log in to view rewards'));
     }
 
+    // Load reward items on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (shopState.items.isEmpty && !shopState.isLoading) {
+        ref.read(rewardShopProvider.notifier).loadRewardItems();
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
