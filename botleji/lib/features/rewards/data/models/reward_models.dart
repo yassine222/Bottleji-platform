@@ -19,19 +19,23 @@ class RewardStats {
     print('🎯 RewardStats.fromJson: Parsing response: $json');
     
     // Handle the actual backend response structure
-    final currentTierData = json['currentTier'] as Map<String, dynamic>?;
-    final currentTier = currentTierData?['tier'] ?? 1;
+    final currentTier = json['currentTier'] ?? 1;
+    final currentPoints = json['availablePoints'] ?? json['currentPoints'] ?? 0;
+    final totalPoints = json['totalPoints'] ?? 0;
+    final totalCollections = json['totalCollections'] ?? 0;
     
     print('🎯 RewardStats.fromJson: Extracted currentTier: $currentTier');
-    print('🎯 RewardStats.fromJson: Extracted currentPoints: ${json['currentPoints']}');
+    print('🎯 RewardStats.fromJson: Extracted currentPoints: $currentPoints');
+    print('🎯 RewardStats.fromJson: Extracted totalPoints: $totalPoints');
+    print('🎯 RewardStats.fromJson: Extracted totalCollections: $totalCollections');
     
     return RewardStats(
-      totalDropsCollected: json['totalDrops'] ?? 0, // Backend uses 'totalDrops'
-      totalDropsCreated: json['totalDrops'] ?? 0, // Same as collected for now
-      totalPointsEarned: json['totalPoints'] ?? 0, // Backend uses 'totalPoints'
-      currentPoints: json['currentPoints'] ?? 0,
+      totalDropsCollected: totalCollections,
+      totalDropsCreated: totalCollections, // Same as collected for now
+      totalPointsEarned: totalPoints,
+      currentPoints: currentPoints,
       currentTier: currentTier,
-      rewardHistory: (json['rewardHistory'] as List<dynamic>?)
+      rewardHistory: (json['recentRedemptions'] as List<dynamic>?)
           ?.map((item) => RewardHistoryItem.fromJson(item))
           .toList() ?? [],
     );
