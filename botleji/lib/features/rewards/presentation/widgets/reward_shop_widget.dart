@@ -193,7 +193,8 @@ class RewardShopWidget extends ConsumerWidget {
   }
 
   Widget _buildRewardCard(BuildContext context, WidgetRef ref, RewardItem item, user) {
-    final canAfford = user.currentPoints >= item.pointCost;
+    final userPoints = user.currentPoints ?? 0;
+    final canAfford = userPoints >= item.pointCost;
     final isInStock = item.stock > 0;
     final canRedeem = canAfford && isInStock && item.isActive;
 
@@ -320,7 +321,7 @@ class RewardShopWidget extends ConsumerWidget {
             const SizedBox(height: 8),
             Text('Cost: ${item.pointCost} points'),
             const SizedBox(height: 8),
-            Text('Your points: ${user.currentPoints}'),
+            Text('Your points: ${user.currentPoints ?? 0}'),
             const SizedBox(height: 8),
             Text('Stock: ${item.stock} available'),
           ],
