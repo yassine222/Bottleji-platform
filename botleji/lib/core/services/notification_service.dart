@@ -125,7 +125,7 @@ class NotificationService extends ChangeNotifier {
       }
       
       // Initialize Socket.IO client with better error handling
-      final socketUrl = ServerConfig.socketUrl;
+      final socketUrl = ServerConfig.apiBaseUrlSync;
       _socket = IO.io('$socketUrl/notifications', <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false, // Don't auto-connect, we'll connect manually

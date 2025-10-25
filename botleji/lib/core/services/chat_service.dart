@@ -76,7 +76,7 @@ class ChatService extends ChangeNotifier {
       }
 
       // Initialize Socket.IO client
-      final socketUrl = ServerConfig.socketUrl;
+      final socketUrl = ServerConfig.apiBaseUrlSync;
       debugPrint('🔌 ChatService: Connecting to: $socketUrl/chat');
       debugPrint('🔌 ChatService: Token available: ${token.isNotEmpty}');
       _socket = IO.io('$socketUrl/chat', <String, dynamic>{
