@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { RewardItem, RewardItemDocument, RewardCategory } from './schemas/reward-item.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { CollectionAttempt, CollectionAttemptDocument } from '../dropoffs/schemas/collection-attempt.schema';
 
 export interface CreateRewardItemDto {
   name: string;
@@ -40,6 +42,8 @@ export interface RewardItemFilters {
 export class RewardsService {
   constructor(
     @InjectModel(RewardItem.name) private rewardItemModel: Model<RewardItemDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttemptDocument>,
   ) {}
 
   /**
@@ -294,25 +298,51 @@ export class RewardsService {
    * Get user's reward stats
    */
   async getUserRewardStats(userId: string): Promise<any> {
-    // For now, return mock data
-    // In a real implementation, this would query the user's points, tier, redemptions, etc.
-    return {
-      totalPoints: 150,
-      currentTier: 2,
-      tierName: 'Silver',
-      pointsToNextTier: 50,
-      totalRedemptions: 3,
-      availablePoints: 150,
-      recentRedemptions: [
-        {
-          id: 'redemption_1',
-          itemName: 'Professional Collection Bag',
-          pointsUsed: 100,
-          redeemedAt: new Date(),
-          status: 'fulfilled'
-        }
-      ]
-    };
+    try {
+      // Get user's actual points from their profile
+      const user = await this.userModel.findById(userId).exec();
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Calculate points from collection history
+      const collectionAttempts = await this.collectionAttemptModel.find({ collectorId: userId }).exec();
+      const totalCollections = collectionAttempts.length;
+      const totalPoints = user.totalPointsEarned || 0;
+      const currentTier = user.currentTier || 1;
+      
+      // Calculate tier name and points to next tier
+      const tierNames = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+      const tierName = tierNames[Math.min(currentTier - 1, tierNames.length - 1)] || 'Bronze';
+      const pointsToNextTier = Math.max(0, (currentTier * 100) - totalPoints);
+
+      // Get recent redemptions (mock for now, would need redemption model)
+      const recentRedemptions = [];
+
+      return {
+        totalPoints,
+        currentTier,
+        tierName,
+        pointsToNextTier,
+        totalRedemptions: recentRedemptions.length,
+        availablePoints: totalPoints,
+        totalCollections,
+        recentRedemptions
+      };
+    } catch (error) {
+      console.error('Error getting user reward stats:', error);
+      // Return fallback data
+      return {
+        totalPoints: 0,
+        currentTier: 1,
+        tierName: 'Bronze',
+        pointsToNextTier: 100,
+        totalRedemptions: 0,
+        availablePoints: 0,
+        totalCollections: 0,
+        recentRedemptions: []
+      };
+    }
   }
 
   /**
