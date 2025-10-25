@@ -39,9 +39,9 @@ class RewardService {
       print('🎯 RewardService: Response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        final stats = response.data['stats'] ?? {};
+        final stats = response.data['data']['stats'] ?? {};
         print('🎯 RewardService: Returning stats: $stats');
-        return stats;
+        return Map<String, dynamic>.from(stats);
       } else {
         print('🎯 RewardService: Failed with status: ${response.statusCode}');
         throw Exception('Failed to load reward stats: ${response.statusCode}');
