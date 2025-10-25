@@ -32,8 +32,8 @@ class NetworkInitializationService {
     } catch (e) {
       print('❌ NetworkInitializationService: Error during initialization: $e');
       // Set fallback URLs
-      _detectedServerUrl = 'http://localhost:3000';
-      _detectedApiUrl = 'http://localhost:3000/api';
+      _detectedServerUrl = 'http://192.168.1.14:3000';
+      _detectedApiUrl = 'http://192.168.1.14:3000/api';
       _initialized = true;
     }
   }
