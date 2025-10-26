@@ -48,19 +48,11 @@ export class UserRewardsController {
     @Query('subCategory') subCategory?: string,
     @Query('isActive') isActive?: boolean,
   ) {
-    console.log('🎯 UserRewardsController: getAvailableRewards called with:', {
-      category,
-      subCategory,
-      isActive
-    });
-    
     const items = await this.rewardsService.findAvailableForUser({
       category,
       subCategory,
       isActive,
     });
-    
-    console.log('🎯 UserRewardsController: Returning', items.length, 'items');
     
     return {
       success: true,
