@@ -8655,7 +8655,7 @@ function RewardShopContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Point Cost</label>
                     <input
                       type="number"
-                      value={newReward.pointCost || ''}
+                      value={newReward.pointCost === 0 ? '' : newReward.pointCost}
                       onChange={(e) => setNewReward({...newReward, pointCost: e.target.value === '' ? 0 : parseInt(e.target.value) || 0})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Enter point cost"
@@ -8666,7 +8666,7 @@ function RewardShopContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
                     <input
                       type="number"
-                      value={newReward.stock || ''}
+                      value={newReward.stock === 0 ? '' : newReward.stock}
                       onChange={(e) => setNewReward({...newReward, stock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Enter stock quantity"
