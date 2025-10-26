@@ -16,7 +16,6 @@ class TimezoneService {
     tz.setLocalLocation(tz.getLocation(germanTimezone));
     
     _initialized = true;
-    print('🕐 TimezoneService: Initialized with German timezone ($germanTimezone)');
   }
 
   /// Get current time in German timezone
@@ -26,8 +25,6 @@ class TimezoneService {
 
   /// Convert UTC DateTime to German timezone
   static DateTime toGermanTime(DateTime utcDateTime) {
-    print('🕐 TimezoneService.toGermanTime: Input: $utcDateTime (isUtc: ${utcDateTime.isUtc})');
-    
     DateTime result;
     if (utcDateTime.isUtc) {
       result = tz.TZDateTime.from(utcDateTime, tz.getLocation(germanTimezone));
@@ -36,7 +33,6 @@ class TimezoneService {
       result = tz.TZDateTime.from(utcDateTime.toUtc(), tz.getLocation(germanTimezone));
     }
     
-    print('🕐 TimezoneService.toGermanTime: Output: $result');
     return result;
   }
 
@@ -53,11 +49,8 @@ class TimezoneService {
 
   /// Parse ISO string and convert to German timezone
   static DateTime parseToGermanTime(String isoString) {
-    print('🕐 TimezoneService.parseToGermanTime: Input: $isoString');
     final utcDateTime = DateTime.parse(isoString);
-    print('🕐 TimezoneService.parseToGermanTime: Parsed UTC: $utcDateTime');
     final result = toGermanTime(utcDateTime);
-    print('🕐 TimezoneService.parseToGermanTime: Final result: $result');
     return result;
   }
 
