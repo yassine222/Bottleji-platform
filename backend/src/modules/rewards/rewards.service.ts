@@ -355,6 +355,8 @@ export class RewardsService {
   }): Promise<RewardItem[]> {
     const query: any = {};
     
+    console.log('🎯 RewardsService: findAvailableForUser called with filters:', filters);
+    
     if (filters?.isActive !== undefined) {
       query.isActive = filters.isActive;
     } else {
@@ -363,13 +365,19 @@ export class RewardsService {
     
     if (filters?.category) {
       query.category = filters.category;
+      console.log('🎯 RewardsService: Adding category filter:', filters.category);
     }
     
     if (filters?.subCategory) {
       query.subCategory = filters.subCategory;
+      console.log('🎯 RewardsService: Adding subCategory filter:', filters.subCategory);
     }
     
-    return await this.rewardItemModel.find(query).exec();
+    console.log('🎯 RewardsService: Final query:', query);
+    const results = await this.rewardItemModel.find(query).exec();
+    console.log('🎯 RewardsService: Found', results.length, 'items');
+    
+    return results;
   }
 
   /**
