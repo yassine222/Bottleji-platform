@@ -155,9 +155,9 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
   Color _getModeColor() {
     switch (widget.targetMode) {
       case UserMode.household:
-        return Colors.blue;
+        return const Color(0xFF00695C);
       case UserMode.collector:
-        return Colors.green;
+        return const Color(0xFF00695C);
     }
   }
 
