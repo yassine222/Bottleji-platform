@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/rewards/presentation/providers/reward_shop_provider.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/features/rewards/presentation/pages/reward_item_detail_page.dart';
 
 class RewardShopWidget extends ConsumerWidget {
   const RewardShopWidget({super.key});
@@ -91,6 +92,11 @@ class RewardShopWidget extends ConsumerWidget {
 
   Widget _buildCategoryFilter(BuildContext context, WidgetRef ref) {
     final shopState = ref.watch(rewardShopProvider);
+    final authState = ref.watch(authNotifierProvider);
+    final user = authState.value;
+    
+    // Check if user has collector role
+    final hasCollectorRole = user?.roles?.contains('collector') ?? false;
     
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -103,13 +109,16 @@ class RewardShopWidget extends ConsumerWidget {
             onSelected: () => ref.read(rewardShopProvider.notifier).setCategory(null),
           ),
           const SizedBox(width: 8),
-          _buildFilterChip(
-            context,
-            label: 'Collector',
-            isSelected: shopState.selectedCategory == 'collector',
-            onSelected: () => ref.read(rewardShopProvider.notifier).setCategory('collector'),
-          ),
-          const SizedBox(width: 8),
+          // Only show collector filter if user has collector role
+          if (hasCollectorRole) ...[
+            _buildFilterChip(
+              context,
+              label: 'Collector',
+              isSelected: shopState.selectedCategory == 'collector',
+              onSelected: () => ref.read(rewardShopProvider.notifier).setCategory('collector'),
+            ),
+            const SizedBox(width: 8),
+          ],
           _buildFilterChip(
             context,
             label: 'Household',
@@ -202,7 +211,7 @@ class RewardShopWidget extends ConsumerWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: canRedeem ? () => _showRedeemDialog(context, ref, item, user) : null,
+        onTap: () => _navigateToItemDetail(context, ref, item, user),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -308,37 +317,14 @@ class RewardShopWidget extends ConsumerWidget {
     );
   }
 
-  void _showRedeemDialog(BuildContext context, WidgetRef ref, RewardItem item, user) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Redeem ${item.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Description: ${item.description}'),
-            const SizedBox(height: 8),
-            Text('Cost: ${item.pointCost} points'),
-            const SizedBox(height: 8),
-            Text('Your points: ${user.currentPoints ?? 0}'),
-            const SizedBox(height: 8),
-            Text('Stock: ${item.stock} available'),
-          ],
+  void _navigateToItemDetail(BuildContext context, WidgetRef ref, RewardItem item, user) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RewardItemDetailPage(
+          item: item,
+          user: user,
+          onRedeem: () => _redeemReward(context, ref, item),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _redeemReward(context, ref, item);
-            },
-            child: const Text('Redeem'),
-          ),
-        ],
       ),
     );
   }
