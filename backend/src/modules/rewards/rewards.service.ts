@@ -348,8 +348,28 @@ export class RewardsService {
   /**
    * Get available reward items for users
    */
-  async findAvailableForUser(): Promise<RewardItem[]> {
-    return await this.rewardItemModel.find({ isActive: true }).exec();
+  async findAvailableForUser(filters?: {
+    category?: string;
+    subCategory?: string;
+    isActive?: boolean;
+  }): Promise<RewardItem[]> {
+    const query: any = {};
+    
+    if (filters?.isActive !== undefined) {
+      query.isActive = filters.isActive;
+    } else {
+      query.isActive = true; // Default to active items only
+    }
+    
+    if (filters?.category) {
+      query.category = filters.category;
+    }
+    
+    if (filters?.subCategory) {
+      query.subCategory = filters.subCategory;
+    }
+    
+    return await this.rewardItemModel.find(query).exec();
   }
 
   /**

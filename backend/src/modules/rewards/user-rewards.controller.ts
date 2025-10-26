@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   UseGuards,
   HttpStatus,
   HttpCode,
@@ -41,8 +42,17 @@ export class UserRewardsController {
    * GET /rewards/items
    */
   @Get('items')
-  async getAvailableRewards(@Request() req: any) {
-    const items = await this.rewardsService.findAvailableForUser();
+  async getAvailableRewards(
+    @Request() req: any,
+    @Query('category') category?: string,
+    @Query('subCategory') subCategory?: string,
+    @Query('isActive') isActive?: boolean,
+  ) {
+    const items = await this.rewardsService.findAvailableForUser({
+      category,
+      subCategory,
+      isActive,
+    });
     return {
       success: true,
       data: items,
