@@ -8480,8 +8480,11 @@ function RewardShopContent() {
 
       {/* Rewards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {(filteredRewards || []).map((reward, index) => (
-          <div key={reward.id || reward._id || `reward-${index}`} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+        {(filteredRewards || []).map((reward, index) => {
+          // Create a unique key that combines multiple identifiers
+          const uniqueKey = reward.id || reward._id || `reward-${reward.name}-${index}-${Date.now()}`;
+          return (
+          <div key={uniqueKey} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
             <div className="aspect-w-16 aspect-h-9 bg-gray-200">
               {reward.imageUrl ? (
                 <img src={reward.imageUrl} alt={reward.name} className="w-full h-48 object-cover" />
@@ -8563,7 +8566,8 @@ function RewardShopContent() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Empty State */}
