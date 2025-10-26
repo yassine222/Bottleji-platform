@@ -8482,7 +8482,7 @@ function RewardShopContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {(filteredRewards || []).map((reward, index) => {
           // Create a unique key that combines multiple identifiers
-          const uniqueKey = reward.id || reward._id || `reward-${reward.name}-${index}-${Date.now()}`;
+          const uniqueKey = reward.id || reward._id || `reward-${reward.name}-${reward.category}-${reward.subCategory}-${index}`;
           return (
           <div key={uniqueKey} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
             <div className="aspect-w-16 aspect-h-9 bg-gray-200">
