@@ -34,6 +34,16 @@ export class RewardItem extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
+  // Wearable type flags (only relevant for Equipment subcategory)
+  @Prop({ default: false })
+  isFootwear: boolean;
+
+  @Prop({ default: false })
+  isJacket: boolean;
+
+  @Prop({ default: false })
+  isBottoms: boolean;
+
   // Metadata
   @Prop({ default: 0 })
   totalRedemptions: number;

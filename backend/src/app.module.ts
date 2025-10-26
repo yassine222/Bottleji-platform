@@ -15,6 +15,7 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
 import { TrainingModule } from './modules/training/training.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
+import { ShippingModule } from './modules/shipping/shipping.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RewardsModule } from './modules/rewards/rewards.module';
     TrainingModule,
     ChatModule,
     RewardsModule,
+    ShippingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

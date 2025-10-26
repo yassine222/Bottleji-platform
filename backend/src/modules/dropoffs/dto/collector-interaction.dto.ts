@@ -48,7 +48,7 @@ export class GetCollectorStatsDto {
 
   @IsOptional()
   @IsString()
-  timeRange?: string; // 'today', 'week', 'month', 'year'
+  timeRange?: string;
 }
 
 export class GetCollectorHistoryDto {
@@ -57,17 +57,10 @@ export class GetCollectorHistoryDto {
 
   @IsOptional()
   @IsString()
-  status?: string;
-
-  @IsOptional()
-  @IsString()
-  timeRange?: string;
-
-  @IsOptional()
-  @IsString()
   page?: string;
 
   @IsOptional()
   @IsString()
   limit?: string;
-} 
+}
+

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
 
 export enum InteractionType {
   ACCEPTED = 'accepted',
@@ -9,9 +9,6 @@ export enum InteractionType {
 }
 
 export enum CancellationReason {
-  NO_ACCESS = 'noAccess',
-  NOT_FOUND = 'notFound',
-  ALREADY_COLLECTED = 'alreadyCollected',
   WRONG_LOCATION = 'wrongLocation',
   UNSAFE = 'unsafe',
   OTHER = 'other',
@@ -19,10 +16,10 @@ export enum CancellationReason {
 
 @Schema({ timestamps: true })
 export class CollectorInteraction extends Document {
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  @Prop({ required: true, type: String, ref: 'User' })
   collectorId: string;
 
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Dropoff' })
+  @Prop({ required: true, type: String, ref: 'Dropoff' })
   dropoffId: string;
 
   @Prop({ required: true, enum: InteractionType })
@@ -78,7 +75,7 @@ export class CollectorInteraction extends Document {
 
 export const CollectorInteractionSchema = SchemaFactory.createForClass(CollectorInteraction);
 
-// Add virtual id field to convert _id to id
+// Add virtual for id
 CollectorInteractionSchema.virtual('id').get(function(this: any) {
   return this._id.toHexString();
 });
@@ -86,17 +83,16 @@ CollectorInteractionSchema.virtual('id').get(function(this: any) {
 // Ensure virtual fields are serialized
 CollectorInteractionSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc: any, ret: any) {
-    ret.id = ret._id;
+  transform: function(doc, ret) {
     delete ret._id;
     delete ret.__v;
     return ret;
-  },
+  }
 });
 
-// Index for efficient queries
+// Add indexes for performance
 CollectorInteractionSchema.index({ collectorId: 1, interactionTime: -1 });
 CollectorInteractionSchema.index({ dropoffId: 1 });
 CollectorInteractionSchema.index({ interactionType: 1 });
 CollectorInteractionSchema.index({ dropoffId: 1, interactionType: 1 }); // For duplicate EXPIRED check
-// Removed unique constraint to allow multiple expired interactions for the same dropoff 
+

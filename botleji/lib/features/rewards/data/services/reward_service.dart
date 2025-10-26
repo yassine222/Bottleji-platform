@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:botleji/core/config/server_config.dart';
+import '../models/reward_models.dart';
 
 class RewardService {
   static String get baseUrl => ServerConfig.apiBaseUrlSync;
@@ -175,8 +176,14 @@ class RewardService {
     }
   }
 
-  static Future<Map<String, dynamic>> redeemReward(String userId, String rewardItemId) async {
+  static Future<Map<String, dynamic>> redeemReward(String userId, String rewardItemId, Map<String, dynamic> deliveryAddress, {String? selectedSize, String? sizeType, int? pointCost}) async {
     try {
+      print('🛒 RewardService: Starting redemption...');
+      print('🛒 User ID: $userId');
+      print('🛒 Item ID: $rewardItemId');
+      print('🛒 Point Cost: $pointCost');
+      print('🛒 Selected Size: $selectedSize, Size Type: $sizeType');
+      
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
       
@@ -195,10 +202,22 @@ class RewardService {
         },
       ));
 
-      final response = await dio.post('/rewards/shop/redeem', data: {
+      final requestData = {
         'userId': userId,
         'rewardItemId': rewardItemId,
-      });
+        'pointsSpent': pointCost ?? 0, // Use actual point cost
+        'deliveryAddress': deliveryAddress,
+        if (selectedSize != null) 'selectedSize': selectedSize,
+        if (sizeType != null) 'sizeType': sizeType,
+      };
+      
+      print('🛒 Request data: $requestData');
+      print('🛒 Making request to: $baseUrl/rewards/shop/redeem');
+
+      final response = await dio.post('/rewards/shop/redeem', data: requestData);
+
+      print('🛒 Response status: ${response.statusCode}');
+      print('🛒 Response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -206,12 +225,18 @@ class RewardService {
         throw Exception('Failed to redeem reward: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error redeeming reward: $e');
+      print('❌ RewardService: Error redeeming reward: $e');
+      if (e is DioException) {
+        print('❌ DioException details:');
+        print('❌ Status code: ${e.response?.statusCode}');
+        print('❌ Response data: ${e.response?.data}');
+        print('❌ Request data: ${e.requestOptions.data}');
+      }
       rethrow;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getUserRedemptions(String userId) async {
+  static Future<List<RewardRedemption>> getUserRedemptions(String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -231,17 +256,28 @@ class RewardService {
         },
       ));
 
-      final response = await dio.get('/rewards/shop/redemptions/$userId');
+      final response = await dio.get('/rewards/redemptions');
 
       if (response.statusCode == 200) {
         final data = response.data;
+        List<Map<String, dynamic>> redemptionsData = [];
+        
         if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
+          redemptionsData = List<Map<String, dynamic>>.from(data);
         } else if (data is Map && data.containsKey('data')) {
-          return List<Map<String, dynamic>>.from(data['data'] ?? []);
-        } else {
-          return [];
+          redemptionsData = List<Map<String, dynamic>>.from(data['data'] ?? []);
+        } else if (data is Map && data.containsKey('redemptions')) {
+          redemptionsData = List<Map<String, dynamic>>.from(data['redemptions'] ?? []);
         }
+        
+        return redemptionsData.map((json) {
+          try {
+            return RewardRedemption.fromJson(json);
+          } catch (e) {
+            print('❌ Error parsing redemption: $json, Error: $e');
+            rethrow;
+          }
+        }).toList();
       } else {
         throw Exception('Failed to load redemptions: ${response.statusCode}');
       }

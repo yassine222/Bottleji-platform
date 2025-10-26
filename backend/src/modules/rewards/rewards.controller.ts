@@ -11,7 +11,8 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
-import { RewardsService, CreateRewardItemDto, UpdateRewardItemDto, RewardItemFilters } from './rewards.service';
+import { RewardsService, RewardItemFilters } from './rewards.service';
+import { CreateRewardItemDto, UpdateRewardItemDto } from './dto/reward-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -90,6 +91,46 @@ export class RewardsController {
     };
   }
 
+
+  /**
+   * Get all redemptions (admin)
+   * GET /admin/rewards/redemptions
+   */
+  @Get('redemptions')
+  async getAllRedemptions(
+    @Query('status') status?: string,
+    @Query('userId') userId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const filters = {
+      status: status as any,
+      userId,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 50,
+    };
+    
+    const result = await this.rewardsService.getAllRedemptions(filters);
+    return {
+      success: true,
+      data: result.redemptions,
+      total: result.total,
+    };
+  }
+
+  /**
+   * Get redemption by ID (admin)
+   * GET /admin/rewards/redemptions/:id
+   */
+  @Get('redemptions/:id')
+  async getRedemptionById(@Param('id') id: string) {
+    const redemption = await this.rewardsService.getRedemptionById(id);
+    return {
+      success: true,
+      data: redemption,
+    };
+  }
+
   /**
    * Get a single reward item by ID
    * GET /admin/rewards/:id
@@ -156,6 +197,51 @@ export class RewardsController {
     return {
       success: true,
       message: 'Reward item deleted successfully',
+    };
+  }
+
+
+  /**
+   * Approve redemption (admin)
+   * PATCH /admin/rewards/redemptions/:id/approve
+   */
+  @Patch('redemptions/:id/approve')
+  async approveRedemption(@Param('id') id: string) {
+    const redemption = await this.rewardsService.approveRedemption(id);
+    return {
+      success: true,
+      message: 'Redemption approved successfully',
+      data: redemption,
+    };
+  }
+
+  /**
+   * Reject redemption (admin)
+   * PATCH /admin/rewards/redemptions/:id/reject
+   */
+  @Patch('redemptions/:id/reject')
+  async rejectRedemption(@Param('id') id: string, @Body() body: { reason: string }) {
+    const redemption = await this.rewardsService.rejectRedemption(id, body.reason);
+    return {
+      success: true,
+      message: 'Redemption rejected successfully',
+      data: redemption,
+    };
+  }
+
+  /**
+   * Mark redemption as fulfilled (admin)
+   * PATCH /admin/rewards/redemptions/:id/fulfill
+   */
+  @Patch('redemptions/:id/fulfill')
+  async fulfillRedemption(@Param('id') id: string) {
+    const redemption = await this.rewardsService.updateRedemptionStatus(id, {
+      status: 'delivered' as any,
+    });
+    return {
+      success: true,
+      message: 'Redemption marked as fulfilled successfully',
+      data: redemption,
     };
   }
 }

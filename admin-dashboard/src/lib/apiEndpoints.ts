@@ -6,7 +6,7 @@
  */
 
 // Base API URL - can be overridden by environment variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.14:3000/api';
 
 /**
  * API Endpoints organized by category
@@ -75,7 +75,7 @@ export const API_ENDPOINTS = {
     FLAG: (dropId: string) => `/admin/drops-management/flag/${dropId}`,
     UNFLAG: (dropId: string) => `/admin/drops-management/unflag/${dropId}`,
     CENSOR: (dropId: string) => `/admin/drops-management/censor/${dropId}`,
-    DELETE: (dropId: string) => `/admin/drops-management/delete/${dropId}`,
+    DELETE_MANAGEMENT: (dropId: string) => `/admin/drops-management/delete/${dropId}`,
     
     // Reports
     REPORT_ACTION: (reportId: string, dropId: string) => `/api/admin/drops-management/reports/${reportId}/action/${dropId}`,
@@ -132,9 +132,11 @@ export const API_ENDPOINTS = {
         TOGGLE_ACTIVE: (id: string) => `/admin/rewards/${id}/toggle-active`,
         UPDATE_STOCK: (id: string) => `/admin/rewards/${id}/stock`,
         GET_REDEMPTIONS: '/admin/rewards/redemptions',
+        GET_ALL_REDEMPTIONS: '/admin/rewards/redemptions',
         GET_REDEMPTION_BY_ID: (id: string) => `/admin/rewards/redemptions/${id}`,
-        APPROVE_REDEMPTION: (id: string) => `/admin/rewards/redemptions/${id}/approve`,
-        REJECT_REDEMPTION: (id: string) => `/admin/rewards/redemptions/${id}/reject`,
+    APPROVE_REDEMPTION: (id: string) => `/admin/rewards/redemptions/${id}/approve`,
+    REJECT_REDEMPTION: (id: string) => `/admin/rewards/redemptions/${id}/reject`,
+    DOWNLOAD_SHIPPING_LABEL: (id: string) => `/admin/shipping/label/${id}`,
         FULFILL_REDEMPTION: (id: string) => `/admin/rewards/redemptions/${id}/fulfill`,
       },
 };
@@ -186,7 +188,7 @@ export const API_CONFIG = {
  */
 export const ENV_CONFIGS = {
   DEVELOPMENT: {
-    BASE_URL: 'http://localhost:3000/api',
+    BASE_URL: 'http://192.168.1.14:3000/api',
     TIMEOUT: 30000,
   },
   PRODUCTION: {

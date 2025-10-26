@@ -32,10 +32,8 @@ import { UserRole } from '@/types';
 import {
   UsersGrowthChart,
   DropsActivityChart,
-  CollectorInteractionsChart,
   DropStatusPieChart,
   BottleTypeDistribution,
-  TicketsByCategory,
   ApplicationsStatus,
 } from '@/components/dashboard/DashboardCharts';
 import FileUpload from '@/components/training/FileUpload';
@@ -165,11 +163,6 @@ function DashboardContent({ stats, loading, error }: any) {
         )}
       </div>
 
-      {/* Collector Interactions Chart - Full Width */}
-      {stats?.interactionsTimeSeries && stats.interactionsTimeSeries.length > 0 && (
-        <CollectorInteractionsChart data={stats.interactionsTimeSeries} />
-      )}
-
       {/* Charts Section - Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {stats?.dropsByStatus && Object.keys(stats.dropsByStatus).length > 0 && (
@@ -184,9 +177,6 @@ function DashboardContent({ stats, loading, error }: any) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {stats?.applicationsByStatus && Object.keys(stats.applicationsByStatus).length > 0 && (
           <ApplicationsStatus data={stats.applicationsByStatus} />
-        )}
-        {stats?.ticketsByCategory && Object.keys(stats.ticketsByCategory).length > 0 && (
-          <TicketsByCategory data={stats.ticketsByCategory} />
         )}
       </div>
 
@@ -211,7 +201,7 @@ function DashboardContent({ stats, loading, error }: any) {
                       <div className="relative flex space-x-3">
                         <div>
                           <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${
-                            activity.type === 'user_registration' ? 'bg-blue-500' : 
+                            activity.type === 'user_registration' ? 'bg-[#00695C]' : 
                             activity.type === 'drop_created' ? 'bg-green-500' : 'bg-purple-500'
                           }`}>
                             <span className="text-white text-sm font-medium">
@@ -8176,14 +8166,28 @@ function AdminManagementContent() {
 // Reward Shop Content Component
 function RewardShopContent() {
   const [rewards, setRewards] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<'all' | 'collector' | 'household'>('all');
   const [activeSubCategory, setActiveSubCategory] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingReward, setEditingReward] = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [activeTab, setActiveTab] = useState<'rewards' | 'orders'>('rewards');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [customRejectionReason, setCustomRejectionReason] = useState<string>('');
 
-  // Reward categories and sub-categories
+  // Rejection reasons
+  const rejectionReasons = [
+    'Size not available',
+    'Item out of stock',
+    'Invalid delivery address',
+    'Other'
+  ];
   const categories = {
     collector: {
       name: 'Collector Rewards',
@@ -8203,11 +8207,15 @@ function RewardShopContent() {
     pointCost: 0,
     stock: 0,
     imageUrl: '',
-    isActive: true
+    isActive: true,
+    isFootwear: false,
+    isJacket: false,
+    isBottoms: false
   });
 
   useEffect(() => {
     fetchRewards();
+    fetchOrders();
   }, []);
 
   // Reset sub-category when main category changes
@@ -8254,6 +8262,9 @@ function RewardShopContent() {
             stock: 10,
             imageUrl: '/collection-bag.jpg',
             isActive: true,
+        isFootwear: false,
+        isJacket: false,
+        isBottoms: false,
             createdAt: new Date()
           },
           {
@@ -8267,6 +8278,9 @@ function RewardShopContent() {
             stock: 5,
             imageUrl: '/speaker.jpg',
             isActive: true,
+        isFootwear: false,
+        isJacket: false,
+        isBottoms: false,
             createdAt: new Date()
           }
         ];
@@ -8276,6 +8290,166 @@ function RewardShopContent() {
       console.error('Error fetching rewards:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      const response = await axios.get(buildApiUrl(API_ENDPOINTS.REWARDS.GET_ALL_REDEMPTIONS), config);
+      console.log('📊 Orders API Response:', response.data);
+      
+      // Handle the API response structure
+      let ordersData = [];
+      if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        ordersData = response.data.data;
+      } else if (response.data && Array.isArray(response.data)) {
+        ordersData = response.data;
+      }
+      
+      // Transform the data to match the expected format
+      const transformedOrders = ordersData.map((order: any) => ({
+        id: order._id || order.id,
+        _id: order._id || order.id,
+        userId: order.userId?._id || order.userId,
+        userName: order.userId?.name || order.userId?.email || 'Unknown User',
+        userEmail: order.userId?.email || 'N/A',
+        userPhone: order.userId?.phoneNumber || 'N/A',
+        userRoles: order.userId?.roles || [],
+        rewardItemId: order.rewardItemId?._id || order.rewardItemId,
+        rewardItemName: order.rewardItemName || order.rewardItemId?.name || 'Unknown Item',
+        rewardItemImage: order.rewardItemId?.imageUrl || '',
+        pointsSpent: order.pointsSpent || 0,
+        status: order.status || 'pending',
+        deliveryAddress: order.deliveryAddress || {},
+        selectedSize: order.selectedSize,
+        sizeType: order.sizeType,
+        trackingNumber: order.trackingNumber,
+        estimatedDelivery: order.estimatedDelivery ? new Date(order.estimatedDelivery) : null,
+        createdAt: new Date(order.createdAt),
+        updatedAt: new Date(order.updatedAt)
+      }));
+      
+      setOrders(transformedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const handleApproveOrder = async (orderId: string) => {
+    try {
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      // Call the approve endpoint which will generate shipping label and mark as confirmed
+      await axios.patch(buildApiUrl(API_ENDPOINTS.REWARDS.APPROVE_REDEMPTION(orderId)), {}, config);
+      
+      console.log(`✅ Order ${orderId} approved and shipping label generated`);
+      fetchOrders(); // Refresh orders
+    } catch (error) {
+      console.error('Error approving order:', error);
+    }
+  };
+
+  const handleDownloadShippingLabel = async (orderId: string) => {
+    try {
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      
+      if (!token) {
+        alert('No authentication token found. Please log in again.');
+        return;
+      }
+
+      // Fetch the PDF with proper authorization header
+      const response = await fetch(
+        buildApiUrl(API_ENDPOINTS.REWARDS.DOWNLOAD_SHIPPING_LABEL(orderId)),
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          alert('Unauthorized. Please log in again.');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create a blob URL and trigger download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `DHL_Shipping_Label_${orderId}.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+      
+      console.log(`📦 Shipping label downloaded for order ${orderId}`);
+    } catch (error) {
+      console.error('Error downloading shipping label:', error);
+      alert('Failed to download shipping label. Please try again.');
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      try {
+        let endpoint = '';
+        switch (newStatus) {
+          case 'approved':
+            endpoint = API_ENDPOINTS.REWARDS.APPROVE_REDEMPTION(orderId);
+            break;
+          case 'rejected':
+            endpoint = API_ENDPOINTS.REWARDS.REJECT_REDEMPTION(orderId);
+            break;
+          case 'delivered':
+            endpoint = API_ENDPOINTS.REWARDS.FULFILL_REDEMPTION(orderId);
+            break;
+          default:
+            throw new Error('Invalid status');
+        }
+
+        await axios.patch(buildApiUrl(endpoint), {}, config);
+        console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
+        fetchOrders(); // Refresh orders
+      } catch (apiError) {
+        console.log('API not available, updating local state');
+        // Update local state
+        setOrders(prev => prev.map(order => 
+          order.id === orderId || order._id === orderId 
+            ? { ...order, status: newStatus, updatedAt: new Date() }
+            : order
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
     }
   };
 
@@ -8296,15 +8470,36 @@ function RewardShopContent() {
 
       // Try API first, fallback to mock data if not available
       try {
+        console.log('🔍 Debug - editingReward:', editingReward);
+        console.log('🔍 Debug - newReward:', newReward);
+        if (editingReward) {
+          console.log('🔍 Debug - API URL:', buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward._id || editingReward.id)));
+        } else {
+          console.log('🔍 Debug - API URL:', buildApiUrl(API_ENDPOINTS.REWARDS.CREATE));
+        }
+        
+        console.log('🔍 Debug - newReward data:', newReward);
+        
         if (editingReward) {
           // Update existing reward
-          await axios.put(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward.id)), newReward, config);
+          await axios.patch(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward._id || editingReward.id)), newReward, config);
         } else {
           // Create new reward
           await axios.post(buildApiUrl(API_ENDPOINTS.REWARDS.CREATE), newReward, config);
         }
         console.log('✅ Reward saved via API');
       } catch (apiError: any) {
+        console.error('❌ API Error:', apiError);
+        console.error('❌ Error response:', apiError.response?.data);
+        console.error('❌ Error status:', apiError.response?.status);
+        console.error('❌ Request data:', newReward);
+        
+        if (apiError.response?.status === 400) {
+          console.error('❌ Validation Error Details:', apiError.response?.data);
+          setError(`Validation Error: ${apiError.response?.data?.message || 'Invalid data provided'}`);
+          return;
+        }
+        
         if (apiError.response?.status === 404) {
           console.log('📝 API not available, using mock data for reward creation');
           usedMockData = true;
@@ -8312,7 +8507,7 @@ function RewardShopContent() {
           // For now, just add to local state as mock data
           const newRewardWithId = {
             ...newReward,
-            id: editingReward ? editingReward.id : `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: editingReward ? (editingReward.id || editingReward._id) : `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             _id: editingReward ? editingReward._id : `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             createdAt: editingReward ? editingReward.createdAt : new Date()
           };
@@ -8320,14 +8515,17 @@ function RewardShopContent() {
           if (editingReward) {
             // Update existing reward in local state
             setRewards(prev => prev.map(reward => 
-              reward.id === editingReward.id ? newRewardWithId : reward
+              (reward.id === editingReward.id || reward._id === editingReward._id) ? newRewardWithId : reward
             ));
           } else {
             // Add new reward to local state
             setRewards(prev => [...prev, newRewardWithId]);
           }
         } else {
-          throw apiError; // Re-throw if it's not a 404 error
+          // Handle other errors (401, 403, 500, etc.)
+          console.error('❌ Other API Error:', apiError.response?.status, apiError.response?.data);
+          setError(`API Error (${apiError.response?.status}): ${apiError.response?.data?.message || apiError.message}`);
+          return;
         }
       }
 
@@ -8341,7 +8539,10 @@ function RewardShopContent() {
         pointCost: 0,
         stock: 0,
         imageUrl: '',
-        isActive: true
+        isActive: true,
+        isFootwear: false,
+        isJacket: false,
+        isBottoms: false
       });
       
       // Only fetch from API if we didn't use mock data
@@ -8361,7 +8562,10 @@ function RewardShopContent() {
         pointCost: 0,
         stock: 0,
         imageUrl: '',
-        isActive: true
+        isActive: true,
+        isFootwear: false,
+        isJacket: false,
+        isBottoms: false
       });
     }
   };
@@ -8418,6 +8622,41 @@ function RewardShopContent() {
         <p className="text-purple-100 text-lg">Manage reward items that users can redeem with their points</p>
       </div>
 
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 mb-6">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('rewards')}
+            className={`flex-1 px-6 py-4 text-center font-semibold transition-all ${
+              activeTab === 'rewards'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+            }`}
+          >
+            <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+            Reward Items ({rewards.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`flex-1 px-6 py-4 text-center font-semibold transition-all ${
+              activeTab === 'orders'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+            }`}
+          >
+            <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            Orders ({orders.length})
+          </button>
+        </div>
+      </div>
+
+      {/* Reward Items Tab Content */}
+      {activeTab === 'rewards' && (
+        <>
       {/* Controls */}
       <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
@@ -8480,7 +8719,13 @@ function RewardShopContent() {
 
       {/* Rewards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {(filteredRewards || []).map((reward, index) => {
+        {(filteredRewards || [])
+          .filter((reward, index, self) => {
+            // Remove duplicates based on id or _id
+            const identifier = reward.id || reward._id;
+            return identifier ? self.findIndex(r => (r.id || r._id) === identifier) === index : true;
+          })
+          .map((reward, index) => {
           // Create a unique key that combines multiple identifiers
           const uniqueKey = reward.id || reward._id || `reward-${reward.name}-${reward.category}-${reward.subCategory}-${index}`;
           return (
@@ -8606,7 +8851,10 @@ function RewardShopContent() {
                       pointCost: 0,
                       stock: 0,
                       imageUrl: '',
-                      isActive: true
+                      isActive: true,
+                      isFootwear: false,
+                      isJacket: false,
+                      isBottoms: false
                     });
                   }}
                   className="text-gray-400 hover:text-gray-600"
@@ -8654,6 +8902,54 @@ function RewardShopContent() {
                       ))}
                     </select>
                   </div>
+
+                  {/* Wearable Type Checkboxes - Only show for Equipment subcategory */}
+                  {newReward.subCategory === 'Equipment' && (
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Wearable Types (check all that apply)</label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="isFootwear"
+                            checked={newReward.isFootwear}
+                            onChange={(e) => setNewReward({...newReward, isFootwear: e.target.checked})}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="isFootwear" className="ml-2 block text-sm text-gray-700">
+                            👟 Footwear (requires shoe size)
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="isJacket"
+                            checked={newReward.isJacket}
+                            onChange={(e) => setNewReward({...newReward, isJacket: e.target.checked})}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="isJacket" className="ml-2 block text-sm text-gray-700">
+                            🧥 Jackets (requires clothing size)
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="isBottoms"
+                            checked={newReward.isBottoms}
+                            onChange={(e) => setNewReward({...newReward, isBottoms: e.target.checked})}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="isBottoms" className="ml-2 block text-sm text-gray-700">
+                            👖 Bottoms (requires clothing size)
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Users will be required to select sizes for checked items during redemption
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Point Cost</label>
@@ -8725,7 +9021,10 @@ function RewardShopContent() {
                       pointCost: 0,
                       stock: 0,
                       imageUrl: '',
-                      isActive: true
+                      isActive: true,
+                      isFootwear: false,
+                      isJacket: false,
+                      isBottoms: false
                     });
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -8740,6 +9039,274 @@ function RewardShopContent() {
                   {uploadingImage ? 'Uploading...' : (editingReward ? 'Update Reward' : 'Create Reward')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* Orders Tab Content */}
+      {activeTab === 'orders' && (
+        <div className="space-y-6">
+          {ordersLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-600"></div>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
+                <p className="text-gray-600">Orders will appear here when users redeem rewards.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {orders.map((order) => (
+                <div key={order.id || order._id} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    {/* Order Info */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start gap-3">
+                          {/* Product Image */}
+                          {order.rewardItemImage && (
+                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                              <img 
+                                src={order.rewardItemImage} 
+                                alt={order.rewardItemName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">{order.rewardItemName}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Order #{(order.id || order._id).slice(-8)}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'processing' ? 'bg-purple-100 text-purple-800' :
+                          order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                          order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                          order.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {order.status.toUpperCase()}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-600 font-medium">Customer</p>
+                          <p className="text-gray-900 font-semibold">{order.userName}</p>
+                          <p className="text-gray-600 text-sm">📧 {order.userEmail}</p>
+                          <p className="text-gray-600 text-sm">📞 {order.userPhone}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {order.userRoles.map((role: string) => (
+                              <span key={role} className={`px-2 py-1 text-xs rounded-full ${
+                                role === 'collector' ? 'bg-blue-100 text-blue-800' :
+                                role === 'household' ? 'bg-green-100 text-green-800' :
+                                role === 'admin' || role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {role.replace('_', ' ').toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 font-medium">Delivery Address</p>
+                          <p className="text-gray-900">
+                            {order.deliveryAddress?.street}, {order.deliveryAddress?.city}
+                          </p>
+                          <p className="text-gray-600">
+                            {order.deliveryAddress?.state} {order.deliveryAddress?.zipCode}, {order.deliveryAddress?.country}
+                          </p>
+                          <p className="text-gray-600">📞 {order.deliveryAddress?.phoneNumber}</p>
+                          
+                          {/* Tracking Information */}
+                          {order.trackingNumber && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                              <p className="text-blue-800 font-medium text-sm">📦 Tracking Information</p>
+                              <p className="text-blue-700 text-sm">Tracking: {order.trackingNumber}</p>
+                              {order.estimatedDelivery && (
+                                <p className="text-blue-600 text-xs">
+                                  Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {order.selectedSize && (
+                        <div className="mt-3">
+                          <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
+                            Size: {order.selectedSize} ({order.sizeType})
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                        <span className="font-semibold text-purple-600">{order.pointsSpent} Points</span>
+                        <span>•</span>
+                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2">
+                      {order.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleApproveOrder(order.id || order._id)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRejectingOrderId(order.id || order._id);
+                              setShowRejectModal(true);
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {(order.status === 'approved' || order.status === 'processing' || order.status === 'shipped') && (
+                        <>
+                          <button
+                            onClick={() => handleDownloadShippingLabel(order.id || order._id)}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold flex items-center gap-2"
+                          >
+                            📦 Download DHL Label
+                          </button>
+                          <button
+                            onClick={() => updateOrderStatus(order.id || order._id, 'delivered')}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-semibold"
+                          >
+                            Mark as Delivered
+                          </button>
+                        </>
+                      )}
+                      {order.status === 'delivered' && (
+                        <span className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-center text-sm font-semibold">
+                          ✓ Completed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reject Order</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for rejection
+                </label>
+                <select
+                  value={rejectionReason}
+                  onChange={(e) => {
+                    setRejectionReason(e.target.value);
+                    if (e.target.value !== 'Other') {
+                      setCustomRejectionReason('');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a reason</option>
+                  {rejectionReasons.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {rejectionReason === 'Other' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom reason
+                  </label>
+                  <textarea
+                    value={customRejectionReason}
+                    onChange={(e) => setCustomRejectionReason(e.target.value)}
+                    placeholder="Please specify the reason..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason('');
+                  setCustomRejectionReason('');
+                  setRejectingOrderId(null);
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!rejectionReason) return;
+                  
+                  const finalReason = rejectionReason === 'Other' ? customRejectionReason : rejectionReason;
+                  if (!finalReason.trim()) return;
+
+                  try {
+                    const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+                    const config = {
+                      headers: { Authorization: `Bearer ${token}` }
+                    };
+
+                    await axios.patch(
+                      buildApiUrl(API_ENDPOINTS.REWARDS.REJECT_REDEMPTION(rejectingOrderId!)),
+                      { reason: finalReason },
+                      config
+                    );
+
+                    // Refresh orders
+                    await fetchOrders();
+                    
+                    // Close modal
+                    setShowRejectModal(false);
+                    setRejectionReason('');
+                    setCustomRejectionReason('');
+                    setRejectingOrderId(null);
+                  } catch (error) {
+                    console.error('Error rejecting order:', error);
+                  }
+                }}
+                disabled={!rejectionReason || (rejectionReason === 'Other' && !customRejectionReason.trim())}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Reject Order
+              </button>
             </div>
           </div>
         </div>

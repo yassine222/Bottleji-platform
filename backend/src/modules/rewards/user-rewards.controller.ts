@@ -1,8 +1,12 @@
 import {
   Controller,
   Get,
+  Post,
+  Patch,
+  Delete,
   Param,
   Query,
+  Body,
   UseGuards,
   HttpStatus,
   HttpCode,
@@ -12,6 +16,7 @@ import { RewardsService } from './rewards.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../users/schemas/user.schema';
 import { UserRole } from '../users/schemas/user.schema';
+import { CreateRedemptionDto } from './dto/reward-redemption.dto';
 
 @Controller('rewards')
 @UseGuards(JwtAuthGuard)
@@ -71,6 +76,45 @@ export class UserRewardsController {
     return {
       success: true,
       data: redemptions,
+    };
+  }
+
+  /**
+   * Redeem a reward item
+   * POST /rewards/shop/redeem
+   */
+  @Post('shop/redeem')
+  @HttpCode(HttpStatus.CREATED)
+  async redeemReward(@Request() req: any, @Body() createRedemptionDto: CreateRedemptionDto) {
+    const user = req.user;
+    
+    // Ensure user can only redeem for themselves
+    if (createRedemptionDto.userId !== user._id.toString()) {
+      throw new Error('Unauthorized: Cannot redeem for other users');
+    }
+
+    const redemption = await this.rewardsService.redeemReward(createRedemptionDto);
+    
+    return {
+      success: true,
+      data: redemption,
+      message: 'Reward redeemed successfully! Your order is pending approval.',
+    };
+  }
+
+  /**
+   * Cancel a redemption
+   * DELETE /rewards/redemptions/:id
+   */
+  @Delete('redemptions/:id')
+  async cancelRedemption(@Request() req: any, @Param('id') redemptionId: string) {
+    const user = req.user;
+    const redemption = await this.rewardsService.cancelRedemption(redemptionId, user._id.toString());
+    
+    return {
+      success: true,
+      data: redemption,
+      message: 'Redemption cancelled successfully. Points have been refunded.',
     };
   }
 }

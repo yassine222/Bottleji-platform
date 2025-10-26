@@ -294,24 +294,10 @@ export class DropoffsService {
         ];
       }
 
-      console.log('findAvailableForCollectors query:', JSON.stringify(query, null, 2));
-      console.log('excludeCollectorId:', excludeCollectorId);
-
       const result = await this.dropoffModel.find(query).exec();
-      
-      console.log('findAvailableForCollectors result count:', result.length);
-      console.log('findAvailableForCollectors result:', result.map(d => ({
-        id: d._id,
-        status: d.status,
-        userId: d.userId,
-        cancelledByCollectorIds: d.cancelledByCollectorIds,
-        isSuspicious: d.isSuspicious,
-        cancellationCount: d.cancellationCount,
-      })));
 
       return result;
     } catch (error) {
-      console.error('Error in findAvailableForCollectors:', error);
       throw error;
     }
   }
@@ -528,7 +514,7 @@ export class DropoffsService {
       dropoffId: id,
       interactionType: InteractionType.COLLECTED,
       interactionTime: new Date(),
-      dropoffStatus: DropoffStatus.COLLECTED, // Set to COLLECTED, not the old status
+      dropoffStatus: DropoffStatus.COLLECTED,
       numberOfItems: dropoff.numberOfBottles + dropoff.numberOfCans,
       bottleType: dropoff.bottleType,
       location: dropoff.location,
@@ -543,39 +529,22 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
-    // Find and complete the collection attempt
-    const collectionAttempt = await this.collectionAttemptModel.findOne({
-      dropoffId: id,
-      collectorId: acceptedInteraction.collectorId,
-      status: 'active',
-    }).exec();
-
-    if (collectionAttempt) {
-      console.log('Found collection attempt to complete:', collectionAttempt._id);
-      await this.completeCollectionAttempt(collectionAttempt._id.toString(), 'collected', {
-        reason: 'Successfully collected',
-        notes: 'Drop collected successfully',
-        location: dropoff.location,
-      });
-    } else {
-      console.log('No active collection attempt found for this drop');
-    }
-
-         // Award points to collector for successful collection
-         try {
-           const rewardResult = await this.rewardsService.awardPointsForCollection(
-             acceptedInteraction.collectorId.toString(),
-             id
-           );
+    // Award points to collector for successful collection
+    let rewardResult: any = null;
+    try {
+      rewardResult = await this.rewardsService.awardPointsForCollection(
+        acceptedInteraction.collectorId.toString(),
+        id
+      );
            
-           console.log('🎉 Collector reward - Points awarded:', {
-             collectorId: acceptedInteraction.collectorId,
-             pointsAwarded: rewardResult.pointsAwarded,
-             newTier: rewardResult.newTier.name,
-             tierUpgraded: rewardResult.tierUpgraded,
-             totalPoints: rewardResult.totalPoints,
-             totalDrops: rewardResult.totalDrops
-           });
+      console.log('🎉 Collector reward - Points awarded:', {
+        collectorId: acceptedInteraction.collectorId,
+        pointsAwarded: rewardResult.pointsAwarded,
+        newTier: rewardResult.newTier.name,
+        tierUpgraded: rewardResult.tierUpgraded,
+        totalPoints: rewardResult.totalPoints,
+        totalDrops: rewardResult.totalDrops
+      });
 
            // Send tier upgrade notification if applicable
            if (rewardResult.tierUpgraded) {
@@ -664,7 +633,17 @@ export class DropoffsService {
 
     console.log(`📱 Drop collected notification sent to user ${dropoff.userId}`);
 
-    return updatedDropoff;
+    // Return both the updated dropoff and reward information for the collector
+    return {
+      ...(updatedDropoff?.toObject() || {}),
+      rewardData: {
+        pointsAwarded: rewardResult?.pointsAwarded || 0,
+        currentTier: rewardResult?.newTier || { tier: 1, name: 'Bronze Collector', pointsPerDrop: 8 },
+        totalPoints: rewardResult?.totalPoints || 0,
+        tierUpgraded: rewardResult?.tierUpgraded || false,
+        totalDrops: rewardResult?.totalDrops || 0
+      }
+    };
   }
 
   async cancelAcceptedDrop(id: string, reason?: string, cancelledByCollectorId?: string): Promise<Dropoff> {
@@ -1243,6 +1222,8 @@ export class DropoffsService {
     const interaction = new this.interactionModel(interactionData);
     return interaction.save();
   }
+
+  // Collection Attempt Tracking Methods (New System)
 
   async getCollectorStats(collectorId: string, timeRange?: string) {
     const now = new Date();
