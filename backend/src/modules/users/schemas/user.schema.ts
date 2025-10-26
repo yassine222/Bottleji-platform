@@ -173,6 +173,9 @@ export class User extends Document {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+// Export the document type
+export type UserDocument = User & Document;
+
 // Add virtual id field to convert _id to id
 UserSchema.virtual('id').get(function(this: any) {
   return this._id.toHexString();
