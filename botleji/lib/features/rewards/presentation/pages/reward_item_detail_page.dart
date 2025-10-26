@@ -102,7 +102,7 @@ class RewardItemDetailPage extends StatelessWidget {
             // Category and Subcategory
             Row(
               children: [
-                _buildInfoChip(context, item.category, Icons.category),
+                _buildInfoChip(context, item.category.name, Icons.category),
                 const SizedBox(width: 8),
                 if (item.subCategory != null) ...[
                   _buildInfoChip(context, item.subCategory!, Icons.label),

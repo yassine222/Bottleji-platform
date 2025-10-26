@@ -58,6 +58,11 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
 
       final items = itemsData.map((json) => RewardItem.fromJson(json)).toList();
       
+      print('🎯 RewardShopProvider: Received ${items.length} items after filtering');
+      for (var item in items) {
+        print('🎯 RewardShopProvider: Item "${item.name}" - Category: ${item.category.value}, SubCategory: ${item.subCategory}');
+      }
+      
       state = state.copyWith(
         items: items,
         isLoading: false,
@@ -74,6 +79,7 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
   }
 
   void setCategory(String? category) {
+    print('🎯 RewardShopProvider: Setting category filter to: $category');
     state = state.copyWith(selectedCategory: category);
     loadRewardItems(category: category);
   }

@@ -158,6 +158,8 @@ class RewardService {
       print('🎯 RewardService: Query params: $queryParams');
       final response = await dio.get('/rewards/items', queryParameters: queryParams);
       
+      print('🎯 RewardService: Filter request - category: $category, subCategory: $subCategory');
+      
       print('🎯 RewardService: Response status: ${response.statusCode}');
       print('🎯 RewardService: Response data: ${response.data}');
 
