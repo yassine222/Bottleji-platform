@@ -10,6 +10,7 @@ import '../../../drops/controllers/drops_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/local_notification_service.dart';
+import '../../../../core/services/network_detection_service.dart';
 import '../../controllers/collector_subscription_controller.dart';
 import '../../../collector/controllers/collector_application_controller.dart';
 import '../../data/models/user_data.dart' as auth_models;
@@ -472,9 +473,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   }
 
   // WebSocket notification methods
-  void _connectToNotifications(String token, WidgetRef ref) {
+  void _connectToNotifications(String token, WidgetRef ref) async {
     try {
       print('🔌 AuthProvider: Setting up WebSocket connection...');
+      
+      // Wait for network detection to complete
+      print('🔌 AuthProvider: Waiting for network detection...');
+      await NetworkDetectionService.getOptimalServerIp();
+      print('🔌 AuthProvider: Network detection completed');
+      
       final notificationService = ref.read(notificationServiceProvider);
       
       // Set up force logout callback
@@ -509,10 +516,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   }
 
   /// Connect to WebSocket on app startup (without WidgetRef)
-  void _connectToNotificationsOnStartup(String token) {
+  void _connectToNotificationsOnStartup(String token) async {
     try {
       print('🔌 AuthProvider: Setting up WebSocket connection on startup...');
       print('🔌 AuthProvider: Token length: ${token.length}');
+      
+      // Wait for network detection to complete
+      print('🔌 AuthProvider: Waiting for network detection...');
+      await NetworkDetectionService.getOptimalServerIp();
+      print('🔌 AuthProvider: Network detection completed');
+      
       final notificationService = _ref.read(notificationServiceProvider);
       
       // Set up force logout callback
