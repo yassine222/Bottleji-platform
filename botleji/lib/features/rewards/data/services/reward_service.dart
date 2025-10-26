@@ -154,36 +154,23 @@ class RewardService {
       if (subCategory != null) queryParams['subCategory'] = subCategory;
       if (isActive != null) queryParams['isActive'] = isActive;
 
-      print('🎯 RewardService: Making request to: $baseUrl/rewards/items');
-      print('🎯 RewardService: Query params: $queryParams');
       final response = await dio.get('/rewards/items', queryParameters: queryParams);
-      
-      print('🎯 RewardService: Filter request - category: $category, subCategory: $subCategory');
-      
-      print('🎯 RewardService: Response status: ${response.statusCode}');
-      print('🎯 RewardService: Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('🎯 RewardService: Processing response data: $data');
         if (data is Map && data.containsKey('data')) {
           final items = List<Map<String, dynamic>>.from(data['data'] ?? []);
-          print('🎯 RewardService: Found ${items.length} reward items');
           return items;
         } else if (data is List) {
           final items = List<Map<String, dynamic>>.from(data);
-          print('🎯 RewardService: Found ${items.length} reward items (direct list)');
           return items;
         } else {
-          print('🎯 RewardService: No items found in response');
           return [];
         }
       } else {
-        print('🎯 RewardService: Failed with status: ${response.statusCode}');
         throw Exception('Failed to load reward items: ${response.statusCode}');
       }
     } catch (e) {
-      print('🎯 RewardService: Error fetching reward items: $e');
       rethrow;
     }
   }

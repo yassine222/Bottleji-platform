@@ -44,17 +44,14 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
     String? category,
     String? subCategory,
   }) async {
-    print('🎯 RewardShopProvider: Starting loadRewardItems with category: $category, subCategory: $subCategory');
     state = state.copyWith(isLoading: true, error: null);
     
     try {
-      print('🎯 RewardShopProvider: Calling RewardService.getRewardItems...');
       final itemsData = await RewardService.getRewardItems(
         category: category,
         subCategory: subCategory,
         isActive: true, // Only show active items
       );
-      print('🎯 RewardShopProvider: Got ${itemsData.length} items from service');
 
       final allItems = itemsData.map((json) => RewardItem.fromJson(json)).toList();
       
@@ -63,17 +60,10 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
       
       if (category != null) {
         filteredItems = allItems.where((item) => item.category.value == category).toList();
-        print('🎯 RewardShopProvider: Client-side filtering by category "$category": ${filteredItems.length} items');
       }
       
       if (subCategory != null) {
         filteredItems = filteredItems.where((item) => item.subCategory == subCategory).toList();
-        print('🎯 RewardShopProvider: Client-side filtering by subCategory "$subCategory": ${filteredItems.length} items');
-      }
-      
-      print('🎯 RewardShopProvider: Final filtered items: ${filteredItems.length}');
-      for (var item in filteredItems) {
-        print('🎯 RewardShopProvider: Item "${item.name}" - Category: ${item.category.value}, SubCategory: ${item.subCategory}');
       }
       
       state = state.copyWith(
@@ -83,7 +73,6 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
         selectedSubCategory: subCategory,
       );
     } catch (e) {
-      print('🎯 RewardShopProvider: Error loading reward items: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -92,7 +81,6 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
   }
 
   void setCategory(String? category) {
-    print('🎯 RewardShopProvider: Setting category filter to: $category');
     state = state.copyWith(selectedCategory: category);
     loadRewardItems(category: category);
   }
