@@ -56,15 +56,28 @@ class RewardShopNotifier extends StateNotifier<RewardShopState> {
       );
       print('🎯 RewardShopProvider: Got ${itemsData.length} items from service');
 
-      final items = itemsData.map((json) => RewardItem.fromJson(json)).toList();
+      final allItems = itemsData.map((json) => RewardItem.fromJson(json)).toList();
       
-      print('🎯 RewardShopProvider: Received ${items.length} items after filtering');
-      for (var item in items) {
+      // Apply client-side filtering as fallback
+      List<RewardItem> filteredItems = allItems;
+      
+      if (category != null) {
+        filteredItems = allItems.where((item) => item.category.value == category).toList();
+        print('🎯 RewardShopProvider: Client-side filtering by category "$category": ${filteredItems.length} items');
+      }
+      
+      if (subCategory != null) {
+        filteredItems = filteredItems.where((item) => item.subCategory == subCategory).toList();
+        print('🎯 RewardShopProvider: Client-side filtering by subCategory "$subCategory": ${filteredItems.length} items');
+      }
+      
+      print('🎯 RewardShopProvider: Final filtered items: ${filteredItems.length}');
+      for (var item in filteredItems) {
         print('🎯 RewardShopProvider: Item "${item.name}" - Category: ${item.category.value}, SubCategory: ${item.subCategory}');
       }
       
       state = state.copyWith(
-        items: items,
+        items: filteredItems,
         isLoading: false,
         selectedCategory: category,
         selectedSubCategory: subCategory,
