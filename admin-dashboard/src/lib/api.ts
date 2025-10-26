@@ -52,14 +52,14 @@ api.interceptors.response.use(
     
     // Log the full error for debugging
     console.error('❌ Full Error Details:', {
-      message: error.message,
-      code: error.code,
-      status: error.response?.status,
-      data: error.response?.data,
+      message: error.message || 'Unknown error',
+      code: error.code || 'No error code',
+      status: error.response?.status || 'No status',
+      data: error.response?.data || 'No response data',
       config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        timeout: error.config?.timeout,
+        url: error.config?.url || 'No URL',
+        method: error.config?.method || 'No method',
+        timeout: error.config?.timeout || 'No timeout',
       }
     });
     

@@ -10,6 +10,7 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
+  GiftIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Users', id: 'users', icon: UsersIcon },
   { name: 'Drops', id: 'drops', icon: CubeIcon },
   { name: 'Applications', id: 'applications', icon: ClipboardDocumentListIcon },
+  { name: 'Reward Shop', id: 'reward-shop', icon: GiftIcon },
   { name: 'Training', id: 'training', icon: AcademicCapIcon },
   { name: 'Support', id: 'support', icon: ChatBubbleLeftRightIcon },
   { name: 'Settings', id: 'settings', icon: Cog6ToothIcon },

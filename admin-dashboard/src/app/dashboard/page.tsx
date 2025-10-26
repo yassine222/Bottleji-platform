@@ -25,6 +25,8 @@ import {
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
 import { supportTicketsAPI, trainingAPI } from '@/lib/api';
+import { API_ENDPOINTS, buildApiUrl, getEndpoint } from '@/lib/apiEndpoints';
+import RewardImageUpload from '@/components/rewards/RewardImageUpload';
 import { CollectorApplication } from '@/types';
 import { UserRole } from '@/types';
 import {
@@ -40,7 +42,7 @@ import FileUpload from '@/components/training/FileUpload';
 import VideoPlayer from '@/components/training/VideoPlayer';
 import VideoModal from '@/components/training/VideoModal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://172.20.10.12:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
@@ -473,11 +475,15 @@ function UsersContent() {
     
     if (confirmed) {
       try {
-        const response = await fetch(`/api/admin/drops-management/reports/${reportId}/action/${dropId}`, {
+        // NEW: Using centralized API endpoint
+        const reportActionUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.REPORT_ACTION, reportId, dropId));
+        const response = await fetch(reportActionUrl, {
+        // OLD: Hardcoded URL (commented for fallback)
+        // const response = await fetch(`/api/admin/drops-management/reports/${reportId}/action/${dropId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token')}`
           },
           body: JSON.stringify({ action })
         });
@@ -1647,6 +1653,29 @@ function DropsContent() {
   const [successRate, setSuccessRate] = useState<any>(null);
   const [collectorLeaderboard, setCollectorLeaderboard] = useState<any[]>([]);
   const [householdRankings, setHouseholdRankings] = useState<any[]>([]);
+
+  // Helper function for copying text to clipboard
+  const copyToClipboard = (text: string) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      });
+    } else {
+      // Fallback for browsers without clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  };
   const [oldDrops, setOldDrops] = useState<any[]>([]);
   const [selectedOldDrops, setSelectedOldDrops] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1683,14 +1712,37 @@ function DropsContent() {
   const [dropDetailsContext, setDropDetailsContext] = useState<'default' | 'flagged'>('default');
 
   useEffect(() => {
-    fetchAllData();
-    fetchDropsList();
-    // Load counts for all tabs on initial load
-    fetchReportedDrops();
-    fetchFlaggedDrops();
-    fetchCollectedDrops();
-    fetchStaleDrops();
-    fetchCensoredDrops();
+    const initializeDropsData = async () => {
+      try {
+        console.log('🚀 Initializing drops data...');
+        await fetchAllData();
+        await fetchDropsList();
+        // Load counts for all tabs on initial load
+        await Promise.allSettled([
+          fetchReportedDrops(),
+          fetchFlaggedDrops(),
+          fetchCollectedDrops(),
+          fetchStaleDrops(),
+          fetchCensoredDrops()
+        ]);
+        console.log('✅ Drops data initialization completed');
+      } catch (error) {
+        console.error('❌ Error initializing drops data:', error);
+      } finally {
+        // Ensure loading is always set to false
+        setLoading(false);
+      }
+    };
+
+    initializeDropsData();
+
+    // Fallback timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('⏰ Drops data loading timeout - forcing loading to false');
+      setLoading(false);
+    }, 30000); // 30 second timeout
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -1723,7 +1775,7 @@ function DropsContent() {
   const fetchDropsList = async () => {
     try {
       setDropsLoading(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const params = new URLSearchParams();
@@ -1735,10 +1787,20 @@ function DropsContent() {
       
       console.log('📋 Fetching drops list with params:', params.toString());
       
-      const response = await axios.get(
-        `${API_URL}/admin/drops-management/list?${params.toString()}`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const dropsListUrl = buildApiUrl(API_ENDPOINTS.DROPS.LIST, {
+        status: selectedStatus,
+        search: searchQuery,
+        hasAttempts: showWithAttempts ? 'true' : undefined,
+        page: currentPage,
+        limit: 10
+      });
+      const response = await axios.get(dropsListUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops-management/list?${params.toString()}`,
+      //   config
+      // );
       
       console.log('📋 Drops list response:', response.data);
       console.log('📋 First drop sample:', response.data.drops?.[0]);
@@ -1758,15 +1820,19 @@ function DropsContent() {
   const fetchReportedDrops = async () => {
     try {
       setLoadingReportedDrops(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       console.log('📋 Fetching reported drops...');
       
-      const response = await axios.get(
-        `${API_URL}/admin/drops-management/reported`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const reportedDropsUrl = buildApiUrl(API_ENDPOINTS.DROPS.REPORTED);
+      const response = await axios.get(reportedDropsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops-management/reported`,
+      //   config
+      // );
       
       console.log('📋 Reported drops response:', response.data);
       console.log('📋 Total reported drops:', response.data.reports?.length);
@@ -1783,15 +1849,19 @@ function DropsContent() {
   const fetchFlaggedDrops = async () => {
     try {
       setLoadingFlaggedDrops(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching flagged drops...');
 
-      const response = await axios.get(
-        `${API_URL}/admin/drops-management/flagged`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const flaggedDropsUrl = buildApiUrl(API_ENDPOINTS.DROPS.FLAGGED);
+      const response = await axios.get(flaggedDropsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops-management/flagged`,
+      //   config
+      // );
 
       console.log('📋 Flagged drops response:', response.data);
       console.log('📋 Total flagged drops:', response.data.drops?.length);
@@ -1808,15 +1878,19 @@ function DropsContent() {
   const fetchCollectedDrops = async () => {
     try {
       setLoadingCollectedDrops(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching collected drops...');
 
-      const response = await axios.get(
-        `${API_URL}/admin/drops-management/list?status=collected&limit=1000`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const collectedDropsUrl = buildApiUrl(API_ENDPOINTS.DROPS.COLLECTED);
+      const response = await axios.get(collectedDropsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops-management/list?status=collected&limit=1000`,
+      //   config
+      // );
 
       console.log('📋 Collected drops response:', response.data);
       console.log('📋 Total collected drops:', response.data.drops?.length);
@@ -1845,15 +1919,19 @@ function DropsContent() {
   const fetchStaleDrops = async () => {
     try {
       setLoadingStaleDrops(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching stale drops...');
 
-      const response = await axios.get(
-        `${API_URL}/admin/drops-management/stale?limit=1000`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const staleDropsUrl = buildApiUrl(API_ENDPOINTS.DROPS.STALE);
+      const response = await axios.get(staleDropsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops-management/stale?limit=1000`,
+      //   config
+      // );
 
       console.log('📋 Stale drops response:', response.data);
       console.log('📋 Total stale drops:', response.data.drops?.length);
@@ -1870,15 +1948,19 @@ function DropsContent() {
   const fetchCensoredDrops = async () => {
     try {
       setLoadingCensoredDrops(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching censored drops...');
 
-      const response = await axios.get(
-        `${API_URL}/admin/drops?isCensored=true&limit=1000`,
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const censoredDropsUrl = buildApiUrl(API_ENDPOINTS.DROPS.CENSORED);
+      const response = await axios.get(censoredDropsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(
+      //   `${API_URL}/admin/drops?isCensored=true&limit=1000`,
+      //   config
+      // );
 
       console.log('📋 Censored drops response:', response.data);
       console.log('📋 Total censored drops:', response.data.drops?.length);
@@ -1895,34 +1977,105 @@ function DropsContent() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const [
-        statsRes,
-        timeRes,
-        successRes,
-        collectorRes,
-        householdRes,
-      ] = await Promise.all([
-        axios.get(`${API_URL}/admin/drops-management/stats`, config),
-        axios.get(`${API_URL}/admin/drops-management/analytics/time-based`, config),
-        axios.get(`${API_URL}/admin/drops-management/analytics/success-rate`, config),
-        axios.get(`${API_URL}/admin/drops-management/performance/collector-leaderboard?limit=5`, config),
-        axios.get(`${API_URL}/admin/drops-management/performance/household-rankings?limit=5`, config),
-      ]);
+      // Fetch each endpoint individually with error handling
+      const fetchWithTimeout = async (url: string, timeout = 10000) => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
+          
+          const response = await axios.get(url, {
+            ...config,
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            console.warn(`⏰ Request timeout for ${url}`);
+            return null;
+          }
+          console.error(`❌ Error fetching ${url}:`, error.message);
+          return null;
+        }
+      };
 
-      setStats(statsRes.data.stats);
-      setTimeBasedStats(timeRes.data.stats);
-      setSuccessRate(successRes.data.stats);
-      setCollectorLeaderboard(collectorRes.data.leaderboard);
-      setHouseholdRankings(householdRes.data.rankings);
+      console.log('📊 Fetching drops management data...');
+
+      // Fetch stats
+      // NEW: Using centralized API endpoint
+      const statsUrl = buildApiUrl(API_ENDPOINTS.DROPS.STATS);
+      const statsRes = await fetchWithTimeout(statsUrl);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const statsRes = await fetchWithTimeout(`${API_URL}/admin/drops-management/stats`);
+      if (statsRes) {
+        setStats(statsRes.data.stats);
+        console.log('✅ Stats loaded');
+      } else {
+        console.warn('⚠️ Stats failed to load');
+      }
+
+      // Fetch time-based analytics
+      // NEW: Using centralized API endpoint
+      const timeAnalyticsUrl = buildApiUrl(API_ENDPOINTS.DROPS.TIME_BASED_ANALYTICS);
+      const timeRes = await fetchWithTimeout(timeAnalyticsUrl);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const timeRes = await fetchWithTimeout(`${API_URL}/admin/drops-management/analytics/time-based`);
+      if (timeRes) {
+        setTimeBasedStats(timeRes.data.stats);
+        console.log('✅ Time-based analytics loaded');
+      } else {
+        console.warn('⚠️ Time-based analytics failed to load');
+      }
+
+      // Fetch success rate
+      // NEW: Using centralized API endpoint
+      const successRateUrl = buildApiUrl(API_ENDPOINTS.DROPS.SUCCESS_RATE);
+      const successRes = await fetchWithTimeout(successRateUrl);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const successRes = await fetchWithTimeout(`${API_URL}/admin/drops-management/analytics/success-rate`);
+      if (successRes) {
+        setSuccessRate(successRes.data.stats);
+        console.log('✅ Success rate loaded');
+      } else {
+        console.warn('⚠️ Success rate failed to load');
+      }
+
+      // Fetch collector leaderboard
+      // NEW: Using centralized API endpoint
+      const collectorLeaderboardUrl = buildApiUrl(API_ENDPOINTS.DROPS.COLLECTOR_LEADERBOARD, { limit: 5 });
+      const collectorRes = await fetchWithTimeout(collectorLeaderboardUrl);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const collectorRes = await fetchWithTimeout(`${API_URL}/admin/drops-management/performance/collector-leaderboard?limit=5`);
+      if (collectorRes) {
+        setCollectorLeaderboard(collectorRes.data.leaderboard);
+        console.log('✅ Collector leaderboard loaded');
+        console.log('🔍 Collector Leaderboard Full Response:', collectorRes.data);
+      } else {
+        console.warn('⚠️ Collector leaderboard failed to load');
+      }
+
+      // Fetch household rankings
+      // NEW: Using centralized API endpoint
+      const householdRankingsUrl = buildApiUrl(API_ENDPOINTS.DROPS.HOUSEHOLD_RANKINGS, { limit: 5 });
+      const householdRes = await fetchWithTimeout(householdRankingsUrl);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const householdRes = await fetchWithTimeout(`${API_URL}/admin/drops-management/performance/household-rankings?limit=5`);
+      if (householdRes) {
+        setHouseholdRankings(householdRes.data.rankings);
+        console.log('✅ Household rankings loaded');
+        console.log('🔍 Household Rankings Full Response:', householdRes.data);
+      } else {
+        console.warn('⚠️ Household rankings failed to load');
+      }
+
+      console.log('📊 Drops management data fetch completed');
       
-      // Debug: Log the data structure to see available fields
-      console.log('🔍 Collector Leaderboard Full Response:', collectorRes.data);
-      console.log('🔍 Household Rankings Full Response:', householdRes.data);
     } catch (error) {
-      console.error('Error fetching drops data:', error);
+      console.error('❌ Error in fetchAllData:', error);
     } finally {
       setLoading(false);
     }
@@ -1930,9 +2083,13 @@ function DropsContent() {
 
   const analyzeOldDrops = async () => {
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_URL}/admin/drops-management/analyze-old`, config);
+      // NEW: Using centralized API endpoint
+      const analyzeOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.ANALYZE_OLD);
+      const response = await axios.get(analyzeOldUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(`${API_URL}/admin/drops-management/analyze-old`, config);
       setOldDrops(response.data.drops);
       setShowOldDropsModal(true);
     } catch (error) {
@@ -1944,12 +2101,16 @@ function DropsContent() {
     if (selectedOldDrops.length === 0) return;
     
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.post(`${API_URL}/admin/drops-management/hide-old`, 
-        { dropIds: selectedOldDrops }, 
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const hideOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.HIDE_OLD);
+      await axios.post(hideOldUrl, { dropIds: selectedOldDrops }, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.post(`${API_URL}/admin/drops-management/hide-old`, 
+      //   { dropIds: selectedOldDrops }, 
+      //   config
+      // );
       
       alert(`${selectedOldDrops.length} drops hidden successfully and users notified!`);
       setShowOldDropsModal(false);
@@ -1965,9 +2126,13 @@ function DropsContent() {
     try {
       setDropDetailsLoading(true);
       setShowDropDetails(true);
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_URL}/admin/drops-management/details/${dropId}`, config);
+      // NEW: Using centralized API endpoint
+      const dropDetailsUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.GET_DETAILS, dropId));
+      const response = await axios.get(dropDetailsUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(`${API_URL}/admin/drops-management/details/${dropId}`, config);
       console.log('🔍 Drop details response:', response.data);
       console.log('🔍 Image URL from drop:', response.data.drop?.imageUrl);
       console.log('🔍 Collection attempts:', response.data.collectionAttempts);
@@ -1987,9 +2152,13 @@ function DropsContent() {
 
   const flagDrop = async (dropId: string) => {
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/flag/${dropId}`, { reason: 'Flagged by admin' }, config);
+      // NEW: Using centralized API endpoint
+      const flagDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.FLAG, dropId));
+      await axios.put(flagDropUrl, { reason: 'Flagged by admin' }, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.put(`${API_URL}/admin/drops-management/flag/${dropId}`, { reason: 'Flagged by admin' }, config);
       alert('Drop flagged successfully!');
       setShowDropDetails(false);
       fetchDropsList();
@@ -2002,9 +2171,13 @@ function DropsContent() {
 
   const unflagDrop = async (dropId: string) => {
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/unflag/${dropId}`, {}, config);
+      // NEW: Using centralized API endpoint
+      const unflagDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.UNFLAG, dropId));
+      await axios.put(unflagDropUrl, {}, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.put(`${API_URL}/admin/drops-management/unflag/${dropId}`, {}, config);
       alert('Flag removed successfully!');
       setShowDropDetails(false);
       fetchDropsList();
@@ -2025,12 +2198,16 @@ function DropsContent() {
   const submitCensor = async () => {
     if (!censorTargetDropId) return;
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const reasonPayload = censorNotes?.trim()
         ? `${selectedCensorReason}: ${censorNotes.trim()}`
         : selectedCensorReason;
-      await axios.put(`${API_URL}/admin/drops-management/censor/${censorTargetDropId}`, { reason: reasonPayload }, config);
+      // NEW: Using centralized API endpoint
+      const censorDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.CENSOR, censorTargetDropId));
+      await axios.put(censorDropUrl, { reason: reasonPayload }, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.put(`${API_URL}/admin/drops-management/censor/${censorTargetDropId}`, { reason: reasonPayload }, config);
       setShowCensorModal(false);
       setCensorTargetDropId(null);
       alert('Drop image censored, user notified, and warning added!');
@@ -2047,9 +2224,13 @@ function DropsContent() {
     if (!confirm('Are you sure you want to permanently delete this drop? This action cannot be undone.')) return;
     
     try {
-      const token = localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_URL}/admin/drops-management/delete/${dropId}`, {}, config);
+      // NEW: Using centralized API endpoint
+      const deleteDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.DELETE, dropId));
+      await axios.put(deleteDropUrl, {}, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.put(`${API_URL}/admin/drops-management/delete/${dropId}`, {}, config);
       alert('Drop deleted successfully and user notified!');
       setShowDropDetails(false);
       fetchDropsList();
@@ -2093,6 +2274,19 @@ function DropsContent() {
           <h1 className="text-4xl font-bold">Drops Management</h1>
         </div>
         <p className="text-blue-100 text-lg">Monitor, analyze, and manage all drops in the system</p>
+      </div>
+
+      {/* Analyze Old Drops Button */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={analyzeOldDrops}
+          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+          Analyze Old Drops
+        </button>
       </div>
 
       {/* Tabs */}
@@ -2382,94 +2576,132 @@ function DropsContent() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {dropsList.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                        No drops found
-                      </td>
-                    </tr>
-                  ) : (
-                    dropsList.map((drop: any, index: number) => (
-                      <tr key={drop.id || drop._id || `drop-${index}`} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                          {(drop.id || drop._id)?.substring(0, 8) || 'N/A'}...
-                        </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {typeof drop.userId === 'object' ? drop.userId?.name : 'User ID: ' + (drop.userId?.substring(0, 8) || 'Unknown')}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {typeof drop.userId === 'object' ? drop.userId?.email : ''}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        📍 {drop.location?.latitude?.toFixed(2)}, {drop.location?.longitude?.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <img src="/water-bottle.png" alt="Bottles" className="w-4 h-4" />
-                            <span>{drop.numberOfBottles}</span>
+            <div className="grid grid-cols-1 gap-4">
+              {dropsList.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No drops found</h3>
+                    <p className="text-gray-600">No drops match your current filters.</p>
+                  </div>
+                </div>
+              ) : (
+                dropsList.map((drop: any, index: number) => (
+                  <div key={drop.id || drop._id || `drop-${index}`} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          {/* Header with ID and Status */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                                <div className="flex items-center gap-2">
+                                  <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                    {drop.id || drop._id || 'N/A'}
+                                  </code>
+                                  <button
+                                    onClick={() => {
+                                      copyToClipboard(drop.id || drop._id || '');
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                    title="Copy ID to clipboard"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                drop.status === 'collected' ? 'bg-green-100 text-green-800' :
+                                drop.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                drop.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                drop.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                                'bg-orange-100 text-orange-800'
+                              }`}>
+                                {drop.status}
+                              </span>
+                              {drop.isSuspicious && (
+                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">⚠️ Flagged</span>
+                              )}
+                            </div>
                           </div>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <img src="/can.png" alt="Cans" className="w-4 h-4" />
-                            <span>{drop.numberOfCans}</span>
+
+                          {/* Content Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Created By */}
+                            <div className="space-y-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</span>
+                              <div className="text-sm font-medium text-gray-900">
+                                {typeof drop.userId === 'object' ? drop.userId?.name : 'User ID: ' + (drop.userId?.substring(0, 8) || 'Unknown')}
+                              </div>
+                              {typeof drop.userId === 'object' && drop.userId?.email && (
+                                <div className="text-sm text-gray-500">{drop.userId.email}</div>
+                              )}
+                            </div>
+
+                            {/* Items */}
+                            <div className="space-y-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Items</span>
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
+                                  <span className="text-sm font-medium text-gray-900">{drop.numberOfBottles}</span>
+                                  <span className="text-xs text-gray-500">bottles</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <img src="/can.png" alt="Cans" className="w-5 h-5" />
+                                  <span className="text-sm font-medium text-gray-900">{drop.numberOfCans}</span>
+                                  <span className="text-xs text-gray-500">cans</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Date Info */}
+                            <div className="space-y-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</span>
+                              <div className="text-sm text-gray-900">
+                                {new Date(drop.createdAt).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {(() => {
+                                  const created = new Date(drop.createdAt);
+                                  const now = new Date();
+                                  const days = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+                                  return days === 0 ? 'Today' : `${days} days ago`;
+                                })()}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          drop.status === 'collected' ? 'bg-green-100 text-green-800' :
-                          drop.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          drop.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                          drop.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
-                          {drop.status}
-                        </span>
-                        {drop.isSuspicious && (
-                          <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">⚠️ Flagged</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(drop.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {(() => {
-                          const created = new Date(drop.createdAt);
-                          const now = new Date();
-                          const days = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-                          return days === 0 ? 'Today' : `${days}d ago`;
-                        })()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => { setDropDetailsContext('default'); viewDropDetails(drop.id || drop._id); }}
-                          className="text-primary hover:text-primary-dark font-medium"
-                        >
-                          View Details →
-                        </button>
-                      </td>
-                    </tr>
-                  )))}
-                </tbody>
-              </table>
+
+                        {/* Action Button */}
+                        <div className="ml-4 flex-shrink-0">
+                          <button
+                            onClick={() => { setDropDetailsContext('default'); viewDropDetails(drop.id || drop._id); }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Pagination */}
@@ -2523,77 +2755,114 @@ function DropsContent() {
               <p className="text-gray-500">All reports have been reviewed or there are no pending reports.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drop Info</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reported At</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportedDrops.map((report: any, index: number) => (
-                    <tr key={report._id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {report._id?.substring(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {report.drop?.imageUrl && (
-                            <img
-                              className="h-10 w-10 rounded-lg object-cover mr-3"
-                              src={report.drop.imageUrl}
-                              alt="Drop image"
-                            />
-                          )}
-                          <div>
+            <div className="grid grid-cols-1 gap-4">
+              {reportedDrops.map((report: any, index: number) => (
+                <div key={report._id || index} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Header with Report ID and Reason */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Report ID</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {report._id || 'N/A'}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(report._id || '');
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Copy Report ID to clipboard"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            {report.reason?.replace('_', ' ').toUpperCase() || 'Unknown'}
+                          </span>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Drop Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Drop Info</span>
+                            <div className="flex items-center gap-3">
+                              {report.drop?.imageUrl && (
+                                <img
+                                  className="h-12 w-12 rounded-lg object-cover"
+                                  src={report.drop.imageUrl}
+                                  alt="Drop image"
+                                />
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {report.drop?.numberOfBottles || 0} bottles, {report.drop?.numberOfCans || 0} cans
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Status: {report.drop?.status || 'Unknown'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Reporter */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Reporter</span>
                             <div className="text-sm font-medium text-gray-900">
-                              {report.drop?.numberOfBottles || 0} bottles, {report.drop?.numberOfCans || 0} cans
+                              {report.reporter?.name || 'Unknown'}
                             </div>
                             <div className="text-sm text-gray-500">
-                              Status: {report.drop?.status || 'Unknown'}
+                              {report.reporter?.email || 'N/A'}
+                            </div>
+                          </div>
+
+                          {/* Date Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Reported At</span>
+                            <div className="text-sm text-gray-900">
+                              {new Date(report.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
                             </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {report.reporter?.name || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {report.reporter?.email || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          {report.reason?.replace('_', ' ').toUpperCase() || 'Unknown'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {report.details || 'No additional details'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+
+                        {/* Details */}
+                        {report.details && (
+                          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Details</span>
+                            <div className="text-sm text-gray-900 mt-1">
+                              {report.details}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="ml-4 flex-shrink-0">
                         <button
                           onClick={() => { setDropDetailsContext('default'); viewDropDetails(report.dropId); }}
-                          className="text-primary hover:text-primary-dark"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                         >
                           View Drop
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2622,55 +2891,96 @@ function DropsContent() {
               <p className="text-gray-500">There are currently no flagged drops.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cancels</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {flaggedDrops.map((drop: any, index: number) => (
-                    <tr key={drop._id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          {drop.suspiciousReason || 'Flagged'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {drop.status}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {drop.cancellationCount || 0}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {drop.createdAt ? new Date(drop.createdAt).toLocaleDateString() : '—'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <div className="grid grid-cols-1 gap-4">
+              {flaggedDrops.map((drop: any, index: number) => (
+                <div key={drop._id || index} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Header with ID and Status */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {drop._id || drop.id || 'N/A'}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(drop._id || drop.id || '');
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Copy ID to clipboard"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {drop.suspiciousReason || 'Flagged'}
+                            </span>
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              drop.status === 'collected' ? 'bg-green-100 text-green-800' :
+                              drop.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              drop.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                              drop.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                              'bg-orange-100 text-orange-800'
+                            }`}>
+                              {drop.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Created By */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                          </div>
+
+                          {/* Cancellation Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Cancellations</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.cancellationCount || 0}</div>
+                            <div className="text-xs text-gray-500">times cancelled</div>
+                          </div>
+
+                          {/* Date Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</span>
+                            <div className="text-sm text-gray-900">
+                              {drop.createdAt ? new Date(drop.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : '—'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="ml-4 flex-shrink-0">
                         <button
                           onClick={() => { setDropDetailsContext('flagged'); viewDropDetails(drop._id || drop.id); }}
-                          className="text-primary hover:text-primary-dark"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                         >
-                          View
+                          View Details
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2699,70 +3009,117 @@ function DropsContent() {
               <p className="text-gray-500">There are currently no collected drops.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected At</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {collectedDrops.map((drop: any, index: number) => (
-                    <tr key={drop._id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {drop.imageUrl ? (
-                          <img
-                            className="h-10 w-10 rounded-lg object-cover"
-                            src={drop.imageUrl}
-                            alt="Drop image"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
-                            }}
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs text-gray-500">No Image</span>
+            <div className="grid grid-cols-1 gap-4">
+              {collectedDrops.map((drop: any, index: number) => (
+                <div key={drop._id || index} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Header with ID and Status */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {drop._id || drop.id || 'N/A'}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(drop._id || drop.id || '');
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Copy ID to clipboard"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Collected
+                          </span>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Created By */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                          </div>
+
+                          {/* Items */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Items</span>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
+                                <span className="text-sm font-medium text-gray-900">{drop.numberOfBottles || 0}</span>
+                                <span className="text-xs text-gray-500">bottles</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <img src="/can.png" alt="Cans" className="w-5 h-5" />
+                                <span className="text-sm font-medium text-gray-900">{drop.numberOfCans || 0}</span>
+                                <span className="text-xs text-gray-500">cans</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Collected Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Collected By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.collectedBy?.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(drop.collectedAt || drop.updatedAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Image */}
+                        {drop.imageUrl && (
+                          <div className="mt-4">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Image</span>
+                            <div className="mt-2">
+                              <img
+                                className="h-20 w-20 rounded-lg object-cover"
+                                src={drop.imageUrl}
+                                alt="Drop image"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{drop.numberOfBottles || 0} bottles, {drop.numberOfCans || 0} cans</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{drop.collectedBy?.name || 'Unknown'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(drop.collectedAt || drop.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="ml-4 flex-shrink-0">
                         <button
                           onClick={() => {
                             setDropDetailsContext('default');
                             viewDropDetails(drop._id || drop.id);
                           }}
-                          className="text-primary hover:text-primary-dark"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                         >
                           View Details
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2791,70 +3148,123 @@ function DropsContent() {
               <p className="text-gray-500">There are currently no stale drops.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expired</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {staleDrops.map((drop: any, index: number) => (
-                    <tr key={drop._id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {drop.imageUrl ? (
-                          <img
-                            className="h-10 w-10 rounded-lg object-cover"
-                            src={drop.imageUrl}
-                            alt="Drop image"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
-                            }}
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs text-gray-500">No Image</span>
+            <div className="grid grid-cols-1 gap-4">
+              {staleDrops.map((drop: any, index: number) => (
+                <div key={drop._id || index} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Header with ID and Status */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {drop._id || drop.id || 'N/A'}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(drop._id || drop.id || '');
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Copy ID to clipboard"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Stale
+                          </span>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Created By */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                          </div>
+
+                          {/* Items */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Items</span>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <img src="/water-bottle.png" alt="Bottles" className="w-5 h-5" />
+                                <span className="text-sm font-medium text-gray-900">{drop.numberOfBottles || 0}</span>
+                                <span className="text-xs text-gray-500">bottles</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <img src="/can.png" alt="Cans" className="w-5 h-5" />
+                                <span className="text-sm font-medium text-gray-900">{drop.numberOfCans || 0}</span>
+                                <span className="text-xs text-gray-500">cans</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Date Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</span>
+                            <div className="text-sm text-gray-900">
+                              {new Date(drop.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Expired: {new Date(drop.updatedAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Image */}
+                        {drop.imageUrl && (
+                          <div className="mt-4">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Image</span>
+                            <div className="mt-2">
+                              <img
+                                className="h-20 w-20 rounded-lg object-cover"
+                                src={drop.imageUrl}
+                                alt="Drop image"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{drop.numberOfBottles || 0} bottles, {drop.numberOfCans || 0} cans</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(drop.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(drop.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="ml-4 flex-shrink-0">
                         <button
                           onClick={() => {
                             setDropDetailsContext('default');
                             viewDropDetails(drop._id || drop.id);
                           }}
-                          className="text-primary hover:text-primary-dark"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                         >
                           View Details
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2883,72 +3293,114 @@ function DropsContent() {
               <p className="text-gray-500">There are currently no censored drops.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Censored By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Censored At</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {censoredDrops.map((drop: any, index: number) => (
-                    <tr key={drop._id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {(drop._id?.toString?.() || drop.id || '').toString().slice(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {drop.imageUrl ? (
-                          <img
-                            className="h-10 w-10 rounded-lg object-cover"
-                            src={drop.imageUrl}
-                            alt="Drop image"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
-                            }}
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs text-gray-500">No Image</span>
+            <div className="grid grid-cols-1 gap-4">
+              {censoredDrops.map((drop: any, index: number) => (
+                <div key={drop._id || index} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Header with ID and Status */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                  {drop._id || drop.id || 'N/A'}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(drop._id || drop.id || '');
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Copy ID to clipboard"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            {drop.censorReason || 'Inappropriate Content'}
+                          </span>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Created By */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.userId?.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-500">{drop.userId?.email || 'N/A'}</div>
+                          </div>
+
+                          {/* Censored Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Censored By</span>
+                            <div className="text-sm font-medium text-gray-900">{drop.censoredBy?.name || 'Admin'}</div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(drop.censoredAt || drop.updatedAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Date Info */}
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</span>
+                            <div className="text-sm text-gray-900">
+                              {new Date(drop.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Image */}
+                        {drop.imageUrl && (
+                          <div className="mt-4">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Image</span>
+                            <div className="mt-2">
+                              <img
+                                className="h-20 w-20 rounded-lg object-cover"
+                                src={drop.imageUrl}
+                                alt="Drop image"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5e7eb" width="100" height="100"/><text x="50%" y="50%" fill="%236b7280" text-anchor="middle" font-size="12">No Image</text></svg>';
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          {drop.censorReason || 'Inappropriate Content'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{drop.censoredBy?.name || 'Admin'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(drop.censoredAt || drop.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="ml-4 flex-shrink-0">
                         <button
                           onClick={() => {
                             setDropDetailsContext('default');
                             viewDropDetails(drop._id || drop.id);
                           }}
-                          className="text-primary hover:text-primary-dark"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                         >
                           View Details
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -5379,7 +5831,7 @@ function SupportContent() {
 
   // Real-time Socket.IO connection for support tickets with retry logic
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
+        const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
     if (!token) {
       console.log('❌ No admin token found for WebSocket connection');
       return;
@@ -5624,7 +6076,7 @@ function SupportContent() {
     if (!selectedTicket || chatConnecting) return;
     try {
       setChatConnecting(true);
-      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token')) : null;
       if (!token) {
         console.error('❌ Admin Dashboard: No admin token found');
         return;
@@ -6036,45 +6488,60 @@ function SupportContent() {
           ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex justify-between items-center">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => {
-                fetchTickets();
-                fetchStats();
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
-            >
-              Refresh
-            </button>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
-              <option value="authentication">Authentication</option>
-              <option value="app_technical">App Technical</option>
-              <option value="drop_creation">Drop Creation</option>
-              <option value="collection_navigation">Collection & Navigation</option>
-              <option value="collector_application">Collector Application</option>
-              <option value="payment_rewards">Payment & Rewards</option>
-              <option value="statistics_history">Statistics & History</option>
-              <option value="role_switching">Role Switching</option>
-              <option value="communication">Communication</option>
-              <option value="general_support">General Support</option>
-            </select>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Refresh Button */}
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  fetchTickets();
+                  fetchStats();
+                }}
+                className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors shadow-sm"
+              >
+                Refresh
+              </button>
+            </div>
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-3">
+              <FunnelIcon className="h-5 w-5 text-gray-400" />
+              <label className="text-sm font-semibold text-gray-700">Status:</label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium min-w-[180px]"
+              >
+                <option value="">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex items-center gap-3">
+              <FunnelIcon className="h-5 w-5 text-gray-400" />
+              <label className="text-sm font-semibold text-gray-700">Category:</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium min-w-[200px]"
+              >
+                <option value="">All Categories</option>
+                <option value="authentication">Authentication</option>
+                <option value="app_technical">App Technical</option>
+                <option value="drop_creation">Drop Creation</option>
+                <option value="collection_navigation">Collection & Navigation</option>
+                <option value="collector_application">Collector Application</option>
+                <option value="payment_rewards">Payment & Rewards</option>
+                <option value="statistics_history">Statistics & History</option>
+                <option value="role_switching">Role Switching</option>
+                <option value="communication">Communication</option>
+                <option value="general_support">General Support</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -7706,6 +8173,577 @@ function AdminManagementContent() {
   );
 }
 
+// Reward Shop Content Component
+function RewardShopContent() {
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<'all' | 'collector' | 'household'>('all');
+  const [activeSubCategory, setActiveSubCategory] = useState<string>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingReward, setEditingReward] = useState<any>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Reward categories and sub-categories
+  const categories = {
+    collector: {
+      name: 'Collector Rewards',
+      subCategories: ['Tools', 'Equipment', 'Gear', 'Accessories', 'Other']
+    },
+    household: {
+      name: 'Household Rewards', 
+      subCategories: ['Home & Garden', 'Electronics', 'Appliances', 'Furniture', 'Other']
+    }
+  };
+
+  const [newReward, setNewReward] = useState({
+    name: '',
+    description: '',
+    category: 'collector',
+    subCategory: 'Tools',
+    pointCost: 0,
+    stock: 0,
+    imageUrl: '',
+    isActive: true
+  });
+
+  useEffect(() => {
+    fetchRewards();
+  }, []);
+
+  // Reset sub-category when main category changes
+  useEffect(() => {
+    setActiveSubCategory('all');
+  }, [activeCategory]);
+
+  const fetchRewards = async () => {
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      // Try to fetch from API first
+      try {
+        const response = await axios.get(buildApiUrl(API_ENDPOINTS.REWARDS.GET_ALL), config);
+        console.log('📊 API Response:', response.data);
+        
+        // Handle different response structures
+        let rewardsData = [];
+        if (response.data && response.data.data && Array.isArray(response.data.data.items)) {
+          rewardsData = response.data.data.items;
+        } else if (response.data && Array.isArray(response.data)) {
+          rewardsData = response.data;
+        } else if (response.data && response.data.rewards && Array.isArray(response.data.rewards)) {
+          rewardsData = response.data.rewards;
+        }
+        
+        setRewards(rewardsData);
+      } catch (apiError) {
+        console.log('API not available, using mock data');
+        // Fallback to mock data if API is not available
+        const mockRewards = [
+          {
+            id: 'mock_reward_1',
+            _id: 'mock_reward_1',
+            name: 'Professional Collection Bag',
+            description: 'High-quality collection bag for collectors',
+            category: 'collector',
+            subCategory: 'Equipment',
+            pointCost: 500,
+            stock: 10,
+            imageUrl: '/collection-bag.jpg',
+            isActive: true,
+            createdAt: new Date()
+          },
+          {
+            id: 'mock_reward_2',
+            _id: 'mock_reward_2',
+            name: 'Smart Home Speaker',
+            description: 'Wireless smart speaker for households',
+            category: 'household',
+            subCategory: 'Electronics',
+            pointCost: 1000,
+            stock: 5,
+            imageUrl: '/speaker.jpg',
+            isActive: true,
+            createdAt: new Date()
+          }
+        ];
+        setRewards(mockRewards);
+      }
+    } catch (error) {
+      console.error('Error fetching rewards:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredRewards = (rewards || []).filter(reward => {
+    if (activeCategory !== 'all' && reward.category !== activeCategory) return false;
+    if (activeSubCategory !== 'all' && reward.subCategory !== activeSubCategory) return false;
+    return true;
+  });
+
+  const handleCreateReward = async () => {
+    let usedMockData = false;
+    
+    try {
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      // Try API first, fallback to mock data if not available
+      try {
+        if (editingReward) {
+          // Update existing reward
+          await axios.put(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward.id)), newReward, config);
+        } else {
+          // Create new reward
+          await axios.post(buildApiUrl(API_ENDPOINTS.REWARDS.CREATE), newReward, config);
+        }
+        console.log('✅ Reward saved via API');
+      } catch (apiError: any) {
+        if (apiError.response?.status === 404) {
+          console.log('📝 API not available, using mock data for reward creation');
+          usedMockData = true;
+          
+          // For now, just add to local state as mock data
+          const newRewardWithId = {
+            ...newReward,
+            id: editingReward ? editingReward.id : `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            _id: editingReward ? editingReward._id : `reward_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            createdAt: editingReward ? editingReward.createdAt : new Date()
+          };
+          
+          if (editingReward) {
+            // Update existing reward in local state
+            setRewards(prev => prev.map(reward => 
+              reward.id === editingReward.id ? newRewardWithId : reward
+            ));
+          } else {
+            // Add new reward to local state
+            setRewards(prev => [...prev, newRewardWithId]);
+          }
+        } else {
+          throw apiError; // Re-throw if it's not a 404 error
+        }
+      }
+
+      setShowCreateModal(false);
+      setEditingReward(null);
+      setNewReward({
+        name: '',
+        description: '',
+        category: 'collector',
+        subCategory: 'Tools',
+        pointCost: 0,
+        stock: 0,
+        imageUrl: '',
+        isActive: true
+      });
+      
+      // Only fetch from API if we didn't use mock data
+      if (!usedMockData) {
+        fetchRewards();
+      }
+    } catch (error) {
+      console.error('Error creating/updating reward:', error);
+      // Still close modal and reset form on error
+      setShowCreateModal(false);
+      setEditingReward(null);
+      setNewReward({
+        name: '',
+        description: '',
+        category: 'collector',
+        subCategory: 'Tools',
+        pointCost: 0,
+        stock: 0,
+        imageUrl: '',
+        isActive: true
+      });
+    }
+  };
+
+  const handleEditReward = (reward: any) => {
+    setEditingReward(reward);
+    setNewReward(reward);
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteReward = async (rewardId: string) => {
+    if (!confirm('Are you sure you want to delete this reward?')) return;
+    try {
+      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      try {
+        await axios.delete(buildApiUrl(API_ENDPOINTS.REWARDS.DELETE(rewardId)), config);
+        fetchRewards();
+      } catch (apiError: any) {
+        if (apiError.response?.status === 404) {
+          console.log('📝 API not available, removing from local state');
+          // Remove from local state
+          setRewards(prev => prev.filter(reward => reward.id !== rewardId));
+        } else {
+          throw apiError;
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting reward:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+          </svg>
+          <h1 className="text-4xl font-bold">Reward Shop</h1>
+        </div>
+        <p className="text-purple-100 text-lg">Manage reward items that users can redeem with their points</p>
+      </div>
+
+      {/* Controls */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="all">All Categories</option>
+                <option value="collector">Collector Rewards</option>
+                <option value="household">Household Rewards</option>
+              </select>
+            </div>
+
+            {/* Sub-category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sub-category</label>
+              <select
+                value={activeSubCategory}
+                onChange={(e) => setActiveSubCategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="all">All Sub-categories</option>
+                {activeCategory === 'collector' && categories.collector.subCategories.map(sub => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+                {activeCategory === 'household' && categories.household.subCategories.map(sub => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+                {activeCategory === 'all' && (
+                  <>
+                    {categories.collector.subCategories.map(sub => (
+                      <option key={`collector-${sub}`} value={sub}>{sub} (Collector)</option>
+                    ))}
+                    {categories.household.subCategories.map(sub => (
+                      <option key={`household-${sub}`} value={sub}>{sub} (Household)</option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+          </div>
+
+          {/* Create Button */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200 font-semibold"
+          >
+            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Reward Item
+          </button>
+        </div>
+      </div>
+
+      {/* Rewards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {(filteredRewards || []).map((reward, index) => (
+          <div key={reward.id || reward._id || `reward-${index}`} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+            <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+              {reward.imageUrl ? (
+                <img src={reward.imageUrl} alt={reward.name} className="w-full h-48 object-cover" />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{reward.name}</h3>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    reward.category === 'collector' 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {reward.category === 'collector' ? 'Collector' : 'Household'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditReward(reward)}
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Edit reward"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteReward(reward.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete reward"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{reward.description}</p>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Point Cost:</span>
+                  <span className="font-semibold text-primary">{reward.pointCost} points</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Stock:</span>
+                  <span className={`font-semibold ${reward.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {reward.stock} available
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Sub-category:</span>
+                  <span className="text-sm text-gray-700">{reward.subCategory}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    reward.isActive 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {reward.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(reward.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {(filteredRewards || []).length === 0 && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No rewards found</h3>
+            <p className="text-gray-600">No rewards match your current filters.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingReward ? 'Edit Reward' : 'Create New Reward'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingReward(null);
+                    setNewReward({
+                      name: '',
+                      description: '',
+                      category: 'collector',
+                      subCategory: 'Tools',
+                      pointCost: 0,
+                      stock: 0,
+                      imageUrl: '',
+                      isActive: true
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={newReward.name}
+                      onChange={(e) => setNewReward({...newReward, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter reward name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select
+                      value={newReward.category}
+                      onChange={(e) => setNewReward({...newReward, category: e.target.value, subCategory: 'Tools'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    >
+                      <option value="collector">Collector Rewards</option>
+                      <option value="household">Household Rewards</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sub-category</label>
+                    <select
+                      value={newReward.subCategory}
+                      onChange={(e) => setNewReward({...newReward, subCategory: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    >
+                      {categories[newReward.category as keyof typeof categories].subCategories.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Point Cost</label>
+                    <input
+                      type="number"
+                      value={newReward.pointCost || ''}
+                      onChange={(e) => setNewReward({...newReward, pointCost: e.target.value === '' ? 0 : parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter point cost"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                    <input
+                      type="number"
+                      value={newReward.stock || ''}
+                      onChange={(e) => setNewReward({...newReward, stock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter stock quantity"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <RewardImageUpload
+                      currentUrl={newReward.imageUrl}
+                      onUploadComplete={(url) => setNewReward({...newReward, imageUrl: url})}
+                      onUploadingChange={setUploadingImage}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={newReward.description}
+                    onChange={(e) => setNewReward({...newReward, description: e.target.value})}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="Enter reward description"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={newReward.isActive}
+                    onChange={(e) => setNewReward({...newReward, isActive: e.target.checked})}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                    Active (available for redemption)
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingReward(null);
+                    setNewReward({
+                      name: '',
+                      description: '',
+                      category: 'collector',
+                      subCategory: 'Tools',
+                      pointCost: 0,
+                      stock: 0,
+                      imageUrl: '',
+                      isActive: true
+                    });
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateReward}
+                  disabled={uploadingImage}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingImage ? 'Uploading...' : (editingReward ? 'Update Reward' : 'Create Reward')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Main Dashboard Component
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -7717,7 +8755,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('admin_token');
+        const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
         if (token) {
           // Try to decode JWT token to get user roles
           try {
@@ -7809,6 +8847,8 @@ export default function DashboardPage() {
         return <DropsContent />;
       case 'applications':
         return <ApplicationsContent />;
+      case 'reward-shop':
+        return <RewardShopContent />;
       case 'training':
         return <TrainingContent />;
       case 'support':

@@ -44,8 +44,9 @@ import {
   Shield,
   Ban
 } from 'lucide-react';
+import { API_ENDPOINTS, buildApiUrl, getEndpoint } from '@/lib/apiEndpoints';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://172.20.10.12:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 interface DropsStats {
   totalDrops: number;
@@ -151,11 +152,18 @@ export default function DropsManagementPage() {
         collectorRes,
         householdRes,
       ] = await Promise.all([
-        axios.get(`${API_URL}/admin/drops/stats`, config),
-        axios.get(`${API_URL}/admin/drops/analytics/time-based`, config),
-        axios.get(`${API_URL}/admin/drops/analytics/success-rate`, config),
-        axios.get(`${API_URL}/admin/drops/performance/collector-leaderboard?limit=5`, config),
-        axios.get(`${API_URL}/admin/drops/performance/household-rankings?limit=5`, config),
+        // NEW: Using centralized API endpoints
+        axios.get(buildApiUrl(API_ENDPOINTS.DROPS.STATS), config),
+        axios.get(buildApiUrl(API_ENDPOINTS.DROPS.TIME_BASED_ANALYTICS), config),
+        axios.get(buildApiUrl(API_ENDPOINTS.DROPS.SUCCESS_RATE), config),
+        axios.get(buildApiUrl(API_ENDPOINTS.DROPS.COLLECTOR_LEADERBOARD, { limit: 5 }), config),
+        axios.get(buildApiUrl(API_ENDPOINTS.DROPS.HOUSEHOLD_RANKINGS, { limit: 5 }), config),
+        // OLD: Hardcoded URLs (commented for fallback)
+        // axios.get(`${API_URL}/admin/drops/stats`, config),
+        // axios.get(`${API_URL}/admin/drops/analytics/time-based`, config),
+        // axios.get(`${API_URL}/admin/drops/analytics/success-rate`, config),
+        // axios.get(`${API_URL}/admin/drops/performance/collector-leaderboard?limit=5`, config),
+        // axios.get(`${API_URL}/admin/drops/performance/household-rankings?limit=5`, config),
       ]);
 
       setStats(statsRes.data.stats);
@@ -174,7 +182,11 @@ export default function DropsManagementPage() {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_URL}/admin/drops/analyze-old`, config);
+      // NEW: Using centralized API endpoint
+      const analyzeOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.ANALYZE_OLD);
+      const response = await axios.get(analyzeOldUrl, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // const response = await axios.get(`${API_URL}/admin/drops/analyze-old`, config);
       setOldDrops(response.data.drops);
       setShowOldDropsModal(true);
     } catch (error) {
@@ -188,10 +200,14 @@ export default function DropsManagementPage() {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.post(`${API_URL}/admin/drops/hide-old`, 
-        { dropIds: selectedOldDrops }, 
-        config
-      );
+      // NEW: Using centralized API endpoint
+      const hideOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.HIDE_OLD);
+      await axios.post(hideOldUrl, { dropIds: selectedOldDrops }, config);
+      // OLD: Hardcoded URL (commented for fallback)
+      // await axios.post(`${API_URL}/admin/drops/hide-old`, 
+      //   { dropIds: selectedOldDrops }, 
+      //   config
+      // );
       
       alert(`${selectedOldDrops.length} drops hidden successfully and users notified!`);
       setShowOldDropsModal(false);

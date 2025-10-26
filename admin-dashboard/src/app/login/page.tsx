@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -25,7 +26,11 @@ export default function LoginPage() {
       // Test connectivity first
       console.log('🔍 Testing connectivity...');
       try {
-        const testResponse = await fetch('http://localhost:3000/api/auth/profile', {
+        // NEW: Using centralized API endpoint
+        const profileUrl = buildApiUrl(API_ENDPOINTS.AUTH.PROFILE);
+        const testResponse = await fetch(profileUrl, {
+        // OLD: Hardcoded URL (commented for fallback)
+        // const testResponse = await fetch('http://localhost:3000/api/auth/profile', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -70,12 +75,16 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('❌ Login error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        data: error.response?.data,
-        config: error.config,
-        stack: error.stack
+        message: error.message || 'Unknown error',
+        code: error.code || 'No error code',
+        status: error.response?.status || 'No status',
+        data: error.response?.data || 'No response data',
+        config: error.config ? {
+          url: error.config.url || 'No URL',
+          method: error.config.method || 'No method',
+          timeout: error.config.timeout || 'No timeout'
+        } : 'No config',
+        stack: error.stack || 'No stack trace'
       });
       
       if (error.response?.status === 401) {
@@ -86,8 +95,12 @@ export default function LoginPage() {
         return;
       } else if (error.response?.data?.message) {
         setError(error.response.data.message);
+      } else if (error.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your internet connection and try again.');
+      } else if (error.code === 'ECONNABORTED') {
+        setError('Request timed out. Please try again.');
       } else {
-        setError('An error occurred during login. Please try again.');
+        setError('An error occurred during login. Please check your credentials and try again.');
       }
     } finally {
       setIsLoading(false);

@@ -24,13 +24,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
       
-      // Try localStorage first, then sessionStorage as fallback
-      let token = localStorage.getItem('admin_token');
+      // Use sessionStorage for tab-specific authentication
+      // This prevents cross-tab interference when different users log in
+      let token = sessionStorage.getItem('admin_token');
       if (!token) {
-        token = sessionStorage.getItem('admin_token');
+        // Fallback to localStorage for backward compatibility
+        token = localStorage.getItem('admin_token');
         if (token) {
-          console.log('🔐 Token found in sessionStorage, copying to localStorage');
-          localStorage.setItem('admin_token', token);
+          console.log('🔐 Token found in localStorage, copying to sessionStorage');
+          sessionStorage.setItem('admin_token', token);
         }
       }
       console.log('🔐 Token from storage:', token ? token.substring(0, 20) + '...' : 'No token found');
