@@ -279,6 +279,52 @@ class NotificationService extends ChangeNotifier {
           // Skip generic handler to avoid duplicate toast
           return;
         }
+        
+        // Handle order approved notification
+        if (data['type'] == 'order_approved') {
+          debugPrint('🎉 Order approved notification received!');
+          final orderId = data['data']?['orderId']?.toString() ?? '';
+          final trackingNumber = data['data']?['trackingNumber']?.toString() ?? '';
+          final estimatedDelivery = data['data']?['estimatedDelivery']?.toString();
+          
+          debugPrint('🎉 Order ID: $orderId');
+          debugPrint('🎉 Tracking Number: $trackingNumber');
+          debugPrint('🎉 Estimated Delivery: $estimatedDelivery');
+          
+          // Show local notification
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'Order Approved! 🎉',
+            body: data['message'] ?? 'Your order has been approved and is being prepared for shipment',
+            id: 9300,
+            payload: 'order_approved:$orderId',
+          );
+          
+          // Skip generic handler to avoid duplicate toast
+          return;
+        }
+        
+        // Handle order rejected notification
+        if (data['type'] == 'order_rejected') {
+          debugPrint('❌ Order rejected notification received!');
+          final orderId = data['data']?['orderId']?.toString() ?? '';
+          final rejectionReason = data['data']?['rejectionReason']?.toString() ?? '';
+          final pointsAmount = data['data']?['pointsAmount']?.toString() ?? '';
+          
+          debugPrint('❌ Order ID: $orderId');
+          debugPrint('❌ Rejection Reason: $rejectionReason');
+          debugPrint('❌ Points Refunded: $pointsAmount');
+          
+          // Show local notification
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'Order Rejected',
+            body: data['message'] ?? 'Your order was rejected and points have been refunded',
+            id: 9400,
+            payload: 'order_rejected:$orderId',
+          );
+          
+          // Skip generic handler to avoid duplicate toast
+          return;
+        }
 
         // Fallback: for other notification types, use the generic handler once
         debugPrint('📨 NotificationService: Received notification of type: ${data['type']} (generic handler)');

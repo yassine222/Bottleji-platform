@@ -35,7 +35,7 @@ class DioFactory {
   /// Get a Dio instance with the configured base URL (sync version - uses fallback)
   static Dio getDioSync() {
     return Dio(BaseOptions(
-      baseUrl: 'http://192.168.1.14:3000/api', // Fallback URL
+      baseUrl: ServerConfig.apiBaseUrlSync, // Fallback URL
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 10),
       sendTimeout: const Duration(seconds: 10),

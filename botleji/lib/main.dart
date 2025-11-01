@@ -14,13 +14,15 @@ import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/services/local_notification_service.dart';
 import 'package:botleji/core/services/timezone_service.dart';
-import 'package:botleji/core/services/network_initialization_service.dart';
 import 'package:botleji/features/auth/services/mode_switch_service.dart';
 import 'package:botleji/features/splash/presentation/screens/splash_screen.dart';
 import 'package:botleji/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:botleji/features/onboarding/presentation/screens/permissions_screen.dart';
 import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
+import 'package:botleji/features/notifications/data/services/notification_service.dart';
+import 'package:botleji/core/services/network_initialization_service.dart';
+import 'package:botleji/core/config/server_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +36,10 @@ void main() async {
 
   // Initialize network detection service for automatic IP detection
   await NetworkInitializationService.initialize();
+
+  // Initialize notification service with detected API URL
+  final detectedApiUrl = NetworkInitializationService.apiUrl ?? ServerConfig.apiBaseUrlSync;
+  NotificationService.initialize(detectedApiUrl);
 
   // Initialize local notification service
   await LocalNotificationService().initialize();

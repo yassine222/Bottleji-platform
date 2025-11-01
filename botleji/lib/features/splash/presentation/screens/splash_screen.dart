@@ -63,13 +63,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final prefs = await SharedPreferences.getInstance();
     final isFirstTime = prefs.getBool('is_first_time') ?? true;
 
-    if (isFirstTime) {
-      // Navigate to onboarding
+    // Check if user is already authenticated
+    final authState = ref.read(authNotifierProvider);
+    final isAuthenticated = authState.hasValue && authState.value != null;
+
+    if (isFirstTime && !isAuthenticated) {
+      // Only show onboarding for unauthenticated first-time users
       Navigator.of(context).pushReplacementNamed('/onboarding');
-    } else {
-      // Wait for user mode to be loaded before navigating to main app
-      await _waitForUserModeAndNavigate();
+      return;
     }
+
+    // Ensure we don't show onboarding again for authenticated users
+    if (isFirstTime && isAuthenticated) {
+      await prefs.setBool('is_first_time', false);
+    }
+
+    // Wait for user mode to be loaded before navigating to main app
+    await _waitForUserModeAndNavigate();
   }
 
   Future<void> _waitForUserModeAndNavigate() async {

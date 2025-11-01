@@ -1,223 +1,187 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/notification_service.dart';
-import 'package:intl/intl.dart';
-import '../../../../features/auth/presentation/providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
+import '../widgets/notification_card.dart';
+import '../../data/models/notification_models.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notificationService = ref.watch(notificationServiceProvider);
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        actions: [
-          TextButton(
-            onPressed: notificationService.notifications.isNotEmpty
-                ? () => notificationService.markAllAsRead()
-                : null,
-            child: const Text('Mark All Read'),
-          ),
-        ],
-      ),
-      body: notificationService.notifications.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No notifications yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: notificationService.notifications.length,
-              itemBuilder: (context, index) {
-                final notification = notificationService.notifications[index];
-                final isRead = notification.data?['read'] ?? false;
-                
-                // Filter out connection notifications
-                if (notification.type == 'connection_established' || 
-                    notification.type == 'connection') {
-                  return const SizedBox.shrink();
-                }
-                
-                return _NotificationTile(
-                  notification: notification,
-                  isRead: isRead,
-                  onTap: () => notificationService.markAsRead(index),
-                );
-              },
-            ),
-    );
-  }
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationTile extends StatelessWidget {
-  final NotificationPayload notification;
-  final bool isRead;
-  final VoidCallback onTap;
-
-  const _NotificationTile({
-    required this.notification,
-    required this.isRead,
-    required this.onTap,
-  });
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load notifications when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationProvider.notifier).loadNotifications(refresh: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: isRead ? null : Colors.blue.withOpacity(0.1),
-      child: ListTile(
-        leading: _getNotificationIcon(notification.type),
-        title: Text(
-          notification.title,
-          style: TextStyle(
-            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final notificationState = ref.watch(notificationProvider);
+    final notificationNotifier = ref.read(notificationProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
+        actions: [
+          if (notificationState.unreadCount > 0)
+            TextButton(
+              onPressed: () {
+                notificationNotifier.markAllAsRead();
+              },
+              child: const Text(
+                'Mark All Read',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await notificationNotifier.loadNotifications(refresh: true);
+        },
+        child: _buildBody(notificationState, notificationNotifier),
+      ),
+    );
+  }
+
+  Widget _buildBody(notificationState, notificationNotifier) {
+    if (notificationState.isLoading && notificationState.notifications.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (notificationState.error != null && notificationState.notifications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(notification.message),
-            const SizedBox(height: 4),
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
             Text(
-              _formatTimestamp(notification.timestamp),
-              style: TextStyle(
-                fontSize: 12,
+              'Failed to load notifications',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              notificationState.error!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                notificationNotifier.loadNotifications(refresh: true);
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (notificationState.notifications.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_none,
+              size: 64,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No notifications yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'You\'ll see your notifications here',
+              style: TextStyle(
+                color: Colors.grey,
               ),
             ),
           ],
         ),
-        trailing: isRead ? null : Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: Colors.blue,
-            shape: BoxShape.circle,
-          ),
-        ),
-        onTap: onTap,
-      ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: notificationState.notifications.length,
+      itemBuilder: (context, index) {
+        final notification = notificationState.notifications[index];
+        return NotificationCard(
+          notification: notification,
+          onTap: () {
+            // Handle notification tap
+            _handleNotificationTap(notification);
+          },
+          onDelete: () {
+            _showDeleteDialog(notification, notificationNotifier);
+          },
+        );
+      },
     );
   }
 
-  Widget _getNotificationIcon(String type) {
-    IconData iconData;
-    Color iconColor;
-
-    switch (type) {
-      case 'user_deleted':
-      case 'force_logout':
-        iconData = Icons.person_off;
-        iconColor = Colors.red;
+  void _handleNotificationTap(notification) {
+    // Handle different notification types
+    switch (notification.type) {
+      case NotificationType.orderApproved:
+        // Navigate to order details or tracking
         break;
-      case 'user_banned':
-        iconData = Icons.block;
-        iconColor = Colors.orange;
+      case NotificationType.orderRejected:
+        // Navigate to order details
         break;
-      case 'user_unbanned':
-        iconData = Icons.check_circle;
-        iconColor = Colors.green;
-        break;
-      case 'role_changed':
-        iconData = Icons.admin_panel_settings;
-        iconColor = Colors.blue;
-        break;
-      case 'drop_accepted':
-        iconData = Icons.check_circle;
-        iconColor = Colors.green;
-        break;
-      case 'drop_collected':
-        iconData = Icons.done_all;
-        iconColor = Colors.green;
-        break;
-      case 'drop_cancelled':
-        iconData = Icons.cancel;
-        iconColor = Colors.red;
-        break;
-      case 'drop_expired':
-        iconData = Icons.schedule;
-        iconColor = Colors.orange;
-        break;
-      case 'new_drop_available':
-        iconData = Icons.add_location;
-        iconColor = Colors.blue;
-        break;
-      case 'ticket_response':
-        iconData = Icons.support_agent;
-        iconColor = Colors.purple;
-        break;
-      case 'application_approved':
-        iconData = Icons.verified;
-        iconColor = Colors.green;
-        break;
-      case 'application_rejected':
-        iconData = Icons.cancel;
-        iconColor = Colors.red;
-        break;
-      case 'system_maintenance':
-        iconData = Icons.build;
-        iconColor = Colors.orange;
-        break;
-      case 'announcement':
-        iconData = Icons.announcement;
-        iconColor = Colors.blue;
-        break;
-      case 'new_training_content':
-        iconData = Icons.school;
-        iconColor = Colors.blue;
-        break;
-      case 'training_completed':
-        iconData = Icons.check_circle;
-        iconColor = Colors.green;
-        break;
-      case 'connection_established':
-        iconData = Icons.notifications;
-        iconColor = Colors.grey;
+      case NotificationType.pointsEarned:
+        // Navigate to rewards or points history
         break;
       default:
-        iconData = Icons.notifications;
-        iconColor = Colors.grey;
+        // Handle other types
+        break;
     }
+  }
 
-    return CircleAvatar(
-      backgroundColor: iconColor.withOpacity(0.1),
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 20,
+  void _showDeleteDialog(notification, notificationNotifier) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Notification'),
+        content: const Text('Are you sure you want to delete this notification?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              notificationNotifier.deleteNotification(notification.id);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inDays > 0) {
-      return DateFormat('MMM d, y').format(timestamp);
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
-} 
+}

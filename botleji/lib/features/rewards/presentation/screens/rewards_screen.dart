@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
+import 'package:botleji/features/rewards/presentation/providers/reward_shop_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/tier_upgrade_popup.dart';
 import 'package:botleji/features/rewards/presentation/widgets/reward_shop_widget.dart';
+import 'package:botleji/features/rewards/presentation/widgets/order_history_widget.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
+import 'package:botleji/features/rewards/data/services/reward_service.dart';
+import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 
 class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
@@ -13,16 +17,28 @@ class RewardsScreen extends ConsumerStatefulWidget {
   ConsumerState<RewardsScreen> createState() => _RewardsScreenState();
 }
 
-class _RewardsScreenState extends ConsumerState<RewardsScreen> {
+class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTickerProviderStateMixin {
   RewardStats? _previousStats;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    // Refresh reward data every time the screen is opened
+    _tabController = TabController(length: 2, vsync: this);
+    
+    // Only refresh reward data if it's not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(rewardStatsProvider);
+      final rewardStats = ref.read(rewardStatsProvider);
+      if (rewardStats.hasError) {
+        ref.invalidate(rewardStatsProvider);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -52,6 +68,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
       backgroundColor: Colors.grey[50],
       body: Stack(
         children: [
+          // Main content
           userMode.when(
             data: (mode) => rewardStats.when(
               data: (stats) => _buildRewardsContent(context, mode, stats),
@@ -109,9 +126,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
   Widget _buildRewardsContent(BuildContext context, UserMode mode, RewardStats stats) {
     return RefreshIndicator(
       onRefresh: () async {
-        // Refresh reward data when user pulls down
         ref.invalidate(rewardStatsProvider);
-        await Future.delayed(const Duration(milliseconds: 500)); // Small delay for better UX
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       child: CustomScrollView(
         slivers: [
@@ -119,36 +135,102 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildPointsCard(context, stats),
-                    const SizedBox(height: 16),
-                    _buildTierCard(context, mode, stats),
-                    const SizedBox(height: 16),
-                    _buildInfoCard(context, mode),
-                    const SizedBox(height: 24),
-                    _buildRewardShopHeader(context),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _buildPointsCard(context, stats),
+                  const SizedBox(height: 16),
+                  _buildTierCard(context, mode, stats),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(context, mode),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
-
-          // Reward Shop Items
+          
+          
+          // Reward Shop Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildRewardShopHeader(context),
+            ),
+          ),
+          
+          // Shop Items
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _buildRewardShop(context, mode),
             ),
           ),
-
-        // Bottom spacing
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 100),
-        ),
+          
+          // Order History Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.history,
+                    color: const Color(0xFF00695C),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Order History',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF00695C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Order History Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildOrderHistoryContent(context),
+            ),
+          ),
+          
+          // Bottom spacing
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 100),
+          ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildTabContent(BuildContext context, UserMode mode) {
+    if (_tabController.index == 0) {
+      // Shop Tab
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildRewardShopHeader(context),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildRewardShop(context, mode),
+          ),
+        ),
+      ];
+    } else {
+      // Order History Tab
+      return [
+        const SliverFillRemaining(
+          child: OrderHistoryWidget(),
+        ),
+      ];
+    }
   }
 
   Widget _buildPointsCard(BuildContext context, RewardStats stats) {
@@ -401,6 +483,16 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
             color: const Color(0xFF00695C),
           ),
         ),
+        const Spacer(),
+        Consumer(
+          builder: (context, ref, child) {
+            return IconButton(
+              onPressed: () => ref.read(rewardShopProvider.notifier).refresh(),
+              icon: const Icon(Icons.refresh),
+              color: const Color(0xFF00695C),
+            );
+          },
+        ),
       ],
     );
   }
@@ -603,5 +695,139 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildOrderHistoryContent(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final authState = ref.watch(authNotifierProvider);
+        final user = authState.value;
+        
+        if (user == null) {
+          return const Center(
+            child: Text('Please log in to view order history'),
+          );
+        }
+        
+        return FutureBuilder<List<RewardRedemption>>(
+          future: RewardService.getUserRedemptions(user.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 8),
+                    Text('Error loading orders: ${snapshot.error}'),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Trigger rebuild
+                        setState(() {});
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            final redemptions = snapshot.data ?? [];
+            
+            if (redemptions.isEmpty) {
+              return const Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                    SizedBox(height: 8),
+                    Text('Your order history will appear here', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              );
+            }
+            
+            return Column(
+              children: redemptions.map((redemption) => 
+                Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                redemption.rewardItemName,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(redemption.status).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                redemption.status.value.toUpperCase(),
+                                style: TextStyle(
+                                  color: _getStatusColor(redemption.status),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Points: ${redemption.pointsSpent}'),
+                        if (redemption.selectedSize != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Size: ${redemption.selectedSize} (${redemption.sizeType})'),
+                        ],
+                        const SizedBox(height: 4),
+                        Text('Order Date: ${_formatDate(redemption.createdAt)}'),
+                      ],
+                    ),
+                  ),
+                ),
+              ).toList(),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Color _getStatusColor(RedemptionStatus status) {
+    switch (status) {
+      case RedemptionStatus.pending:
+        return Colors.orange;
+      case RedemptionStatus.approved:
+        return Colors.blue;
+      case RedemptionStatus.processing:
+        return Colors.purple;
+      case RedemptionStatus.shipped:
+        return Colors.indigo;
+      case RedemptionStatus.delivered:
+        return Colors.green;
+      case RedemptionStatus.cancelled:
+        return Colors.grey;
+      case RedemptionStatus.rejected:
+        return Colors.red;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

@@ -272,11 +272,12 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
 
   Future<void> confirmCollection(String dropId) async {
     try {
-      final updatedDrop = await _repository.confirmCollection(dropId);
+      final response = await _repository.confirmCollection(dropId);
+      final updatedDrop = Drop.fromJson(response);
       
       // Update the drop in the current list
       state.whenData((drops) {
-        final updatedDrops = drops.map((drop) {
+        final updatedDrops = drops.map<Drop>((drop) {
           if (drop.id == dropId) {
             return updatedDrop;
           }
@@ -291,27 +292,21 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
 
   Future<Map<String, dynamic>?> confirmCollectionWithRewards(String dropId) async {
     try {
-      final updatedDrop = await _repository.confirmCollection(dropId);
+      final response = await _repository.confirmCollection(dropId);
       
       // Update the drop in the current list
       state.whenData((drops) {
-        final updatedDrops = drops.map((drop) {
+        final updatedDrops = drops.map<Drop>((drop) {
           if (drop.id == dropId) {
-            return updatedDrop;
+            return Drop.fromJson(response); // Parse the response as a Drop
           }
           return drop;
         }).toList();
         state = AsyncValue.data(updatedDrops);
       });
 
-      // Fetch updated reward stats after collection
-      try {
-        final rewardStats = await _repository.getUserRewardStats();
-        return rewardStats;
-      } catch (e) {
-        debugPrint('Error fetching reward stats: $e');
-        return null;
-      }
+      // Return the response which now contains rewardData from the backend
+      return response;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       return null;

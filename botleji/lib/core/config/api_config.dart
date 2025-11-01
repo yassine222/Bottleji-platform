@@ -7,6 +7,6 @@ class ApiConfig {
   
   // Synchronous fallback for backward compatibility
   static String get baseUrlSync {
-    return 'http://192.168.1.14:3000/api'; // Fallback URL
+    return ServerConfig.apiBaseUrlSync; // Fallback URL
   }
 } 

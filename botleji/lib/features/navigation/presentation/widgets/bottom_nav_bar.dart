@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/features/notifications/presentation/providers/notification_provider.dart';
 
 class BottomNavBar extends ConsumerWidget {
   final int currentIndex;
@@ -18,15 +19,16 @@ class BottomNavBar extends ConsumerWidget {
     final userMode = ref.watch(userModeControllerProvider);
     final pendingCount = ref.watch(pendingDropsCountProvider);
     final userDropsCount = ref.watch(userDropsCountProvider);
+    final unreadCount = ref.watch(unreadCountProvider);
 
     return userMode.when(
-      data: (mode) => _buildFloatingNavBar(context, mode, pendingCount, userDropsCount),
-      loading: () => _buildFloatingNavBar(context, null, 0, 0),
-      error: (_, __) => _buildFloatingNavBar(context, null, 0, 0),
+      data: (mode) => _buildFloatingNavBar(context, mode, pendingCount, userDropsCount, unreadCount),
+      loading: () => _buildFloatingNavBar(context, null, 0, 0, 0),
+      error: (_, __) => _buildFloatingNavBar(context, null, 0, 0, 0),
     );
   }
 
-  Widget _buildFloatingNavBar(BuildContext context, UserMode? mode, int pendingCount, int userDropsCount) {
+  Widget _buildFloatingNavBar(BuildContext context, UserMode? mode, int pendingCount, int userDropsCount, int unreadCount) {
     return Positioned(
       left: 16,
       right: 16,
@@ -73,6 +75,7 @@ class BottomNavBar extends ConsumerWidget {
               icon: Icons.card_giftcard_outlined,
               activeIcon: Icons.card_giftcard,
               label: 'Rewards',
+              badgeCount: unreadCount > 0 ? unreadCount : null,
             ),
             _buildNavItem(
               context,

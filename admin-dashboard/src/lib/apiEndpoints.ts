@@ -5,8 +5,12 @@
  * Update the base URL here to switch between environments.
  */
 
-// Base API URL - can be overridden by environment variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.14:3000/api';
+// Base API URL - prefer env var, otherwise derive from window.location when available
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:3000/api`
+    : 'http://localhost:3000/api');
 
 /**
  * API Endpoints organized by category
@@ -188,7 +192,7 @@ export const API_CONFIG = {
  */
 export const ENV_CONFIGS = {
   DEVELOPMENT: {
-    BASE_URL: 'http://192.168.1.14:3000/api',
+    BASE_URL: API_BASE_URL,
     TIMEOUT: 30000,
   },
   PRODUCTION: {

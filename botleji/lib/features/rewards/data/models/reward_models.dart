@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class RewardStats {
   final int totalDropsCollected;
   final int totalDropsCreated;
@@ -19,8 +21,9 @@ class RewardStats {
     print('🎯 RewardStats.fromJson: Parsing response: $json');
     
     // Handle the actual backend response structure
-    final currentTier = json['currentTier'] ?? 1;
-    final currentPoints = json['availablePoints'] ?? json['currentPoints'] ?? 0;
+    final currentTierData = json['currentTier'];
+    final currentTier = currentTierData is Map ? (currentTierData['tier'] ?? 1) : (currentTierData ?? 1);
+    final currentPoints = json['currentPoints'] ?? 0;
     final totalPoints = json['totalPoints'] ?? 0;
     final totalCollections = json['totalCollections'] ?? 0;
     
@@ -105,6 +108,9 @@ class RewardItem {
   final int stock;
   final String? imageUrl;
   final bool isActive;
+  final bool isFootwear;
+  final bool isJacket;
+  final bool isBottoms;
   final int totalRedemptions;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -119,6 +125,9 @@ class RewardItem {
     required this.stock,
     this.imageUrl,
     required this.isActive,
+    required this.isFootwear,
+    required this.isJacket,
+    required this.isBottoms,
     required this.totalRedemptions,
     required this.createdAt,
     required this.updatedAt,
@@ -135,6 +144,9 @@ class RewardItem {
       stock: json['stock'] ?? 0,
       imageUrl: json['imageUrl'],
       isActive: json['isActive'] ?? true,
+      isFootwear: json['isFootwear'] ?? false,
+      isJacket: json['isJacket'] ?? false,
+      isBottoms: json['isBottoms'] ?? false,
       totalRedemptions: json['totalRedemptions'] ?? 0,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
@@ -152,6 +164,9 @@ class RewardItem {
       'stock': stock,
       'imageUrl': imageUrl,
       'isActive': isActive,
+      'isFootwear': isFootwear,
+      'isJacket': isJacket,
+      'isBottoms': isBottoms,
       'totalRedemptions': totalRedemptions,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -187,17 +202,143 @@ enum RewardCategory {
   }
 }
 
+class DeliveryAddress {
+  final String street;
+  final String city;
+  final String state;
+  final String zipCode;
+  final String country;
+  final String phoneNumber;
+  final String? additionalNotes;
+
+  DeliveryAddress({
+    required this.street,
+    required this.city,
+    required this.state,
+    required this.zipCode,
+    required this.country,
+    required this.phoneNumber,
+    this.additionalNotes,
+  });
+
+  factory DeliveryAddress.fromJson(Map<String, dynamic> json) {
+    return DeliveryAddress(
+      street: json['street'] ?? '',
+      city: json['city'] ?? '',
+      state: json['state'] ?? '',
+      zipCode: json['zipCode'] ?? '',
+      country: json['country'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      additionalNotes: json['additionalNotes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'street': street,
+      'city': city,
+      'state': state,
+      'zipCode': zipCode,
+      'country': country,
+      'phoneNumber': phoneNumber,
+      if (additionalNotes != null) 'additionalNotes': additionalNotes,
+    };
+  }
+}
+
+enum RedemptionStatus {
+  pending('pending'),
+  approved('approved'),
+  processing('processing'),
+  shipped('shipped'),
+  delivered('delivered'),
+  cancelled('cancelled'),
+  rejected('rejected');
+
+  const RedemptionStatus(this.value);
+  final String value;
+
+  static RedemptionStatus fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'pending':
+        return RedemptionStatus.pending;
+      case 'approved':
+        return RedemptionStatus.approved;
+      case 'processing':
+        return RedemptionStatus.processing;
+      case 'shipped':
+        return RedemptionStatus.shipped;
+      case 'delivered':
+        return RedemptionStatus.delivered;
+      case 'cancelled':
+        return RedemptionStatus.cancelled;
+      case 'rejected':
+        return RedemptionStatus.rejected;
+      default:
+        return RedemptionStatus.pending;
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case RedemptionStatus.pending:
+        return 'Pending';
+      case RedemptionStatus.approved:
+        return 'Approved';
+      case RedemptionStatus.processing:
+        return 'Processing';
+      case RedemptionStatus.shipped:
+        return 'Shipped';
+      case RedemptionStatus.delivered:
+        return 'Delivered';
+      case RedemptionStatus.cancelled:
+        return 'Cancelled';
+      case RedemptionStatus.rejected:
+        return 'Rejected';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case RedemptionStatus.pending:
+        return Colors.orange;
+      case RedemptionStatus.approved:
+        return Colors.blue;
+      case RedemptionStatus.processing:
+        return Colors.purple;
+      case RedemptionStatus.shipped:
+        return Colors.indigo;
+      case RedemptionStatus.delivered:
+        return Colors.green;
+      case RedemptionStatus.cancelled:
+        return Colors.grey;
+      case RedemptionStatus.rejected:
+        return Colors.red;
+    }
+  }
+}
+
 class RewardRedemption {
   final String id;
   final String userId;
   final String rewardItemId;
   final String rewardItemName;
   final int pointsSpent;
-  final String status; // 'pending', 'approved', 'rejected', 'fulfilled'
-  final DateTime requestedAt;
+  final RedemptionStatus status;
+  final DeliveryAddress deliveryAddress;
+  final DateTime createdAt;
   final DateTime? approvedAt;
-  final DateTime? fulfilledAt;
-  final String? notes;
+  final DateTime? processingAt;
+  final DateTime? shippedAt;
+  final DateTime? deliveredAt;
+  final DateTime? cancelledAt;
+  final DateTime? rejectedAt;
+  final String? trackingNumber;
+  final DateTime? estimatedDelivery;
+  final String? adminNotes;
+  final String? rejectionReason;
+  final String? selectedSize;
+  final String? sizeType;
 
   RewardRedemption({
     required this.id,
@@ -206,24 +347,44 @@ class RewardRedemption {
     required this.rewardItemName,
     required this.pointsSpent,
     required this.status,
-    required this.requestedAt,
+    required this.deliveryAddress,
+    required this.createdAt,
     this.approvedAt,
-    this.fulfilledAt,
-    this.notes,
+    this.processingAt,
+    this.shippedAt,
+    this.deliveredAt,
+    this.cancelledAt,
+    this.rejectedAt,
+    this.trackingNumber,
+    this.estimatedDelivery,
+    this.adminNotes,
+    this.rejectionReason,
+    this.selectedSize,
+    this.sizeType,
   });
 
   factory RewardRedemption.fromJson(Map<String, dynamic> json) {
     return RewardRedemption(
       id: json['_id'] ?? json['id'] ?? '',
       userId: json['userId'] ?? '',
-      rewardItemId: json['rewardItemId'] ?? '',
+      rewardItemId: json['rewardItemId'] is Map ? json['rewardItemId']['_id'] ?? json['rewardItemId']['id'] ?? '' : json['rewardItemId'] ?? '',
       rewardItemName: json['rewardItemName'] ?? '',
       pointsSpent: json['pointsSpent'] ?? 0,
-      status: json['status'] ?? 'pending',
-      requestedAt: DateTime.parse(json['requestedAt'] ?? DateTime.now().toIso8601String()),
+      status: RedemptionStatus.fromString(json['status'] ?? 'pending'),
+      deliveryAddress: DeliveryAddress.fromJson(json['deliveryAddress'] ?? {}),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       approvedAt: json['approvedAt'] != null ? DateTime.parse(json['approvedAt']) : null,
-      fulfilledAt: json['fulfilledAt'] != null ? DateTime.parse(json['fulfilledAt']) : null,
-      notes: json['notes'],
+      processingAt: json['processingAt'] != null ? DateTime.parse(json['processingAt']) : null,
+      shippedAt: json['shippedAt'] != null ? DateTime.parse(json['shippedAt']) : null,
+      deliveredAt: json['deliveredAt'] != null ? DateTime.parse(json['deliveredAt']) : null,
+      cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt']) : null,
+      rejectedAt: json['rejectedAt'] != null ? DateTime.parse(json['rejectedAt']) : null,
+      trackingNumber: json['trackingNumber'],
+      estimatedDelivery: json['estimatedDelivery'] != null ? DateTime.parse(json['estimatedDelivery']) : null,
+      adminNotes: json['adminNotes'],
+      rejectionReason: json['rejectionReason'],
+      selectedSize: json['selectedSize'],
+      sizeType: json['sizeType'],
     );
   }
 }

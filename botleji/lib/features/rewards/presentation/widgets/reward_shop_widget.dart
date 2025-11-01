@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/rewards/presentation/providers/reward_shop_provider.dart';
+import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/rewards/presentation/pages/reward_item_detail_page.dart';
+import 'package:botleji/features/rewards/presentation/widgets/redemption_confirmation_dialog.dart';
+import 'package:botleji/features/rewards/data/services/reward_service.dart';
 
 class RewardShopWidget extends ConsumerWidget {
   const RewardShopWidget({super.key});
@@ -12,49 +15,24 @@ class RewardShopWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shopState = ref.watch(rewardShopProvider);
     final authState = ref.watch(authNotifierProvider);
+    final rewardStatsAsync = ref.watch(rewardStatsProvider);
     final user = authState.value;
 
     if (user == null) {
       return const Center(child: Text('Please log in to view rewards'));
     }
 
-    // Load reward items on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🎯 RewardShopWidget: Checking if should load items...');
-      print('🎯 RewardShopWidget: Items count: ${shopState.items.length}');
-      print('🎯 RewardShopWidget: Is loading: ${shopState.isLoading}');
-      print('🎯 RewardShopWidget: Error: ${shopState.error}');
-      
-      if (shopState.items.isEmpty && !shopState.isLoading) {
-        print('🎯 RewardShopWidget: Loading reward items...');
+    // Load items if empty and not loading
+    if (shopState.items.isEmpty && !shopState.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(rewardShopProvider.notifier).loadRewardItems();
-      } else {
-        print('🎯 RewardShopWidget: Not loading items - items: ${shopState.items.length}, loading: ${shopState.isLoading}');
-      }
-    });
+      });
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Reward Shop',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                onPressed: () => ref.read(rewardShopProvider.notifier).refresh(),
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-        ),
+        // Remove duplicate header - it's now handled in the main screen
 
         // Category Filter
         Padding(
@@ -85,7 +63,11 @@ class RewardShopWidget extends ConsumerWidget {
         else if (shopState.items.isEmpty)
           _buildEmptyState(context)
         else
-          _buildRewardItems(context, ref, shopState.items, user),
+          rewardStatsAsync.when(
+            data: (rewardStats) => _buildRewardItems(context, ref, shopState.items, user, rewardStats.currentPoints),
+            loading: () => _buildRewardItems(context, ref, shopState.items, user, user.currentPoints ?? 0),
+            error: (error, stack) => _buildRewardItems(context, ref, shopState.items, user, user.currentPoints ?? 0),
+          ),
       ],
     );
   }
@@ -96,7 +78,7 @@ class RewardShopWidget extends ConsumerWidget {
     final user = authState.value;
     
     // Check if user has collector role
-    final hasCollectorRole = user?.roles?.contains('collector') ?? false;
+    final hasCollectorRole = user?.roles.contains('collector') ?? false;
     
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -182,7 +164,7 @@ class RewardShopWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildRewardItems(BuildContext context, WidgetRef ref, List<RewardItem> items, user) {
+  Widget _buildRewardItems(BuildContext context, WidgetRef ref, List<RewardItem> items, user, int userPoints) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -196,16 +178,18 @@ class RewardShopWidget extends ConsumerWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return _buildRewardCard(context, ref, item, user);
+        return _buildRewardCard(context, ref, item, user, userPoints);
       },
     );
   }
 
-  Widget _buildRewardCard(BuildContext context, WidgetRef ref, RewardItem item, user) {
-    final userPoints = user.currentPoints ?? 0;
+  Widget _buildRewardCard(BuildContext context, WidgetRef ref, RewardItem item, user, int userPoints) {
+    return _buildRewardCardContent(context, ref, item, user, userPoints);
+  }
+
+  Widget _buildRewardCardContent(BuildContext context, WidgetRef ref, RewardItem item, user, int userPoints) {
     final canAfford = userPoints >= item.pointCost;
     final isInStock = item.stock > 0;
-    final canRedeem = canAfford && isInStock && item.isActive;
 
     return Card(
       elevation: 2,
@@ -323,30 +307,75 @@ class RewardShopWidget extends ConsumerWidget {
         builder: (context) => RewardItemDetailPage(
           item: item,
           user: user,
-          onRedeem: () => _redeemReward(context, ref, item),
+          onRedeem: (userPoints) => _redeemReward(context, ref, item, userPoints),
         ),
       ),
     );
   }
 
-  Future<void> _redeemReward(BuildContext context, WidgetRef ref, RewardItem item) async {
+  Future<void> _redeemReward(BuildContext context, WidgetRef ref, RewardItem item, int userPoints) async {
+    // Show confirmation bottom sheet with delivery address form
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => RedemptionConfirmationDialog(
+        item: item,
+        userPoints: userPoints,
+        onConfirm: (deliveryAddress, {String? selectedSize, String? sizeType}) async {
+          await _processRedemption(context, ref, item, deliveryAddress, selectedSize: selectedSize, sizeType: sizeType);
+        },
+      ),
+    );
+  }
+
+  Future<void> _processRedemption(BuildContext context, WidgetRef ref, RewardItem item, DeliveryAddress deliveryAddress, {String? selectedSize, String? sizeType}) async {
     try {
-      await ref.read(redeemRewardProvider(item.id).future);
+      print('🛒 Starting redemption process...');
+      print('🛒 Item: ${item.name} (${item.pointCost} points)');
+      print('🛒 User ID: ${ref.read(authNotifierProvider).value?.id}');
+      print('🛒 Selected Size: $selectedSize, Size Type: $sizeType');
+      
+      final authState = ref.read(authNotifierProvider);
+      final user = authState.value;
+      
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Call the updated redeemReward method with delivery address and size
+      await RewardService.redeemReward(
+        user.id, 
+        item.id, 
+        deliveryAddress.toJson(),
+        selectedSize: selectedSize,
+        sizeType: sizeType,
+        pointCost: item.pointCost,
+      );
+      
+      print('✅ Redemption successful!');
+      
+      // Refresh reward stats and shop data after successful redemption
+      ref.invalidate(rewardStatsProvider);
+      ref.read(rewardShopProvider.notifier).refresh();
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully redeemed ${item.name}!'),
+            content: Text('Order placed successfully! ${item.name} is pending approval.'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } catch (e) {
+      print('❌ Redemption failed: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to redeem reward: $e'),
+            content: Text('Failed to place order: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

@@ -106,7 +106,6 @@ class DropRepository {
         }
       }
       
-      print('🔍 DropRepository: Successfully parsed ${drops.length} drops');
       return drops;
     } catch (e) {
       print('❌ DropRepository: Error getting drops: $e');
@@ -138,7 +137,6 @@ class DropRepository {
         }
         
         final List<dynamic> data = response.data;
-        print('🔍 DropRepository: Got ${data.length} drops available for collectors');
         
         final drops = <Drop>[];
         for (int i = 0; i < data.length; i++) {
@@ -152,7 +150,6 @@ class DropRepository {
           }
         }
         
-        print('🔍 DropRepository: Successfully parsed ${drops.length} drops for collectors');
         return drops;
       } else {
         throw Exception('Failed to load drops: ${response.statusCode}');
@@ -211,7 +208,6 @@ class DropRepository {
         }
       }
       
-      print('🔍 DropRepository: Successfully parsed ${drops.length} drops for user');
       return drops;
     } catch (e) {
       // print('❌ API Error getting user drops: $e');
@@ -292,7 +288,7 @@ class DropRepository {
   }
 
   // Confirm collection (completes CollectionAttempt as 'collected')
-  Future<Drop> confirmCollection(String dropId) async {
+  Future<Map<String, dynamic>> confirmCollection(String dropId) async {
     try {
       // First, find the active collection attempt for this drop
       print('📝 Getting active collection attempt for drop: $dropId');
@@ -322,7 +318,7 @@ class DropRepository {
       
       // Then update the drop status
       final response = await _dio.patch('/dropoffs/$dropId/confirm-collection');
-      return Drop.fromJson(response.data);
+      return response.data; // Return raw response data which includes rewardData
     } catch (e) {
       throw Exception('Failed to confirm collection: $e');
     }
@@ -493,7 +489,8 @@ class DropRepository {
     try {
       final userId = await _getCurrentUserId();
       final response = await _dio.get('/rewards/stats/$userId');
-      return response.data['stats'] ?? {};
+      // Backend returns { success: true, data: { stats } }
+      return response.data['data']['stats'] ?? {};
     } catch (e) {
       throw Exception('Failed to load reward stats: $e');
     }

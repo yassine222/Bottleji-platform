@@ -2363,11 +2363,12 @@ Future<void> _handleCancellation(CancellationReason reason) async {
       
       // Show collection success popup with reward information
       if (rewardData != null && mounted) {
-        final currentTier = rewardData['currentTier']?['tier'] ?? 1;
-        final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
-        final totalPoints = rewardData['totalPoints'] ?? 0;
-        final currentPoints = rewardData['currentPoints'] ?? 0;
-        final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+        // Get reward data from the backend response
+        final rewardInfo = rewardData['rewardData'] ?? {};
+        final currentTier = rewardInfo['currentTier']?['tier'] ?? 1;
+        final tierName = rewardInfo['currentTier']?['name'] ?? 'Bronze Collector';
+        final totalPoints = rewardInfo['totalPoints'] ?? 0;
+        final pointsAwarded = rewardInfo['pointsAwarded'] ?? 0;
         
         debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
         
@@ -2512,14 +2513,16 @@ Future<void> _handleCancellation(CancellationReason reason) async {
         // Show collection success popup with reward information
         debugPrint('🎉 Raw reward data: $rewardData');
         if (rewardData != null && mounted) {
-          final currentTier = rewardData['currentTier']?['tier'] ?? 1;
-          final tierName = rewardData['currentTier']?['name'] ?? 'Bronze Collector';
-          final totalPoints = rewardData['totalPoints'] ?? 0;
-          final currentPoints = rewardData['currentPoints'] ?? 0;
-          final pointsAwarded = currentPoints - (rewardData['previousPoints'] ?? 0);
+          // Get reward data from the backend response
+          final rewardInfo = rewardData['rewardData'] ?? {};
+          debugPrint('🎉 Reward info from backend: $rewardInfo');
+          final currentTier = rewardInfo['currentTier']?['tier'] ?? 1;
+          final tierName = rewardInfo['currentTier']?['name'] ?? 'Bronze Collector';
+          final totalPoints = rewardInfo['totalPoints'] ?? 0;
+          final pointsAwarded = rewardInfo['pointsAwarded'] ?? 0;
           
           debugPrint('🎉 Reward data: $pointsAwarded points awarded, tier: $tierName');
-          debugPrint('🎉 Current points: $currentPoints, Total points: $totalPoints');
+          debugPrint('🎉 Total points: $totalPoints');
           
           // Show the collection success popup as a dialog
           _showCollectionSuccessDialog(

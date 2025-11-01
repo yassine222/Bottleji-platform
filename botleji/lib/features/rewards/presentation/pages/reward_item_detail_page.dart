@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart';
+import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
 
-class RewardItemDetailPage extends StatelessWidget {
+class RewardItemDetailPage extends ConsumerWidget {
   final RewardItem item;
   final UserData user;
-  final VoidCallback onRedeem;
+  final Function(int) onRedeem;
 
   const RewardItemDetailPage({
     super.key,
@@ -15,8 +17,17 @@ class RewardItemDetailPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final userPoints = user.currentPoints ?? 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rewardStatsAsync = ref.watch(rewardStatsProvider);
+    
+    return rewardStatsAsync.when(
+      data: (rewardStats) => _buildContent(context, rewardStats.currentPoints),
+      loading: () => _buildContent(context, user.currentPoints ?? 0),
+      error: (error, stack) => _buildContent(context, user.currentPoints ?? 0),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, int userPoints) {
     final canAfford = userPoints >= item.pointCost;
     final isInStock = item.stock > 0;
     final canRedeem = canAfford && isInStock && item.isActive;
@@ -104,8 +115,8 @@ class RewardItemDetailPage extends StatelessWidget {
               children: [
                 _buildInfoChip(context, item.category.name, Icons.category),
                 const SizedBox(width: 8),
-                if (item.subCategory != null) ...[
-                  _buildInfoChip(context, item.subCategory!, Icons.label),
+                if (item.subCategory.isNotEmpty) ...[
+                  _buildInfoChip(context, item.subCategory, Icons.label),
                   const SizedBox(width: 8),
                 ],
                 _buildInfoChip(
@@ -200,7 +211,7 @@ class RewardItemDetailPage extends StatelessWidget {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: canRedeem ? onRedeem : null,
+                onPressed: canRedeem ? () => onRedeem(userPoints) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: canRedeem 
                       ? Theme.of(context).primaryColor 

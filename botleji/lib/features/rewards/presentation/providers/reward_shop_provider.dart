@@ -120,31 +120,14 @@ final userRedemptionsProvider = FutureProvider<List<RewardRedemption>>((ref) asy
   if (user == null) return [];
 
   try {
-    final redemptionsData = await RewardService.getUserRedemptions(user.id);
-    return redemptionsData.map((json) => RewardRedemption.fromJson(json)).toList();
+    return await RewardService.getUserRedemptions(user.id);
   } catch (e) {
     print('Error loading user redemptions: $e');
     return [];
   }
 });
 
-// Redeem reward provider
+// Redeem reward provider (deprecated - use direct service call instead)
 final redeemRewardProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, rewardItemId) async {
-  final authState = ref.watch(authNotifierProvider);
-  final user = authState.value;
-  
-  if (user == null) throw Exception('User not authenticated');
-
-  try {
-    final result = await RewardService.redeemReward(user.id, rewardItemId);
-    
-    // Refresh the reward shop and redemptions after successful redemption
-    ref.invalidate(rewardShopProvider);
-    ref.invalidate(userRedemptionsProvider);
-    
-    return result;
-  } catch (e) {
-    print('Error redeeming reward: $e');
-    rethrow;
-  }
+  throw Exception('This provider is deprecated. Use RewardService.redeemReward directly with delivery address.');
 });
