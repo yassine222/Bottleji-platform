@@ -217,9 +217,10 @@ admin-dashboard/yarn-error.log*
 firebase-debug.log
 firebase-debug.*.log
 
-# Google Services
+# Google Services & Firebase
 google-services.json
 GoogleService-Info.plist
+**/firebase_options.dart
 
 # API Keys and secrets
 **/secrets/
@@ -228,6 +229,8 @@ GoogleService-Info.plist
 **/*.key
 **/*.p12
 **/*.mobileprovision
+**/*_config.dart
+**/*_credentials.dart
 
 # Generated files
 **/generated/
