@@ -73,6 +73,7 @@ class Drop {
   final DropStatus status;
   final DateTime createdAt;
   final DateTime modifiedAt;
+  final DateTime? collectedAt;
   final int cancellationCount;
   final bool isSuspicious;
   final String? suspiciousReason;
@@ -95,6 +96,7 @@ class Drop {
     this.status = DropStatus.pending,
     required this.createdAt,
     required this.modifiedAt,
+    this.collectedAt,
     this.cancellationCount = 0,
     this.isSuspicious = false,
     this.suspiciousReason,
@@ -117,6 +119,7 @@ class Drop {
     location: const LatLng(0, 0),
     createdAt: DateTime.fromMillisecondsSinceEpoch(0),
     modifiedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    collectedAt: null,
     isSuspicious: false,
     isCensored: false,
   );
@@ -139,8 +142,9 @@ class Drop {
         (e) => e.name == (json['status']?.toString() ?? 'pending'),
         orElse: () => DropStatus.pending,
       ),
-      createdAt: json['createdAt'] != null ? TimezoneService.parseToGermanTime(json['createdAt'].toString()) : TimezoneService.now(),
-      modifiedAt: json['updatedAt'] != null ? TimezoneService.parseToGermanTime(json['updatedAt'].toString()) : TimezoneService.now(),
+      createdAt: _parseDate(json['createdAt']) ?? TimezoneService.now(),
+      modifiedAt: _parseDate(json['updatedAt']) ?? TimezoneService.now(),
+      collectedAt: _parseDate(json['collectedAt']),
       cancellationCount: json['cancellationCount'] as int? ?? 0,
       isSuspicious: json['isSuspicious'] as bool? ?? false,
       suspiciousReason: json['suspiciousReason']?.toString(),
@@ -169,6 +173,7 @@ class Drop {
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': modifiedAt.toIso8601String(),
+      'collectedAt': collectedAt?.toIso8601String(),
       'cancellationCount': cancellationCount,
       'isSuspicious': isSuspicious,
       'suspiciousReason': suspiciousReason,
@@ -193,6 +198,7 @@ class Drop {
     DropStatus? status,
     DateTime? createdAt,
     DateTime? modifiedAt,
+    DateTime? collectedAt,
     int? cancellationCount,
     bool? isSuspicious,
     String? suspiciousReason,
@@ -215,6 +221,7 @@ class Drop {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
+      collectedAt: collectedAt ?? this.collectedAt,
       cancellationCount: cancellationCount ?? this.cancellationCount,
       isSuspicious: isSuspicious ?? this.isSuspicious,
       suspiciousReason: suspiciousReason ?? this.suspiciousReason,
@@ -242,6 +249,7 @@ class Drop {
         other.status == status &&
         other.createdAt == createdAt &&
         other.modifiedAt == modifiedAt &&
+        other.collectedAt == collectedAt &&
         other.cancellationCount == cancellationCount &&
         other.isSuspicious == isSuspicious &&
         other.suspiciousReason == suspiciousReason &&
@@ -266,6 +274,7 @@ class Drop {
       status,
       createdAt,
       modifiedAt,
+      collectedAt,
       cancellationCount,
       isSuspicious,
       suspiciousReason,
@@ -278,6 +287,73 @@ class Drop {
 
   @override
   String toString() {
-    return 'Drop(id: $id, userId: $userId, imageUrl: $imageUrl, numberOfBottles: $numberOfBottles, numberOfCans: $numberOfCans, bottleType: $bottleType, notes: $notes, leaveOutside: $leaveOutside, location: $location, status: $status, createdAt: $createdAt, modifiedAt: $modifiedAt, cancellationCount: $cancellationCount, isSuspicious: $isSuspicious, cancellationReason: $cancellationReason, cancelledByCollectorIds: $cancelledByCollectorIds)';
+    return 'Drop(id: $id, userId: $userId, imageUrl: $imageUrl, numberOfBottles: $numberOfBottles, numberOfCans: $numberOfCans, bottleType: $bottleType, notes: $notes, leaveOutside: $leaveOutside, location: $location, status: $status, createdAt: $createdAt, modifiedAt: $modifiedAt, collectedAt: $collectedAt, cancellationCount: $cancellationCount, isSuspicious: $isSuspicious, cancellationReason: $cancellationReason, cancelledByCollectorIds: $cancelledByCollectorIds)';
   }
 } 
+
+DateTime? _parseDate(dynamic rawValue) {
+  if (rawValue == null) return null;
+
+  try {
+    if (rawValue is DateTime) {
+      return TimezoneService.toGermanTime(rawValue);
+    }
+
+    if (rawValue is String) {
+      if (rawValue.isEmpty) return null;
+      return TimezoneService.parseToGermanTime(rawValue);
+    }
+
+    if (rawValue is Map<String, dynamic>) {
+      dynamic value = rawValue['\$date'] ?? rawValue['date'] ?? rawValue['iso'];
+
+      if (value is Map<String, dynamic>) {
+        if (value.containsKey('\$numberLong')) {
+          final millisString = value['\$numberLong']?.toString();
+          if (millisString != null) {
+            final millis = int.tryParse(millisString);
+            if (millis != null) {
+              return TimezoneService.toGermanTime(DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true));
+            }
+          }
+        } else if (value.containsKey('_seconds')) {
+          final secondsRaw = value['_seconds'];
+          final nanosRaw = value['_nanoseconds'] ?? 0;
+          if (secondsRaw is num) {
+            final seconds = secondsRaw.toDouble();
+            final nanos = nanosRaw is num ? nanosRaw.toDouble() : 0;
+            final millis = (seconds * 1000).round() + (nanos / 1000000).round();
+            final dateTime = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+            return TimezoneService.toGermanTime(dateTime);
+          }
+        }
+        // Attempt to parse nested iso string
+        final nestedIso = value['iso'] ?? value['\$date'];
+        if (nestedIso is String) {
+          return TimezoneService.parseToGermanTime(nestedIso);
+        }
+      }
+
+      if (value is String) {
+        return TimezoneService.parseToGermanTime(value);
+      }
+
+      // Fallback: try known Mongo style keys
+      if (rawValue.containsKey('_seconds')) {
+        final secondsRaw = rawValue['_seconds'];
+        final nanosRaw = rawValue['_nanoseconds'] ?? 0;
+        if (secondsRaw is num) {
+          final seconds = secondsRaw.toDouble();
+          final nanos = nanosRaw is num ? nanosRaw.toDouble() : 0;
+          final millis = (seconds * 1000).round() + (nanos / 1000000).round();
+          final dateTime = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+          return TimezoneService.toGermanTime(dateTime);
+        }
+      }
+    }
+  } catch (_) {
+    return null;
+  }
+
+  return null;
+}

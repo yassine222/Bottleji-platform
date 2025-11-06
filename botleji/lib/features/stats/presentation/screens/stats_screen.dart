@@ -13,6 +13,7 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 import 'package:botleji/features/stats/presentation/widgets/stats_chart_carousel.dart';
+import 'package:botleji/features/stats/presentation/widgets/household_stats_chart_carousel.dart';
 import 'package:botleji/core/services/timezone_service.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -144,25 +145,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           _buildHouseholdTimeRangeSelector(),
           const SizedBox(height: 24),
           
-          // Overview section - empty for now
-          Container(
-            height: 100,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: const Center(
-              child: Text(
-                'Overview section\n(To be designed)',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+          HouseholdStatsChartCarousel(
+            drops: drops,
+            timeRange: _selectedTimeRange.apiValue,
           ),
           const SizedBox(height: 24),
           
@@ -229,55 +214,45 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildTimeRangeSelector() {
-    return GestureDetector(
-      onTap: _showTimeRangeDialog,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              _selectedTimeRange.displayName,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Time Range',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
               ),
-            ),
-            const Spacer(),
-            const Icon(Icons.arrow_drop_down, color: Colors.grey),
-          ],
         ),
-      ),
-    );
-  }
-
-  void _showTimeRangeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Time Range'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: TimeRange.values.map((timeRange) {
-            return ListTile(
-              title: Text(timeRange.displayName),
-              trailing: _selectedTimeRange == timeRange
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                setState(() {
-                  _selectedTimeRange = timeRange;
-                });
-                Navigator.of(context).pop();
-              },
-            );
-          }).toList(),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: TimeRange.values.map((timeRange) {
+              final isSelected = _selectedTimeRange == timeRange;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(timeRange.displayName),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (!selected) return;
+                    setState(() {
+                      _selectedTimeRange = timeRange;
+                    });
+                  },
+                  selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+                  checkmarkColor: const Color(0xFF00695C),
+                  labelStyle: TextStyle(
+                    color: isSelected ? const Color(0xFF00695C) : Colors.grey[700],
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -998,7 +973,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           _buildTimeRangeSelector(),
           const SizedBox(height: 24),
           _buildOverviewCards(stats),
-          const SizedBox(height: 24),
+          
           _buildPerformanceMetrics(stats),
           const SizedBox(height: 24),
           _buildCancellationReasons(stats),
@@ -1020,7 +995,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             color: const Color(0xFF00695C), // Green color
           ),
         ),
-        const SizedBox(height: 16),
+        
         // Use the new chart carousel instead of static cards
         StatsChartCarousel(stats: stats, timeRange: _selectedTimeRange.apiValue),
       ],

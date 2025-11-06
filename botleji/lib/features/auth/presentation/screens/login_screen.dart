@@ -44,25 +44,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (user != null) {
-        if (!user.isProfileComplete) {
-          print('Profile incomplete, navigating to profile setup');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProfileSetupScreen(
-                email: user.email,
-                isNewUserSetup: true, // Set to true for incomplete profiles (new users)
+        // Add small delay to ensure WebSocket connection and state updates complete
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        if (!mounted) return;
+        
+        try {
+          if (!user.isProfileComplete) {
+            print('Profile incomplete, navigating to profile setup');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileSetupScreen(
+                  email: user.email,
+                  isNewUserSetup: true, // Set to true for incomplete profiles (new users)
+                ),
               ),
-            ),
-          );
-        } else {
-          print('Profile complete, navigating to home');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const HomeScreen(),
-            ),
-          );
+            );
+          } else {
+            print('Profile complete, navigating to home');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            );
+          }
+        } catch (navError) {
+          print('Navigation error: $navError');
+          if (!mounted) return;
+          // Fallback: navigate using named route
+          Navigator.pushReplacementNamed(context, '/main');
         }
       } else {
         // Login failed - show error message

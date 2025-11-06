@@ -220,7 +220,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
     if (activeCollection != null) {
       debugPrint('🔔 Active collection found, calling notification service...');
-      debugPrint('🔔 Drop ID: ${activeCollection.dropoffId}');  
+      debugPrint('🔔 Drop ID: ${activeCollection.dropoffId}');
       
       try {
         await LocalNotificationService().showDropExpiredNotification(
@@ -327,7 +327,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 },
               ),
             );
-
+            
             debugPrint('✅ Collection attempt completed as expired: ${completeResponse.statusCode}');
             debugPrint('✅ Response data: ${completeResponse.data}');
 
@@ -359,7 +359,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               },
             ),
           );
-
+          
           debugPrint('✅ Drop status updated to pending: ${updateResponse.statusCode}');
         } else {
           debugPrint('❌ No collector ID found in active collection');
@@ -534,62 +534,62 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     // Do nothing - camera stays where user puts it
   }
 
-  
-void _startLocationStream() {
-  const LocationSettings locationSettings = LocationSettings(
-    accuracy: LocationAccuracy.medium, // Reduced accuracy for better performance
-    distanceFilter: 10, // Update every 10 meters of movement (increased from 5)
-  );
 
-  _locationSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
-      .listen(
-    (Position position) {
-      final newLocation = LatLng(position.latitude, position.longitude);
+  void _startLocationStream() {
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.medium, // Reduced accuracy for better performance
+      distanceFilter: 10, // Update every 10 meters of movement (increased from 5)
+    );
 
-      // Check if user is moving
-      if (_lastLocation != null) {
-        final movementDistance = Geolocator.distanceBetween(
-          _lastLocation!.latitude,
-          _lastLocation!.longitude,
-          newLocation.latitude,
-          newLocation.longitude,
-        );
-        final isMoving = movementDistance > _movementThreshold;
-
-        if (isMoving != _isMoving) {
-          _isMoving = isMoving;
-          // Switch between fast and slow updates based on movement
-          if (_isMoving) {
-            _startFastLocationUpdates();
-          } else {
-            _startSlowLocationUpdates();
+    _locationSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen(
+      (Position position) {
+        final newLocation = LatLng(position.latitude, position.longitude);
+        
+        // Check if user is moving
+        if (_lastLocation != null) {
+          final movementDistance = Geolocator.distanceBetween(
+            _lastLocation!.latitude,
+            _lastLocation!.longitude,
+            newLocation.latitude,
+            newLocation.longitude,
+          );
+          final isMoving = movementDistance > _movementThreshold;
+          
+          if (isMoving != _isMoving) {
+            _isMoving = isMoving;
+            // Switch between fast and slow updates based on movement
+            if (_isMoving) {
+              _startFastLocationUpdates();
+            } else {
+              _startSlowLocationUpdates();
+            }
           }
         }
-      }
-
-      if (mounted) {
-        setState(() {
-          _currentLocation = newLocation;
-          _lastLocation = newLocation;
-          _lastLocationTime = DateTime.now();
-        });
-      }
-
-      // Camera updates disabled - only manual control allowed
-      // _updateCameraPosition(newLocation); // Removed automatic camera updates
-
-      // Update distance immediately when location changes
-      if (mounted) {
-        _updateDistanceToDestination();
-      }
-    },
-    onError: (error) {
-      debugPrint('Location stream error: $error');
-      // Fallback to timer-based updates
-      _startSlowLocationUpdates();
-    },
-  );
-}
+        
+        if (mounted) {
+          setState(() {
+            _currentLocation = newLocation;
+            _lastLocation = newLocation;
+            _lastLocationTime = DateTime.now();
+          });
+        }
+        
+        // Camera updates disabled - only manual control allowed
+        // _updateCameraPosition(newLocation); // Removed automatic camera updates
+        
+        // Update distance immediately when location changes
+        if (mounted) {
+          _updateDistanceToDestination();
+        }
+      },
+      onError: (error) {
+        debugPrint('Location stream error: $error');
+        // Fallback to timer-based updates
+        _startSlowLocationUpdates();
+      },
+    );
+  }
 
 
 
@@ -814,7 +814,7 @@ void _startLocationStream() {
         '&mode=driving'
         '&units=metric'
         '&key=AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E'
-        );
+      );
 
       debugPrint('Directions API URL: ${url.toString().replaceAll('AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E', 'API_KEY_HIDDEN')}');
       debugPrint('Using API key: AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E');
@@ -1023,7 +1023,7 @@ void _startLocationStream() {
             streetName: instruction.contains('<b>') 
                 ? _extractStreetName(instruction)
                 : null,
-            );
+          );
         }).toList();
         
         debugPrint('✅ Navigation steps processed successfully!');
@@ -1193,77 +1193,77 @@ void _startLocationStream() {
   }
 
   Widget _buildNavigationBanner() {
-  final theme = Theme.of(context);
-  final isDark = theme.brightness == Brightness.dark;
-
-  return Container(
-    width: double.infinity,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      width: double.infinity,
     margin: const EdgeInsets.fromLTRB(16, 25, 16, 16),
-    decoration: BoxDecoration(
-      color: isDark ? AppColors.darkSurface : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-      ],
-      border: Border.all(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
         color: isDark
             ? AppColors.darkPrimary.withOpacity(0.2)
             : AppColors.lightPrimary.withOpacity(0.2),
-        width: 1,
+          width: 1,
+        ),
       ),
-    ),
-    child: SafeArea(
-      child: Padding(
+      child: SafeArea(
+        child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             /// ---------------- HEADER ----------------
-            Row(
-              children: [
-                Container(
+              Row(
+                children: [
+                  Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                     color: const Color(0xFF00695C).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   child: const Icon(
-                    Icons.route,
+                      Icons.route,
                     color: Color(0xFF00695C),
                     size: 24,
+                    ),
                   ),
-                ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Route to Drop',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Route to Drop',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.darkTextPrimary
                               : AppColors.lightTextPrimary,
+                          ),
                         ),
-                      ),
-                      if (_routeDistance != null && _routeDuration != null)
-                        Text(
-                          '$_routeDistance • $_routeDuration',
-                          style: theme.textTheme.bodySmall?.copyWith(
+                        if (_routeDistance != null && _routeDuration != null)
+                          Text(
+                            '$_routeDistance • $_routeDuration',
+                            style: theme.textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.darkTextSecondary
                                 : AppColors.lightTextSecondary,
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 IconButton(
                   onPressed: () {
                     setState(() {
@@ -1277,18 +1277,18 @@ void _startLocationStream() {
                         : AppColors.lightTextSecondary,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _temporaryExit(),
-                  icon: Icon(
-                    Icons.close,
+                  IconButton(
+                    onPressed: () => _temporaryExit(),
+                    icon: Icon(
+                      Icons.close,
                     color: isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.lightTextSecondary,
+                    ),
                   ),
-                ),
-              ],
-            ),
-
+                ],
+              ),
+              
             const SizedBox(height: 16),
 
             /// ---------------- CONDITIONAL CONTENT (MINIMIZED/EXPANDED) ----------------
@@ -1343,74 +1343,74 @@ void _startLocationStream() {
             ] else ...[
               /// ---------------- NEXT TURN ----------------
               if (_nextTurnInstruction != null) ...[
-              Row(
-                children: [
-                  Container(
+                Row(
+                  children: [
+                    Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                      decoration: BoxDecoration(
                       color: const Color(0xFF00695C),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
                       _getManeuverIcon(
                         _navigationSteps.isNotEmpty
                             ? _navigationSteps[_currentStepIndex].maneuver
                             : '',
                       ),
-                      color: Colors.white,
+                        color: Colors.white,
                       size: 20,
+                      ),
                     ),
-                  ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _nextTurnInstruction!,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _nextTurnInstruction!,
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w600,
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.lightTextPrimary,
+                            ),
                           ),
-                        ),
                         if (_nextTurnDistance != null ||
                             _nextStreetName != null)
-                          Text(
-                            '${_nextTurnDistance ?? ''}${_nextStreetName != null ? ' • $_nextStreetName' : ''}',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            Text(
+                              '${_nextTurnDistance ?? ''}${_nextStreetName != null ? ' • $_nextStreetName' : ''}',
+                              style: theme.textTheme.bodySmall?.copyWith(
                               color: isDark
                                   ? AppColors.darkTextSecondary
                                   : AppColors.lightTextSecondary,
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 16),
-            ],
-
+              ],
+              
             /// ---------------- DISTANCE TO DESTINATION ----------------
-            Container(
+              Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: _hasReachedDestination
+                decoration: BoxDecoration(
+                  color: _hasReachedDestination 
                     ? Colors.green.withOpacity(0.1)
                     : const Color(0xFF00695C).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _hasReachedDestination
+                  border: Border.all(
+                    color: _hasReachedDestination 
                       ? Colors.green.withOpacity(0.3)
                       : const Color(0xFF00695C).withOpacity(0.3),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
+                child: Row(
+                  children: [
+                    Icon(
                     _hasReachedDestination
                         ? Icons.location_on
                         : Icons.my_location,
@@ -1420,121 +1420,121 @@ void _startLocationStream() {
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _hasReachedDestination
-                          ? 'You have arrived at the destination!'
-                          : '${_formatDistance(_distanceToDestination)} remaining',
+                    Expanded(
+                      child: Text(
+                        _hasReachedDestination 
+                            ? 'You have arrived at the destination!'
+                            : '${_formatDistance(_distanceToDestination)} remaining',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: _hasReachedDestination
+                          fontWeight: FontWeight.w600,
+                          color: _hasReachedDestination 
                             ? Colors.green
                             : (isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.lightTextPrimary),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-
+              
             const SizedBox(height: 8),
-
+              
             /// ---------------- TIMER ----------------
-            Container(
+              Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
+                decoration: BoxDecoration(
                 color: _remainingSeconds < 300
                     ? Colors.orange.withOpacity(0.1)
                     : const Color(0xFF00695C).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
                   color: _remainingSeconds < 300
                       ? Colors.orange.withOpacity(0.3)
                       : const Color(0xFF00695C).withOpacity(0.3),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.timer,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.timer,
                     color: _remainingSeconds < 300
                         ? Colors.orange
                         : const Color(0xFF00695C),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Complete collection in: ${_formatTime(_remainingSeconds)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Complete collection in: ${_formatTime(_remainingSeconds)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         color: _remainingSeconds < 300
                             ? Colors.orange
                             : (isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.lightTextPrimary),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-
+              
             const SizedBox(height: 16),
-
+              
             /// ---------------- ACTION BUTTONS ----------------
-            if (_hasReachedDestination) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Cancel Collection'),
+              if (_hasReachedDestination) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Cancel Collection'),
                             content: const Text(
                                 'Are you sure you want to cancel this collection?'),
-                            actions: [
-                              TextButton(
+                              actions: [
+                                TextButton(
                                 onPressed: () =>
                                     Navigator.pop(context, false),
-                                child: const Text('No'),
-                              ),
-                              FilledButton(
+                                  child: const Text('No'),
+                                ),
+                                FilledButton(
                                 onPressed: () =>
                                     Navigator.pop(context, true),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.lightError,
                                 ),
-                                child: const Text('Yes, Cancel'),
-                              ),
-                            ],
-                          ),
-                        );
+                                  child: const Text('Yes, Cancel'),
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirmed == true) {
-                          _showCancellationDialog(context);
-                        }
-                      },
-                      icon: const Icon(Icons.cancel),
-                      label: const Text('Cancel'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.lightError,
-                        side: BorderSide(color: AppColors.lightError),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          if (confirmed == true) {
+                            _showCancellationDialog(context);
+                          }
+                        },
+                        icon: const Icon(Icons.cancel),
+                        label: const Text('Cancel'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.lightError,
+                          side: BorderSide(color: AppColors.lightError),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ] else ...[
+                  ],
+                ),
+              ] else ...[
               // Show slide button when close to drop, otherwise show nothing
               if (_showSlideButton) ...[
                 // Slide to Collect Button (when close to drop)
@@ -1554,180 +1554,180 @@ void _startLocationStream() {
                 ),
               ],
             ],
+              ],
             ],
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-@override
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  final isDark = theme.brightness == Brightness.dark;
-
-  // Loading state shortcut
-  if (_isLoading) {
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(color: AppColors.lightPrimary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Calculating route...',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  return WillPopScope(
-    onWillPop: () async {
-      // Show confirmation dialog before allowing back
-      final shouldPop = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Leave Collection?'),
-          content: const Text(
-            'You have an active collection. Are you sure you want to leave? '
-            'You must complete or cancel the collection to proceed.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Stay'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.lightError,
-                foregroundColor: Colors.white,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+  // Loading state shortcut
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                  CircularProgressIndicator(color: AppColors.lightPrimary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Calculating route...',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Leave'),
-            ),
-          ],
+            ],
+          ),
         ),
       );
-      if (shouldPop == true) {
-        await ref.read(navigationControllerProvider.notifier).cancelCollection();
-      }
-      return shouldPop ?? false;
-    },
-    child: Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      body: Stack(
-        children: [
-          // Google Map
-          GoogleMap(
-            onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
-              setState(() {
-                _hasInitialCameraPosition = true;
-              });
-              debugPrint('🗺️ Map created - Initial camera position set');
-            },
-            onCameraMoveStarted: () {
-              debugPrint('👆 User started interacting with map');
-              setState(() {
-                _isUserInteracting = true;
-              });
-            },
-            onCameraIdle: () {
-              debugPrint('👆 User finished interacting with map - will resume auto-update in 2 seconds');
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted) {
-                  debugPrint('🔄 Resuming automatic camera updates');
-                  setState(() {
-                    _isUserInteracting = false;
-                  });
-                }
-              });
-            },
-            initialCameraPosition: CameraPosition(
-              target: _currentLocation ?? widget.destination,
+    }
+
+    return WillPopScope(
+      onWillPop: () async {
+        // Show confirmation dialog before allowing back
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Leave Collection?'),
+            content: const Text(
+              'You have an active collection. Are you sure you want to leave? '
+              'You must complete or cancel the collection to proceed.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Stay'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.lightError,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Leave'),
+              ),
+            ],
+          ),
+        );
+        if (shouldPop == true) {
+          await ref.read(navigationControllerProvider.notifier).cancelCollection();
+        }
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        body: Stack(
+          children: [
+            // Google Map
+            GoogleMap(
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+                setState(() {
+                  _hasInitialCameraPosition = true;
+                });
+                debugPrint('🗺️ Map created - Initial camera position set');
+              },
+              onCameraMoveStarted: () {
+                debugPrint('👆 User started interacting with map');
+                setState(() {
+                  _isUserInteracting = true;
+                });
+              },
+              onCameraIdle: () {
+                debugPrint('👆 User finished interacting with map - will resume auto-update in 2 seconds');
+                Future.delayed(const Duration(seconds: 2), () {
+                  if (mounted) {
+                    debugPrint('🔄 Resuming automatic camera updates');
+                    setState(() {
+                      _isUserInteracting = false;
+                    });
+                  }
+                });
+              },
+              initialCameraPosition: CameraPosition(
+                target: _currentLocation ?? widget.destination,
               zoom: 18,
               tilt: 0,
               bearing: 0,
-            ),
-            markers: {
-              Marker(
-                markerId: const MarkerId('destination'),
-                position: widget.destination,
-                icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                infoWindow: const InfoWindow(title: 'Drop Location'),
               ),
-            },
-            polylines: _polylines,
+              markers: {
+                Marker(
+                  markerId: const MarkerId('destination'),
+                  position: widget.destination,
+                icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
+                  infoWindow: const InfoWindow(title: 'Drop Location'),
+                ),
+              },
+              polylines: _polylines,
             myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
             compassEnabled: true,
-            mapType: MapType.normal,
-            zoomGesturesEnabled: true,
-            scrollGesturesEnabled: true,
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
-            minMaxZoomPreference: const MinMaxZoomPreference(15, 20),
-          ),
-
-          // Navigation Banner
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _buildNavigationBanner(),
-          ),
-
-          // Floating Action Buttons
-          Positioned(
-            bottom: 20,
-            right: 20,
+              mapType: MapType.normal,
+              zoomGesturesEnabled: true,
+              scrollGesturesEnabled: true,
+              rotateGesturesEnabled: true,
+              tiltGesturesEnabled: true,
+              minMaxZoomPreference: const MinMaxZoomPreference(15, 20),
+            ),
+            
+            // Navigation Banner
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildNavigationBanner(),
+            ),
+            
+            // Floating Action Buttons
+            Positioned(
+              bottom: 20,
+              right: 20,
             child: SizedBox(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                 // My Location button
                 FloatingActionButton(
-                  heroTag: 'my_location_nav_fab',
-                  onPressed: () {
-                    if (_mapController != null && _currentLocation != null) {
-                      debugPrint('📍 My Location button pressed - manual camera control');
-                      _mapController!.animateCamera(
-                        CameraUpdate.newLatLng(_currentLocation!),
-                      );
-                    }
-                  },
+                heroTag: 'my_location_nav_fab',
+                onPressed: () {
+                  if (_mapController != null && _currentLocation != null) {
+                    debugPrint('📍 My Location button pressed - manual camera control');
+                    _mapController!.animateCamera(
+                      CameraUpdate.newLatLng(_currentLocation!),
+                    );
+                  }
+                },
                   backgroundColor: const Color(0xFF00695C),
                   foregroundColor: Colors.white,
-                  child: const Icon(Icons.my_location),
-                ),
+                child: const Icon(Icons.my_location),
+              ),
 
                 const SizedBox(height: 12),
 
@@ -2180,23 +2180,23 @@ Widget build(BuildContext context) {
   }
 
   void _showCancellationDialog(BuildContext context) {
-  CancellationReason? selectedReason;
-
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('Cancel Collection'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Are you sure you want to cancel this collection? Please select a reason:',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
+    CancellationReason? selectedReason;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Cancel Collection'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to cancel this collection? Please select a reason:',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
             ...CancellationReason.values.map(
               (reason) => RadioListTile<CancellationReason>(
                 title: Text(reason.displayName),
@@ -2210,31 +2210,31 @@ Widget build(BuildContext context) {
                 },
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Back'),
+            ],
           ),
-          FilledButton(
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Back'),
+            ),
+            FilledButton(
             onPressed: selectedReason == null
                 ? null
                 : () {
-                    Navigator.pop(context);
-                    _handleCancellation(selectedReason!);
-                  },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.lightError,
-              foregroundColor: Colors.white,
+                Navigator.pop(context);
+                _handleCancellation(selectedReason!);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.lightError,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Cancel Collection'),
             ),
-            child: const Text('Cancel Collection'),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
 void _showWarningNotification() async {
   if (_warningNotificationSent) return;
@@ -2287,52 +2287,52 @@ void _showWarningNotification() async {
   }
 }
 
-Future<void> _handleCancellation(CancellationReason reason) async {
-  try {
-    final authState = ref.read(authNotifierProvider);
-    final collectorId = authState?.value?.id;
-
-    if (collectorId == null) {
+  Future<void> _handleCancellation(CancellationReason reason) async {
+    try {
+      final authState = ref.read(authNotifierProvider);
+      final collectorId = authState?.value?.id;
+      
+      if (collectorId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: User not authenticated'),
+              backgroundColor: AppColors.lightError,
+            ),
+          );
+        }
+        return;
+      }
+      
+      await ref.read(dropsControllerProvider.notifier)
+          .cancelAcceptedDrop(widget.dropId, reason.value, collectorId);
+      
+      // Clear the persistent collection state
+      await ref.read(navigationControllerProvider.notifier).cancelCollection();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error: User not authenticated'),
+          SnackBar(
+          // ⚠️ Removed `const` so string interpolation works
+            content: Text('Collection cancelled: ${reason.displayName}'),
+            backgroundColor: AppColors.lightMapPin,
+          ),
+        );
+        
+        // Navigate back to home screen
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cancelling collection: $e'),
             backgroundColor: AppColors.lightError,
           ),
         );
       }
-      return;
-    }
-
-    await ref.read(dropsControllerProvider.notifier)
-        .cancelAcceptedDrop(widget.dropId, reason.value, collectorId);
-
-    // Clear the persistent collection state
-    await ref.read(navigationControllerProvider.notifier).cancelCollection();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          // ⚠️ Removed `const` so string interpolation works
-          content: Text('Collection cancelled: ${reason.displayName}'),
-          backgroundColor: AppColors.lightMapPin,
-        ),
-      );
-
-      // Navigate back to home screen
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error cancelling collection: $e'),
-          backgroundColor: AppColors.lightError,
-        ),
-      );
     }
   }
-}
 
   
 
@@ -2416,7 +2416,7 @@ Future<void> _handleCancellation(CancellationReason reason) async {
             content: Text('Error completing collection: $e'),
             backgroundColor: AppColors.lightError,
           ),
-          );
+        );
       }
     }
   }

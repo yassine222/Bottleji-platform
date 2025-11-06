@@ -159,6 +159,22 @@ class _MyAppState extends ConsumerState<MyApp> {
       navigationController.debugCheckSavedCollection();
     });
 
+    // Log current ColorScheme whenever theme changes
+    ref.listen(themeControllerProvider, (previous, next) {
+      // Defer to next frame to ensure theme has been applied
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = MyApp.navigatorKey.currentContext ?? context;
+        if (!mounted || ctx == null) return;
+        _dumpActiveColorScheme(ctx, label: 'Theme changed to ${next.name.toUpperCase()}');
+      });
+    });
+
+    // Initial dump after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _dumpActiveColorScheme(context, label: 'Initial theme');
+    });
+
     // Removed splash-on-resume behavior per request
 
     return MaterialApp(
@@ -260,6 +276,31 @@ class _MyAppState extends ConsumerState<MyApp> {
 
 }
 
+extension on _MyAppState {
+  void _dumpActiveColorScheme(BuildContext context, {String label = 'ColorScheme'}) {
+    try {
+      final s = Theme.of(context).colorScheme;
+      String hex(Color c) => '#'
+          '${c.alpha.toRadixString(16).padLeft(2, '0')}'
+          '${c.red.toRadixString(16).padLeft(2, '0')}'
+          '${c.green.toRadixString(16).padLeft(2, '0')}'
+          '${c.blue.toRadixString(16).padLeft(2, '0')}'
+          .toUpperCase();
+      // Compact, thesis-ready output
+      debugPrint('=== $label ===');
+      debugPrint('primary: ${hex(s.primary)} | onPrimary: ${hex(s.onPrimary)} | primaryContainer: ${hex(s.primaryContainer)} | onPrimaryContainer: ${hex(s.onPrimaryContainer)}');
+      debugPrint('secondary: ${hex(s.secondary)} | onSecondary: ${hex(s.onSecondary)} | secondaryContainer: ${hex(s.secondaryContainer)} | onSecondaryContainer: ${hex(s.onSecondaryContainer)}');
+      debugPrint('tertiary: ${hex(s.tertiary)} | onTertiary: ${hex(s.onTertiary)} | tertiaryContainer: ${hex(s.tertiaryContainer)} | onTertiaryContainer: ${hex(s.onTertiaryContainer)}');
+      debugPrint('error: ${hex(s.error)} | onError: ${hex(s.onError)} | errorContainer: ${hex(s.errorContainer)} | onErrorContainer: ${hex(s.onErrorContainer)}');
+      debugPrint('background: ${hex(s.background)} | onBackground: ${hex(s.onBackground)} | surface: ${hex(s.surface)} | onSurface: ${hex(s.onSurface)}');
+      debugPrint('surfaceVariant: ${hex(s.surfaceVariant)} | onSurfaceVariant: ${hex(s.onSurfaceVariant)} | outline: ${hex(s.outline)} | outlineVariant: ${hex(s.outlineVariant)}');
+      debugPrint('inverseSurface: ${hex(s.inverseSurface)} | onInverseSurface: ${hex(s.onInverseSurface)} | inversePrimary: ${hex(s.inversePrimary)} | surfaceTint: ${hex(s.surfaceTint)}');
+    } catch (e) {
+      debugPrint('Failed to dump ColorScheme: $e');
+    }
+  }
+}
+
 // Removed ResumeSplashScreen widget per request
 
 class MainAppScreen extends ConsumerStatefulWidget {
@@ -282,14 +323,16 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
     // Check if all providers are ready
     final isAuthReady = authState.hasValue;
     final isUserModeReady = userMode.hasValue;
+    // Don't wait for navigationController - it's not critical for initial load
     final isNavigationReady = !navigationController.isLoading;
     
     print('🔄 MainAppScreen rebuild - Auth: $isAuthReady, UserMode: $isUserModeReady, Navigation: $isNavigationReady');
     print('🔄 Auth state: ${authState.when(data: (user) => user?.id, loading: () => 'loading', error: (_, __) => 'error')}');
     
-    // Show loading screen until ALL providers are ready
-    if (!isAuthReady || !isUserModeReady || !isNavigationReady) {
-      print('⏳ Showing loading screen - Auth: $isAuthReady, UserMode: $isUserModeReady, Navigation: $isNavigationReady');
+    // Show loading screen only for critical providers (auth and userMode)
+    // Navigation controller can load in the background
+    if (!isAuthReady || !isUserModeReady) {
+      print('⏳ Showing loading screen - Auth: $isAuthReady, UserMode: $isUserModeReady');
       return Scaffold(
         backgroundColor: const Color(0xFF00695C),
         body: Center(

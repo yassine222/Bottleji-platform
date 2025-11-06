@@ -131,26 +131,85 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
       ),
-      body: Center(
-        child: _errorMessage != null
-            ? Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                    const SizedBox(height: 16),
-                    const Text('Unable to load video', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(_errorMessage!, style: const TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
-                  ],
-                ),
-              )
-            : !_isInitialized
-                ? const CircularProgressIndicator(color: Color(0xFF00695C))
-                : _chewieController != null
-                    ? Chewie(controller: _chewieController!)
-                    : const SizedBox.shrink(),
+      body: SafeArea(
+        child: Center(
+          child: _errorMessage != null
+              ? Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      const Text('Unable to load video', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(_errorMessage!, style: const TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+                    ],
+                  ),
+                )
+              : !_isInitialized
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _buildVideoContainer(
+                        context,
+                        const Center(
+                          child: CircularProgressIndicator(color: Color(0xFF00695C)),
+                        ),
+                      ),
+                    )
+                  : _chewieController != null
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                          child: _buildVideoContainer(
+                            context,
+                            AspectRatio(
+                              aspectRatio: _videoPlayerController?.value.isInitialized == true
+                                  ? _videoPlayerController!.value.aspectRatio
+                                  : 16 / 9,
+                              child: Chewie(controller: _chewieController!),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoContainer(BuildContext context, Widget child) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 900),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF101010),
+            Color(0xFF050505),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: Colors.white24, width: 1.2),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            color: Colors.black,
+            child: child,
+          ),
+        ),
       ),
     );
   }

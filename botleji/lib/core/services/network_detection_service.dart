@@ -41,8 +41,8 @@ class NetworkDetectionService {
       print('❌ NetworkDetectionService: Local IP detection failed: $e');
     }
 
-    // Method 2: Try common local IPs
-    final commonIps = ['192.168.1.14', '192.168.1.100', '192.168.0.100', '10.0.0.100', '172.20.10.12'];
+    // Method 2: Try common local IPs (Personal Hotspot IP first)
+    final commonIps = ['172.20.10.12', '192.168.0.207', '192.168.1.14', '192.168.1.100', '192.168.0.100', '10.0.0.100'];
     for (final ip in commonIps) {
       if (await _testConnection(ip)) {
         print('🌐 NetworkDetectionService: Using common IP: $ip');

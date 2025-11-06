@@ -194,9 +194,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         }
         
         // Check application status first, then roles
-        final applicationStatus = user.collectorApplicationStatus;
-        print('🔍 AppDrawer: User application status from shared preferences: $applicationStatus');
-        
+          final applicationStatus = user.collectorApplicationStatus;
+          print('🔍 AppDrawer: User application status from shared preferences: $applicationStatus');
+          
         // Priority 1: If user has collector role and isCollector is true, allow mode switch (legacy collectors)
         if (user.isCollector && user.roles.contains('collector')) {
           print('🔄 AppDrawer: Legacy collector - has collector role and isCollector is true, allowing mode switch to collector');
@@ -240,7 +240,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             shouldNavigateToStatus = false;
             shouldNavigateToEdit = false;
           }
-      
+          
           // Show dialog to apply for collector status
           final shouldApply = await showDialog<bool>(
             context: context,
@@ -368,7 +368,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         ? Text(
                                             (user.name?.isNotEmpty == true) ? user.name![0].toUpperCase() : 'U',
                                             style: const TextStyle(
-                                              color: Color(0xFF00695C),
+              color: Color(0xFF00695C),
                                               fontSize: 28,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -379,17 +379,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 const SizedBox(width: 16),
                                 // User Info Column
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
-                                    children: [
+              children: [
                                       // Name
                                       Text(
                                         user.name ?? 'User',
                                         style: const TextStyle(
-                                          color: Colors.white,
+                    color: Colors.white,
                                           fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                                           letterSpacing: 0.5,
                                         ),
                                         maxLines: 1,
@@ -420,19 +420,19 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                               runSpacing: 8,
                               children: [
                                 if (user.roles.contains('household'))
-                                  Container(
+                Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Colors.white.withOpacity(0.3),
                                         width: 1,
                                       ),
-                                    ),
-                                    child: Row(
+                  ),
+                  child: Row(
                                       mainAxisSize: MainAxisSize.min,
-                                      children: [
+                    children: [
                                         Icon(Icons.home_rounded, color: Colors.white, size: 16),
                                         const SizedBox(width: 6),
                                         Text('Household', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
@@ -471,9 +471,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         Navigator.push(context, MaterialPageRoute(builder: (context) => const UpgradeToProScreen()));
                                       }
                                     : null,
-                                child: Container(
+                          child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                                     gradient: user.collectorSubscriptionType?.toLowerCase() == 'pro'
                                         ? const LinearGradient(
                                             colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
@@ -481,7 +481,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         : const LinearGradient(
                                             colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
                                           ),
-                                    borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
                                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
                                   ),
@@ -533,16 +533,16 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 6),
-                  child: Text(
+                              child: Text(
                     'Active Mode',
-                    style: TextStyle(
+                                style: TextStyle(
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
+                                ),
+                              ),
+                            ),
                 Container(
                   decoration: BoxDecoration(
                     color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
@@ -691,12 +691,12 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 ),
                                 const SizedBox(height: 4),
                                 userAsync.when(
-                            data: (user) {
-                              if (user == null) {
+                                data: (user) {
+                                  if (user == null) {
                                 return Text(
                                   'Collector',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
                                     color: currentUserMode.when(
                                       data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
@@ -705,17 +705,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
                                     letterSpacing: 0.3,
-                                  ),
-                                );
-                              }
+                                      ),
+                                    );
+                                  }
 
-                              final applicationStatus = user.collectorApplicationStatus;
+                                  final applicationStatus = user.collectorApplicationStatus;
                               
                               if (user.isCollector && user.roles.contains('collector')) {
                                 return Text(
                                   'Collector',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
                                     color: currentUserMode.when(
                                       data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
@@ -724,17 +724,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
                                     letterSpacing: 0.3,
-                                  ),
-                                );
-                              }
-                              
-                              if (applicationStatus != null) {
-                                switch (applicationStatus) {
-                                  case CollectorApplicationStatus.pending:
+                                      ),
+                                    );
+                                  }
+                                  
+                                  if (applicationStatus != null) {
+                                    switch (applicationStatus) {
+                                      case CollectorApplicationStatus.pending:
                                     return Text(
                                       'Review',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
                                         color: currentUserMode.when(
                                           data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                           loading: () => Colors.grey[600],
@@ -743,13 +743,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     fontWeight: FontWeight.w700,
                                     fontSize: 11,
                                     letterSpacing: 0.3,
-                                      ),
-                                    );
-                                  case CollectorApplicationStatus.rejected:
+                                          ),
+                                        );
+                                      case CollectorApplicationStatus.rejected:
                                     return Text(
                                       'Rejected',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
                                         color: currentUserMode.when(
                                           data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                           loading: () => Colors.grey[600],
@@ -758,14 +758,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     fontWeight: FontWeight.w700,
                                     fontSize: 11,
                                     letterSpacing: 0.3,
-                                      ),
-                                    );
-                                  case CollectorApplicationStatus.approved:
+                                          ),
+                                        );
+                                      case CollectorApplicationStatus.approved:
                                     if (user.roles.contains('collector')) {
                                       return Text(
                                         'Collector',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
                                           color: currentUserMode.when(
                                             data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
@@ -798,8 +798,8 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                               if (user.roles.contains('collector')) {
                                 return Text(
                                   'Collector',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
                                     color: currentUserMode.when(
                                       data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                       loading: () => Colors.grey[600],
@@ -824,13 +824,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                     fontWeight: FontWeight.w700,
                                     fontSize: 11,
                                     letterSpacing: 0.3,
-                                ),
-                              );
-                            },
+                                    ),
+                                  );
+                                },
                             loading: () => Text(
-                              'Loading...',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
+                                  'Loading...',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
                                 color: currentUserMode.when(
                                   data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
@@ -843,8 +843,8 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             ),
                             error: (error, stack) => Text(
                               'Apply',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
                                 color: currentUserMode.when(
                                   data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                   loading: () => Colors.grey[600],
@@ -890,18 +890,18 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           // History - Only show for collectors
           currentUserMode.when(
             data: (mode) => mode == UserMode.collector ? ListTile(
-              leading: Icon(
+            leading: Icon(
                 Icons.history_rounded,
                 color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
-              ),
-              title: const Text('History'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HistoryScreen()),
-                );
-              },
+            ),
+            title: const Text('History'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
             ) : const SizedBox.shrink(),
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
@@ -1009,4 +1009,4 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
       ),
     );
   }
-}
+} 

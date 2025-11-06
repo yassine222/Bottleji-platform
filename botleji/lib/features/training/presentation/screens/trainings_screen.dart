@@ -291,7 +291,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
+                        children: [
                     _buildBadge(
                       content.category.icon,
                       content.category.displayName,

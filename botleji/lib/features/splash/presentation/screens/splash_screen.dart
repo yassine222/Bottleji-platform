@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,38 +88,102 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final authState = ref.read(authNotifierProvider);
     final userMode = ref.read(userModeControllerProvider);
     
+    print('⏳ Splash: Checking auth and user mode...');
+    print('⏳ Splash: Auth state: ${authState.hasValue} (${authState.hasError ? 'error' : authState.isLoading ? 'loading' : 'ready'})');
+    print('⏳ Splash: UserMode state: ${userMode.hasValue} (${userMode.hasError ? 'error' : userMode.isLoading ? 'loading' : 'ready'})');
+    
     // If both are already loaded, navigate immediately
     if (authState.hasValue && userMode.hasValue) {
       print('✅ Splash: Both auth and user mode already loaded, navigating to main');
-      Navigator.of(context).pushReplacementNamed('/main');
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/main');
+      }
       return;
     }
     
-    // Otherwise, wait for both to load
+    // Check for errors - navigate anyway if there are errors
+    if (authState.hasError || userMode.hasError) {
+      print('⚠️ Splash: Error detected, navigating anyway');
+      print('⚠️ Splash: Auth error: ${authState.hasError}, UserMode error: ${userMode.hasError}');
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/main');
+      }
+      return;
+    }
+    
+    // Otherwise, wait for both to load with polling
     print('⏳ Splash: Waiting for auth and user mode to load...');
-    print('⏳ Splash: Auth ready: ${authState.hasValue}, UserMode ready: ${userMode.hasValue}');
     
     // Listen to both auth and user mode changes
     bool hasNavigated = false;
     
     ref.listen(authNotifierProvider, (previous, next) {
-      if (mounted && !hasNavigated && next.hasValue && userMode.hasValue) {
+      final currentUserMode = ref.read(userModeControllerProvider);
+      print('🔄 Splash: Auth changed - hasValue: ${next.hasValue}, UserMode hasValue: ${currentUserMode.hasValue}');
+      
+      if (mounted && !hasNavigated && next.hasValue && currentUserMode.hasValue) {
         hasNavigated = true;
-        print('✅ Splash: Auth and user mode loaded, navigating to main');
-        Navigator.of(context).pushReplacementNamed('/main');
+        print('✅ Splash: Auth and user mode loaded (via auth listener), navigating to main');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
+      } else if (mounted && !hasNavigated && next.hasError) {
+        hasNavigated = true;
+        print('⚠️ Splash: Auth error detected, navigating anyway');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
       }
     });
     
     ref.listen(userModeControllerProvider, (previous, next) {
-      if (mounted && !hasNavigated && next.hasValue && authState.hasValue) {
+      final currentAuthState = ref.read(authNotifierProvider);
+      print('🔄 Splash: UserMode changed - hasValue: ${next.hasValue}, Auth hasValue: ${currentAuthState.hasValue}');
+      
+      if (mounted && !hasNavigated && next.hasValue && currentAuthState.hasValue) {
         hasNavigated = true;
-        print('✅ Splash: Auth and user mode loaded, navigating to main');
-        Navigator.of(context).pushReplacementNamed('/main');
+        print('✅ Splash: Auth and user mode loaded (via userMode listener), navigating to main');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
+      } else if (mounted && !hasNavigated && next.hasError) {
+        hasNavigated = true;
+        print('⚠️ Splash: UserMode error detected, navigating anyway');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
       }
     });
     
-    // Fallback: navigate after maximum wait time
-    await Future.delayed(const Duration(seconds: 5));
+    // Poll every 500ms to check if providers are ready (for faster navigation)
+    for (int i = 0; i < 10; i++) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (!mounted || hasNavigated) break;
+      
+      final currentAuthState = ref.read(authNotifierProvider);
+      final currentUserMode = ref.read(userModeControllerProvider);
+      
+      if (currentAuthState.hasValue && currentUserMode.hasValue) {
+        hasNavigated = true;
+        print('✅ Splash: Providers ready after polling, navigating to main');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
+        break;
+      }
+      
+      if (currentAuthState.hasError || currentUserMode.hasError) {
+        hasNavigated = true;
+        print('⚠️ Splash: Error detected during polling, navigating anyway');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
+        break;
+      }
+    }
+    
+    // Final fallback: navigate after maximum wait time (reduced from 5s to 3s)
     if (mounted && !hasNavigated) {
       print('⏰ Splash: Timeout waiting for auth/user mode, navigating anyway');
       Navigator.of(context).pushReplacementNamed('/main');

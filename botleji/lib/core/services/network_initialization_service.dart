@@ -17,23 +17,37 @@ class NetworkInitializationService {
       NetworkDetectionService.clearCache();
       ServerConfig.clearIpCache();
 
-      // Detect the optimal server IP
-      final serverUrl = await ServerConfig.serverUrl;
-      final apiUrl = await ServerConfig.apiBaseUrl;
+      // Use sync version when auto-detection is disabled to avoid localhost issues
+      if (!ServerConfig.useAutoDetection) {
+        // Use sync fallback directly - this will use the correct fallback IP
+        final syncApiUrl = ServerConfig.apiBaseUrlSync;
+        _detectedApiUrl = syncApiUrl;
+        // Extract server URL from API URL (remove /api)
+        _detectedServerUrl = syncApiUrl.replaceAll('/api', '');
+        
+        print('🌐 NetworkInitializationService: Auto-detection disabled, using fallback');
+        print('🌐 NetworkInitializationService: Detected server URL: $_detectedServerUrl');
+        print('🌐 NetworkInitializationService: Detected API URL: $_detectedApiUrl');
+      } else {
+        // Detect the optimal server IP (async)
+        final serverUrl = await ServerConfig.serverUrl;
+        final apiUrl = await ServerConfig.apiBaseUrl;
+        
+        _detectedServerUrl = serverUrl;
+        _detectedApiUrl = apiUrl;
+        
+        print('🌐 NetworkInitializationService: Detected server URL: $serverUrl');
+        print('🌐 NetworkInitializationService: Detected API URL: $apiUrl');
+      }
       
-      _detectedServerUrl = serverUrl;
-      _detectedApiUrl = apiUrl;
-      
-      print('🌐 NetworkInitializationService: Detected server URL: $serverUrl');
-      print('🌐 NetworkInitializationService: Detected API URL: $apiUrl');
       print('🌐 NetworkInitializationService: Current detected IP: ${ServerConfig.currentDetectedIp}');
       
       _initialized = true;
     } catch (e) {
       print('❌ NetworkInitializationService: Error during initialization: $e');
       // Set fallback URLs
-      _detectedServerUrl = 'http://192.168.1.14:3000';
-      _detectedApiUrl = 'http://192.168.1.14:3000/api';
+      _detectedServerUrl = 'http://172.20.10.12:3000';
+      _detectedApiUrl = 'http://172.20.10.12:3000/api';
       _initialized = true;
     }
   }

@@ -21,7 +21,7 @@ class EnvironmentConfig {
   static String get apiBaseUrlSync {
     switch (environment) {
       case Environment.dev:
-        return 'http://192.168.1.14:3000/api'; // Fallback URL
+        return 'http://172.20.10.12:3000/api'; // Fallback URL (Personal Hotspot IP)
       case Environment.prod:
         return 'https://your-production-api.com/api'; // Replace with your production URL
     }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/stats/data/models/collector_stats.dart';
-import 'package:botleji/features/stats/controllers/stats_controller.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 import 'package:botleji/core/services/timezone_service.dart';
@@ -189,12 +188,27 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
     required Color color,
     required List<FlSpot> data,
   }) {
+    final sortedData = [...data]..sort((a, b) => a.x.compareTo(b.x));
+    final minX = sortedData.isEmpty ? null : sortedData.first.x - 0.4;
+    final maxX = sortedData.isEmpty ? null : sortedData.last.x + 0.4;
+    final maxY = data.isEmpty
+        ? 5.0
+        : data.map((spot) => spot.y).reduce((a, b) => a > b ? a : b).ceil().toDouble();
+
     return Container(
       padding: const EdgeInsets.all(8),
       child: LineChart(
         LineChartData(
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+            ),
+          ),
+          minX: minX,
+          maxX: maxX,
           minY: 0,
-          maxY: data.isEmpty ? 5.0 : (data.map((spot) => spot.y).reduce((a, b) => a > b ? a : b) * 1.2).ceil().toDouble(),
+          maxY: maxY == 0 ? 5 : (maxY * 1.2).ceil().toDouble(),
           lineBarsData: [
             LineChartBarData(
               spots: data,
@@ -227,16 +241,19 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
                 showTitles: true,
                 reservedSize: 35,
                 getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
+                  if ((value - value.roundToDouble()).abs() > 0.01) {
+                    return const SizedBox.shrink();
+                  }
+                  final index = value.round();
                   final dataPoints = _getDataPointsForTimeRange();
-                  
+
                   if (index >= 0 && index < dataPoints) {
                     return Text(
                       _getXAxisLabel(index),
                       style: const TextStyle(fontSize: 9),
                     );
                   }
-                  return const Text('');
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -359,7 +376,6 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   List<FlSpot> _generateDataFromCollectionAttempts(List<CollectionAttempt> attempts, String outcome) {
-    final now = TimezoneService.now();
     final dataPoints = _getDataPointsForTimeRange();
     final Map<String, int> counts = {};
     

@@ -580,7 +580,6 @@ function UsersContent() {
   const collectorsCount = users.filter(u => u.roles?.includes('collector')).length;
   const activeUsersCount = users.filter(u => !u.isAccountLocked || (u.accountLockedUntil && new Date(u.accountLockedUntil) <= new Date())).length;
   const lockedUsersCount = users.filter(u => u.isAccountLocked && (!u.accountLockedUntil || new Date(u.accountLockedUntil) > new Date())).length;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -718,7 +717,7 @@ function UsersContent() {
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[200px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -726,7 +725,7 @@ function UsersContent() {
                     <span>User</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[120px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -734,7 +733,7 @@ function UsersContent() {
                     <span>Status</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[130px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -742,15 +741,15 @@ function UsersContent() {
                     <span>Role</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[110px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    <span>Verification</span>
+                    <span>Verify</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[100px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -758,7 +757,7 @@ function UsersContent() {
                     <span>Joined</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-[280px]">
                   <div className="flex items-center space-x-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
@@ -771,12 +770,12 @@ function UsersContent() {
             <tbody className="bg-white divide-y divide-gray-50">
               {filteredUsers.map((user, index) => (
                 <tr key={user.id} className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-12 w-12 relative">
+                      <div className="flex-shrink-0 h-10 w-10 relative">
                         {user.profilePhoto ? (
                           <img
-                            className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-sm"
+                            className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
                             src={user.profilePhoto}
                             alt={user.name || 'User'}
                             onError={(e) => {
@@ -786,34 +785,34 @@ function UsersContent() {
                             }}
                           />
                         ) : null}
-                        <div className={`h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm ring-2 ring-white ${user.profilePhoto ? 'hidden' : ''}`}>
-                          <span className="text-white text-sm font-semibold">
+                        <div className={`h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm ring-2 ring-white ${user.profilePhoto ? 'hidden' : ''}`}>
+                          <span className="text-white text-xs font-semibold">
                             {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                           </span>
                         </div>
                         {/* Online indicator */}
-                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-success-color rounded-full border-2 border-white shadow-sm"></div>
+                        <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-success-color rounded-full border-2 border-white shadow-sm"></div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-semibold text-text-primary">{user.name || 'No Name'}</div>
-                        <div className="text-sm text-text-secondary flex items-center">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="ml-2 min-w-0">
+                        <div className="text-xs font-semibold text-text-primary truncate">{user.name || 'No Name'}</div>
+                        <div className="text-xs text-text-secondary truncate flex items-center">
+                          <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
-                          {user.email}
+                          <span className="truncate">{user.email}</span>
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     {getStatusBadge(user)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-1">
                       {user.roles?.map((role: string, idx: number) => (
                         <span
                           key={idx}
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             role === 'admin' 
                               ? 'bg-red-100 text-red-800' 
                               : role === 'collector' 
@@ -823,36 +822,36 @@ function UsersContent() {
                         >
                           {role}
                         </span>
-                      )) || <span className="text-text-secondary text-sm">No roles</span>}
+                      )) || <span className="text-text-secondary text-xs">No roles</span>}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     {user.isVerified ? (
                       <div className="flex items-center text-success-color">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
-                        <span className="text-sm font-medium">Verified</span>
+                        <span className="text-xs font-medium">Verified</span>
                       </div>
                     ) : (
                       <div className="flex items-center text-warning-color">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
-                        <span className="text-sm font-medium">Not Verified</span>
+                        <span className="text-xs font-medium">Not Verified</span>
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                  <td className="px-3 py-3 whitespace-nowrap text-xs text-text-secondary">
                     <div className="flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       {formatDate(user.createdAt)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-3 py-3 whitespace-nowrap text-xs font-medium">
+                    <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => {
                           setSelectedUser(user);
@@ -862,9 +861,9 @@ function UsersContent() {
                           setActivityDateFilter('all');
                           loadUserActivities(user.id);
                         }}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-sm"
+                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-sm"
                       >
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
@@ -873,19 +872,19 @@ function UsersContent() {
                       {user.isAccountLocked ? (
                         <button
                           onClick={() => handleUnbanUser(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-sm"
+                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-sm"
                         >
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                           Unlock
                         </button>
                       ) : (
                         <button
                           onClick={() => handleBanUser(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-orange-500 text-xs font-medium rounded-md text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-sm"
+                          className="inline-flex items-center px-2 py-1 border border-orange-500 text-xs font-medium rounded-md text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-sm"
                         >
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                           Lock
@@ -894,9 +893,9 @@ function UsersContent() {
                       {user.isDeleted ? (
                         <button
                           onClick={() => handleRestoreUser(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-green-500 text-xs font-medium rounded-md text-green-600 bg-green-50 hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm"
+                          className="inline-flex items-center px-2 py-1 border border-green-500 text-xs font-medium rounded-md text-green-600 bg-green-50 hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm"
                         >
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
                           Restore
@@ -904,9 +903,9 @@ function UsersContent() {
                       ) : (
                         <button
                           onClick={() => handleDeleteUser(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-red-500 text-xs font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm"
+                          className="inline-flex items-center px-2 py-1 border border-red-500 text-xs font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm"
                         >
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                           Delete
@@ -967,7 +966,6 @@ function UsersContent() {
           </div>
         )}
       </div>
-
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
@@ -1573,7 +1571,7 @@ function UsersContent() {
                     })()}
                   </div>
               
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex justify-end space-x-3 pt-6 pb-4">
                 <button
                   onClick={() => setShowUserModal(false)}
                   className="px-4 py-2 bg-surface text-text-primary border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
@@ -1636,7 +1634,6 @@ function UsersContent() {
     </div>
   );
 }
-
 function DropsContent() {
   const [stats, setStats] = useState<any>(null);
   const [timeBasedStats, setTimeBasedStats] = useState<any>(null);
@@ -2252,7 +2249,6 @@ function DropsContent() {
     { name: 'Cancelled', value: stats.dropsByStatus['cancelled'] || 0, color: COLORS.cancelled },
     { name: 'Expired', value: stats.dropsByStatus['expired'] || 0, color: COLORS.expired },
   ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -2975,7 +2971,6 @@ function DropsContent() {
           )}
         </div>
       )}
-
       {/* Collected Drops Tab */}
       {dropsActiveTab === 'collected-drops' && (
         <div className="bg-white rounded-xl shadow-md p-6">
@@ -3558,21 +3553,22 @@ function DropsContent() {
           </div>
         </div>
       )}
-
       {/* Drop Details Modal */}
       {showDropDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full my-8 relative">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-primary to-primary-dark">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-800 to-gray-900">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Drop Details</h2>
+                <h2 className="text-2xl font-bold text-white drop-shadow-sm">Drop Details</h2>
                 <button
                   onClick={() => setShowDropDetails(false)}
-                  className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+                  className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white hover:bg-gray-100 text-gray-800 hover:text-gray-900 transition-colors shadow-sm"
                   aria-label="Close"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -4028,7 +4024,6 @@ function DropsContent() {
     </div>
   );
 }
-
 function ApplicationsContent() {
   const [applications, setApplications] = useState<CollectorApplication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4593,7 +4588,6 @@ function ApplicationsContent() {
           </nav>
         </div>
       )}
-
       {/* Application Details Modal */}
       {showApplicationModal && selectedApplication && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
@@ -5000,7 +4994,6 @@ function ApplicationsContent() {
     </div>
   );
 }
-
 function TrainingContent() {
   const [trainingContent, setTrainingContent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -5688,7 +5681,7 @@ function TrainingContentModal({ content, onClose, onSave }: {
               )}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-6">
+            <div className="flex justify-end space-x-3 pt-6 pb-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -5740,7 +5733,6 @@ function TrainingContentModal({ content, onClose, onSave }: {
     </div>
   );
 }
-
 function SupportContent() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -6439,7 +6431,6 @@ function SupportContent() {
       iconColor: 'text-red-600',
     },
   ];
-
   return (
     <div className="p-0">
       <div className="space-y-6">
@@ -6937,7 +6928,6 @@ function SupportContent() {
                     </div>
                   </div>
                 </div>
-
                 {/* Related Objects Context */}
                 {(selectedTicket.relatedDropId || selectedTicket.relatedCollectionId || selectedTicket.relatedApplicationId) && (
                   <div>
@@ -7682,10 +7672,10 @@ function SupportContent() {
                         </div>
                       )}
                     </div>
-                    <div className="mt-3 flex justify-end space-x-3">
+                    <div className="mt-3 flex justify-end space-x-3 pt-6 pb-4">
                       <button
-                        onClick={handleCloseModal}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                        onClick={() => setShowUserModal(false)}
+                        className="px-4 py-2 bg-surface text-text-primary border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
                       >
                         Cancel
                       </button>
@@ -7721,7 +7711,6 @@ function SettingsContent() {
     </div>
   );
 }
-
 function AdminManagementContent() {
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -8162,7 +8151,6 @@ function AdminManagementContent() {
     </div>
   );
 }
-
 // Reward Shop Content Component
 function RewardShopContent() {
   const [rewards, setRewards] = useState<any[]>([]);
@@ -8608,7 +8596,6 @@ function RewardShopContent() {
       </div>
     );
   }
-
   return (
     <div className="p-6">
       {/* Header */}
@@ -9314,7 +9301,6 @@ function RewardShopContent() {
     </div>
   );
 }
-
 // Main Dashboard Component
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');

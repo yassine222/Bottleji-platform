@@ -64,18 +64,6 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     super.dispose();
   }
 
-  void _handleScrollVisibility() {
-    // Only hide header when typing, not based on scroll
-    if (_isTyping && _showHeader) {
-      setState(() {
-        _showHeader = false;
-      });
-    } else if (!_isTyping && !_showHeader) {
-      setState(() {
-        _showHeader = true;
-      });
-    }
-  }
 
   void _setupRealtimeChat() {
     final chatService = ref.read(chatServiceProvider);
@@ -326,12 +314,10 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     
     if (!_isTyping && text.isNotEmpty) {
       _startTyping();
-      if (_showHeader) {
-        setState(() { _showHeader = false; });
-      }
+      // Don't hide header when typing - keep drop details visible
     } else if (_isTyping && text.isEmpty) {
       _stopTyping();
-      _handleScrollVisibility();
+      // Don't change header visibility when stopping typing
     }
   }
 
@@ -344,7 +330,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
     final chatService = ref.read(chatServiceProvider);
     chatService.startTyping(widget.ticket.id, 'user');
-    _handleScrollVisibility(); // Hide header while typing
+    // Don't hide header - keep drop details card visible
 
     // Set timer to stop typing after 2 seconds of inactivity
     _typingTimer?.cancel();
@@ -362,7 +348,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
 
     final chatService = ref.read(chatServiceProvider);
     chatService.stopTyping(widget.ticket.id, 'user');
-    _handleScrollVisibility(); // Show header when done typing
+    // Don't change header visibility - keep it consistent
 
     _typingTimer?.cancel();
   }
@@ -439,15 +425,17 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Row(
+                    // User messages on right, agent messages on left
                     mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
+                      // Agent avatar on the left (for agent/received messages)
                       if (!isUser) ...[
                         CircleAvatar(
                           radius: 16,
                           backgroundColor: const Color(0xFF00695C),
-                          child: Text(
+                          child: const Text(
                             'A',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            style: TextStyle(color: Colors.white, fontSize: 12),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -456,6 +444,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
+                            // User's own messages: green on right, Received messages: gray on left
                             color: isUser ? const Color(0xFF00695C) : Colors.grey[200],
                             borderRadius: BorderRadius.circular(18),
                           ),
@@ -481,6 +470,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
                           ),
                         ),
                       ),
+                      // User avatar on the right (for user's own messages)
                       if (isUser) ...[
                         const SizedBox(width: 8),
                         CircleAvatar(

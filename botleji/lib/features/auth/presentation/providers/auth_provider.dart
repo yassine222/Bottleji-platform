@@ -1,3 +1,4 @@
+import 'package:botleji/core/config/server_config.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -131,51 +132,75 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     try {
       print('🔄 AuthProvider: Setting user mode from roles: $roles');
       
+      if (roles.isEmpty) {
+        print('⚠️ AuthProvider: No roles provided, skipping user mode setup');
+        return;
+      }
+      
       // Wait for UserModeController to be ready
       int attempts = 0;
       while (attempts < 10) { // Max 5 seconds wait
-        final userModeState = _ref.read(userModeControllerProvider);
-        if (userModeState.hasValue) {
-          print('✅ AuthProvider: UserModeController is ready');
-          break;
+        try {
+          final userModeState = _ref.read(userModeControllerProvider);
+          if (userModeState.hasValue) {
+            print('✅ AuthProvider: UserModeController is ready');
+            break;
+          }
+        } catch (e) {
+          print('⚠️ AuthProvider: Error reading userModeControllerProvider: $e');
         }
         print('⏳ AuthProvider: UserModeController not ready yet, waiting... (attempt ${attempts + 1}/10)');
         await Future.delayed(const Duration(milliseconds: 500));
         attempts++;
       }
       
-      final userModeController = _ref.read(userModeControllerProvider.notifier);
-      
-      // Get the current saved mode
-      final currentMode = await userModeController.getCurrentMode();
-      print('🔍 AuthProvider: Current saved mode: ${currentMode?.name}');
-      print('🔍 AuthProvider: Current mode backend role: ${currentMode?.backendRole}');
-      print('🔍 AuthProvider: User roles: $roles');
-      print('🔍 AuthProvider: Does user have current mode role? ${currentMode != null ? roles.contains(currentMode.backendRole) : false}');
-      
-      // Check if the current mode is still valid (user still has that role)
-      if (currentMode != null && roles.contains(currentMode.backendRole)) {
-        // Keep the current mode if it's still valid
-        print('✅ AuthProvider: Keeping current mode: ${currentMode.name} (user still has role: ${currentMode.backendRole})');
-        // Don't call setMode again if it's already the correct mode
-        final currentState = _ref.read(userModeControllerProvider);
-        if (currentState.hasValue && currentState.value == currentMode) {
-          print('✅ AuthProvider: Mode is already set correctly, skipping setMode call');
+      try {
+        final userModeController = _ref.read(userModeControllerProvider.notifier);
+        
+        // Get the current saved mode
+        final currentMode = await userModeController.getCurrentMode();
+        
+        print('🔍 AuthProvider: Current saved mode: ${currentMode?.name}');
+        print('🔍 AuthProvider: Current mode backend role: ${currentMode?.backendRole}');
+        print('🔍 AuthProvider: User roles: $roles');
+        print('🔍 AuthProvider: Does user have current mode role? ${currentMode != null ? roles.contains(currentMode.backendRole) : false}');
+        
+        // Check if the current mode is still valid (user still has that role)
+        if (currentMode != null && roles.contains(currentMode.backendRole)) {
+          // Keep the current mode if it's still valid
+          print('✅ AuthProvider: Keeping current mode: ${currentMode.name} (user still has role: ${currentMode.backendRole})');
+          // Don't call setMode again if it's already the correct mode
+          try {
+            final currentState = _ref.read(userModeControllerProvider);
+            if (currentState.hasValue && currentState.value == currentMode) {
+              print('✅ AuthProvider: Mode is already set correctly, skipping setMode call');
+            } else {
+              print('🔄 AuthProvider: Mode needs to be updated, calling setMode');
+              await userModeController.setMode(currentMode);
+            }
+          } catch (e) {
+            print('⚠️ AuthProvider: Error checking/updating mode: $e');
+            // Fallback: just set the mode
+            await userModeController.setMode(currentMode);
+          }
         } else {
-          print('🔄 AuthProvider: Mode needs to be updated, calling setMode');
-          await userModeController.setMode(currentMode);
+          // If no saved mode or invalid mode, default to household for users with both roles
+          final mode = UserMode.household;
+          print('🔄 AuthProvider: Setting default mode: ${mode.name} (from roles: $roles)');
+          print('🔄 AuthProvider: Reason: ${currentMode == null ? 'No saved mode' : 'Invalid mode for current roles'}');
+          await userModeController.setMode(mode);
         }
-      } else {
-        // If no saved mode or invalid mode, default to household for users with both roles
-        final mode = UserMode.household;
-        print('🔄 AuthProvider: Setting default mode: ${mode.name} (from roles: $roles)');
-        print('🔄 AuthProvider: Reason: ${currentMode == null ? 'No saved mode' : 'Invalid mode for current roles'}');
-        await userModeController.setMode(mode);
+        
+        print('✅ AuthProvider: User mode set successfully');
+      } catch (e, stackTrace) {
+        print('❌ AuthProvider: Error in user mode controller operations: $e');
+        print('❌ AuthProvider: Stack trace: $stackTrace');
+        rethrow;
       }
-      
-      print('✅ AuthProvider: User mode set to: ${currentMode?.name ?? 'default'} (from roles: $roles)');
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ AuthProvider: Error setting user mode: $e');
+      print('❌ AuthProvider: Stack trace: $stackTrace');
+      // Don't rethrow - let login continue even if user mode setup fails
     }
   }
 
@@ -235,7 +260,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       print('Login response: $response');
       
       return response.when(
-        success: (user, token, message) {
+        success: (user, token, message) async {
           print('Login success - User: $user, Token: $token, Message: $message');
           if (user != null && token != null) {
             print('Saving user data and token');
@@ -251,11 +276,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             _saveAuth(user);
             _saveToken(token);
             state = AsyncValue.data(user);
-            _connectToNotifications(token, ref);
+            
+            // Set user mode first (await it to ensure it completes)
             try {
-              _setUserModeFromRoles(user.roles);
+              await _setUserModeFromRoles(user.roles);
+            } catch (e, stackTrace) {
+              print('❌ Error setting user mode: $e');
+              print('❌ Stack trace: $stackTrace');
+              // Don't fail login if user mode setting fails
+            }
+            
+            // Connect to notifications (non-blocking, but log errors)
+            try {
+              _connectToNotifications(token, ref);
             } catch (e) {
-              print('Error setting user mode: $e');
+              print('❌ Error connecting to notifications: $e');
+              // Don't fail login if WebSocket connection fails
             }
             
             // Note: Skip syncing application status after login since we already have fresh user data
@@ -477,10 +513,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     try {
       print('🔌 AuthProvider: Setting up WebSocket connection...');
       
-      // Wait for network detection to complete
-      print('🔌 AuthProvider: Waiting for network detection...');
-      await NetworkDetectionService.getOptimalServerIp();
-      print('🔌 AuthProvider: Network detection completed');
+      // Skip network detection if auto-detection is disabled (use fallback directly)
+      if (ServerConfig.useAutoDetection) {
+        print('🔌 AuthProvider: Waiting for network detection...');
+        await NetworkDetectionService.getOptimalServerIp();
+        print('🔌 AuthProvider: Network detection completed');
+      } else {
+        print('🔌 AuthProvider: Auto-detection disabled, using configured IP');
+      }
       
       final notificationService = ref.read(notificationServiceProvider);
       
@@ -521,10 +561,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       print('🔌 AuthProvider: Setting up WebSocket connection on startup...');
       print('🔌 AuthProvider: Token length: ${token.length}');
       
-      // Wait for network detection to complete
-      print('🔌 AuthProvider: Waiting for network detection...');
-      await NetworkDetectionService.getOptimalServerIp();
-      print('🔌 AuthProvider: Network detection completed');
+      // Skip network detection if auto-detection is disabled (use fallback directly)
+      if (ServerConfig.useAutoDetection) {
+        print('🔌 AuthProvider: Waiting for network detection...');
+        await NetworkDetectionService.getOptimalServerIp();
+        print('🔌 AuthProvider: Network detection completed');
+      } else {
+        print('🔌 AuthProvider: Auto-detection disabled, using configured IP');
+      }
       
       final notificationService = _ref.read(notificationServiceProvider);
       

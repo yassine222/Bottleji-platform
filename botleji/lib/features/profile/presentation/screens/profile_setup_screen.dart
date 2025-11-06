@@ -533,8 +533,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           setState(() {
             _profilePhotoFile = finalImageFile;
           });
-          print('Image set successfully');
-        }
+        print('Image set successfully');
+      }
       } else {
         print('No file picked');
       }
@@ -544,14 +544,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text('Error picking image: ${e.toString()}'),
-          actions: [
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
+            title: const Text('Error'),
+            content: Text('Error picking image: ${e.toString()}'),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
         ),
       );
     }
@@ -812,12 +812,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           );
         } else {
           // For existing users, use updateProfile
-          await ref.read(authNotifierProvider.notifier).updateProfile(
-            name: changedFields['name'] ?? _originalName,
-            phone: changedFields['phone'] ?? _originalPhone,
-            address: changedFields['address'] ?? _originalAddress,
-            profilePhoto: changedFields['profilePhoto'] ?? _originalProfilePhoto,
-          );
+        await ref.read(authNotifierProvider.notifier).updateProfile(
+          name: changedFields['name'] ?? _originalName,
+          phone: changedFields['phone'] ?? _originalPhone,
+          address: changedFields['address'] ?? _originalAddress,
+          profilePhoto: changedFields['profilePhoto'] ?? _originalProfilePhoto,
+        );
         }
         
         print('Profile updated successfully via provider');
@@ -828,7 +828,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (user != null) {
           // Activity tracking removed
         }
-
+        
         // Show success message
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -861,7 +861,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           );
         } else {
           // For existing users, navigate back to the previous screen (Account screen)
-          Navigator.pop(context);
+        Navigator.pop(context);
         }
       } catch (e) {
         print('Error updating profile via provider: $e');
@@ -1033,7 +1033,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           },
                         );
                       }
-                  ),
+                    ),
                   )
               ],
             ),
@@ -1108,9 +1108,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           } else {
             // For new user setup, only clear fields if they haven't been initialized yet
             if (!_fieldsInitialized) {
-              _fullNameController.clear();
-              _phoneController.clear();
-              _addressController.clear();
+            _fullNameController.clear();
+            _phoneController.clear();
+            _addressController.clear();
               _fieldsInitialized = true; // Mark fields as initialized
             }
           }
@@ -1140,19 +1140,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () async {
                 // Silently logout without confirmation dialog
-                // Clear SharedPreferences
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
-                
-                // Logout from auth provider
-                await ref.read(authNotifierProvider.notifier).logout(ref);
-                
-                // Navigate to login screen
-                if (mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/login',
-                    (route) => false,
-                  );
+                  // Clear SharedPreferences
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.clear();
+                  
+                  // Logout from auth provider
+                  await ref.read(authNotifierProvider.notifier).logout(ref);
+                  
+                  // Navigate to login screen
+                  if (mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/login',
+                      (route) => false,
+                    );
                 }
               },
             ) : null,
@@ -1358,7 +1358,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                           Expanded(
                                             flex: 5, // Give even more space to the phone field
                                             child: TextFormField(
-                                              controller: _phoneController,
+                                controller: _phoneController,
                                               focusNode: _phoneFocusNode,
                                               keyboardType: TextInputType.number,
                                               maxLength: 8,
@@ -1384,7 +1384,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                                 fillColor: theme.colorScheme.surface,
                                                 contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                                               ),
-                                              validator: (v) {
+                                validator: (v) {
                                                 // Always validate as required for new users
                                                 if (widget.isNewUserSetup) {
                                                   if (v == null || v.isEmpty) {
@@ -1782,38 +1782,38 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
 
   Widget _buildAddressField(BuildContext context, ThemeData theme) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.lightSuccess.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.lightSuccess.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.location_on_outlined,
+                color: AppColors.lightSuccess,
+                size: 20,
+              ),
             ),
-            child: Icon(
-              Icons.location_on_outlined,
-              color: AppColors.lightSuccess,
-              size: 20,
+            const SizedBox(width: 12),
+            Text(
+              'Address',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Address',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
+          ],
+        ),
+        const SizedBox(height: 8),
 
       /// Address field
-      FormField<String>(
-        validator: (value) {
+        FormField<String>(
+          validator: (value) {
           // Validate only if new user or address changed
           if (widget.isNewUserSetup ||
               _addressController.text != _originalAddress) {
@@ -1822,64 +1822,64 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 : null;
           }
           return null; // Skip validation if unchanged
-        },
-        builder: (FormFieldState<String> field) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _addressController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.colorScheme.outline),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.colorScheme.outline),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+          },
+          builder: (FormFieldState<String> field) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _addressController,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: theme.colorScheme.outline),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: theme.colorScheme.outline),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     borderSide:
                         BorderSide(color: AppColors.lightPrimary, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () async {
-                      await _showAddressSearchDialog();
-                      field.didChange(_addressController.text);
-                      _formKey.currentState?.validate();
-                    },
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: () async {
+                        await _showAddressSearchDialog();
+                        field.didChange(_addressController.text);
+                        _formKey.currentState?.validate();
+                      },
+                    ),
+                    errorText: field.errorText,
                   ),
-                  errorText: field.errorText,
+                  onTap: () async {
+                    await _showAddressSearchDialog();
+                    field.didChange(_addressController.text);
+                    _formKey.currentState?.validate();
+                  },
+                  onChanged: (value) {
+                    field.didChange(value);
+                  },
                 ),
-                onTap: () async {
-                  await _showAddressSearchDialog();
-                  field.didChange(_addressController.text);
-                  _formKey.currentState?.validate();
-                },
-                onChanged: (value) {
-                  field.didChange(value);
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tap to search for your address',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap to search for your address',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
-    ],
-  );
+              ],
+            );
+          },
+        ),
+      ],
+    );
   }
-}
+} 
 
   

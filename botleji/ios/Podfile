@@ -32,9 +32,7 @@ target 'Runner' do
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   
-  # Fix Firebase Auth iOS issue - use specific version to avoid crashes
-  pod 'FirebaseAuth', '11.13.0'
-  pod 'FirebaseCore', '11.13.0'
+  # Let CocoaPods resolve Firebase versions automatically based on Flutter plugin requirements
   
   target 'RunnerTests' do
     inherit! :search_paths

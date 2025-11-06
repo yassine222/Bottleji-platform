@@ -9,102 +9,231 @@ class ThemeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeControllerProvider);
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text(
-          'Display theme',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _ThemeOption(
-              title: 'System Default',
-              subtitle: 'Use your device\'s default mode',
-              icon: Icons.phone_android,
-              isSelected: themeMode == ThemeMode.system,
-              onTap: () {
-                if (themeMode != ThemeMode.system) {
-                  ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.system);
-                }
-              },
-            ),
-            const Divider(),
-            _ThemeOption(
-              title: 'Light',
-              subtitle: 'Always use light mode',
-              icon: Icons.wb_sunny_outlined,
-              isSelected: themeMode == ThemeMode.light,
-              onTap: () {
-                if (themeMode != ThemeMode.light) {
-                  ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.light);
-                }
-              },
-            ),
-            const Divider(),
-            _ThemeOption(
-              title: 'Dark',
-              subtitle: 'Always use dark mode',
-              icon: Icons.nightlight_round,
-              isSelected: themeMode == ThemeMode.dark,
-              onTap: () {
-                if (themeMode != ThemeMode.dark) {
-                  ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.dark);
-                }
-              },
-            ),
-          ],
+        title: const Text(
+          'Display Theme',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: const Color(0xFF00695C),
+          onRefresh: () async {},
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildInfoCard(colorScheme),
+              const SizedBox(height: 16),
+              _ThemeOptionCard(
+                icon: Icons.phone_android,
+                title: 'System Default',
+                subtitle: 'Matches your device setting automatically',
+                isSelected: themeMode == ThemeMode.system,
+                colorScheme: colorScheme,
+                onTap: () {
+                  if (themeMode != ThemeMode.system) {
+                    ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.system);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _ThemeOptionCard(
+                icon: Icons.wb_sunny_outlined,
+                title: 'Light Mode',
+                subtitle: 'Bright colors and high contrast',
+                isSelected: themeMode == ThemeMode.light,
+                colorScheme: colorScheme,
+                onTap: () {
+                  if (themeMode != ThemeMode.light) {
+                    ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.light);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _ThemeOptionCard(
+                icon: Icons.nightlight_round,
+                title: 'Dark Mode',
+                subtitle: 'Comfortable viewing in low light',
+                isSelected: themeMode == ThemeMode.dark,
+                colorScheme: colorScheme,
+                onTap: () {
+                  if (themeMode != ThemeMode.dark) {
+                    ref.read(themeControllerProvider.notifier).setTheme(ThemeMode.dark);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.palette_outlined,
+              color: colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Personalize Your Experience',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Switch between light, dark, or follow your system preference. Changes apply instantly everywhere in Bottleji.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ThemeOption extends StatelessWidget {
+class _ThemeOptionCard extends StatelessWidget {
+  final IconData icon;
   final String title;
   final String subtitle;
-  final IconData icon;
   final bool isSelected;
+  final ColorScheme colorScheme;
   final VoidCallback onTap;
 
-  const _ThemeOption({
+  const _ThemeOptionCard({
+    required this.icon,
     required this.title,
     required this.subtitle,
-    required this.icon,
     required this.isSelected,
+    required this.colorScheme,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return InkWell(
       onTap: onTap,
-      leading: Icon(icon, size: 24),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outline.withValues(alpha: 0.3),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+              child: Icon(
+                icon,
+              color: colorScheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(
+                          Icons.check_circle,
+                          color: colorScheme.primary,
+                          size: 20,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(
-              Icons.check_circle,
-              color: Theme.of(context).colorScheme.primary,
-            )
-          : const Icon(Icons.circle_outlined),
     );
   }
 }
