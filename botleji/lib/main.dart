@@ -10,6 +10,7 @@ import 'package:botleji/features/profile/presentation/screens/profile_setup_scre
 import 'package:botleji/core/controllers/theme_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/services/local_notification_service.dart';
@@ -21,7 +22,9 @@ import 'package:botleji/features/onboarding/presentation/screens/permissions_scr
 import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
 import 'package:botleji/features/notifications/data/services/notification_service.dart';
-import 'package:botleji/core/services/network_initialization_service.dart';
+// Network initialization is deferred to splash to avoid early iOS prompts
+// import 'package:botleji/core/services/network_initialization_service.dart';
+// import 'package:botleji/core/config/server_config.dart';
 import 'package:botleji/core/config/server_config.dart';
 
 void main() async {
@@ -34,22 +37,27 @@ void main() async {
   // Initialize timezone service for German timezone
   await TimezoneService.initialize();
 
-  // Initialize network detection service for automatic IP detection
-  await NetworkInitializationService.initialize();
+  // Initialize server config caches (decides tunnel vs local IP before any sync URL is read)
+  await ServerConfig.init();
 
-  // Initialize notification service with detected API URL
-  final detectedApiUrl = NetworkInitializationService.apiUrl ?? ServerConfig.apiBaseUrlSync;
-  NotificationService.initialize(detectedApiUrl);
+  // Force use of Cloudflare Tunnel for all network calls (avoids local network probing on iOS)
+  // Quick tunnel URL from `cloudflared tunnel --url http://localhost:3000`
+  await ServerConfig.setTunnelUrlOverride(
+    'https://sheer-sheriff-military-drilling.trycloudflare.com',
+  );
+
+  // Defer network detection and notification service initialization
+  // to run after the splash animation to avoid early iOS prompts.
 
   // Initialize local notification service
   await LocalNotificationService().initialize();
 
   // Set up notification tap handling
   LocalNotificationService().handleNotificationTap = (payload) async {
-    print('🔔 Main: Notification tapped with payload: $payload');
+    AppLogger.log('🔔 Main: Notification tapped with payload: $payload');
     if (payload != null && payload.startsWith('force_logout:')) {
       final reason = payload.substring('force_logout:'.length);
-      print('🔔 Main: Force logout notification tapped, reason: $reason');
+      AppLogger.log('🔔 Main: Force logout notification tapped, reason: $reason');
 
       // Store the reason to show dialog when app is ready
       LocalNotificationService().showForceLogoutDialog(reason);
@@ -58,30 +66,30 @@ void main() async {
 
   // Set up global error handling for 401 errors
   FlutterError.onError = (FlutterErrorDetails details) {
-    print('Global error: ${details.exception}');
+    AppLogger.log('Global error: ${details.exception}');
 
     // Check if it's a 401 error
     if (details.exception.toString().contains('401')) {
-      print('Global 401 error detected');
+      AppLogger.log('Global 401 error detected');
       // This will be handled by the auth provider
     }
   };
 
   try {
-    print('Initializing Firebase...');
+    AppLogger.log('Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    AppLogger.log('Firebase initialized successfully');
 
     // Wait longer for Firebase Auth to be ready
-    print('Waiting for Firebase Auth to be ready...');
+    AppLogger.log('Waiting for Firebase Auth to be ready...');
     await Future.delayed(const Duration(milliseconds: 2000));
-    print('Firebase Auth should be ready now');
+    AppLogger.log('Firebase Auth should be ready now');
   } catch (e, stackTrace) {
-    print('Error initializing Firebase: $e');
-    print('Stack trace: $stackTrace');
-    print('Continuing without Firebase...');
+    AppLogger.log('Error initializing Firebase: $e');
+    AppLogger.log('Stack trace: $stackTrace');
+    AppLogger.log('Continuing without Firebase...');
   }
 
   runApp(
@@ -101,13 +109,48 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Sync badge count with actual unread count when app comes to foreground
+      AppLogger.log('🔔 App resumed - syncing badge count...');
+      _syncBadgeCount();
+    }
+  }
+
+  Future<void> _syncBadgeCount() async {
+    try {
+      // Get actual unread count from backend
+      final unreadCount = await NotificationService.getUnreadCount();
+      AppLogger.log('🔔 App resumed - actual unread count: $unreadCount');
+      // Update badge with actual count
+      await LocalNotificationService().updateBadgeCount(unreadCount);
+    } catch (e) {
+      AppLogger.log('🔔 Error syncing badge count: $e');
+      // If we can't get the count, at least clear it
+      await LocalNotificationService().clearBadgeCount();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // Listen for 401 errors globally
     ref.listen(authNotifierProvider, (previous, next) {
-      print('🚪 Main: Auth state changed - Previous: ${previous?.value?.id}, Next: ${next.value?.id}');
+      AppLogger.log('🚪 Main: Auth state changed - Previous: ${previous?.value?.id}, Next: ${next.value?.id}');
 
       Future.delayed(const Duration(milliseconds: 100), () {
         if (!context.mounted) return;
@@ -270,7 +313,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         },
       );
     } catch (e) {
-      print('Error showing dialog: $e');
+      AppLogger.log('Error showing dialog: $e');
     }
   }
 
@@ -326,13 +369,13 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
     // Don't wait for navigationController - it's not critical for initial load
     final isNavigationReady = !navigationController.isLoading;
     
-    print('🔄 MainAppScreen rebuild - Auth: $isAuthReady, UserMode: $isUserModeReady, Navigation: $isNavigationReady');
-    print('🔄 Auth state: ${authState.when(data: (user) => user?.id, loading: () => 'loading', error: (_, __) => 'error')}');
+    AppLogger.log('🔄 MainAppScreen rebuild - Auth: $isAuthReady, UserMode: $isUserModeReady, Navigation: $isNavigationReady');
+    AppLogger.log('🔄 Auth state: ${authState.when(data: (user) => user?.id, loading: () => 'loading', error: (_, __) => 'error')}');
     
     // Show loading screen only for critical providers (auth and userMode)
     // Navigation controller can load in the background
     if (!isAuthReady || !isUserModeReady) {
-      print('⏳ Showing loading screen - Auth: $isAuthReady, UserMode: $isUserModeReady');
+      AppLogger.log('⏳ Showing loading screen - Auth: $isAuthReady, UserMode: $isUserModeReady');
       return Scaffold(
         backgroundColor: const Color(0xFF00695C),
         body: Center(
@@ -376,15 +419,15 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
         }
 
         // All conditions met, return HomeScreen
-        print('🏠 MainAppScreen: All providers ready!');
+        AppLogger.log('🏠 MainAppScreen: All providers ready!');
         
         // Only create HomeScreen once
         if (!_hasCreatedHomeScreen) {
-          print('🏠 MainAppScreen: Creating HomeScreen instance for the first time');
+          AppLogger.log('🏠 MainAppScreen: Creating HomeScreen instance for the first time');
           _cachedHomeScreen = const HomeScreen();
           _hasCreatedHomeScreen = true;
         } else {
-          print('🏠 MainAppScreen: Reusing cached HomeScreen instance');
+          AppLogger.log('🏠 MainAppScreen: Reusing cached HomeScreen instance');
         }
         
         return Stack(
@@ -396,7 +439,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
                 final collectionSuccessState = ref.watch(collectionSuccessProvider);
                 
                 if (collectionSuccessState.showPopup) {
-                  print('🎉 MainApp: Rendering CollectionSuccessPopup with ${collectionSuccessState.pointsAwarded} points');
+                  AppLogger.log('🎉 MainApp: Rendering CollectionSuccessPopup with ${collectionSuccessState.pointsAwarded} points');
                   return CollectionSuccessPopup(
                     pointsAwarded: collectionSuccessState.pointsAwarded,
                     tierName: collectionSuccessState.tierName,
@@ -408,7 +451,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
                     },
                   );
                 } else {
-                  print('🎉 MainApp: Popup not showing, showPopup: ${collectionSuccessState.showPopup}');
+                  AppLogger.log('🎉 MainApp: Popup not showing, showPopup: ${collectionSuccessState.showPopup}');
                 }
                 
                 return const SizedBox.shrink();

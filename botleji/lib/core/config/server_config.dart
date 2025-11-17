@@ -1,4 +1,5 @@
 import 'package:botleji/core/services/network_detection_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ServerConfig {
   // Development mode: use tunnel for fast connection, auto-detect IP for different locations
@@ -7,6 +8,7 @@ class ServerConfig {
   
   // Cloudflare tunnel URL (fast, reliable)
   static const String tunnelUrl = 'https://circuits-institutions-holds-axis.trycloudflare.com';
+  static String? _tunnelUrlOverride; // Optional runtime override, loaded from SharedPreferences
   
   // Fallback IPs (will be overridden by auto-detection)
   static const String fallbackServerIp = '172.20.10.12'; // Your Mac's IP when using Personal Hotspot
@@ -14,11 +16,65 @@ class ServerConfig {
   
   // Cached detected IP
   static String? _detectedIp;
+  // Cache local network permission to allow sync getters to decide without async prefs
+  static bool _localNetworkGranted = false;
+  
+  // Initialize ServerConfig caches (call once at app start)
+  static Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _localNetworkGranted = prefs.getBool('local_network_granted') ?? false;
+      _tunnelUrlOverride = prefs.getString('server_tunnel_url');
+    } catch (_) {
+      _localNetworkGranted = false;
+    }
+  }
+  
+  // Update local network permission at runtime (called by permissions screen)
+  static void setLocalNetworkGranted(bool granted) {
+    _localNetworkGranted = granted;
+  }
+  
+  // Set/clear tunnel URL override at runtime and persist
+  static Future<void> setTunnelUrlOverride(String? url) async {
+    _tunnelUrlOverride = (url == null || url.isEmpty) ? null : url;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_tunnelUrlOverride == null) {
+        await prefs.remove('server_tunnel_url');
+      } else {
+        await prefs.setString('server_tunnel_url', _tunnelUrlOverride!);
+      }
+    } catch (_) {}
+    // Changing endpoint invalidates previous IP detection cache
+    clearIpCache();
+  }
+
+  // Resolve active tunnel URL (override wins)
+  static String get _activeTunnelUrl => _tunnelUrlOverride ?? tunnelUrl;
+  
+  // Read-only accessor for other services to respect permission without async prefs
+  static bool get isLocalNetworkGranted => _localNetworkGranted;
+  
+  // Check if we're using a tunnel (tunnel URL override or forced tunnel mode)
+  static bool get isUsingTunnel {
+    return _tunnelUrlOverride != null || !_localNetworkGranted || useTunnel;
+  }
   
   // Base URLs - automatically choose the best option
   static Future<String> get serverUrl async {
+    // If a runtime tunnel override is set, always prefer it (bypasses LAN completely)
+    if (_tunnelUrlOverride != null) {
+      return _activeTunnelUrl;
+    }
+
+    // If local network not granted yet, force tunnel to avoid iOS local network prompt
+    if (!_localNetworkGranted) {
+      return _activeTunnelUrl;
+    }
+    
     if (useTunnel) {
-      return tunnelUrl;
+      return _activeTunnelUrl;
     }
     
     if (useAutoDetection) {
@@ -38,6 +94,15 @@ class ServerConfig {
   
   // Synchronous version for backward compatibility
   static String get apiBaseUrlSync {
+    // If a runtime tunnel override is set, always prefer it (bypasses LAN completely)
+    if (_tunnelUrlOverride != null) {
+      return '$_activeTunnelUrl/api';
+    }
+
+    // If local network not granted yet, force tunnel to avoid iOS local network prompt
+    if (!_localNetworkGranted) {
+      return '$_activeTunnelUrl/api';
+    }
     // If auto-detection is disabled, always use fallback
     if (!useAutoDetection) {
       return 'http://$fallbackServerIp:$serverPort/api';
@@ -54,6 +119,15 @@ class ServerConfig {
   
   // Synchronous socket URL for WebSocket connections (without /api prefix)
   static String get socketUrlSync {
+    // If a runtime tunnel override is set, always prefer it (bypasses LAN completely)
+    if (_tunnelUrlOverride != null) {
+      return _activeTunnelUrl;
+    }
+
+    // If local network not granted yet, force tunnel to avoid iOS local network prompt
+    if (!_localNetworkGranted) {
+      return _activeTunnelUrl;
+    }
     // If auto-detection is disabled, always use fallback
     if (!useAutoDetection) {
       return 'http://$fallbackServerIp:$serverPort';

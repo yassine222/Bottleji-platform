@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/notification_models.dart';
 import '../../data/services/notification_service.dart';
+import '../../../../core/services/local_notification_service.dart';
 
 
 // Notification state
@@ -47,12 +48,17 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       final result = await NotificationService.getUserNotifications();
       
       if (result['success']) {
+        final unreadCount = result['unreadCount'] ?? 0;
         state = state.copyWith(
           notifications: result['notifications'],
-          unreadCount: result['unreadCount'],
+          unreadCount: unreadCount,
           isLoading: false,
           error: null,
         );
+        
+        // Sync app icon badge with actual unread count
+        final localNotificationService = LocalNotificationService();
+        await localNotificationService.updateBadgeCount(unreadCount);
       } else {
         state = state.copyWith(
           isLoading: false,
@@ -87,6 +93,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         notifications: updatedNotifications,
         unreadCount: newUnreadCount,
       );
+      
+      // Update app icon badge with new unread count
+      final localNotificationService = LocalNotificationService();
+      await localNotificationService.updateBadgeCount(newUnreadCount);
     }
   }
 
@@ -105,6 +115,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         notifications: updatedNotifications,
         unreadCount: 0,
       );
+      
+      // Clear app icon badge since all are read
+      final localNotificationService = LocalNotificationService();
+      await localNotificationService.clearBadgeCount();
     }
   }
 

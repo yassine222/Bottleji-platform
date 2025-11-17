@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:botleji/core/services/network_initialization_service.dart';
+import 'package:botleji/core/config/server_config.dart';
+import 'package:botleji/features/notifications/data/services/notification_service.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -25,6 +29,14 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
       description: 'Access your location to show nearby drops and enable navigation for collectors.',
       icon: Icons.location_on,
       isRequired: true,
+    ),
+    PermissionItem(
+      permission: Permission.bluetooth, // placeholder; not used for iOS local network
+      title: 'Local Network Access',
+      description: 'Allow the app to discover services on your Wi‑Fi for real-time features.',
+      icon: Icons.wifi,
+      isRequired: true,
+      isLocalNetwork: true,
     ),
     PermissionItem(
       permission: Permission.notification,
@@ -52,14 +64,19 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
     final statuses = <Permission, bool>{};
     for (final permission in _permissions) {
       bool isGranted = false;
+      final item = permission;
       
       // Check permissions using the same packages used elsewhere in the app
-      if (permission.permission == Permission.location) {
+      if (item.isLocalNetwork) {
+        final prefs = await SharedPreferences.getInstance();
+        isGranted = prefs.getBool('local_network_granted') ?? false;
+        print('Initial check - ${item.title}: granted flag = $isGranted');
+      } else if (permission.permission == Permission.location) {
         // Use Geolocator (same as home screen and map screens)
         final locationPermission = await Geolocator.checkPermission();
         isGranted = locationPermission == LocationPermission.whileInUse || 
                    locationPermission == LocationPermission.always;
-        print('Initial check - ${permission.title}: $locationPermission (granted: $isGranted)');
+        print('Initial check - ${item.title}: $locationPermission (granted: $isGranted)');
       } else if (permission.permission == Permission.notification) {
         // Use FirebaseMessaging (same as notification settings screen)
         try {
@@ -67,20 +84,20 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
           final settings = await messaging.getNotificationSettings();
           isGranted = settings.authorizationStatus == AuthorizationStatus.authorized ||
                      settings.authorizationStatus == AuthorizationStatus.provisional;
-          print('Initial check - ${permission.title}: ${settings.authorizationStatus} (granted: $isGranted)');
+          print('Initial check - ${item.title}: ${settings.authorizationStatus} (granted: $isGranted)');
         } catch (e) {
           isGranted = false;
-          print('Initial check - ${permission.title}: Error checking permission: $e');
+          print('Initial check - ${item.title}: Error checking permission: $e');
         }
       } else if (permission.permission == Permission.storage) {
         // Photo Storage permission - treat as granted by default (ImagePicker handles it when needed)
         isGranted = true;
-        print('Initial check - ${permission.title}: Granted by default (handled by ImagePicker)');
+        print('Initial check - ${item.title}: Granted by default (handled by ImagePicker)');
       } else {
         // Handle other permissions with permission_handler
         final status = await permission.permission.status;
         isGranted = status.isGranted;
-        print('Initial check - ${permission.title}: $status');
+        print('Initial check - ${item.title}: $status');
       }
       
       statuses[permission.permission] = isGranted;
@@ -102,7 +119,44 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
       bool isGranted = false;
       
       // Handle permissions with the same packages used elsewhere in the app
-      if (permissionItem.permission == Permission.location) {
+      if (permissionItem.isLocalNetwork) {
+        print('Requesting local network permission via network init...');
+        try {
+          // 1) Proactively touch LAN to trigger iOS "Local Network" prompt
+          // Try a few common gateway IPs with very short timeouts
+          final candidates = <String>['192.168.1.1', '192.168.0.1', '10.0.0.1', '172.20.10.1'];
+          for (final ip in candidates) {
+            try {
+              print('Attempting LAN connect to $ip:80 to trigger prompt...');
+              final socket = await Socket.connect(ip, 80, timeout: const Duration(milliseconds: 400));
+              socket.destroy();
+              print('Connected to $ip:80 (prompt should have appeared)');
+              break;
+            } catch (_) {
+              // Ignore; the attempt itself is enough to trigger the prompt if needed
+            }
+          }
+          
+          // 2) Run our normal network init (will still use tunnel until we flip the flag below)
+          await NetworkInitializationService.initialize();
+          final detectedApiUrl = NetworkInitializationService.apiUrl ?? ServerConfig.apiBaseUrlSync;
+          NotificationService.initialize(detectedApiUrl);
+          
+          // 3) Persist and flip runtime flag so future connections may use LAN
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('local_network_granted', true);
+          // Inform ServerConfig for sync URL selection going forward
+          ServerConfig.setLocalNetworkGranted(true);
+          // Clear any cached IP so future auto-detection (if enabled) can re-run
+          ServerConfig.clearIpCache();
+          isGranted = true;
+          print('Local network initialization completed, marking as granted');
+        } catch (e) {
+          print('Local network init error: $e');
+          isGranted = false;
+        }
+        
+      } else if (permissionItem.permission == Permission.location) {
         // Use Geolocator (same as home screen and map screens)
         print('Requesting location permission with Geolocator...');
         
@@ -439,6 +493,7 @@ class PermissionItem {
   final String description;
   final IconData icon;
   final bool isRequired;
+  final bool isLocalNetwork;
 
   PermissionItem({
     required this.permission,
@@ -446,5 +501,6 @@ class PermissionItem {
     required this.description,
     required this.icon,
     required this.isRequired,
+    this.isLocalNetwork = false,
   });
 }

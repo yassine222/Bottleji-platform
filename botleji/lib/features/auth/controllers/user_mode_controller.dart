@@ -1,4 +1,5 @@
 import 'package:riverpod/riverpod.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
@@ -50,39 +51,39 @@ class UserModeController extends StateNotifier<AsyncValue<UserMode>> {
 
   Future<void> _initialize() async {
     try {
-      print('🔄 UserModeController: Starting initialization...');
+      AppLogger.log('🔄 UserModeController: Starting initialization...');
       _prefs = await SharedPreferences.getInstance();
-      print('✅ UserModeController: SharedPreferences initialized');
+      AppLogger.log('✅ UserModeController: SharedPreferences initialized');
       
       // Debug: Print what's actually saved
       await debugPrintSavedMode();
       
       final mode = await _loadSavedMode();
-      print('✅ UserModeController: Loaded mode: ${mode.name}');
+      AppLogger.log('✅ UserModeController: Loaded mode: ${mode.name}');
       state = AsyncValue.data(mode);
-      print('✅ UserModeController: State set to: ${mode.name}');
+      AppLogger.log('✅ UserModeController: State set to: ${mode.name}');
     } catch (e) {
-      print('❌ UserModeController: Error initializing: $e');
+      AppLogger.log('❌ UserModeController: Error initializing: $e');
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
   Future<UserMode> _loadSavedMode() async {
-    print('🔍 UserModeController: Loading saved mode from SharedPreferences...');
-    print('🔍 UserModeController: SharedPreferences instance: $_prefs');
-    print('🔍 UserModeController: Key being used: $_userModeKey');
+    AppLogger.log('🔍 UserModeController: Loading saved mode from SharedPreferences...');
+    AppLogger.log('🔍 UserModeController: SharedPreferences instance: $_prefs');
+    AppLogger.log('🔍 UserModeController: Key being used: $_userModeKey');
     
     // Check all keys first
     final allKeys = _prefs.getKeys();
-    print('🔍 UserModeController: All SharedPreferences keys: $allKeys');
+    AppLogger.log('🔍 UserModeController: All SharedPreferences keys: $allKeys');
     
     final savedMode = _prefs.getString(_userModeKey);
-    print('🔍 UserModeController: Loading saved mode from SharedPreferences: $savedMode');
+    AppLogger.log('🔍 UserModeController: Loading saved mode from SharedPreferences: $savedMode');
     
     if (savedMode == null) {
-      print('🔍 UserModeController: No saved mode found, defaulting to household');
+      AppLogger.log('🔍 UserModeController: No saved mode found, defaulting to household');
       await _prefs.setString(_userModeKey, UserMode.household.name);
-      print('✅ UserModeController: Set default household mode in SharedPreferences');
+      AppLogger.log('✅ UserModeController: Set default household mode in SharedPreferences');
       return UserMode.household;
     }
 
@@ -91,12 +92,12 @@ class UserModeController extends StateNotifier<AsyncValue<UserMode>> {
         (mode) => mode.name == savedMode,
         orElse: () => UserMode.household,
       );
-      print('✅ UserModeController: Successfully loaded saved mode: ${mode.name}');
+      AppLogger.log('✅ UserModeController: Successfully loaded saved mode: ${mode.name}');
       return mode;
     } catch (e) {
-      print('❌ UserModeController: Error loading saved mode: $e');
+      AppLogger.log('❌ UserModeController: Error loading saved mode: $e');
       await _prefs.setString(_userModeKey, UserMode.household.name);
-      print('✅ UserModeController: Reset to household mode due to error');
+      AppLogger.log('✅ UserModeController: Reset to household mode due to error');
       return UserMode.household;
     }
   }
@@ -120,35 +121,35 @@ class UserModeController extends StateNotifier<AsyncValue<UserMode>> {
 
   Future<void> setMode(UserMode mode) async {
     try {
-      print('🔄 UserModeController: Setting user mode to: ${mode.name}');
-      print('🔍 UserModeController: SharedPreferences instance: $_prefs');
-      print('🔍 UserModeController: Key being used: $_userModeKey');
+      AppLogger.log('🔄 UserModeController: Setting user mode to: ${mode.name}');
+      AppLogger.log('🔍 UserModeController: SharedPreferences instance: $_prefs');
+      AppLogger.log('🔍 UserModeController: Key being used: $_userModeKey');
       
       // Check what's currently saved before setting
       final currentSaved = _prefs.getString(_userModeKey);
-      print('🔍 UserModeController: Currently saved mode before change: $currentSaved');
+      AppLogger.log('🔍 UserModeController: Currently saved mode before change: $currentSaved');
       
       await _prefs.setString(_userModeKey, mode.name);
-      print('✅ UserModeController: User mode saved to SharedPreferences: ${mode.name}');
+      AppLogger.log('✅ UserModeController: User mode saved to SharedPreferences: ${mode.name}');
       
       // Verify the save immediately
       final savedMode = _prefs.getString(_userModeKey);
-      print('🔍 UserModeController: Verified saved mode: $savedMode');
+      AppLogger.log('🔍 UserModeController: Verified saved mode: $savedMode');
       
       // Double-check by reading all keys
       final allKeys = _prefs.getKeys();
-      print('🔍 UserModeController: All SharedPreferences keys: $allKeys');
+      AppLogger.log('🔍 UserModeController: All SharedPreferences keys: $allKeys');
       
       // Update state
       state = AsyncValue.data(mode);
-      print('✅ UserModeController: State updated to: ${mode.name}');
+      AppLogger.log('✅ UserModeController: State updated to: ${mode.name}');
     } catch (e) {
-      print('❌ UserModeController: Error setting user mode: $e');
-      print('❌ UserModeController: Error type: ${e.runtimeType}');
-      print('❌ UserModeController: Error details: ${e.toString()}');
+      AppLogger.log('❌ UserModeController: Error setting user mode: $e');
+      AppLogger.log('❌ UserModeController: Error type: ${e.runtimeType}');
+      AppLogger.log('❌ UserModeController: Error details: ${e.toString()}');
       // Check if it's a 401 error
       if (e.toString().contains('401')) {
-        print('401 error in user mode controller');
+        AppLogger.log('401 error in user mode controller');
         // Handle session expiration by clearing mode
         await clearMode();
       }
@@ -157,11 +158,11 @@ class UserModeController extends StateNotifier<AsyncValue<UserMode>> {
 
   Future<void> clearMode() async {
     try {
-      print('🔄 UserModeController: Clearing user mode');
+      AppLogger.log('🔄 UserModeController: Clearing user mode');
       await _prefs.remove(_userModeKey);
-      print('✅ UserModeController: User mode cleared from SharedPreferences');
+      AppLogger.log('✅ UserModeController: User mode cleared from SharedPreferences');
       state = const AsyncValue.data(UserMode.household);
-      print('✅ UserModeController: State reset to household');
+      AppLogger.log('✅ UserModeController: State reset to household');
     } catch (e) {
       debugPrint('Error clearing mode: $e');
     }
@@ -170,19 +171,19 @@ class UserModeController extends StateNotifier<AsyncValue<UserMode>> {
   Future<void> debugPrintSavedMode() async {
     try {
       final savedMode = _prefs.getString(_userModeKey);
-      print('🔍 UserModeController: DEBUG - Saved mode in SharedPreferences: $savedMode');
+      AppLogger.log('🔍 UserModeController: DEBUG - Saved mode in SharedPreferences: $savedMode');
       
       if (savedMode != null) {
         final mode = UserMode.values.firstWhere(
           (mode) => mode.name == savedMode,
           orElse: () => UserMode.household,
         );
-        print('🔍 UserModeController: DEBUG - Parsed mode: ${mode.name}');
+        AppLogger.log('🔍 UserModeController: DEBUG - Parsed mode: ${mode.name}');
       } else {
-        print('🔍 UserModeController: DEBUG - No saved mode found');
+        AppLogger.log('🔍 UserModeController: DEBUG - No saved mode found');
       }
     } catch (e) {
-      print('❌ UserModeController: DEBUG - Error reading saved mode: $e');
+      AppLogger.log('❌ UserModeController: DEBUG - Error reading saved mode: $e');
     }
   }
 

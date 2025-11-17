@@ -32,9 +32,7 @@ import { UserRole } from '@/types';
 import {
   UsersGrowthChart,
   DropsActivityChart,
-  DropStatusPieChart,
-  BottleTypeDistribution,
-  ApplicationsStatus,
+  Co2SavingsChart,
 } from '@/components/dashboard/DashboardCharts';
 import FileUpload from '@/components/training/FileUpload';
 import VideoPlayer from '@/components/training/VideoPlayer';
@@ -161,22 +159,10 @@ function DashboardContent({ stats, loading, error }: any) {
         {stats?.dropsTimeSeries && stats.dropsTimeSeries.length > 0 && (
           <DropsActivityChart data={stats.dropsTimeSeries} />
         )}
-      </div>
-
-      {/* Charts Section - Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {stats?.dropsByStatus && Object.keys(stats.dropsByStatus).length > 0 && (
-          <DropStatusPieChart data={stats.dropsByStatus} />
-        )}
-        {stats?.bottleTypeDistribution && Object.keys(stats.bottleTypeDistribution).length > 0 && (
-          <BottleTypeDistribution data={stats.bottleTypeDistribution} />
-        )}
-      </div>
-
-      {/* Charts Section - Applications & Tickets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {stats?.applicationsByStatus && Object.keys(stats.applicationsByStatus).length > 0 && (
-          <ApplicationsStatus data={stats.applicationsByStatus} />
+        {stats && (
+          <div className="lg:col-span-2">
+            <Co2SavingsChart data={stats.co2SavingsTimeSeries} />
+          </div>
         )}
       </div>
 
@@ -7674,7 +7660,7 @@ function SupportContent() {
                     </div>
                     <div className="mt-3 flex justify-end space-x-3 pt-6 pb-4">
                       <button
-                        onClick={() => setShowUserModal(false)}
+                        onClick={() => setShowTicketModal(false)}
                         className="px-4 py-2 bg-surface text-text-primary border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
                       >
                         Cancel
@@ -7874,7 +7860,7 @@ function AdminManagementContent() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Admin Management</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Manage admin users, moderators, and support agents. Only visible to Super Admins.
+              Manage admin users and support agents. Only visible to Super Admins.
             </p>
           </div>
           <button
@@ -7905,7 +7891,7 @@ function AdminManagementContent() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">
             {adminUsers.filter(u => u.roles.includes('super_admin')).length}
@@ -7917,12 +7903,6 @@ function AdminManagementContent() {
             {adminUsers.filter(u => u.roles.includes('admin')).length}
           </div>
           <div className="text-sm text-gray-600">Admins</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-2xl font-bold text-gray-900">
-            {adminUsers.filter(u => u.roles.includes('moderator')).length}
-          </div>
-          <div className="text-sm text-gray-600">Moderators</div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">
@@ -8029,7 +8009,7 @@ function AdminManagementContent() {
               </h3>
               
               <div className="space-y-3">
-                {(['admin', 'moderator', 'support_agent'] as UserRole[]).map((role) => (
+                {(['admin', 'support_agent'] as UserRole[]).map((role) => (
                   <label key={role} className="flex items-center">
                     <input
                       type="checkbox"
@@ -8115,7 +8095,6 @@ function AdminManagementContent() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="admin">Admin</option>
-                    <option value="moderator">Moderator</option>
                     <option value="support_agent">Support Agent</option>
                   </select>
                 </div>
@@ -9364,6 +9343,15 @@ export default function DashboardPage() {
           totalTickets: 45,
           pendingApplications: 12,
           pendingTickets: 8,
+          co2SavingsTimeSeries: Array.from({ length: 7 }).map((_, idx) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - idx));
+            date.setHours(0, 0, 0, 0);
+            return {
+              date: date.toISOString().split('T')[0],
+              co2: Math.max(0, Math.round((Math.random() * 5 + 2) * 100) / 100),
+            };
+          }),
           recentActivity: [
             {
               id: '1',

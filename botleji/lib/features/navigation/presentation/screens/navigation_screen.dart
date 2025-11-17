@@ -9,6 +9,7 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/core/theme/app_colors.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/core/config/api_config.dart';
 import 'package:botleji/core/api/api_client.dart';
 import 'dart:async';

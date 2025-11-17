@@ -995,6 +995,18 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
       builder: (context) => FutureBuilder<Map<String, dynamic>?>(
           future: ref.read(dropsControllerProvider.notifier).getUserInfo(drop.userId),
           builder: (context, snapshot) {
+            // Show loading state while fetching user data
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                height: MediaQuery.of(context).size.height * 0.8,
+                padding: const EdgeInsets.all(16),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
+            // Only show default data if there's an error, otherwise use the fetched data
             final userData = snapshot.data ?? {
               'name': 'Unknown User',
               'phoneNumber': 'N/A',

@@ -152,7 +152,7 @@ class PhoneVerificationService {
         print('🔍 PhoneVerificationService: DEBUG MODE - Bypassing Firebase verification');
         print('🔍 PhoneVerificationService: Debug verification - Code: $smsCode');
         
-        if (smsCode == '123456') {
+        if (smsCode == '847293') {
           print('🔍 PhoneVerificationService: Debug verification successful with code: $smsCode');
           return await _verifyWithBackend(phoneNumber, 'debug-firebase-token');
         } else {

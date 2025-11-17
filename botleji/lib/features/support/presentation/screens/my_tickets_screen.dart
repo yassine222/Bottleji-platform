@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/support_ticket.dart';
 import '../providers/support_ticket_provider.dart';
 import 'ticket_detail_screen_new.dart';
-import 'create_ticket_screen.dart';
+import 'support_categories_screen.dart';
 
 class MyTicketsScreen extends ConsumerStatefulWidget {
   const MyTicketsScreen({super.key});
@@ -244,10 +244,11 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Navigate to Support Categories screen to start the ticket creation flow
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CreateTicketScreen(),
+              builder: (context) => const SupportCategoriesScreen(),
             ),
           );
         },

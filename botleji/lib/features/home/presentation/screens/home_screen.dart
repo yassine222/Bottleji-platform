@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:image_picker/image_picker.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:botleji/core/widgets/app_drawer.dart';
@@ -37,7 +38,7 @@ import 'package:botleji/features/auth/data/models/user_data.dart';
 import 'package:botleji/core/theme/app_typography.dart';
 import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:botleji/core/widgets/active_collection_indicator.dart';
-import 'package:botleji/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:botleji/features/notifications/presentation/providers/notification_provider.dart';
 
 
 // Navigation step model
@@ -159,7 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Don't clear mode switching flag here - let it persist across restarts
     _saveLastLoadedMode(null); // Clear saved mode
     // Don't clear mode switching flag here
-    print('🔍 Home: Reset drops tracking - ready for fresh load');
+    AppLogger.log('🔍 Home: Reset drops tracking - ready for fresh load');
   }
 
   Future<void> _saveLastLoadedMode(UserMode? mode) async {
@@ -167,13 +168,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (mode != null) {
         await prefs.setString(_lastLoadedModeKey, mode.name);
-        print('🔍 Home: Saved last loaded mode: ${mode.name}');
+        AppLogger.log('🔍 Home: Saved last loaded mode: ${mode.name}');
       } else {
         await prefs.remove(_lastLoadedModeKey);
-        print('🔍 Home: Cleared last loaded mode');
+        AppLogger.log('🔍 Home: Cleared last loaded mode');
       }
     } catch (e) {
-      print('❌ Home: Error saving last loaded mode: $e');
+      AppLogger.log('❌ Home: Error saving last loaded mode: $e');
     }
   }
 
@@ -186,13 +187,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (mode) => mode.name == savedMode,
           orElse: () => UserMode.household,
         );
-        print('🔍 Home: Loaded last loaded mode: ${mode.name}');
+        AppLogger.log('🔍 Home: Loaded last loaded mode: ${mode.name}');
         return mode;
       }
-      print('🔍 Home: No saved last loaded mode found');
+      AppLogger.log('🔍 Home: No saved last loaded mode found');
       return null;
     } catch (e) {
-      print('❌ Home: Error loading last loaded mode: $e');
+      AppLogger.log('❌ Home: Error loading last loaded mode: $e');
       return null;
     }
   }
@@ -201,9 +202,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isModeSwitchingKey, isSwitching);
-      print('🔍 Home: Saved mode switching flag: $isSwitching');
+      AppLogger.log('🔍 Home: Saved mode switching flag: $isSwitching');
     } catch (e) {
-      print('❌ Home: Error saving mode switching flag: $e');
+      AppLogger.log('❌ Home: Error saving mode switching flag: $e');
     }
   }
 
@@ -211,10 +212,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isSwitching = prefs.getBool(_isModeSwitchingKey) ?? false;
-      print('🔍 Home: Loaded mode switching flag: $isSwitching');
+      AppLogger.log('🔍 Home: Loaded mode switching flag: $isSwitching');
       return isSwitching;
     } catch (e) {
-      print('❌ Home: Error loading mode switching flag: $e');
+      AppLogger.log('❌ Home: Error loading mode switching flag: $e');
       return false;
     }
   }
@@ -222,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _clearModeSwitchingFlag() async {
     _isModeSwitching = false;
     await _saveModeSwitchingFlag(false);
-    print('🔍 Home: Mode switching flag cleared');
+    AppLogger.log('🔍 Home: Mode switching flag cleared');
   }
 
   // Debounced marker update to prevent flickering
@@ -723,7 +724,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Track HomeScreen instances for debugging
     _instanceCount++;
     _instanceId = _instanceCount;
-    print('🏠 HomeScreen Instance #$_instanceId created at ${DateTime.now()}');
+    AppLogger.log('🏠 HomeScreen Instance #$_instanceId created at ${DateTime.now()}');
     
     try {
       _bottlesController = TextEditingController(text: '1');
@@ -738,8 +739,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       });
     } catch (e, stackTrace) {
-      print('❌ Home: Error in initState: $e');
-      print('❌ Home: Stack trace: $stackTrace');
+      AppLogger.log('❌ Home: Error in initState: $e');
+      AppLogger.log('❌ Home: Stack trace: $stackTrace');
     }
   }
 
@@ -752,24 +753,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _loadLastLoadedMode().then((mode) {
         if (mounted) {
           _lastLoadedMode = mode;
-          print('🔍 Home: Restored last loaded mode: ${mode?.name ?? 'none'}');
+          AppLogger.log('🔍 Home: Restored last loaded mode: ${mode?.name ?? 'none'}');
         }
       }).catchError((e) {
-        print('❌ Home: Error loading last loaded mode: $e');
+        AppLogger.log('❌ Home: Error loading last loaded mode: $e');
       });
       
       _loadModeSwitchingFlag().then((isSwitching) {
         if (mounted) {
           _isModeSwitching = isSwitching;
-          print('🔍 Home: Restored mode switching flag: $isSwitching');
+          AppLogger.log('🔍 Home: Restored mode switching flag: $isSwitching');
         }
       }).catchError((e) {
-        print('❌ Home: Error loading mode switching flag: $e');
+        AppLogger.log('❌ Home: Error loading mode switching flag: $e');
       });
       
       // Step 2: Load custom marker (non-blocking, but can setState)
       _loadCustomMarker().catchError((e) {
-        print('❌ Home: Error loading custom marker: $e');
+        AppLogger.log('❌ Home: Error loading custom marker: $e');
       });
       
       // Step 3: Wait a bit before location initialization (release mode needs more time)
@@ -781,8 +782,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       try {
         await _initializeLocation();
       } catch (e, stackTrace) {
-        print('❌ Home: Error initializing location: $e');
-        print('❌ Home: Stack trace: $stackTrace');
+        AppLogger.log('❌ Home: Error initializing location: $e');
+        AppLogger.log('❌ Home: Stack trace: $stackTrace');
       }
       
       // Step 5: Start session check (non-blocking)
@@ -797,12 +798,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         try {
           _checkSessionImmediately();
         } catch (e) {
-          print('❌ Home: Error in checkSessionImmediately: $e');
+          AppLogger.log('❌ Home: Error in checkSessionImmediately: $e');
         }
       }
     } catch (e, stackTrace) {
-      print('❌ Home: Error in _initializeAsyncOperations: $e');
-      print('❌ Home: Stack trace: $stackTrace');
+      AppLogger.log('❌ Home: Error in _initializeAsyncOperations: $e');
+      AppLogger.log('❌ Home: Stack trace: $stackTrace');
     }
   }
 
@@ -851,22 +852,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Also check if user mode is available and load drops
       final userMode = ref.read(userModeControllerProvider);
       userMode.whenData((mode) async {
-        print('🔍 Home: Initial user mode check: ${mode.name}');
+        AppLogger.log('🔍 Home: Initial user mode check: ${mode.name}');
         if (mounted && _currentLocation != null && !_hasInitializedDrops) {
           // Check if we're in the middle of a mode switch
           if (_isModeSwitching) {
-            print('🔍 Home: Mode switch in progress, checking if drops need to be loaded for: ${mode.name}');
+            AppLogger.log('🔍 Home: Mode switch in progress, checking if drops need to be loaded for: ${mode.name}');
             
             // For household mode, always load drops since they show different data
             if (mode == UserMode.household) {
-              print('🔍 Home: Switching to household mode, loading drops for user');
+              AppLogger.log('🔍 Home: Switching to household mode, loading drops for user');
               _hasInitializedDrops = true;
               await _clearModeSwitchingFlag(); // Clear flag
               _forceLoadDropsForMap(); // Load drops for household
               return;
             } else {
               // For collector mode, skip loading since drops are already loaded
-              print('🔍 Home: Mode switch in progress, skipping drops load for: ${mode.name}');
+              AppLogger.log('🔍 Home: Mode switch in progress, skipping drops load for: ${mode.name}');
               _hasInitializedDrops = true;
               await _clearModeSwitchingFlag(); // Clear flag after using it
               return;
@@ -881,18 +882,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
           
           if (_lastLoadedMode == mode && hasDropsLoaded) {
-            print('🔍 Home: Drops already loaded and visible for mode: ${mode.name}, skipping load');
+            AppLogger.log('🔍 Home: Drops already loaded and visible for mode: ${mode.name}, skipping load');
             _hasInitializedDrops = true;
           } else if (_lastLoadedMode == null || _lastLoadedMode != mode) {
-            print('🔍 Home: Loading drops on app start for mode: ${mode.name} (fresh start or mode changed)');
+            AppLogger.log('🔍 Home: Loading drops on app start for mode: ${mode.name} (fresh start or mode changed)');
             _hasInitializedDrops = true;
             _forceLoadDropsForMap();
           } else {
-            print('🔍 Home: Mode unchanged after restart, skipping drops load for: ${mode.name}');
+            AppLogger.log('🔍 Home: Mode unchanged after restart, skipping drops load for: ${mode.name}');
             _hasInitializedDrops = true; // Mark as initialized even if we skip
           }
         } else {
-          print('🔍 Home: Waiting for location, not mounted, or drops already initialized');
+          AppLogger.log('🔍 Home: Waiting for location, not mounted, or drops already initialized');
         }
       });
     }
@@ -917,20 +918,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         response.when(
           success: (user, token, message) {
             // Session is still valid
-            print('Session check: Valid');
+            AppLogger.log('Session check: Valid');
           },
           error: (message, statusCode) {
             if (statusCode == 401) {
-              print('Session expired detected');
+              AppLogger.log('Session expired detected');
               _showSessionExpiredDialog();
             }
           },
         );
       }
     } catch (e) {
-      print('Error checking session validity: $e');
+      AppLogger.log('Error checking session validity: $e');
       if (e.toString().contains('401')) {
-        print('Session expired detected');
+        AppLogger.log('Session expired detected');
         _showSessionExpiredDialog();
       }
     }
@@ -969,7 +970,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // Global error handler for 401 errors
   void _handleGlobal401Error() {
-    print('Global 401 error detected - showing session expired dialog');
+    AppLogger.log('Global 401 error detected - showing session expired dialog');
     _showSessionExpiredDialog();
   }
 
@@ -983,7 +984,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // debugPrint('Home screen - Auth state on dependency change: $authState');
         
         // If user ID is empty, try to reload auth state
-        if (authState.value?.id == null || authState.value!.id!.isEmpty) {
+        final userId = authState.value?.id;
+        if (userId == null || userId.isEmpty) {
           // debugPrint('Home screen - User ID is empty, attempting to reload auth state');
           
           try {
@@ -998,8 +1000,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         debugPrint('Home screen - User ID on dependency change: ${authState.value?.id}');
         
         // Safely check user ID without null assertions
-        final userId = authState.value?.id;
-        if (userId == null || userId.isEmpty) {
+        final currentUserId = authState.value?.id;
+        if (currentUserId == null || currentUserId.isEmpty) {
           debugPrint('Home screen - User ID is empty, attempting to reload auth state');
           if (mounted) {
             _reloadAuthState();
@@ -1127,7 +1129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
-    print('🗑️ HomeScreen Instance #$_instanceId disposed at ${DateTime.now()}');
+    AppLogger.log('🗑️ HomeScreen Instance #$_instanceId disposed at ${DateTime.now()}');
     
     _mapRebuildTimer?.cancel();
     _markerUpdateTimer?.cancel();
@@ -1233,10 +1235,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final lastPosition = await Geolocator.getLastKnownPosition();
           if (lastPosition != null) {
             location = LatLng(lastPosition.latitude, lastPosition.longitude);
-            print('🔍 Home: Using last known location as fallback');
+            AppLogger.log('🔍 Home: Using last known location as fallback');
           }
         } catch (e) {
-          print('🔍 Home: Could not get last known position: $e');
+          AppLogger.log('🔍 Home: Could not get last known position: $e');
         }
       }
 
@@ -1292,7 +1294,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Load drops after location is obtained
       if (mounted) {
         // Don't load drops here - already handled by app initialization
-        print('🔍 Home: Location obtained, drops loading handled by app initialization');
+        AppLogger.log('🔍 Home: Location obtained, drops loading handled by app initialization');
       }
 
       if (_mapController != null && _isMapInitialized) {
@@ -1323,7 +1325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        print('🔍 Home: Location attempt $attempt/$maxRetries');
+        AppLogger.log('🔍 Home: Location attempt $attempt/$maxRetries');
         
         // Use shorter timeout for faster failure detection
         final timeout = Duration(seconds: initialTimeout.inSeconds * attempt);
@@ -1332,20 +1334,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           desiredAccuracy: LocationAccuracy.medium, // Reduced accuracy for faster response
           timeLimit: timeout,
       );
-        print('🔍 Home: Location obtained successfully on attempt $attempt');
+        AppLogger.log('🔍 Home: Location obtained successfully on attempt $attempt');
         return LatLng(position.latitude, position.longitude);
         
       } catch (e) {
-        print('🔍 Home: Location attempt $attempt failed: $e');
+        AppLogger.log('🔍 Home: Location attempt $attempt failed: $e');
         
         if (attempt == maxRetries) {
-          print('🔍 Home: All location attempts failed');
+          AppLogger.log('🔍 Home: All location attempts failed');
           return null;
         }
         
         // Wait before retry with exponential backoff
         final delay = Duration(milliseconds: 500 * attempt);
-        print('🔍 Home: Waiting ${delay.inMilliseconds}ms before retry');
+        AppLogger.log('🔍 Home: Waiting ${delay.inMilliseconds}ms before retry');
         await Future.delayed(delay);
       }
     }
@@ -1355,7 +1357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // Force load drops (bypasses debounce)
   void _forceLoadDropsForMap() {
-    print('🔍 Home: Force loading drops (bypassing debounce)');
+    AppLogger.log('🔍 Home: Force loading drops (bypassing debounce)');
     _dropsLoadDebounceTimer?.cancel();
     _lastLoadedMode = null; // Clear last loaded mode to force fresh load
     _loadDropsForMap();
@@ -1366,7 +1368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Check if we loaded drops recently (within last 1 second instead of 2)
     if (_lastDropsLoadTime != null && 
         DateTime.now().difference(_lastDropsLoadTime!).inMilliseconds < 1000) {
-      print('🔍 Home: Skipping drops load - last load was ${DateTime.now().difference(_lastDropsLoadTime!).inMilliseconds}ms ago');
+      AppLogger.log('🔍 Home: Skipping drops load - last load was ${DateTime.now().difference(_lastDropsLoadTime!).inMilliseconds}ms ago');
       return;
     }
     
@@ -1381,25 +1383,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _loadDropsForMap() async {
   // Check if widget is still mounted
   if (!mounted) {
-    print('🔍 Home: Widget not mounted, skipping drops load');
+    AppLogger.log('🔍 Home: Widget not mounted, skipping drops load');
     return;
   }
 
   // Prevent multiple simultaneous loads
   if (_isDropsLoading) {
-    print('🔍 Home: Drops already loading, skipping...');
+    AppLogger.log('🔍 Home: Drops already loading, skipping...');
     return;
   }
 
   final requestId = ++_lastLoadRequestId;
-  print('🔍 Home: Starting drops load request #$requestId');
+  AppLogger.log('🔍 Home: Starting drops load request #$requestId');
 
   try {
     _isDropsLoading = true;
-    print('🔍 Home: Loading drops for map... (request #$requestId)');
+    AppLogger.log('🔍 Home: Loading drops for map... (request #$requestId)');
 
     if (!mounted) {
-      print('🔍 Home: Widget disposed during drops load, aborting');
+      AppLogger.log('🔍 Home: Widget disposed during drops load, aborting');
       return;
     }
 
@@ -1410,38 +1412,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await userMode.when(
       data: (mode) async {
         if (!mounted) {
-          print('🔍 Home: Widget disposed during user mode processing');
+          AppLogger.log('🔍 Home: Widget disposed during user mode processing');
           return;
         }
 
-        print('🔍 Home: Processing user mode: $mode (request #$requestId)');
+        AppLogger.log('🔍 Home: Processing user mode: $mode (request #$requestId)');
 
         // Check if drops are already loaded for this mode
         if (_lastLoadedMode == mode) {
-          print('🔍 Home: Drops already loaded for mode: ${mode.name}, skipping load');
+          AppLogger.log('🔍 Home: Drops already loaded for mode: ${mode.name}, skipping load');
           return;
         }
 
-        print('🔍 Home: Loading drops for mode: ${mode.name} (request #$requestId)');
+        AppLogger.log('🔍 Home: Loading drops for mode: ${mode.name} (request #$requestId)');
 
         if (mode == UserMode.collector) {
           // Load only available drops for collectors (pending and cancelled, not suspicious)
           final collectorId = authState.value?.id;
-          print('🔍 Home: Loading drops for collector: $collectorId (request #$requestId)');
+          AppLogger.log('🔍 Home: Loading drops for collector: $collectorId (request #$requestId)');
 
           try {
             await ref.read(dropsControllerProvider.notifier).loadDropsAvailableForCollectors(
               excludeCollectorId: collectorId,
             );
           } catch (e, stackTrace) {
-            print('❌ Home: Error loading collector drops: $e');
-            print('❌ Home: Stack trace: $stackTrace');
+            AppLogger.log('❌ Home: Error loading collector drops: $e');
+            AppLogger.log('❌ Home: Stack trace: $stackTrace');
           }
         } else if (mode == UserMode.household) {
           // Safely get user ID without null assertions
           final userId = authState.value?.id;
           if (userId != null && userId.isNotEmpty) {
-            print('🔍 Home: Loading drops for household: $userId (request #$requestId)');
+            AppLogger.log('🔍 Home: Loading drops for household: $userId (request #$requestId)');
 
             if (mounted) {
               setState(() {
@@ -1451,18 +1453,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             try {
               await ref.read(dropsControllerProvider.notifier).loadUserDrops(userId);
-              print('🔍 Home: Household drops loaded successfully (request #$requestId)');
+              AppLogger.log('🔍 Home: Household drops loaded successfully (request #$requestId)');
             } catch (e, stackTrace) {
-              print('❌ Home: Error loading household drops: $e');
-              print('❌ Home: Stack trace: $stackTrace');
+              AppLogger.log('❌ Home: Error loading household drops: $e');
+              AppLogger.log('❌ Home: Stack trace: $stackTrace');
               // Don't rethrow - continue execution
             }
           } else {
-            print('🔍 Home: No user ID found, clearing drops (request #$requestId)');
+            AppLogger.log('🔍 Home: No user ID found, clearing drops (request #$requestId)');
             try {
               ref.read(dropsControllerProvider.notifier).clearDrops();
             } catch (e) {
-              print('❌ Home: Error clearing drops: $e');
+              AppLogger.log('❌ Home: Error clearing drops: $e');
             }
           }
         }
@@ -1472,22 +1474,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _lastLoadedMode = mode;
           try {
             await _saveLastLoadedMode(mode);
-            print('🔍 Home: Updated last loaded mode to: ${mode.name}');
+            AppLogger.log('🔍 Home: Updated last loaded mode to: ${mode.name}');
           } catch (e) {
-            print('❌ Home: Error saving last loaded mode: $e');
+            AppLogger.log('❌ Home: Error saving last loaded mode: $e');
           }
         }
       },
       loading: () async {
-        print('🔍 Home: User mode loading, waiting...');
+        AppLogger.log('🔍 Home: User mode loading, waiting...');
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           _debouncedLoadDropsForMap();
         }
       },
       error: (error, stack) async {
-        print('❌ Home: User mode error: $error');
-        print('❌ Home: Stack trace: $stack');
+        AppLogger.log('❌ Home: User mode error: $error');
+        AppLogger.log('❌ Home: Stack trace: $stack');
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
           _debouncedLoadDropsForMap();
@@ -1498,13 +1500,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Small delay to ensure state updates
     await Future.delayed(const Duration(milliseconds: 100));
   } catch (e, stackTrace) {
-    print('❌ Home: Error loading drops for map: $e');
-    print('❌ Home: Stack trace: $stackTrace');
+    AppLogger.log('❌ Home: Error loading drops for map: $e');
+    AppLogger.log('❌ Home: Stack trace: $stackTrace');
   } finally {
     _isDropsLoading = false;
     _isMarkerTransitioning = false;
     _lastDropsLoadTime = DateTime.now();
-    print('🔍 Home: Drops loading completed (request #$requestId)');
+    AppLogger.log('🔍 Home: Drops loading completed (request #$requestId)');
 
     if (mounted) {
       try {
@@ -1512,7 +1514,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _isMarkersLoading = false;
         });
       } catch (e) {
-        print('❌ Home: Error in setState after drops load: $e');
+        AppLogger.log('❌ Home: Error in setState after drops load: $e');
       }
     }
   }
@@ -1677,10 +1679,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 _debouncedLoadDropsForMap();
               }
-            });
-
-            ref.watch(userModeControllerProvider).whenData((mode) {
-              _updateCollectionRadius(_collectionRadius);
             });
 
             final dropsState = ref.watch(dropsControllerProvider);
@@ -2284,7 +2282,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             // Assign collector to drop
                                             await ref.read(dropsControllerProvider.notifier)
                                                 .assignCollector(drop.id, currentUserId);
-                                            print('✅ Collector assigned to drop');
+                                            AppLogger.log('✅ Collector assigned to drop');
                                             
                                             // Start the collection - this will persist the state
                                             await ref.read(navigationControllerProvider.notifier).startCollection(
@@ -2301,7 +2299,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               routeDistance: null, // Will be set by navigation screen
                                               collectorId: currentUserId, // Add collector ID (userId)
                                             );
-                                            print('✅ Collection started and saved');
+                                            AppLogger.log('✅ Collection started and saved');
                                             
                                             // Close the modal
                                             Navigator.pop(context);
@@ -2328,7 +2326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               );
                                             }
                                           } catch (e) {
-                                            print('❌ Error starting collection: $e');
+                                            AppLogger.log('❌ Error starting collection: $e');
                                             if (context.mounted) {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
@@ -2385,31 +2383,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             next.whenData((mode) {
               if (!mounted) return;
               
-              print('🔍 Home: User mode changed to: ${mode.name}');
+              AppLogger.log('🔍 Home: User mode changed to: ${mode.name}');
               
               // Only reload if mode actually changed
               if (previous?.value != mode) {
-                print('🔍 Home: Mode actually changed, setting mode switching flag and reloading drops');
+                AppLogger.log('🔍 Home: Mode actually changed, setting mode switching flag and reloading drops');
                 _isModeSwitching = true; // Set flag to prevent reload after restart
                 _saveModeSwitchingFlag(true).catchError((e) {
-                  print('❌ Home: Error saving mode switching flag: $e');
+                  AppLogger.log('❌ Home: Error saving mode switching flag: $e');
                 }); // Save flag to SharedPreferences
                 _lastLoadedMode = null; // Clear to force fresh load for new mode
                 
                 if (mounted && _currentLocation != null) {
-                  print('🔍 Home: Force reloading drops for new mode: ${mode.name}');
+                  AppLogger.log('🔍 Home: Force reloading drops for new mode: ${mode.name}');
                   _forceLoadDropsForMap();
                 }
               } else {
-                print('🔍 Home: Mode unchanged, skipping drops reload');
+                AppLogger.log('🔍 Home: Mode unchanged, skipping drops reload');
               }
             });
           } catch (e) {
-            print('❌ Home: Error in user mode listener: $e');
+            AppLogger.log('❌ Home: Error in user mode listener: $e');
           }
         });
       } catch (e) {
-        print('❌ Home: Error setting up user mode listener: $e');
+        AppLogger.log('❌ Home: Error setting up user mode listener: $e');
       }
       
       // Listen to drops state changes to reset loading flags (with error handling)
@@ -2419,7 +2417,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             next.whenData((drops) {
               if (!mounted) return;
               
-              print('🔍 Home: Drops state changed to data with ${drops.length} drops');
+              AppLogger.log('🔍 Home: Drops state changed to data with ${drops.length} drops');
               try {
                 setState(() {
                   _isDropsLoading = false;
@@ -2427,15 +2425,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _isMarkerTransitioning = false; // Reset marker transitioning
                 });
               } catch (e) {
-                print('❌ Home: Error in setState for drops listener: $e');
+                AppLogger.log('❌ Home: Error in setState for drops listener: $e');
               }
             });
           } catch (e) {
-            print('❌ Home: Error in drops listener: $e');
+            AppLogger.log('❌ Home: Error in drops listener: $e');
           }
         });
       } catch (e) {
-        print('❌ Home: Error setting up drops listener: $e');
+        AppLogger.log('❌ Home: Error setting up drops listener: $e');
       }
       
       // Note: User mode changes are now handled by the splash screen approach
@@ -2546,18 +2544,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             minHeight: 44,
                           ),
                         ),
-                        // Notification badge
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
+                        // Notification badge - only show if there are unread notifications
+                        Builder(
+                          builder: (context) {
+                            final unreadCount = ref.watch(unreadCountProvider);
+                            if (unreadCount > 0) {
+                              return Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
                       ],
                     ),
@@ -2760,8 +2766,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       );
     } catch (e, stackTrace) {
-      print('❌ Home: Critical error in build method: $e');
-      print('❌ Home: Stack trace: $stackTrace');
+      AppLogger.log('❌ Home: Critical error in build method: $e');
+      AppLogger.log('❌ Home: Stack trace: $stackTrace');
       // Return a safe error widget instead of crashing
       return Scaffold(
         body: Center(
@@ -3333,7 +3339,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     try {
                       await _pickImageFromSource(ImageSource.gallery, setModalState);
                     } catch (e) {
-                      print('❌ Gallery error: $e');
+                      AppLogger.log('❌ Gallery error: $e');
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -3356,7 +3362,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     try {
                       await _pickImageFromSource(ImageSource.gallery, setModalState);
                     } catch (e) {
-                      print('❌ Gallery error: $e');
+                      AppLogger.log('❌ Gallery error: $e');
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -3382,7 +3388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _pickImageFromSource(ImageSource source, StateSetter setModalState) async {
     try {
-      print('🖼️ Starting image picker with source: $source');
+      AppLogger.log('🖼️ Starting image picker with source: $source');
       
       final imagePicker = ImagePicker();
       
@@ -3406,7 +3412,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       
       if (pickedFile != null) {
-        print('✅ Image picked successfully: ${pickedFile.path}');
+        AppLogger.log('✅ Image picked successfully: ${pickedFile.path}');
         setModalState(() {
           _selectedImage = File(pickedFile!.path);
         });
@@ -3422,10 +3428,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
         }
       } else {
-        print('ℹ️ No image selected');
+        AppLogger.log('ℹ️ No image selected');
       }
     } catch (e) {
-      print('❌ Error picking image: $e');
+      AppLogger.log('❌ Error picking image: $e');
       
       // Show detailed error to user
       if (mounted) {
@@ -3819,26 +3825,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return;
       }
       
-      // Check if we have a user
-      if (authState == null) {
-        debugPrint('Auth state is null');
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('You must be logged in to create a drop'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-        return;
-      }
       // Get the user from the auth state
       final user = authState.value;
-      debugPrint('User from auth state: $user');
-      debugPrint('User ID from auth state: ${user?.id}');
-      debugPrint('User ID length: ${user?.id?.length}');
-      debugPrint('User ID is empty: ${user?.id?.isEmpty}');
-      debugPrint('User email from auth state: ${user?.email}');
-      debugPrint('User name from auth state: ${user?.name}');
+      
+      // Check if we have a user
       if (user == null) {
         debugPrint('User is null');
         Navigator.pop(context); // Close loading dialog
@@ -3850,6 +3840,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
         return;
       }
+      debugPrint('User from auth state: $user');
+      debugPrint('User ID from auth state: ${user.id}');
+      debugPrint('User ID length: ${user.id?.length}');
+      debugPrint('User ID is empty: ${user.id?.isEmpty}');
+      debugPrint('User email from auth state: ${user.email}');
+      debugPrint('User name from auth state: ${user.name}');
       final userId = user.id;
       debugPrint('User ID from user: $userId');
       if (userId == null || userId.isEmpty) {
@@ -3912,7 +3908,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _resetForm(); // Reset form after closing modal
           
           // Don't reload drops here - they should already be loaded for the current mode
-          print('🔍 Home: Drop created successfully, no need to reload drops');
+          AppLogger.log('🔍 Home: Drop created successfully, no need to reload drops');
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

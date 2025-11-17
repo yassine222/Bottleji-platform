@@ -1,4 +1,5 @@
 import 'package:botleji/core/config/server_config.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -56,7 +57,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         state = const AsyncValue.data(null);
       }
     } catch (e) {
-      print('Error initializing AuthNotifier: $e');
+      AppLogger.log('Error initializing AuthNotifier: $e');
       // Set to null on error
       state = const AsyncValue.data(null);
     }
@@ -68,17 +69,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       final token = prefs.getString(_tokenKey);
       final authData = prefs.getString(_authKey);
 
-      // print('Loading saved auth - Token: $token');
-      // print('Loading saved auth - Auth data: $authData');
+      // AppLogger.log('Loading saved auth - Token: $token');
+      // AppLogger.log('Loading saved auth - Auth data: $authData');
 
       if (token != null) {
         try {
-          print('🔍 Loading saved auth data...');
+          AppLogger.log('🔍 Loading saved auth data...');
           
           // Always call backend to get fresh user data (including lock status)
-          print('🔄 Calling backend to get fresh user data...');
+          AppLogger.log('🔄 Calling backend to get fresh user data...');
           final response = await _authRepository.getProfile();
-          print('✅ Backend response received');
+          AppLogger.log('✅ Backend response received');
           
           final userData = response.when(
             success: (user, token, message) => user,
@@ -88,15 +89,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           if (userData == null) {
             throw Exception('No user data received from backend');
           }
-          print('🔒 FRESH LOCK STATUS FROM BACKEND:');
-          print('   - isAccountLocked: ${userData.isAccountLocked}');
-          print('   - accountLockedUntil: ${userData.accountLockedUntil}');
-          print('   - warningCount: ${userData.warningCount}');
-          print('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
+          AppLogger.log('🔒 FRESH LOCK STATUS FROM BACKEND:');
+          AppLogger.log('   - isAccountLocked: ${userData.isAccountLocked}');
+          AppLogger.log('   - accountLockedUntil: ${userData.accountLockedUntil}');
+          AppLogger.log('   - warningCount: ${userData.warningCount}');
+          AppLogger.log('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
           
           // Update saved auth data with fresh backend data
           await prefs.setString(_authKey, jsonEncode(userData.toJson()));
-          print('💾 Updated cached auth data with fresh backend data');
+          AppLogger.log('💾 Updated cached auth data with fresh backend data');
           
           state = AsyncValue.data(userData);
           
@@ -104,7 +105,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           await _setUserModeFromRoles(userData.roles);
           
           // Reconnect to WebSocket notifications on app startup
-          print('🔌 AuthProvider: Reconnecting to WebSocket on app startup');
+          AppLogger.log('🔌 AuthProvider: Reconnecting to WebSocket on app startup');
           _connectToNotificationsOnStartup(token);
           
           // Set up application status update callback
@@ -114,26 +115,26 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           await syncApplicationStatusFromDatabase();
           
         } catch (e) {
-          // print('Error parsing saved auth data: $e');
+          // AppLogger.log('Error parsing saved auth data: $e');
           await _clearAuth();
           state = const AsyncValue.data(null);
         }
       } else {
-        // print('Loading saved auth - Is logged in: false');
+        // AppLogger.log('Loading saved auth - Is logged in: false');
         state = const AsyncValue.data(null);
       }
     } catch (e) {
-      // print('Error loading saved auth: $e');
+      // AppLogger.log('Error loading saved auth: $e');
       state = const AsyncValue.data(null);
     }
   }
 
   Future<void> _setUserModeFromRoles(List<String> roles) async {
     try {
-      print('🔄 AuthProvider: Setting user mode from roles: $roles');
+          AppLogger.log('🔄 AuthProvider: Setting user mode from roles: $roles');
       
       if (roles.isEmpty) {
-        print('⚠️ AuthProvider: No roles provided, skipping user mode setup');
+        AppLogger.log('⚠️ AuthProvider: No roles provided, skipping user mode setup');
         return;
       }
       
@@ -143,13 +144,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         try {
           final userModeState = _ref.read(userModeControllerProvider);
           if (userModeState.hasValue) {
-            print('✅ AuthProvider: UserModeController is ready');
+            AppLogger.log('✅ AuthProvider: UserModeController is ready');
             break;
           }
         } catch (e) {
-          print('⚠️ AuthProvider: Error reading userModeControllerProvider: $e');
+          AppLogger.log('⚠️ AuthProvider: Error reading userModeControllerProvider: $e');
         }
-        print('⏳ AuthProvider: UserModeController not ready yet, waiting... (attempt ${attempts + 1}/10)');
+        AppLogger.log('⏳ AuthProvider: UserModeController not ready yet, waiting... (attempt ${attempts + 1}/10)');
         await Future.delayed(const Duration(milliseconds: 500));
         attempts++;
       }
@@ -160,119 +161,120 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         // Get the current saved mode
         final currentMode = await userModeController.getCurrentMode();
         
-        print('🔍 AuthProvider: Current saved mode: ${currentMode?.name}');
-        print('🔍 AuthProvider: Current mode backend role: ${currentMode?.backendRole}');
-        print('🔍 AuthProvider: User roles: $roles');
-        print('🔍 AuthProvider: Does user have current mode role? ${currentMode != null ? roles.contains(currentMode.backendRole) : false}');
+        AppLogger.log('🔍 AuthProvider: Current saved mode: ${currentMode?.name}');
+        AppLogger.log('🔍 AuthProvider: Current mode backend role: ${currentMode?.backendRole}');
+        AppLogger.log('🔍 AuthProvider: User roles: $roles');
+        AppLogger.log('🔍 AuthProvider: Does user have current mode role? ${currentMode != null ? roles.contains(currentMode.backendRole) : false}');
         
         // Check if the current mode is still valid (user still has that role)
         if (currentMode != null && roles.contains(currentMode.backendRole)) {
           // Keep the current mode if it's still valid
-          print('✅ AuthProvider: Keeping current mode: ${currentMode.name} (user still has role: ${currentMode.backendRole})');
+          AppLogger.log('✅ AuthProvider: Keeping current mode: ${currentMode.name} (user still has role: ${currentMode.backendRole})');
           // Don't call setMode again if it's already the correct mode
           try {
             final currentState = _ref.read(userModeControllerProvider);
             if (currentState.hasValue && currentState.value == currentMode) {
-              print('✅ AuthProvider: Mode is already set correctly, skipping setMode call');
+              AppLogger.log('✅ AuthProvider: Mode is already set correctly, skipping setMode call');
             } else {
-              print('🔄 AuthProvider: Mode needs to be updated, calling setMode');
+              AppLogger.log('🔄 AuthProvider: Mode needs to be updated, calling setMode');
               await userModeController.setMode(currentMode);
             }
           } catch (e) {
-            print('⚠️ AuthProvider: Error checking/updating mode: $e');
+            AppLogger.log('⚠️ AuthProvider: Error checking/updating mode: $e');
             // Fallback: just set the mode
             await userModeController.setMode(currentMode);
           }
         } else {
           // If no saved mode or invalid mode, default to household for users with both roles
           final mode = UserMode.household;
-          print('🔄 AuthProvider: Setting default mode: ${mode.name} (from roles: $roles)');
-          print('🔄 AuthProvider: Reason: ${currentMode == null ? 'No saved mode' : 'Invalid mode for current roles'}');
+          AppLogger.log('🔄 AuthProvider: Setting default mode: ${mode.name} (from roles: $roles)');
+          AppLogger.log('🔄 AuthProvider: Reason: ${currentMode == null ? 'No saved mode' : 'Invalid mode for current roles'}');
           await userModeController.setMode(mode);
         }
         
-        print('✅ AuthProvider: User mode set successfully');
+        AppLogger.log('✅ AuthProvider: User mode set successfully');
       } catch (e, stackTrace) {
-        print('❌ AuthProvider: Error in user mode controller operations: $e');
-        print('❌ AuthProvider: Stack trace: $stackTrace');
+        AppLogger.log('❌ AuthProvider: Error in user mode controller operations: $e');
+        AppLogger.log('❌ AuthProvider: Stack trace: $stackTrace');
         rethrow;
       }
     } catch (e, stackTrace) {
-      print('❌ AuthProvider: Error setting user mode: $e');
-      print('❌ AuthProvider: Stack trace: $stackTrace');
+      AppLogger.log('❌ AuthProvider: Error setting user mode: $e');
+      AppLogger.log('❌ AuthProvider: Stack trace: $stackTrace');
       // Don't rethrow - let login continue even if user mode setup fails
     }
   }
 
   Future<void> _saveAuth(UserData userData) async {
     try {
-      print('💾 AuthProvider: Saving user data to shared preferences...');
-      print('💾 AuthProvider: User ID: ${userData.id}');
-      print('💾 AuthProvider: Application status: ${userData.collectorApplicationStatus}');
+      AppLogger.log('💾 AuthProvider: Saving user data to shared preferences...');
+      AppLogger.log('💾 AuthProvider: User ID: ${userData.id}');
+      AppLogger.log('💾 AuthProvider: Application status: ${userData.collectorApplicationStatus}');
       
       final authData = jsonEncode(userData.toJson());
       await _prefs.setString(_authKey, authData);
       await _prefs.setBool(_isLoggedInKey, true);
+    await _prefs.setBool('is_first_time', false);
       
-      print('💾 AuthProvider: User data saved successfully');
+      AppLogger.log('💾 AuthProvider: User data saved successfully');
     } catch (e) {
-      print('❌ AuthProvider: Error saving user data: $e');
+      AppLogger.log('❌ AuthProvider: Error saving user data: $e');
     }
   }
 
   Future<void> _saveToken(String token) async {
     try {
-      print('Saving token: $token');
+      AppLogger.log('Saving token: $token');
       await _prefs.setString(_tokenKey, token);
     } catch (e) {
-      print('Error saving token: $e');
+      AppLogger.log('Error saving token: $e');
     }
   }
 
   Future<void> _clearAuth() async {
     try {
-      print('=== Before Clearing Auth Data ===');
-      print('Token: ${_prefs.getString(_tokenKey)}');
-      print('Auth Data: ${_prefs.getString(_authKey)}');
-      print('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
+      AppLogger.log('=== Before Clearing Auth Data ===');
+      AppLogger.log('Token: ${_prefs.getString(_tokenKey)}');
+      AppLogger.log('Auth Data: ${_prefs.getString(_authKey)}');
+      AppLogger.log('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
       
-      print('Clearing auth data and token...');
+      AppLogger.log('Clearing auth data and token...');
       await _prefs.remove(_tokenKey);
       await _prefs.remove(_authKey);
       await _prefs.setBool(_isLoggedInKey, false);
       
-      print('=== After Clearing Auth Data ===');
-      print('Token: ${_prefs.getString(_tokenKey)}');
-      print('Auth Data: ${_prefs.getString(_authKey)}');
-      print('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
+      AppLogger.log('=== After Clearing Auth Data ===');
+      AppLogger.log('Token: ${_prefs.getString(_tokenKey)}');
+      AppLogger.log('Auth Data: ${_prefs.getString(_authKey)}');
+      AppLogger.log('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
       
-      print('Auth data and token cleared successfully');
+      AppLogger.log('Auth data and token cleared successfully');
     } catch (e) {
-      print('Error clearing auth data: $e');
+      AppLogger.log('Error clearing auth data: $e');
     }
   }
 
   Future<UserData?> login(String email, String password, WidgetRef ref) async {
     try {
-      print('Starting login process...');
+      AppLogger.log('Starting login process...');
       
       final response = await _authRepository.login(email: email, password: password);
-      print('Login response: $response');
+      AppLogger.log('Login response: $response');
       
       return response.when(
         success: (user, token, message) async {
-          print('Login success - User: $user, Token: $token, Message: $message');
+          AppLogger.log('Login success - User: $user, Token: $token, Message: $message');
           if (user != null && token != null) {
-            print('Saving user data and token');
-            print('User ID: ${user.id}');
-            print('User roles: ${user.roles}');
-            print('User isCollector: ${user.isCollector}');
-            print('User isHousehold: ${user.isHousehold}');
-            print('🔒 LOCK STATUS:');
-            print('   - isAccountLocked: ${user.isAccountLocked}');
-            print('   - accountLockedUntil: ${user.accountLockedUntil}');
-            print('   - warningCount: ${user.warningCount}');
-            print('   - isCurrentlyLocked: ${user.isCurrentlyLocked}');
+            AppLogger.log('Saving user data and token');
+            AppLogger.log('User ID: ${user.id}');
+            AppLogger.log('User roles: ${user.roles}');
+            AppLogger.log('User isCollector: ${user.isCollector}');
+            AppLogger.log('User isHousehold: ${user.isHousehold}');
+            AppLogger.log('🔒 LOCK STATUS:');
+            AppLogger.log('   - isAccountLocked: ${user.isAccountLocked}');
+            AppLogger.log('   - accountLockedUntil: ${user.accountLockedUntil}');
+            AppLogger.log('   - warningCount: ${user.warningCount}');
+            AppLogger.log('   - isCurrentlyLocked: ${user.isCurrentlyLocked}');
             _saveAuth(user);
             _saveToken(token);
             state = AsyncValue.data(user);
@@ -281,8 +283,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             try {
               await _setUserModeFromRoles(user.roles);
             } catch (e, stackTrace) {
-              print('❌ Error setting user mode: $e');
-              print('❌ Stack trace: $stackTrace');
+              AppLogger.log('❌ Error setting user mode: $e');
+              AppLogger.log('❌ Stack trace: $stackTrace');
               // Don't fail login if user mode setting fails
             }
             
@@ -290,28 +292,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             try {
               _connectToNotifications(token, ref);
             } catch (e) {
-              print('❌ Error connecting to notifications: $e');
+              AppLogger.log('❌ Error connecting to notifications: $e');
               // Don't fail login if WebSocket connection fails
             }
             
             // Note: Skip syncing application status after login since we already have fresh user data
             // syncApplicationStatusFromDatabase().catchError((e) {
-            //   print('Error syncing application status after login: $e');
+            //   AppLogger.log('Error syncing application status after login: $e');
             // });
             
             return user;
           } else {
-            print('Login failed - Missing user or token');
+            AppLogger.log('Login failed - Missing user or token');
             return null;
           }
         },
         error: (message, statusCode) {
-          print('Login error: $message (Status: $statusCode)');
+          AppLogger.log('Login error: $message (Status: $statusCode)');
           throw Exception(message);
         },
       );
     } catch (e, stack) {
-      print('Login exception: $e');
+      AppLogger.log('Login exception: $e');
       // Re-throw the exception so the UI can handle it
       rethrow;
     }
@@ -324,24 +326,24 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     required String password,
   }) async {
     try {
-      print('AuthNotifier: Starting signup process...');
-      print('AuthNotifier: Email: $email');
+      AppLogger.log('AuthNotifier: Starting signup process...');
+      AppLogger.log('AuthNotifier: Email: $email');
       
       final response = await _authRepository.signup(
         email: email,
         password: password,
       );
       
-      print('AuthNotifier: Signup response: $response');
+      AppLogger.log('AuthNotifier: Signup response: $response');
       
       response.when(
         success: (user, token, message) {
-          print('AuthNotifier: Signup successful');
-          print('AuthNotifier: Message: $message');
+          AppLogger.log('AuthNotifier: Signup successful');
+          AppLogger.log('AuthNotifier: Message: $message');
           
           // Create a temporary user object for OTP verification
           if (user == null && (message?.contains('verify your email') ?? false)) {
-            print('Creating temporary user for OTP verification');
+            AppLogger.log('Creating temporary user for OTP verification');
             final tempUser = UserData(
               id: '',
               email: email,
@@ -365,15 +367,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           }
         },
         error: (message, statusCode) {
-          print('AuthNotifier: Signup failed');
-          print('AuthNotifier: Error message: $message');
-          print('AuthNotifier: Status code: $statusCode');
+          AppLogger.log('AuthNotifier: Signup failed');
+          AppLogger.log('AuthNotifier: Error message: $message');
+          AppLogger.log('AuthNotifier: Status code: $statusCode');
           state = AsyncValue.error(message, StackTrace.current);
         },
       );
       return response;
     } catch (e, stack) {
-      print('AuthNotifier: Signup exception: $e');
+      AppLogger.log('AuthNotifier: Signup exception: $e');
       state = AsyncValue.error(e, stack);
       return AuthResponse.error(
         message: e.toString(),
@@ -384,34 +386,34 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   Future<void> logout(WidgetRef ref) async {
     try {
-      print('Starting logout process...');
+      AppLogger.log('Starting logout process...');
       
       // Disconnect from WebSocket notifications
       try {
         final notificationService = ref.read(notificationServiceProvider);
         notificationService.disconnect();
-        print('Disconnected from WebSocket notifications');
+        AppLogger.log('Disconnected from WebSocket notifications');
       } catch (e) {
-        print('Error disconnecting from notifications: $e');
+        AppLogger.log('Error disconnecting from notifications: $e');
       }
       
       // Clear local data
-      print('Clearing local auth data...');
+      AppLogger.log('Clearing local auth data...');
       try {
         await _prefs.remove(_tokenKey);
         await _prefs.remove(_authKey);
         await _prefs.setBool(_isLoggedInKey, false);
       } catch (e) {
-        print('Error clearing local auth data: $e');
+        AppLogger.log('Error clearing local auth data: $e');
       }
       
       // Reset user mode controller
       try {
         final userModeController = ref.read(userModeControllerProvider.notifier);
         await userModeController.clearMode();
-        print('Reset user mode controller');
+        AppLogger.log('Reset user mode controller');
       } catch (e) {
-        print('Error resetting user mode controller: $e');
+        AppLogger.log('Error resetting user mode controller: $e');
       }
       
       // Reset collector subscription controller
@@ -419,9 +421,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         final subscriptionController = ref.read(collectorSubscriptionControllerProvider.notifier);
         // Force refresh to reset state
         await subscriptionController.refresh();
-        print('Reset collector subscription controller');
+        AppLogger.log('Reset collector subscription controller');
       } catch (e) {
-        print('Error resetting collector subscription controller: $e');
+        AppLogger.log('Error resetting collector subscription controller: $e');
       }
       
       // Reset collector application controller
@@ -429,41 +431,41 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         final applicationController = ref.read(collectorApplicationControllerProvider.notifier);
         // Clear any cached application data
         applicationController.clearApplication();
-        print('Reset collector application controller');
+        AppLogger.log('Reset collector application controller');
       } catch (e) {
-        print('Error resetting collector application controller: $e');
+        AppLogger.log('Error resetting collector application controller: $e');
       }
       
       // Clear drops data
       try {
         final dropsController = ref.read(dropsControllerProvider.notifier);
         dropsController.clearDrops();
-        print('Cleared drops data');
+        AppLogger.log('Cleared drops data');
       } catch (e) {
-        print('Error clearing drops data: $e');
+        AppLogger.log('Error clearing drops data: $e');
       }
       
       // Clear notification service
       try {
         final notificationService = ref.read(notificationServiceProvider);
         notificationService.clearNotifications();
-        print('Cleared notification service');
+        AppLogger.log('Cleared notification service');
       } catch (e) {
-        print('Error clearing notification service: $e');
+        AppLogger.log('Error clearing notification service: $e');
       }
       
       // Set state to null (logged out)
       state = const AsyncValue.data(null);
-      print('Logout completed successfully');
+      AppLogger.log('Logout completed successfully');
     } catch (e) {
-      print('Error during logout: $e');
+      AppLogger.log('Error during logout: $e');
       // Even if there's an error, try to clear auth data
       try {
         await _prefs.remove(_tokenKey);
         await _prefs.remove(_authKey);
         await _prefs.setBool(_isLoggedInKey, false);
       } catch (e2) {
-        print('Secondary error clearing local auth data: $e2');
+        AppLogger.log('Secondary error clearing local auth data: $e2');
       }
       state = const AsyncValue.data(null);
     }
@@ -471,14 +473,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   Future<void> refreshUserData() async {
     try {
-      print('🔄 AuthProvider: Refreshing user data from server...');
+      AppLogger.log('🔄 AuthProvider: Refreshing user data from server...');
       
       final response = await _authRepository.refreshUserData();
       
       response.when(
         success: (user, token, message) {
-          print('✅ AuthProvider: User data refreshed successfully');
-          print('🔄 AuthProvider: New user roles: ${user?.roles}');
+          AppLogger.log('✅ AuthProvider: User data refreshed successfully');
+          AppLogger.log('🔄 AuthProvider: New user roles: ${user?.roles}');
           
           if (user != null) {
             // Update the state with new user data
@@ -490,100 +492,126 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             // Update user mode based on new roles
             _setUserModeFromRoles(user.roles);
             
-            print('✅ AuthProvider: User data and mode updated successfully');
+            AppLogger.log('✅ AuthProvider: User data and mode updated successfully');
           }
         },
         error: (message, statusCode) {
-          print('❌ AuthProvider: Failed to refresh user data: $message (Status: $statusCode)');
+          AppLogger.log('❌ AuthProvider: Failed to refresh user data: $message (Status: $statusCode)');
           if (statusCode == 401) {
             // Token expired, logout the user
-            print('🔐 AuthProvider: Token expired, logging out user');
+            AppLogger.log('🔐 AuthProvider: Token expired, logging out user');
             // Note: We can't call logout here as it requires a WidgetRef
             // The user will need to manually logout or restart the app
           }
         },
       );
     } catch (e) {
-      print('❌ AuthProvider: Error refreshing user data: $e');
+      AppLogger.log('❌ AuthProvider: Error refreshing user data: $e');
     }
   }
 
   // WebSocket notification methods
   void _connectToNotifications(String token, WidgetRef ref) async {
     try {
-      print('🔌 AuthProvider: Setting up WebSocket connection...');
+      AppLogger.log('🔌 AuthProvider: Setting up WebSocket connection...');
+      
+      // If using tunnel, skip local network check (tunnel uses public HTTPS/WSS, not local network)
+      // Only check local network permission if NOT using tunnel
+      if (!ServerConfig.isUsingTunnel) {
+        final prefs = await SharedPreferences.getInstance();
+        final localNetworkGranted = prefs.getBool('local_network_granted') ?? false;
+        if (!localNetworkGranted) {
+          AppLogger.log('🔌 AuthProvider: Skipping WebSocket connect (local network not granted yet and not using tunnel)');
+          return;
+        }
+      } else {
+        AppLogger.log('🔌 AuthProvider: Using tunnel, skipping local network permission check');
+      }
       
       // Skip network detection if auto-detection is disabled (use fallback directly)
       if (ServerConfig.useAutoDetection) {
-        print('🔌 AuthProvider: Waiting for network detection...');
+        AppLogger.log('🔌 AuthProvider: Waiting for network detection...');
         await NetworkDetectionService.getOptimalServerIp();
-        print('🔌 AuthProvider: Network detection completed');
+        AppLogger.log('🔌 AuthProvider: Network detection completed');
       } else {
-        print('🔌 AuthProvider: Auto-detection disabled, using configured IP');
+        AppLogger.log('🔌 AuthProvider: Auto-detection disabled, using configured IP');
       }
       
       final notificationService = ref.read(notificationServiceProvider);
       
       // Set up force logout callback
       notificationService.onForceLogout = (reason) {
-        print('🚪 Force logout received: $reason');
+        AppLogger.log('🚪 Force logout received: $reason');
         // Show a dialog and then logout
         handleForceLogout(reason);
       };
       
       // Set up drop status update callback for real-time updates
       notificationService.onDropStatusUpdate = (dropId, status, data) {
-        print('🔄 AuthProvider: Drop status update received - $status for drop $dropId');
+        AppLogger.log('🔄 AuthProvider: Drop status update received - $status for drop $dropId');
         // Update drops controller with the status change
         final dropsController = ref.read(dropsControllerProvider.notifier);
         dropsController.handleDropStatusUpdate(dropId, status, data);
       };
       
       // Connect to WebSocket
-      print('🔌 AuthProvider: Calling notificationService.connect()...');
+      AppLogger.log('🔌 AuthProvider: Calling notificationService.connect()...');
       notificationService.connect(token);
-      print('🔌 AuthProvider: WebSocket connection initiated');
+      AppLogger.log('🔌 AuthProvider: WebSocket connection initiated');
       
       // Check connection status after a short delay
       Future.delayed(const Duration(seconds: 2), () {
         final isConnected = notificationService.isConnected;
-        print('🔌 AuthProvider: WebSocket connection status after 2s: $isConnected');
+        AppLogger.log('🔌 AuthProvider: WebSocket connection status after 2s: $isConnected');
       });
       
     } catch (e) {
-      print('❌ AuthProvider: Error connecting to notifications: $e');
+      AppLogger.log('❌ AuthProvider: Error connecting to notifications: $e');
     }
   }
 
   /// Connect to WebSocket on app startup (without WidgetRef)
   void _connectToNotificationsOnStartup(String token) async {
     try {
-      print('🔌 AuthProvider: Setting up WebSocket connection on startup...');
-      print('🔌 AuthProvider: Token length: ${token.length}');
+      AppLogger.log('🔌 AuthProvider: Setting up WebSocket connection on startup...');
+      AppLogger.log('🔌 AuthProvider: Token length: ${token.length}');
+      
+      // If using tunnel, skip local network check (tunnel uses public HTTPS/WSS, not local network)
+      // Only check local network permission if NOT using tunnel
+      if (!ServerConfig.isUsingTunnel) {
+        final prefs = await SharedPreferences.getInstance();
+        final localNetworkGranted = prefs.getBool('local_network_granted') ?? false;
+        if (!localNetworkGranted) {
+          AppLogger.log('🔌 AuthProvider: Skipping WebSocket connect on startup (local network not granted yet and not using tunnel)');
+          return;
+        }
+      } else {
+        AppLogger.log('🔌 AuthProvider: Using tunnel on startup, skipping local network permission check');
+      }
       
       // Skip network detection if auto-detection is disabled (use fallback directly)
       if (ServerConfig.useAutoDetection) {
-        print('🔌 AuthProvider: Waiting for network detection...');
+        AppLogger.log('🔌 AuthProvider: Waiting for network detection...');
         await NetworkDetectionService.getOptimalServerIp();
-        print('🔌 AuthProvider: Network detection completed');
+        AppLogger.log('🔌 AuthProvider: Network detection completed');
       } else {
-        print('🔌 AuthProvider: Auto-detection disabled, using configured IP');
+        AppLogger.log('🔌 AuthProvider: Auto-detection disabled, using configured IP');
       }
       
       final notificationService = _ref.read(notificationServiceProvider);
       
       // Set up force logout callback
       notificationService.onForceLogout = (reason) {
-        print('🚪 Force logout received on startup: $reason');
-        print('🚪 AuthProvider: About to call handleForceLogout');
+        AppLogger.log('🚪 Force logout received on startup: $reason');
+        AppLogger.log('🚪 AuthProvider: About to call handleForceLogout');
         // Show a dialog and then logout
         handleForceLogout(reason);
-        print('🚪 AuthProvider: handleForceLogout completed');
+        AppLogger.log('🚪 AuthProvider: handleForceLogout completed');
       };
       
       // Set up drop status update callback for real-time updates
       notificationService.onDropStatusUpdate = (dropId, status, data) {
-        print('🔄 AuthProvider: Drop status update received on startup - $status for drop $dropId');
+        AppLogger.log('🔄 AuthProvider: Drop status update received on startup - $status for drop $dropId');
         // Update drops controller with the status change
         final dropsController = _ref.read(dropsControllerProvider.notifier);
         dropsController.handleDropStatusUpdate(dropId, status, data);
@@ -591,10 +619,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       
       // Set up account lock status update callback
       notificationService.onAccountLockStatusUpdate = (isLocked, lockedUntil, warningCount) {
-        print('🔒 AuthProvider: Account lock status update received!');
-        print('   - isLocked: $isLocked');
-        print('   - lockedUntil: $lockedUntil');
-        print('   - warningCount: $warningCount');
+        AppLogger.log('🔒 AuthProvider: Account lock status update received!');
+        AppLogger.log('   - isLocked: $isLocked');
+        AppLogger.log('   - lockedUntil: $lockedUntil');
+        AppLogger.log('   - warningCount: $warningCount');
         
         // Update user state immediately
         final currentUser = state.value;
@@ -622,29 +650,29 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           // Update cached data
           SharedPreferences.getInstance().then((prefs) {
             prefs.setString(_authKey, jsonEncode(updatedUser.toJson()));
-            print('💾 AuthProvider: Updated cached user data with new lock status');
+            AppLogger.log('💾 AuthProvider: Updated cached user data with new lock status');
           });
           
-          print('✅ AuthProvider: User state updated with new lock status');
+          AppLogger.log('✅ AuthProvider: User state updated with new lock status');
         }
       };
       
       // Connect to WebSocket
-      print('🔌 AuthProvider: Calling notificationService.connect() on startup...');
+      AppLogger.log('🔌 AuthProvider: Calling notificationService.connect() on startup...');
       notificationService.connect(token);
-      print('🔌 AuthProvider: WebSocket connection initiated on startup');
+      AppLogger.log('🔌 AuthProvider: WebSocket connection initiated on startup');
       
       // Check connection status after a short delay
       Future.delayed(const Duration(seconds: 2), () {
         final isConnected = notificationService.isConnected;
-        print('🔌 AuthProvider: WebSocket connection status after 2s: $isConnected');
+        AppLogger.log('🔌 AuthProvider: WebSocket connection status after 2s: $isConnected');
         if (!isConnected) {
-          print('❌ AuthProvider: WebSocket failed to connect on startup');
+          AppLogger.log('❌ AuthProvider: WebSocket failed to connect on startup');
         }
       });
       
     } catch (e) {
-      print('❌ AuthProvider: Error connecting to notifications on startup: $e');
+      AppLogger.log('❌ AuthProvider: Error connecting to notifications on startup: $e');
     }
   }
 
@@ -652,28 +680,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     try {
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.disconnect();
-      print('🔌 Disconnected from WebSocket notifications');
+      AppLogger.log('🔌 Disconnected from WebSocket notifications');
     } catch (e) {
-      print('❌ Error disconnecting from notifications: $e');
+      AppLogger.log('❌ Error disconnecting from notifications: $e');
     }
   }
 
   void handleForceLogout(String reason) {
-    print('🚪 Handling force logout: $reason');
-    print('🚪 AuthProvider: handleForceLogout called with reason: $reason');
+    AppLogger.log('🚪 Handling force logout: $reason');
+    AppLogger.log('🚪 AuthProvider: handleForceLogout called with reason: $reason');
     
     // Show force logout notification immediately
     try {
       LocalNotificationService().showForceLogoutNotification(reason: reason);
-      print('🔔 Force logout notification sent');
+      AppLogger.log('🔔 Force logout notification sent');
     } catch (e) {
-      print('❌ Error showing force logout notification: $e');
+      AppLogger.log('❌ Error showing force logout notification: $e');
     }
     
     // Store the force logout reason to show dialog
     _pendingForceLogoutReason = reason;
-    print('🚪 Force logout reason stored: $reason');
-    print('🚪 AuthProvider: _pendingForceLogoutReason set to: $_pendingForceLogoutReason');
+    AppLogger.log('🚪 Force logout reason stored: $reason');
+    AppLogger.log('🚪 AuthProvider: _pendingForceLogoutReason set to: $_pendingForceLogoutReason');
     
     // Trigger a state change to make the auth listener run
     // We'll set a temporary flag in the state to trigger the listener
@@ -700,11 +728,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       
       // Set state to trigger the listener
       state = AsyncValue.data(tempUser);
-      print('🚪 AuthProvider: State updated to trigger auth listener');
+      AppLogger.log('🚪 AuthProvider: State updated to trigger auth listener');
     }
     
     // Don't clear auth data immediately - let user see the warning first
-    print('🚪 Force logout initiated - waiting for user acknowledgment');
+    AppLogger.log('🚪 Force logout initiated - waiting for user acknowledgment');
   }
 
   /// Get pending force logout reason and clear it
@@ -716,12 +744,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   /// Execute the actual force logout after user acknowledges
   void executeForceLogout() {
-    print('🚪 Executing force logout after user acknowledgment');
+    AppLogger.log('🚪 Executing force logout after user acknowledgment');
     
     // Clear all data immediately and set state to null
     _clearAuthAndSetState();
     
-    print('🚪 Force logout completed successfully');
+    AppLogger.log('🚪 Force logout completed successfully');
   }
 
   String? _pendingForceLogoutReason;
@@ -730,28 +758,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   void _clearAuthAndSetState() async {
     // Set state to null immediately first
     state = const AsyncValue.data(null);
-    print('✅ Auth state set to null immediately');
+    AppLogger.log('✅ Auth state set to null immediately');
     
     try {
-      print('=== Before Clearing Auth Data ===');
-      print('Token: ${_prefs.getString(_tokenKey)}');
-      print('Auth Data: ${_prefs.getString(_authKey)}');
-      print('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
+      AppLogger.log('=== Before Clearing Auth Data ===');
+      AppLogger.log('Token: ${_prefs.getString(_tokenKey)}');
+      AppLogger.log('Auth Data: ${_prefs.getString(_authKey)}');
+      AppLogger.log('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
       
-      print('Clearing auth data and token...');
+      AppLogger.log('Clearing auth data and token...');
       await _prefs.remove(_tokenKey);
       await _prefs.remove(_authKey);
       await _prefs.setBool(_isLoggedInKey, false);
       
-      print('=== After Clearing Auth Data ===');
-      print('Token: ${_prefs.getString(_tokenKey)}');
-      print('Auth Data: ${_prefs.getString(_authKey)}');
-      print('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
+      AppLogger.log('=== After Clearing Auth Data ===');
+      AppLogger.log('Token: ${_prefs.getString(_tokenKey)}');
+      AppLogger.log('Auth Data: ${_prefs.getString(_authKey)}');
+      AppLogger.log('Is Logged In: ${_prefs.getBool(_isLoggedInKey)}');
       
-      print('Auth data and token cleared successfully');
+      AppLogger.log('Auth data and token cleared successfully');
       
     } catch (e) {
-      print('Error clearing auth data: $e');
+      AppLogger.log('Error clearing auth data: $e');
       // State is already set to null, so no need to set it again
     }
   }
@@ -768,11 +796,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       throw Exception('No user logged in');
     }
 
-    print('setupProfile: Sending data:');
-    print('  name: $name');
-    print('  phone: $phone');
-    print('  address: $address');
-    print('  profilePhoto: $profilePhoto');
+    AppLogger.log('setupProfile: Sending data:');
+    AppLogger.log('  name: $name');
+    AppLogger.log('  phone: $phone');
+    AppLogger.log('  address: $address');
+    AppLogger.log('  profilePhoto: $profilePhoto');
 
     final response = await _authRepository.setupProfile(
       name: name,
@@ -781,7 +809,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       profilePhoto: profilePhoto,
     );
 
-    print('setupProfile: Response: $response');
+    AppLogger.log('setupProfile: Response: $response');
 
     response.when(
       success: (user, token, message) async {
@@ -802,29 +830,29 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           isProfileComplete: user?.isProfileComplete ?? true,
         );
 
-        print('setupProfile: Updated user id=${updatedUser.id}');
-        print('setupProfile: name=${updatedUser.name}, phone=${updatedUser.phoneNumber}');
-        print('setupProfile: address=${updatedUser.address}, photo=${updatedUser.profilePhoto}');
-        print('setupProfile: isProfileComplete=${updatedUser.isProfileComplete}');
+        AppLogger.log('setupProfile: Updated user id=${updatedUser.id}');
+        AppLogger.log('setupProfile: name=${updatedUser.name}, phone=${updatedUser.phoneNumber}');
+        AppLogger.log('setupProfile: address=${updatedUser.address}, photo=${updatedUser.profilePhoto}');
+        AppLogger.log('setupProfile: isProfileComplete=${updatedUser.isProfileComplete}');
 
         state = AsyncValue.data(updatedUser);
         await _saveAuth(updatedUser);
 
         if (token != null && token.isNotEmpty) {
-          print('setupProfile: Saving new token after profile setup');
+          AppLogger.log('setupProfile: Saving new token after profile setup');
           await _saveToken(token);
         }
 
-        print('setupProfile: State and storage updated');
+        AppLogger.log('setupProfile: State and storage updated');
       },
       error: (message, _) {
-        print('setupProfile: Error from backend: $message');
+        AppLogger.log('setupProfile: Error from backend: $message');
         state = AsyncValue.error(message, StackTrace.current);
         throw Exception(message);
       },
     );
   } catch (e, stack) {
-    print('setupProfile: Exception: $e');
+    AppLogger.log('setupProfile: Exception: $e');
     state = AsyncValue.error(e, stack);
     rethrow;
   }
@@ -841,11 +869,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       final currentUser = state.value;
       if (currentUser == null) throw Exception('No user logged in');
 
-      print('updateProfile: Sending data:');
-      print('  name: $name');
-      print('  phone: $phone');
-      print('  address: $address');
-      print('  profilePhoto: $profilePhoto');
+      AppLogger.log('updateProfile: Sending data:');
+      AppLogger.log('  name: $name');
+      AppLogger.log('  phone: $phone');
+      AppLogger.log('  address: $address');
+      AppLogger.log('  profilePhoto: $profilePhoto');
 
       final response = await _authRepository.updateProfile(
         name: name,
@@ -853,7 +881,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         address: address,
         profilePhoto: profilePhoto,
       );
-      print('updateProfile: Response: $response');
+      AppLogger.log('updateProfile: Response: $response');
 
       response.when(
         success: (user, token, message) {
@@ -871,34 +899,34 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
               updatedAt: user.updatedAt ?? currentUser.updatedAt,
               isProfileComplete: user.isProfileComplete ?? currentUser.isProfileComplete,
             );
-            print('updateProfile: Updated user with ID: ${updatedUser.id}');
-            print('updateProfile: Updated user phone: ${updatedUser.phoneNumber}');
-            print('updateProfile: Updated user name: ${updatedUser.name}');
-            print('updateProfile: Updated user address: ${updatedUser.address}');
-            print('updateProfile: Updated user profilePhoto: ${updatedUser.profilePhoto}');
+            AppLogger.log('updateProfile: Updated user with ID: ${updatedUser.id}');
+            AppLogger.log('updateProfile: Updated user phone: ${updatedUser.phoneNumber}');
+            AppLogger.log('updateProfile: Updated user name: ${updatedUser.name}');
+            AppLogger.log('updateProfile: Updated user address: ${updatedUser.address}');
+            AppLogger.log('updateProfile: Updated user profilePhoto: ${updatedUser.profilePhoto}');
             state = AsyncValue.data(updatedUser);
             _saveAuth(updatedUser);
             
             // Save new token if provided
             if (token != null) {
-              print('updateProfile: Saving new token after profile update');
+              AppLogger.log('updateProfile: Saving new token after profile update');
               _saveToken(token);
             }
             
-            print('updateProfile: State and SharedPreferences updated.');
+            AppLogger.log('updateProfile: State and SharedPreferences updated.');
           } else {
-            print('updateProfile: Success but user is null!');
+            AppLogger.log('updateProfile: Success but user is null!');
             throw Exception('Profile update succeeded but user is null');
           }
         },
         error: (message, _) {
-          print('updateProfile: Error from backend: $message');
+          AppLogger.log('updateProfile: Error from backend: $message');
           state = AsyncValue.error(message, StackTrace.current);
           throw Exception(message);
         },
       );
     } catch (e, stack) {
-      print('updateProfile: Exception: $e');
+      AppLogger.log('updateProfile: Exception: $e');
       state = AsyncValue.error(e, stack);
       rethrow;
     }
@@ -907,22 +935,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   Future<AuthResponse> verifyOtp(String email, String otp) async {
     try {
-      print('Verifying OTP for email: $email');
+      AppLogger.log('Verifying OTP for email: $email');
       final response = await _authRepository.verifyOtp(email: email, otp: otp);
-      print('OTP verification response: $response');
+      AppLogger.log('OTP verification response: $response');
       
       response.when(
         success: (user, token, message) {
-          print('OTP verification success - User: $user, Token: $token');
+          AppLogger.log('OTP verification success - User: $user, Token: $token');
           if (token != null && user != null) {
-            print('Saving user data and token after OTP verification');
-            print('User ID from backend: ${user.id}');
+            AppLogger.log('Saving user data and token after OTP verification');
+            AppLogger.log('User ID from backend: ${user.id}');
             _saveAuth(user);
             _saveToken(token);
             _setUserModeFromRoles(user.roles);
             state = AsyncValue.data(user);
           } else if (token != null && user == null) {
-            print('Creating new user object with token (fallback)');
+            AppLogger.log('Creating new user object with token (fallback)');
             final newUser = UserData(
               id: '',
               email: email,
@@ -936,24 +964,24 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
               updatedAt: DateTime.now(),
               isProfileComplete: false,
             );
-            print('Saving user data and token after OTP verification');
+            AppLogger.log('Saving user data and token after OTP verification');
             _saveAuth(newUser);
             _saveToken(token);
             _setUserModeFromRoles(newUser.roles);
             state = AsyncValue.data(newUser);
           } else {
-            print('Warning: No token received after OTP verification');
+            AppLogger.log('Warning: No token received after OTP verification');
             state = AsyncValue.error('Invalid verification response', StackTrace.current);
           }
         },
         error: (message, statusCode) {
-          print('OTP verification error: $message (Status: $statusCode)');
+          AppLogger.log('OTP verification error: $message (Status: $statusCode)');
           state = AsyncValue.error(message, StackTrace.current);
         },
       );
       return response;
     } catch (e, stackTrace) {
-      print('Error in verifyOtp: $e');
+      AppLogger.log('Error in verifyOtp: $e');
       state = AsyncValue.error(e, stackTrace);
       return AuthResponse.error(message: 'Failed to verify OTP: ${e.toString()}');
     }
@@ -1009,7 +1037,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   Future<void> handleSessionExpiration(BuildContext context) async {
     try {
-      print('Handling session expiration...');
+      AppLogger.log('Handling session expiration...');
       
       // Clear all cached data
       await _clearAuth();
@@ -1047,9 +1075,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           },
         );
       }
-      print('Session expiration handled successfully');
+      AppLogger.log('Session expiration handled successfully');
     } catch (e) {
-      print('Error handling session expiration: $e');
+      AppLogger.log('Error handling session expiration: $e');
     }
   }
 
@@ -1063,23 +1091,23 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       
       response.when(
         success: (user, token, message) {
-          print('Session is still valid');
+          AppLogger.log('Session is still valid');
         },
         error: (message, statusCode) async {
           if (statusCode == 401) {
-            print('Session expired detected');
+            AppLogger.log('Session expired detected');
             await _handleSessionExpiration();
           }
         },
       );
     } catch (e) {
-      print('Error checking session expiration: $e');
+      AppLogger.log('Error checking session expiration: $e');
     }
   }
 
   Future<void> _handleSessionExpiration() async {
     try {
-      print('Handling session expiration...');
+      AppLogger.log('Handling session expiration...');
       
       // Clear all cached data
       await _clearAuth();
@@ -1091,9 +1119,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Update state
       state = const AsyncValue.data(null);
       
-      print('Session expiration handled successfully');
+      AppLogger.log('Session expiration handled successfully');
     } catch (e) {
-      print('Error handling session expiration: $e');
+      AppLogger.log('Error handling session expiration: $e');
     }
   }
 
@@ -1104,21 +1132,21 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         return AuthResponse.error(message: 'No user logged in', statusCode: 401);
       }
 
-      print('Checking session validity...');
+      AppLogger.log('Checking session validity...');
       
       // Get fresh user data from backend
       final response = await _authRepository.getProfile();
       
       return response;
     } catch (e) {
-      print('Error checking session validity: $e');
+      AppLogger.log('Error checking session validity: $e');
       return AuthResponse.error(message: 'Session check failed: $e', statusCode: 500);
     }
   }
 
   Future<void> handleGlobal401Error(BuildContext context) async {
     try {
-      print('Handling global 401 error...');
+      AppLogger.log('Handling global 401 error...');
       
       // Clear all cached data
       await _clearAuth();
@@ -1156,9 +1184,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           },
         );
       }
-      print('Global 401 error handled successfully');
+      AppLogger.log('Global 401 error handled successfully');
     } catch (e) {
-      print('Error handling global 401 error: $e');
+      AppLogger.log('Error handling global 401 error: $e');
     }
   }
 
@@ -1170,51 +1198,68 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     DateTime? reviewedAt,
     String? rejectionReason,
   }) {
-    print('🔄 AuthProvider: Updating collector application status to: $status');
+    AppLogger.log('🔄 AuthProvider: Updating collector application status to: $status');
     
-    state.whenData((userData) {
-      if (userData != null) {
-        final updatedUserData = UserData(
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          phoneNumber: userData.phoneNumber,
-          address: userData.address,
-          profilePhoto: userData.profilePhoto,
-          roles: status == auth_models.CollectorApplicationStatus.approved 
-              ? [...userData.roles, 'collector']
-              : userData.roles,
-          collectorSubscriptionType: userData.collectorSubscriptionType,
-          createdAt: userData.createdAt,
-          updatedAt: userData.updatedAt,
-          isProfileComplete: userData.isProfileComplete,
-          isDeleted: userData.isDeleted,
-          deletedAt: userData.deletedAt,
-          deletedBy: userData.deletedBy,
-          sessionInvalidatedAt: userData.sessionInvalidatedAt,
-          isAccountLocked: userData.isAccountLocked,
-          accountLockedUntil: userData.accountLockedUntil,
-          warningCount: userData.warningCount,
-          collectorApplicationStatus: status,
-          collectorApplicationId: applicationId,
-          collectorApplicationAppliedAt: appliedAt,
-          collectorApplicationReviewedAt: reviewedAt,
-          collectorApplicationRejectionReason: rejectionReason,
-        );
-        // Update state
-        state = AsyncValue.data(updatedUserData);
-        
-        // Save to shared preferences
-        _saveAuth(updatedUserData);
-        
-        print('🔄 AuthProvider: Application status updated successfully');
-      }
-    });
+    // Get current user data directly from state
+    final currentState = state;
+    if (!currentState.hasValue || currentState.value == null) {
+      AppLogger.log('⚠️ AuthProvider: Cannot update application status - no user data in state');
+      return;
+    }
+    
+    final userData = currentState.value!;
+    
+    // Ensure we don't duplicate 'collector' role if it already exists
+    final currentRoles = userData.roles;
+    final updatedRoles = status == auth_models.CollectorApplicationStatus.approved 
+        ? (currentRoles.contains('collector') ? currentRoles : [...currentRoles, 'collector'])
+        : currentRoles;
+    
+    final updatedUserData = UserData(
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      phoneNumber: userData.phoneNumber,
+      address: userData.address,
+      profilePhoto: userData.profilePhoto,
+      roles: updatedRoles,
+      collectorSubscriptionType: userData.collectorSubscriptionType,
+      createdAt: userData.createdAt,
+      updatedAt: userData.updatedAt,
+      isProfileComplete: userData.isProfileComplete,
+      isDeleted: userData.isDeleted,
+      deletedAt: userData.deletedAt,
+      deletedBy: userData.deletedBy,
+      sessionInvalidatedAt: userData.sessionInvalidatedAt,
+      isAccountLocked: userData.isAccountLocked,
+      accountLockedUntil: userData.accountLockedUntil,
+      warningCount: userData.warningCount,
+      collectorApplicationStatus: status,
+      collectorApplicationId: applicationId,
+      collectorApplicationAppliedAt: appliedAt,
+      collectorApplicationReviewedAt: reviewedAt,
+      collectorApplicationRejectionReason: rejectionReason,
+    );
+    
+    // Update state - this should trigger a rebuild of widgets watching this provider
+    state = AsyncValue.data(updatedUserData);
+    
+    // Save to shared preferences
+    _saveAuth(updatedUserData);
+    
+    // If application is approved and user now has collector role, update user mode
+    if (status == auth_models.CollectorApplicationStatus.approved && updatedRoles.contains('collector')) {
+      _setUserModeFromRoles(updatedRoles);
+    }
+    
+    AppLogger.log('🔄 AuthProvider: Application status updated successfully');
+    AppLogger.log('🔄 AuthProvider: Updated roles: $updatedRoles');
+    AppLogger.log('🔄 AuthProvider: Updated application status: $status');
   }
 
   // Clear application status (when user applies again after rejection)
   void clearCollectorApplicationStatus() {
-    print('🔄 AuthProvider: Clearing collector application status');
+    AppLogger.log('🔄 AuthProvider: Clearing collector application status');
     
     state.whenData((userData) {
       if (userData != null) {
@@ -1249,7 +1294,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         // Save to shared preferences
         _saveAuth(updatedUserData);
         
-        print('🔄 AuthProvider: Application status cleared successfully');
+        AppLogger.log('🔄 AuthProvider: Application status cleared successfully');
       }
     });
   }
@@ -1258,7 +1303,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   void _setupApplicationStatusCallback() {
     final notificationService = _ref.read(notificationServiceProvider);
     notificationService.onApplicationStatusUpdate = (status, data) {
-      print('🔄 AuthProvider: Application status update received: $status');
+      AppLogger.log('🔄 AuthProvider: Application status update received: $status');
       
       switch (status) {
         case 'approved':
@@ -1298,24 +1343,24 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
   // Sync application status from database
   Future<void> syncApplicationStatusFromDatabase() async {
-    print('🔄 AuthProvider: Syncing application status from database...');
+    AppLogger.log('🔄 AuthProvider: Syncing application status from database...');
     
     try {
       // Get the current user ID
       final currentUser = state.value;
       if (currentUser == null) {
-        print('🔄 AuthProvider: No current user, skipping sync');
+        AppLogger.log('🔄 AuthProvider: No current user, skipping sync');
         return;
       }
 
       // Check if user already has application status in shared preferences
       final existingStatus = currentUser.collectorApplicationStatus;
       final existingApplicationId = currentUser.collectorApplicationId;
-      print('🔄 AuthProvider: Current application status in shared preferences: $existingStatus');
-      print('🔄 AuthProvider: Current application ID in shared preferences: $existingApplicationId');
+      AppLogger.log('🔄 AuthProvider: Current application status in shared preferences: $existingStatus');
+      AppLogger.log('🔄 AuthProvider: Current application ID in shared preferences: $existingApplicationId');
 
       // Always sync from database to ensure we have the latest status
-      print('🔄 AuthProvider: Fetching latest application status from database...');
+      AppLogger.log('🔄 AuthProvider: Fetching latest application status from database...');
         
         // Fetch application status from database
         final collectorApplicationController = _ref.read(collectorApplicationControllerProvider.notifier);
@@ -1325,7 +1370,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         final application = applicationAsync.value;
         
         if (application != null) {
-          print('🔄 AuthProvider: Found application in database: ${application.status}');
+          AppLogger.log('🔄 AuthProvider: Found application in database: ${application.status}');
           
           // Update shared preferences with the application status
           updateCollectorApplicationStatus(
@@ -1339,14 +1384,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
             rejectionReason: application.rejectionReason,
           );
           
-          print('🔄 AuthProvider: Application status synced successfully');
+          AppLogger.log('🔄 AuthProvider: Application status synced successfully');
         } else {
-          print('🔄 AuthProvider: No application found in database, clearing existing status');
+          AppLogger.log('🔄 AuthProvider: No application found in database, clearing existing status');
           // Clear existing status if no application found in database
           await _clearCollectorApplicationStatus();
         }
     } catch (e) {
-      print('🔄 AuthProvider: Error syncing application status: $e');
+      AppLogger.log('🔄 AuthProvider: Error syncing application status: $e');
     }
   }
 
@@ -1359,9 +1404,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       await prefs.remove('collectorApplicationAppliedAt');
       await prefs.remove('collectorApplicationReviewedAt');
       await prefs.remove('collectorApplicationRejectionReason');
-      print('🔄 AuthProvider: Cleared collector application status from shared preferences');
+      AppLogger.log('🔄 AuthProvider: Cleared collector application status from shared preferences');
     } catch (e) {
-      print('🔄 AuthProvider: Error clearing collector application status: $e');
+      AppLogger.log('🔄 AuthProvider: Error clearing collector application status: $e');
     }
   }
   }

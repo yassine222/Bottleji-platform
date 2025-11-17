@@ -1,0 +1,176 @@
+@startuml Collection Process Activity Diagram
+
+title Bottleji - Collection Process Workflow
+
+skinparam activity {
+    BackgroundColor #E8F5E9
+    BorderColor #00695C
+    FontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFF3E0
+    BorderColor #FF6F00
+    FontSize 10
+}
+
+start
+
+:Collector views available drops;
+:Collector selects a drop;
+:Collector clicks "Accept Drop";
+
+:Create Collection Attempt\n(status: "active");
+:Update Drop status\n(PENDING → ACCEPTED);
+:Create ACCEPTED interaction\n(in timeline);
+:Navigate to Navigation Screen;
+
+:Calculate route to drop location\n(using Google Maps API);
+:Get route duration\n(e.g., "15 mins", "1 hour 30 mins");
+
+note right
+  **Timer Calculation:**
+  - Parse route duration
+  - Route ≤ 5 min: +10 min buffer
+  - Route ≤ 15 min: +15 min buffer  
+  - Route > 15 min: +20 min buffer
+  - Calculate total timeout
+  - Account for elapsed time since acceptance
+end note
+
+:Initialize Collection Timer\n(route duration + buffer);
+:Start timer countdown;
+:Start location tracking\n(Update every 1-3 seconds);
+
+fork
+  :**Parallel Process 1:**\nMonitor Distance;
+  repeat
+    :Update current location\n(GPS coordinates);
+    :Calculate distance to destination\n(straight-line or route distance);
+    
+    if (Distance ≤ 100m OR Distance < 10m?) then (yes)
+      :Show "Slide to Confirm Collection" button;
+      :Auto-expand navigation card;
+    else (no)
+      :Hide confirm button;
+    endif
+    
+    if (Distance ≤ 5m?) then (yes)
+      :Show "You have arrived" message;
+    else (no)
+      :Continue showing navigation;
+    endif
+    
+    :Wait 1-3 seconds;
+  repeat while (Collection active?)
+fork again
+  :**Parallel Process 2:**\nMonitor Timer;
+  repeat
+    :Update timer display\n(remaining time);
+    
+    if (Time remaining ≤ 30% AND\nwarning not sent?) then (yes)
+      :Show warning notification\n"Timer running low: X remaining";
+      note right
+        Warning shown once when
+        timer reaches 30% threshold
+      end note
+    else (no)
+    endif
+    
+    if (Timer expired?) then (yes)
+      :**GO TO EXPIRY HANDLING**;
+    else (no)
+      :Wait 1 second;
+    endif
+    
+  repeat while (Collection active?)
+fork again
+  :**Parallel Process 3:**\nWait for User Action;
+  repeat
+    :Wait for user interaction;
+    if (User clicks "Confirm Collection"?) then (yes)
+      :**GO TO CONFIRMATION HANDLING**;
+    elseif (User clicks "Cancel Collection"?) then (yes)
+      :**GO TO CANCELLATION HANDLING**;
+    else (no)
+      :Continue waiting;
+    endif
+  repeat while (Collection active?)
+end fork
+
+partition "Outcome 1: Timer Expiry" {
+  :Timer reaches zero\n(remaining time = 0);
+  :Stop all timers;
+  :Stop location tracking;
+  :Show timeout alert dialog\n"Timer Expired!";
+  :Complete Collection Attempt\n(outcome: "expired");
+  :Update Drop status\n(ACCEPTED → PENDING);
+  :Create EXPIRED interaction\n(in timeline);
+  :Add warning to collector\n(TIMEOUT_WARNING penalty);
+  note right
+    **Penalty System:**
+    - Warning added to collector account
+    - Multiple warnings may lead to
+      account suspension
+  end note
+  :Show timeout notification\n(Drop expired notification);
+  :Clear active collection state;
+  :Navigate to Home Screen;
+  :Show timeout warning on Home Screen;
+  note right
+    **Drop Status:**
+    - Drop returns to PENDING
+    - Available for other collectors
+    - Collector receives warning
+  end note
+  stop
+}
+
+partition "Outcome 2: Collection Confirmation" {
+  :User slides "Confirm Collection" button;
+  
+  if (Distance within threshold\n(≤ 100m or < 10m)?) then (yes)
+    :Stop timer immediately;
+    :Stop location tracking;
+    :Complete Collection Attempt\n(outcome: "collected");
+    :Update Drop status\n(ACCEPTED → COLLECTED);
+    :Create COLLECTED interaction\n(in timeline);
+    :Calculate rewards\n(points based on items);
+    :Award points to collector;
+    :Check tier upgrade\n(Bronze, Silver, Gold, Platinum);
+    :Update collector tier if applicable;
+    :Show collection success popup\n(points awarded, tier name, total points);
+    :Clear active collection state;
+    :Navigate to Home Screen;
+    stop
+  else (no - Too far)
+    :Show error message\n"Too far from drop location";
+    :Continue monitoring;
+    :**RETURN TO MONITORING LOOP**;
+  endif
+}
+
+partition "Outcome 3: Collection Cancellation" {
+  :User clicks "Cancel Collection";
+  :Show cancellation confirmation dialog;
+  
+  if (User confirms cancellation?) then (yes)
+    :Stop timer;
+    :Stop location tracking;
+    :Complete Collection Attempt\n(outcome: "cancelled");
+    :Update Drop status\n(ACCEPTED → PENDING);
+    :Create CANCELLED interaction\n(in timeline);
+    note right
+      Drop becomes available
+      for other collectors
+    end note
+    :Clear active collection state;
+    :Navigate to Home Screen;
+    stop
+  else (no)
+    :Return to monitoring;
+    :**RETURN TO MONITORING LOOP**;
+  endif
+}
+
+@enduml

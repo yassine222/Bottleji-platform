@@ -96,15 +96,15 @@ export class SupportTicketsService {
 
     // Add simple context based on related objects
     if (relatedDropId) {
-      contextualMessage += `\n\n📦 Related to Drop: ${relatedDropId.substring(0, 8)}...`;
+      contextualMessage += `\n\n📦 Related to Drop: ${relatedDropId}`;
     }
 
     if (relatedCollectionId) {
-      contextualMessage += `\n\n🚛 Related to Collection: ${relatedCollectionId.substring(0, 8)}...`;
+      contextualMessage += `\n\n🚛 Related to Collection: ${relatedCollectionId}`;
     }
 
     if (relatedApplicationId) {
-      contextualMessage += `\n\n📋 Related to Application: ${relatedApplicationId.substring(0, 8)}...`;
+      contextualMessage += `\n\n📋 Related to Application: ${relatedApplicationId}`;
     }
 
     return contextualMessage;

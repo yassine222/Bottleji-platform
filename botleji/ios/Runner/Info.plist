@@ -52,6 +52,10 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to location to show your position on the map and help with bottle collection.</string>
 	
+	<!-- Local Network Permission (iOS 14+) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Bottleji uses your local network to connect to nearby services and deliver real-time features.</string>
+	
 	<!-- Camera Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to camera to take photos of bottles for collection.</string>

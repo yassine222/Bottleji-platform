@@ -7,6 +7,11 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF00695C),
     ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Color(0xFF00695C),
+      contentTextStyle: TextStyle(color: Colors.white),
+      behavior: SnackBarBehavior.floating,
+    ),
   );
 
   static final darkTheme = ThemeData(
@@ -15,6 +20,11 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF00695C),
       brightness: Brightness.dark,
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Color(0xFF00695C),
+      contentTextStyle: TextStyle(color: Colors.white),
+      behavior: SnackBarBehavior.floating,
     ),
   );
 } 

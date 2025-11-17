@@ -1,0 +1,170 @@
+@startuml Bottleji System Architecture
+
+!define PRIMARY_COLOR #00695C
+!define SECONDARY_COLOR #2E7D32
+!define ACCENT_COLOR #FF6F00
+
+skinparam component {
+    BackgroundColor #E8F5E9
+    BorderColor PRIMARY_COLOR
+    ArrowColor PRIMARY_COLOR
+}
+
+skinparam node {
+    BackgroundColor #FFF3E0
+    BorderColor ACCENT_COLOR
+}
+
+skinparam database {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+}
+
+' ============================================
+' CLIENT LAYER
+' ============================================
+
+package "Client Applications" {
+    [Flutter Mobile App\niOS & Android] as MobileApp
+    [Admin Dashboard\nNext.js Web App] as AdminDashboard
+}
+
+' ============================================
+' APPLICATION LAYER
+' ============================================
+
+package "Backend Services" {
+    [NestJS API Server\nREST API] as BackendAPI
+    [WebSocket Gateway\nSocket.IO] as WebSocketGateway
+}
+
+' ============================================
+' DATA LAYER
+' ============================================
+
+database "MongoDB\nDatabase" as MongoDB {
+    [Users Collection]
+    [Dropoffs Collection]
+    [CollectionAttempts Collection]
+    [CollectorApplications Collection]
+    [SupportTickets Collection]
+    [RewardItems Collection]
+    [RewardRedemptions Collection]
+    [TrainingContent Collection]
+    [Notifications Collection]
+}
+
+' ============================================
+' EXTERNAL SERVICES
+' ============================================
+
+cloud "External Services" {
+    [Firebase\nAuthentication & Storage] as Firebase
+    [Email Service\nSMTP] as EmailService
+    [Google Maps API\nLocation Services] as GoogleMaps
+}
+
+' ============================================
+' RELATIONSHIPS - CLIENT TO BACKEND
+' ============================================
+
+MobileApp --> BackendAPI : HTTPS\nREST API\n(JWT Auth)
+MobileApp --> WebSocketGateway : WebSocket\nReal-time Updates
+MobileApp --> Firebase : Authentication\nFile Upload
+MobileApp --> GoogleMaps : Map Integration\nNavigation
+
+AdminDashboard --> BackendAPI : HTTPS\nREST API\n(JWT Auth)
+AdminDashboard --> WebSocketGateway : WebSocket\nReal-time Updates
+
+' ============================================
+' RELATIONSHIPS - BACKEND TO DATA
+' ============================================
+
+BackendAPI --> MongoDB : Mongoose ODM\nData Persistence
+WebSocketGateway --> MongoDB : Read Operations\nReal-time Queries
+
+' ============================================
+' RELATIONSHIPS - BACKEND TO EXTERNAL
+' ============================================
+
+BackendAPI --> Firebase : File Storage\nImage Upload
+BackendAPI --> EmailService : OTP Verification\nNotifications\nPassword Reset
+
+' ============================================
+' COMPONENT DETAILS
+' ============================================
+
+note right of MobileApp
+    **Flutter Mobile App**
+    - Cross-platform (iOS/Android)
+    - Riverpod State Management
+    - Material Design 3 UI
+    - Google Maps Integration
+    - Real-time Updates
+    - Offline Support
+end note
+
+note right of AdminDashboard
+    **Admin Dashboard**
+    - Next.js 15 (React)
+    - TypeScript
+    - Tailwind CSS
+    - User Management
+    - Analytics & Reports
+    - Content Moderation
+end note
+
+note right of BackendAPI
+    **NestJS Backend**
+    - RESTful API
+    - JWT Authentication
+    - Role-based Access Control
+    - File Upload Handling
+    - Email Services
+    - Business Logic
+end note
+
+note right of WebSocketGateway
+    **WebSocket Gateway**
+    - Socket.IO Server
+    - Real-time Notifications
+    - Live Updates
+    - Connection Management
+end note
+
+note right of MongoDB
+    **MongoDB Database**
+    - NoSQL Document Store
+    - User Data
+    - Drop Management
+    - Application Tracking
+    - Support Tickets
+    - Reward System
+end note
+
+note right of Firebase
+    **Firebase Services**
+    - Authentication
+    - Cloud Storage
+    - Image Hosting
+end note
+
+' ============================================
+' DEPLOYMENT ARCHITECTURE
+' ============================================
+
+package "Deployment" {
+    [Mobile App Stores\niOS App Store\nGoogle Play Store] as AppStores
+    [Web Server\nAdmin Dashboard] as WebServer
+    [API Server\nBackend Services] as APIServer
+    [Database Server\nMongoDB Atlas] as DBServer
+}
+
+MobileApp ..> AppStores : Published
+AdminDashboard ..> WebServer : Deployed
+BackendAPI ..> APIServer : Deployed
+WebSocketGateway ..> APIServer : Deployed
+MongoDB ..> DBServer : Hosted
+
+@enduml
+

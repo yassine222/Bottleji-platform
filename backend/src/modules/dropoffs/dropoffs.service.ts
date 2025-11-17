@@ -465,19 +465,22 @@ export class DropoffsService {
     });
 
     // Send notification to drop creator
-    this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
-      type: 'drop_accepted',
-      title: 'Drop Accepted',
-      message: 'A collector has accepted your drop and is on their way',
-      data: { 
-        dropId: id, 
-        collectorId,
-        dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
-      },
-      timestamp: new Date(),
-    });
-
-    console.log(`📱 Drop accepted notification sent to user ${dropoff.userId}`);
+    try {
+      await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+        type: 'drop_accepted',
+        title: 'Drop Accepted',
+        message: 'A collector has accepted your drop and is on their way',
+        data: { 
+          dropId: id, 
+          collectorId,
+          dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+        },
+        timestamp: new Date(),
+      });
+      console.log(`📱 Drop accepted notification sent to user ${dropoff.userId}`);
+    } catch (error) {
+      console.error(`❌ Error sending drop accepted notification: ${error}`);
+    }
 
     return updatedDropoff;
   }
@@ -876,9 +879,61 @@ export class DropoffsService {
       
       const timeoutThreshold = new Date(interaction.interactionTime.getTime() + (totalTimeoutMinutes * 60 * 1000));
       
+      // Calculate time remaining
+      const timeRemainingMs = timeoutThreshold.getTime() - now.getTime();
+      const timeRemainingMinutes = Math.floor(timeRemainingMs / (60 * 1000));
+      const timeElapsedMs = now.getTime() - interaction.interactionTime.getTime();
+      const timeElapsedMinutes = Math.floor(timeElapsedMs / (60 * 1000));
+      const timeElapsedPercent = (timeElapsedMinutes / totalTimeoutMinutes) * 100;
+      
       console.log(`⏰ Route duration: ${routeDurationMinutes}min, Buffer: ${bufferMinutes}min, Total timeout: ${totalTimeoutMinutes}min`);
       console.log(`⏰ Timeout threshold: ${timeoutThreshold}`);
+      console.log(`⏰ Time remaining: ${timeRemainingMinutes}min (${(timeRemainingMinutes / totalTimeoutMinutes * 100).toFixed(1)}%)`);
+      console.log(`⏰ Time elapsed: ${timeElapsedMinutes}min (${timeElapsedPercent.toFixed(1)}%)`);
       console.log(`⏰ Should expire: ${now > timeoutThreshold}`);
+      
+      // Check if drop is near expiring (70% of time elapsed = 30% remaining)
+      const nearExpiringThreshold = totalTimeoutMinutes * 0.7; // 70% of total time
+      
+      if (timeElapsedMinutes >= nearExpiringThreshold && timeRemainingMinutes > 0) {
+        // Check if near-expiring notification was already sent for this drop
+        const existingNearExpiringNotification = await this.notificationsService.getUserNotifications(
+          dropoff.userId.toString(),
+          { type: 'drop_near_expiring' as any, limit: 1 }
+        );
+        
+        // Check if there's a recent near-expiring notification for this drop (within last hour)
+        const recentNearExpiring = existingNearExpiringNotification.notifications.find((n: any) => {
+          const notificationData = n.data || {};
+          return notificationData.dropId === (dropoff._id as any).toString() &&
+                 new Date(n.createdAt).getTime() > (now.getTime() - 60 * 60 * 1000); // Within last hour
+        });
+        
+        if (!recentNearExpiring) {
+          console.log(`⚠️ Drop ${dropoff._id} is near expiring (${timeElapsedPercent.toFixed(1)}% elapsed, ${timeRemainingMinutes}min remaining)`);
+          
+          // Send near-expiring notification to household user
+          try {
+            await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+              type: 'drop_near_expiring',
+              title: 'Drop Collection Running Low on Time',
+              message: `The collector has ${timeRemainingMinutes} minute${timeRemainingMinutes !== 1 ? 's' : ''} remaining to collect your drop.`,
+              data: { 
+                dropId: (dropoff._id as any).toString(),
+                collectorId: interaction.collectorId,
+                dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`,
+                timeRemainingMinutes: timeRemainingMinutes,
+              },
+              timestamp: new Date(),
+            });
+            console.log(`📱 Near-expiring notification sent to user ${dropoff.userId}`);
+          } catch (error) {
+            console.error(`❌ Error sending near-expiring notification: ${error}`);
+          }
+        } else {
+          console.log(`ℹ️ Near-expiring notification already sent for drop ${dropoff._id} recently, skipping`);
+        }
+      }
       
       if (now > timeoutThreshold) {
         console.log(`🔄 Processing expired drop ${dropoff._id} for collector ${interaction.collectorId}`);
@@ -929,19 +984,22 @@ export class DropoffsService {
           console.log(`✅ EXPIRED interaction created for drop ${dropoff._id} (penalty added automatically)`);
           
           // Send notification to drop creator
-          this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
-            type: 'drop_expired',
-            title: 'Drop Expired',
-            message: 'A collector\'s time expired on your drop. It\'s now available for others.',
-            data: { 
-                dropId: (dropoff._id as any).toString(),
-              collectorId: interaction.collectorId,
-              dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
-            },
-            timestamp: new Date(),
-          });
-
-          console.log(`📱 Drop expired notification sent to user ${dropoff.userId}`);
+          try {
+            await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+              type: 'drop_expired',
+              title: 'Drop Expired',
+              message: 'A collector\'s time expired on your drop. It\'s now available for others.',
+              data: { 
+                  dropId: (dropoff._id as any).toString(),
+                collectorId: interaction.collectorId,
+                dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+              },
+              timestamp: new Date(),
+            });
+            console.log(`📱 Drop expired notification sent to user ${dropoff.userId}`);
+          } catch (error) {
+            console.error(`❌ Error sending drop expired notification: ${error}`);
+          }
           
           cleanedCount++;
           console.log(`✅ Drop ${dropoff._id} timed out after ${totalTimeoutMinutes} minutes, set back to PENDING`);
@@ -1390,15 +1448,40 @@ export class DropoffsService {
         startDate = new Date(0); // All time
     }
 
-    // Get all drops created by this user (same query as findByUser but with optional date filter)
-    const query: any = { userId };
+    // Get all drops created by this user
+    // For collected drops, filter by collectedAt date (when it was collected)
+    // For other statuses (pending, accepted, cancelled, expired), filter by updatedAt date (when status last changed)
+    let userDrops: any[] = [];
     
-    // Only add date filter if not "all time"
     if (timeRange && timeRange !== 'all' && timeRange !== '') {
-      query.createdAt = { $gte: startDate };
+      // Get collected drops filtered by collectedAt date
+      const collectedDropsQuery: any = {
+        userId,
+        status: DropoffStatus.COLLECTED,
+        collectedAt: { $gte: startDate, $exists: true },
+      };
+      const collectedDrops = await this.dropoffModel.find(collectedDropsQuery).exec();
+      
+      // Get non-collected drops filtered by updatedAt date (when status last changed)
+      // This captures when the drop was last active/modified in the time range
+      // updatedAt is better than createdAt because:
+      // - For accepted drops: shows when they were accepted
+      // - For cancelled/expired drops: shows when they were cancelled/expired
+      // - For pending drops: shows when they were last modified (e.g., after cancellation)
+      const nonCollectedDropsQuery: any = {
+        userId,
+        status: { $ne: DropoffStatus.COLLECTED },
+        updatedAt: { $gte: startDate },
+      };
+      const nonCollectedDrops = await this.dropoffModel.find(nonCollectedDropsQuery).exec();
+      
+      // Combine both sets
+      userDrops = [...collectedDrops, ...nonCollectedDrops];
+    } else {
+      // All time - get all drops
+      const query: any = { userId };
+      userDrops = await this.dropoffModel.find(query).exec();
     }
-    
-    const userDrops = await this.dropoffModel.find(query).exec();
 
     // Count drops by their current status and flags
     let pendingCount = 0;
@@ -1432,8 +1515,19 @@ export class DropoffsService {
 
     // Debug logging
     console.log('🔍 User Drop Stats Debug for user:', userId);
-    console.log('📊 Total drops created:', userDrops.length);
+    console.log('📅 Time range:', timeRange);
+    console.log('📅 Start date:', startDate);
+    console.log('📊 Total drops found:', userDrops.length);
     console.log('📊 Status counts - Pending:', pendingCount, 'Collected:', collectedCount, 'Flagged:', flaggedCount, 'Stale:', staleCount, 'Censored:', censoredCount);
+    
+    // Log sample collected drops for debugging
+    const sampleCollected = userDrops.filter(d => d.status === DropoffStatus.COLLECTED).slice(0, 3);
+    if (sampleCollected.length > 0) {
+      console.log('📦 Sample collected drops:');
+      sampleCollected.forEach(drop => {
+        console.log(`  - Drop ${drop._id}: collectedAt=${drop.collectedAt}, createdAt=${drop.createdAt}`);
+      });
+    }
 
     const stats = {
       total: userDrops.length,

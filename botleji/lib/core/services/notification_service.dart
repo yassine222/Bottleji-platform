@@ -17,6 +17,7 @@ enum NotificationType {
   dropCollected,
   dropCancelled,
   dropExpired,
+  dropNearExpiring,
   newDropAvailable,
   
   // Support
@@ -174,8 +175,12 @@ class NotificationService extends ChangeNotifier {
 
       // Notification events
       _socket!.on('notification', (data) {
-        debugPrint('🔔 Notification received: ${data['type']}');
+        debugPrint('🔔 ===== NOTIFICATION EVENT RECEIVED =====');
+        debugPrint('🔔 Notification type: ${data['type']}');
+        debugPrint('🔔 Notification title: ${data['title']}');
+        debugPrint('🔔 Notification message: ${data['message']}');
         debugPrint('🔔 Full notification data: $data');
+        debugPrint('🔔 ========================================');
 
         // De-dup: ignore if same type+timestamp+id seen in last 10s
         try {
@@ -187,10 +192,14 @@ class NotificationService extends ChangeNotifier {
           _recentNotificationKeys.removeWhere((_, t) => DateTime.now().difference(t) > const Duration(seconds: 20));
           if (_recentNotificationKeys.containsKey(key)) {
             debugPrint('🔁 Duplicate notification suppressed: $key');
+            debugPrint('🔁 This notification was already shown in the last 20 seconds');
             return;
           }
           _recentNotificationKeys[key] = DateTime.now();
-        } catch (_) {}
+          debugPrint('🔔 Notification key: $key (not a duplicate, proceeding)');
+        } catch (e) {
+          debugPrint('⚠️ Error in de-duplication logic: $e');
+        }
         
         // Handle account lock/unlock notifications
         if (data['type'] == 'account_locked' || data['type'] == 'account_unlocked') {
@@ -493,14 +502,30 @@ class NotificationService extends ChangeNotifier {
     debugPrint('📨 Notification received: ${notification.type} - ${notification.title}');
     
     // Handle drop status updates for real-time updates
-    if (notification.type == 'drop_accepted' || 
-        notification.type == 'drop_collected' || 
-        notification.type == 'drop_cancelled' || 
-        notification.type == 'drop_expired') {
+    // Map backend notification types to standard drop status types
+    String? dropStatusType;
+    if (notification.type == 'drop_accepted') {
+      dropStatusType = 'drop_accepted';
+    } else if (notification.type == 'drop_collected' || 
+               notification.type == 'drop_collected_with_rewards' || 
+               notification.type == 'drop_collected_with_tier_upgrade') {
+      dropStatusType = 'drop_collected';
+    } else if (notification.type == 'drop_cancelled') {
+      dropStatusType = 'drop_cancelled';
+    } else if (notification.type == 'drop_expired') {
+      dropStatusType = 'drop_expired';
+    } else if (notification.type == 'drop_near_expiring') {
+      // Near-expiring doesn't change drop status, just a warning notification
+      dropStatusType = null; // Don't trigger status update callback
+    }
+    
+    if (dropStatusType != null) {
       final dropId = notification.data?['dropId']?.toString();
       if (dropId != null) {
-        debugPrint('🔄 Drop status update: ${notification.type} for drop $dropId');
-        onDropStatusUpdate?.call(dropId, notification.type, notification.data ?? {});
+        debugPrint('🔄 Drop status update: $dropStatusType for drop $dropId (from notification type: ${notification.type})');
+        onDropStatusUpdate?.call(dropId, dropStatusType, notification.data ?? {});
+      } else {
+        debugPrint('⚠️ Drop status update: dropId is null for notification type: ${notification.type}');
       }
     }
     
@@ -519,6 +544,11 @@ class NotificationService extends ChangeNotifier {
       body: notification.message,
       id: _notifications.length,);
     debugPrint('🔔 NotificationService: Local notification call completed');
+    
+    // Update app icon badge with actual unread count
+    final currentUnreadCount = unreadCount;
+    _localNotificationService.updateBadgeCount(currentUnreadCount);
+    debugPrint('🔔 NotificationService: Updated badge count to $currentUnreadCount');
     
     // Call notification callback
     onNotificationReceived?.call(notification);
@@ -606,6 +636,12 @@ class NotificationService extends ChangeNotifier {
         message: _notifications[index].message,
         data: {...?_notifications[index].data, 'read': true},
         timestamp: _notifications[index].timestamp,);
+      
+      // Update app icon badge with actual unread count
+      final currentUnreadCount = unreadCount;
+      _localNotificationService.updateBadgeCount(currentUnreadCount);
+      debugPrint('🔔 NotificationService: Updated badge count to $currentUnreadCount after marking as read');
+      
       notifyListeners();
     }
   }
@@ -620,6 +656,11 @@ class NotificationService extends ChangeNotifier {
         data: {...?_notifications[i].data, 'read': true},
         timestamp: _notifications[i].timestamp,);
     }
+    
+    // Clear app icon badge since all are read
+    _localNotificationService.clearBadgeCount();
+    debugPrint('🔔 NotificationService: Cleared badge count after marking all as read');
+    
     notifyListeners();
   }
 
@@ -642,6 +683,8 @@ class NotificationService extends ChangeNotifier {
         return NotificationType.dropCancelled;
       case 'drop_expired':
         return NotificationType.dropExpired;
+      case 'drop_near_expiring':
+        return NotificationType.dropNearExpiring;
       case 'new_drop_available':
         return NotificationType.newDropAvailable;
       case 'ticket_response':

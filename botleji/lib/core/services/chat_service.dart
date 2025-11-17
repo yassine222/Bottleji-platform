@@ -49,6 +49,16 @@ class ChatService extends ChangeNotifier {
       debugPrint('🔌 ChatService: Already connecting, skipping...');
       return;
     }
+    // If using tunnel, skip local network check (tunnel uses public HTTPS/WSS, not local network)
+    // Only check local network permission if NOT using tunnel
+    if (!ServerConfig.isUsingTunnel) {
+      if (!ServerConfig.isLocalNetworkGranted) {
+        debugPrint('🔌 ChatService: Skipping connect (local network not granted yet and not using tunnel)');
+        return;
+      }
+    } else {
+      debugPrint('🔌 ChatService: Using tunnel, skipping local network permission check');
+    }
 
     _isConnecting = true;
     notifyListeners();

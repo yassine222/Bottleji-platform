@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:botleji/core/config/server_config.dart';
 import 'package:http/http.dart' as http;
 
 class NetworkDetectionService {
@@ -8,6 +9,19 @@ class NetworkDetectionService {
 
   /// Automatically detects the best server IP to use
   static Future<String> getOptimalServerIp() async {
+    // Do not probe local network unless user explicitly granted it
+    try {
+      // Lazy import to avoid circular import at top
+      // ignore: avoid_dynamic_calls
+      // Use ServerConfig static to check permission cache
+      // We reference via mirrors to keep file decoupled (simple direct import is fine too in this project)
+    } catch (_) {}
+    // Import directly (project keeps config light)
+    // If local network not granted, return fallback immediately to avoid triggering iOS prompt
+    // This relies on ServerConfig.init() having run in main()
+    if (!ServerConfig.isLocalNetworkGranted) {
+      return ServerConfig.fallbackServerIp;
+    }
     // Return cached result if still valid
     if (_cachedIp != null && 
         _lastDetection != null && 

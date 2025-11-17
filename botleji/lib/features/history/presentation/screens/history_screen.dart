@@ -1210,13 +1210,17 @@ Widget _buildCollectorHistory(BuildContext context) {
               color: Colors.blue,
             ),
           ),
-          // Step 2: Accepted
+          // Step 2: Accepted (shows as "Collector on his way" for household)
           Expanded(
             child: _buildLiveTimelineStep(
               icon: drop.status == DropStatus.collected
                   ? Icons.handshake
-                  : Icons.check_circle,
-              title: 'Accepted',
+                  : Icons.directions_walk,
+              title: drop.status == DropStatus.accepted 
+                  ? 'On the way'
+                  : drop.status == DropStatus.collected
+                      ? 'Was on the way'
+                      : 'Accepted',
               subtitle: _getAcceptedSubtitle(drop),
               isCompleted: drop.status == DropStatus.accepted ||
                   drop.status == DropStatus.collected,
@@ -1499,9 +1503,9 @@ Widget _buildCollectorHistory(BuildContext context) {
 
   String _getAcceptedSubtitle(Drop drop) {
     if (drop.status == DropStatus.accepted) {
-      return 'Collector accepted';
+      return 'Collector on his way to pick up your drop';
     } else if (drop.status == DropStatus.collected) {
-      return 'Was accepted';
+      return 'Collector was on the way';
     } else {
       return 'Waiting...';
     }

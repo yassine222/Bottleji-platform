@@ -104,6 +104,8 @@ export interface DashboardStats {
   pendingApplications: number;
   pendingTickets: number;
   recentActivity: ActivityItem[];
+  bottleTypeDistribution?: Record<string, number>;
+  co2SavingsTimeSeries?: { date: string; co2: number }[];
 }
 
 export interface ActivityItem {

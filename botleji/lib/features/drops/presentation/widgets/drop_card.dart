@@ -1046,12 +1046,14 @@ class DropCard extends StatelessWidget {
                 color: Colors.grey[400],
                 size: 12,
               ),
-              // Accepted step
+              // Accepted step (shows as "On the way" for household)
               _buildTimelineStep(
-                icon: drop.status == DropStatus.accepted ? Icons.check_circle : Icons.assignment_turned_in,
+                icon: drop.status == DropStatus.accepted ? Icons.directions_walk : Icons.assignment_turned_in,
                 iconColor: drop.status == DropStatus.accepted ? const Color(0xFF00695C) : Colors.grey,
-                title: 'Accepted',
-                subtitle: drop.status == DropStatus.accepted ? _formatDate(drop.createdAt) : 'Waiting...',
+                title: drop.status == DropStatus.accepted ? 'On the way' : 'Accepted',
+                subtitle: drop.status == DropStatus.accepted 
+                    ? 'Collector on his way to pick up your drop'
+                    : 'Waiting...',
                 isCompleted: drop.status == DropStatus.accepted,
               ),
               // Arrow

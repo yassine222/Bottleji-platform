@@ -1,0 +1,210 @@
+@startuml Bottleji Domain Model
+
+!define PRIMARY_COLOR #00695C
+!define SECONDARY_COLOR #2E7D32
+
+skinparam class {
+    BackgroundColor #E8F5E9
+    BorderColor PRIMARY_COLOR
+    ArrowColor PRIMARY_COLOR
+}
+
+skinparam enum {
+    BackgroundColor #FFF3E0
+    BorderColor #FF6F00
+}
+
+' ============================================
+' ENUMS
+' ============================================
+
+enum UserRole {
+    HOUSEHOLD
+    COLLECTOR
+    ADMIN
+}
+
+enum DropoffStatus {
+    PENDING
+    COLLECTED
+    CANCELLED
+    EXPIRED
+}
+
+enum TicketStatus {
+    OPEN
+    IN_PROGRESS
+    RESOLVED
+    CLOSED
+}
+
+enum ApplicationStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}
+
+enum RedemptionStatus {
+    PENDING
+    APPROVED
+    SHIPPED
+    DELIVERED
+}
+
+' ============================================
+' MAIN ENTITIES
+' ============================================
+
+class User {
+    +email: String
+    +name: String
+    +phoneNumber: String
+    +address: String
+    +roles: UserRole[]
+    +isVerified: Boolean
+    +currentPoints: Number
+    +totalPointsEarned: Number
+    +createdAt: Date
+}
+
+class Dropoff {
+    +imageUrl: String
+    +numberOfBottles: Number
+    +numberOfCans: Number
+    +bottleType: BottleType
+    +notes: String
+    +location: Location
+    +address: String
+    +status: DropoffStatus
+    +collectedAt: Date
+    +createdAt: Date
+}
+
+class CollectorApplication {
+    +status: ApplicationStatus
+    +idCardPhoto: String
+    +appliedAt: Date
+    +reviewedAt: Date
+}
+
+class SupportTicket {
+    +title: String
+    +description: String
+    +status: TicketStatus
+    +messages: Message[]
+    +createdAt: Date
+}
+
+class RewardItem {
+    +name: String
+    +description: String
+    +pointCost: Number
+    +stock: Number
+    +createdAt: Date
+}
+
+class Notification {
+    +title: String
+    +message: String
+    +isRead: Boolean
+    +createdAt: Date
+}
+
+class TrainingContent {
+    +title: String
+    +description: String
+    +type: String
+    +category: String
+    +mediaUrl: String
+    +viewCount: Number
+    +createdAt: Date
+}
+
+' ============================================
+' VALUE OBJECTS
+' ============================================
+
+class Location {
+    +latitude: Number
+    +longitude: Number
+    +address: String
+}
+
+class Address {
+    +street: String
+    +city: String
+    +zipCode: String
+    +country: String
+}
+
+class Message {
+    +content: String
+    +sentAt: Date
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+User "1" --> "0..*" Dropoff : creates
+User "1" --> "0..1" CollectorApplication : applies
+User "1" --> "0..*" SupportTicket : creates
+User "1" --> "0..*" Notification : receives
+User "1" --> "0..*" TrainingContent : views
+
+User "1" - "0..*" Dropoff : attempts
+(User, Dropoff) .. CollectionAttempt
+
+class CollectionAttempt {
+    +status: String
+    +acceptedAt: Date
+    +completedAt: Date
+    +createdAt: Date
+}
+
+User "1" - "0..*" Dropoff : reports
+(User, Dropoff) .. DropReport
+
+class DropReport {
+    +reason: String
+    +status: String
+    +createdAt: Date
+}
+
+User "1" - "0..*" RewardItem : redeems
+(User, RewardItem) .. RewardRedemption
+
+class RewardRedemption {
+    +pointsSpent: Number
+    +status: RedemptionStatus
+    +deliveryAddress: Address
+    +createdAt: Date
+}
+
+Dropoff "1" *-- "1" Location : has
+
+SupportTicket "1" *-- "0..*" Message : contains
+
+RewardRedemption "1" *-- "1" Address : has
+
+note right of User
+    Central entity representing
+    all system users with
+    different roles and
+    reward points tracking.
+end note
+
+note right of Dropoff
+    Recycling drop created
+    by household users,
+    can be collected by
+    collectors.
+end note
+
+note right of CollectionAttempt
+    Tracks collector attempts
+    to collect drops with
+    timeline and status.
+end note
+
+@enduml

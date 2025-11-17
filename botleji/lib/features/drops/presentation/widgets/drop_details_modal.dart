@@ -154,6 +154,21 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     return FutureBuilder<Map<String, dynamic>?>(
       future: ref.read(dropsControllerProvider.notifier).getUserInfo(widget.drop.userId),
       builder: (context, snapshot) {
+        // Show loading state while fetching user data
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.9,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // Only show default data if there's an error, otherwise use the fetched data
         final userData = snapshot.data ?? {
           'name': 'Unknown User',
           'phoneNumber': 'N/A',
@@ -943,10 +958,12 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     return Row(
       children: [
         if (customIcon != null) ...[
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: customIcon,
+          // Use Flexible instead of fixed SizedBox to prevent overflow
+          Flexible(
+            child: SizedBox(
+              height: 18,
+              child: customIcon,
+            ),
           ),
           const SizedBox(width: 12),
         ] else ...[
@@ -1001,18 +1018,19 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
       case BottleType.mixed:
         return Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Image.asset(
               'assets/icons/water-bottle.png',
-              width: 12,
-              height: 12,
+              width: 14,
+              height: 14,
               color: const Color(0xFF00695C),
             ),
-            const SizedBox(width: 2),
+            const SizedBox(width: 3),
             Image.asset(
               'assets/icons/can.png',
-              width: 12,
-              height: 12,
+              width: 14,
+              height: 14,
               color: const Color(0xFF00695C),
             ),
           ],

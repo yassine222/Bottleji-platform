@@ -1,0 +1,94 @@
+@startuml Bottleji System Architecture
+
+!define PRIMARY_COLOR #00695C
+!define SECONDARY_COLOR #2E7D32
+!define ACCENT_COLOR #FF6F00
+
+skinparam component {
+    BackgroundColor #E8F5E9
+    BorderColor PRIMARY_COLOR
+    ArrowColor PRIMARY_COLOR
+}
+
+skinparam package {
+    BackgroundColor #F5F5F5
+    BorderColor #757575
+}
+
+' ============================================
+' CLIENT APPLICATIONS
+' ============================================
+
+package "Client Applications" {
+    [Flutter Mobile App\niOS & Android] as MobileApp
+    [Admin Dashboard\nNext.js Web App] as AdminDashboard
+}
+
+' ============================================
+' BACKEND SERVICES
+' ============================================
+
+package "Backend Services" {
+    [NestJS REST API] as RESTAPI
+    [WebSocket Gateway\nSocket.IO] as WSGateway
+}
+
+' ============================================
+' DATA & EXTERNAL SERVICES
+' ============================================
+
+database "MongoDB\nDatabase" as MongoDB
+
+cloud "External Services" {
+    [Firebase\nAuth & Storage] as Firebase
+    [Google Maps API] as GoogleMaps
+    [Email Service] as EmailService
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+MobileApp --> RESTAPI : HTTPS\nREST API
+MobileApp --> WSGateway : WebSocket
+MobileApp --> Firebase : Auth & Files
+MobileApp --> GoogleMaps : Maps
+
+AdminDashboard --> RESTAPI : HTTPS\nREST API
+AdminDashboard --> WSGateway : WebSocket
+
+RESTAPI --> MongoDB : Data Access
+WSGateway --> MongoDB : Real-time Queries
+
+RESTAPI --> Firebase : File Storage
+RESTAPI --> EmailService : Notifications
+
+' ============================================
+' NOTES
+' ============================================
+
+note right of MobileApp
+    **Flutter Mobile App**
+    - Cross-platform (iOS/Android)
+    - Riverpod State Management
+    - Google Maps Integration
+    - Real-time Updates
+end note
+
+note right of AdminDashboard
+    **Admin Dashboard**
+    - Next.js Web Application
+    - User Management
+    - Analytics & Reports
+    - Content Moderation
+end note
+
+note right of RESTAPI
+    **Backend API**
+    - NestJS Framework
+    - RESTful API
+    - JWT Authentication
+    - Business Logic
+end note
+
+@enduml

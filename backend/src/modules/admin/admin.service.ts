@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRole, CollectorApplicationStatus } from '../users/schemas/user.schema';
 import { CollectorApplication } from '../collector-applications/schemas/collector-application.schema';
-import { Dropoff } from '../dropoffs/schemas/dropoff.schema';
+import { Dropoff, DropoffStatus } from '../dropoffs/schemas/dropoff.schema';
 import { CollectorInteraction } from '../dropoffs/schemas/collector-interaction.schema';
 import { CollectionAttempt } from '../dropoffs/schemas/collection-attempt.schema';
 import { SupportTicket } from '../support-tickets/schemas/support-ticket.schema';
@@ -53,6 +53,7 @@ export class AdminService {
         ticketsByStatus,
         ticketsByCategory,
         bottleTypeDistribution,
+        co2SavingsTimeSeriesRaw,
       ] = await Promise.all([
         // Basic counts
         this.userModel.countDocuments({ isDeleted: { $ne: true } }),
@@ -109,6 +110,39 @@ export class AdminService {
         this.dropoffModel.aggregate([
           { $group: { _id: '$bottleType', count: { $sum: 1 } } }
         ]),
+
+        // CO₂ savings over the last 7 days
+        this.dropoffModel.aggregate([
+          {
+            $match: {
+              status: DropoffStatus.COLLECTED,
+              $or: [
+                { collectedAt: { $gte: sevenDaysAgo } },
+                { collectedAt: null, updatedAt: { $gte: sevenDaysAgo } },
+              ],
+            },
+          },
+          {
+            $project: {
+              referenceDate: { $ifNull: ['$collectedAt', '$updatedAt'] },
+              co2Saved: {
+                $add: [
+                  { $multiply: ['$numberOfBottles', 0.15] },
+                  { $multiply: ['$numberOfCans', 0.17] },
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: '%Y-%m-%d', date: '$referenceDate' },
+              },
+              totalCo2: { $sum: '$co2Saved' },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]),
       ]);
 
       // Get time series data for charts (last 30 days)
@@ -118,6 +152,7 @@ export class AdminService {
 
       // Get recent activity
       const recentActivity = await this.getRecentActivity();
+      const co2SavingsTimeSeries = this.fillMissingCo2(co2SavingsTimeSeriesRaw, 7);
 
       return {
         // Basic stats
@@ -165,6 +200,7 @@ export class AdminService {
         usersTimeSeries,
         dropsTimeSeries,
         interactionsTimeSeries,
+        co2SavingsTimeSeries,
         
         recentActivity,
       };
@@ -188,6 +224,7 @@ export class AdminService {
         ticketsByStatus: {},
         ticketsByCategory: {},
         bottleTypeDistribution: {},
+        co2SavingsTimeSeries: [],
         usersTimeSeries: [],
         dropsTimeSeries: [],
         interactionsTimeSeries: [],
@@ -298,6 +335,25 @@ export class AdminService {
       });
     }
     
+    return result;
+  }
+
+  private fillMissingCo2(timeSeries: any[], days: number): any[] {
+    const result: any[] = [];
+    const dataMap = new Map(timeSeries.map(item => [item._id, item.totalCo2]));
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dateStr = date.toISOString().split('T')[0];
+
+      result.push({
+        date: dateStr,
+        co2: Number((dataMap.get(dateStr) || 0).toFixed(2)),
+      });
+    }
+
     return result;
   }
 

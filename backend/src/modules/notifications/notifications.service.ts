@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Notification, NotificationDocument, NotificationType, NotificationPriority } from './schemas/notification.schema';
 import { CreateNotificationDto, UpdateNotificationDto, NotificationFiltersDto } from './dto/notification.dto';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
   ) {}
 
   /**
@@ -223,7 +226,7 @@ export class NotificationsService {
    * Notify application approved (for admin service)
    */
   async notifyApplicationApproved(userId: string, adminId: string, applicationId: string): Promise<Notification> {
-    return this.create({
+    const notification = await this.create({
       userId,
       type: NotificationType.APPLICATION_APPROVED,
       title: 'Application Approved! 🎉',
@@ -242,13 +245,28 @@ export class NotificationsService {
         },
       ],
     });
+
+    // Send via WebSocket
+    try {
+      await this.notificationsGateway.sendNotificationToUser(userId, {
+        type: 'application_approved',
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        timestamp: notification.createdAt,
+      });
+    } catch (error) {
+      console.error(`❌ Error sending application approved notification via WebSocket: ${error}`);
+    }
+
+    return notification;
   }
 
   /**
    * Notify application rejected (for admin service)
    */
   async notifyApplicationRejected(userId: string, adminId: string, applicationId: string, reason: string): Promise<Notification> {
-    return this.create({
+    const notification = await this.create({
       userId,
       type: NotificationType.APPLICATION_REJECTED,
       title: 'Application Rejected',
@@ -268,13 +286,28 @@ export class NotificationsService {
         },
       ],
     });
+
+    // Send via WebSocket
+    try {
+      await this.notificationsGateway.sendNotificationToUser(userId, {
+        type: 'application_rejected',
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        timestamp: notification.createdAt,
+      });
+    } catch (error) {
+      console.error(`❌ Error sending application rejected notification via WebSocket: ${error}`);
+    }
+
+    return notification;
   }
 
   /**
    * Notify application reversed (for admin service)
    */
   async notifyApplicationReversed(userId: string, adminId: string, applicationId: string): Promise<Notification> {
-    return this.create({
+    const notification = await this.create({
       userId,
       type: NotificationType.APPLICATION_REVERSED,
       title: 'Application Status Reversed',
@@ -293,5 +326,20 @@ export class NotificationsService {
         },
       ],
     });
+
+    // Send via WebSocket
+    try {
+      await this.notificationsGateway.sendNotificationToUser(userId, {
+        type: 'application_reversed',
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        timestamp: notification.createdAt,
+      });
+    } catch (error) {
+      console.error(`❌ Error sending application reversed notification via WebSocket: ${error}`);
+    }
+
+    return notification;
   }
 }

@@ -897,7 +897,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
         'zoom': '16',
         'size': '300x200',
         'maptype': 'roadmap',
-        'markers': 'color:red|size:mid|$lat,$lng',
+        'markers': 'color:0x00695C|size:mid|$lat,$lng',
         'key': apiKey,
       };
       return Uri.parse(baseUrl).replace(queryParameters: params).toString();

@@ -207,7 +207,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         'zoom': '16',
         'size': '300x200',
         'maptype': 'roadmap',
-        'markers': 'color:red|size:mid|$lat,$lng',
+        'markers': 'color:0x00695C|size:mid|$lat,$lng',
         'key': apiKey,
       };
       return Uri.parse(baseUrl).replace(queryParameters: params).toString();
@@ -240,13 +240,25 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     }
     _refreshTicket();
     _setupRealtimeMessaging();
-    _ensureChatConnectedAndJoin();
+    // Ensure connection happens immediately when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureChatConnectedAndJoin();
+      // Add listener to ChatService to update UI when connection status changes
+      final chatService = ref.read(chatServiceProvider);
+      chatService.addListener(_onChatServiceChanged);
+    });
     // Removed scroll listener - header visibility now only controlled by typing
     
     // Auto-scroll to bottom on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+  }
+
+  void _onChatServiceChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _ensureChatConnectedAndJoin() async {
@@ -257,8 +269,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     try {
       if (!chatService.isConnected) {
         if (!chatService.isConnecting) {
+          debugPrint('🔌 TicketDetailScreen: Starting connection...');
           await chatService.connect();
         } else {
+          debugPrint('🔌 TicketDetailScreen: Connection in progress, waiting...');
           // wait up to 10s for an in-progress connection
           int attempts = 0;
           while (chatService.isConnecting && attempts < 20) {
@@ -269,6 +283,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       }
 
       if (chatService.isConnected) {
+        debugPrint('🔌 TicketDetailScreen: Connected! Joining ticket room...');
         await chatService.joinTicket(widget.ticket.id, 'user');
         // Ensure presence is sent promptly over notifications channel too
         if (notificationService.isConnected) {
@@ -286,11 +301,27 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             }
           });
         }
+        // Trigger UI update after connection
+        if (mounted) {
+          setState(() {});
+        }
       } else {
         debugPrint('❌ TicketDetailScreen: Chat not connected after attempts');
+        // Retry connection after a delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !chatService.isConnected) {
+            _ensureChatConnectedAndJoin();
+          }
+        });
       }
     } catch (e) {
       debugPrint('❌ TicketDetailScreen: Error connecting to chat: $e');
+      // Retry connection after a delay on error
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          _ensureChatConnectedAndJoin();
+        }
+      });
     }
   }
 
@@ -420,6 +451,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   @override
   void dispose() {
+    // Remove listener from ChatService
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      chatService.removeListener(_onChatServiceChanged);
+    } catch (_) {}
+    
     // Leave chat room and send presence leave
     try {
       final chatService = ref.read(chatServiceProvider);
@@ -733,6 +770,47 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   
       
 
+
+          // Connection Status Indicator
+          Consumer(
+            builder: (context, ref, child) {
+              final chatService = ref.watch(chatServiceProvider);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: chatService.isConnected ? Colors.green[50] : Colors.red[50],
+                  border: Border(
+                    bottom: BorderSide(
+                      color: chatService.isConnected ? Colors.green[200]! : Colors.red[200]!,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: chatService.isConnected ? Colors.green : Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      chatService.isConnected ? 'Connected' : 'Connecting...',
+                      style: TextStyle(
+                        color: chatService.isConnected ? Colors.green[800] : Colors.red[800],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
 
           // Messages List
           Expanded(

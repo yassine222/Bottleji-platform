@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -25,11 +26,11 @@ class LocalNotificationService {
   void _handleNotificationTap(String? payload) {
     if (payload == null) return;
     
-    print('🔔 LocalNotificationService: Handling notification tap with payload: $payload');
+    AppLogger.log('🔔 LocalNotificationService: Handling notification tap with payload: $payload');
     
     if (payload.startsWith('force_logout:')) {
       final reason = payload.substring('force_logout:'.length);
-      print('🔔 LocalNotificationService: Force logout notification tapped, reason: $reason');
+      AppLogger.log('🔔 LocalNotificationService: Force logout notification tapped, reason: $reason');
       
       // Call the callback if set
       handleNotificationTap?.call(payload);
@@ -51,26 +52,26 @@ class LocalNotificationService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
       
-      print('🔔 LocalNotificationService: Notification channel created successfully');
+      AppLogger.log('🔔 LocalNotificationService: Notification channel created successfully');
       
       // Check if channel was created
       final channels = await _notifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.getNotificationChannels();
       
-      print('🔔 LocalNotificationService: Available channels: ${channels?.length ?? 0}');
+      AppLogger.log('🔔 LocalNotificationService: Available channels: ${channels?.length ?? 0}');
       if (channels != null) {
         for (final channel in channels) {
-          print('🔔 LocalNotificationService: Channel: ${channel.id} - ${channel.name}');
+          AppLogger.log('🔔 LocalNotificationService: Channel: ${channel.id} - ${channel.name}');
         }
       }
     } catch (e) {
-      print('🔔 LocalNotificationService: Error creating notification channel: $e');
+      AppLogger.log('🔔 LocalNotificationService: Error creating notification channel: $e');
     }
   }
 
   Future<void> initialize() async {
-    print('🔔 LocalNotificationService: Starting initialization...');
+    AppLogger.log('🔔 LocalNotificationService: Starting initialization...');
     
     // Initialize timezone
     tz.initializeTimeZones();
@@ -98,7 +99,7 @@ class LocalNotificationService {
     await _notifications.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print('🔔 LocalNotificationService: Notification tapped: ${response.payload}');
+        AppLogger.log('🔔 LocalNotificationService: Notification tapped: ${response.payload}');
         _handleNotificationTap(response.payload);
       },
     );
@@ -106,49 +107,55 @@ class LocalNotificationService {
     // Create notification channel for Android
     await _createNotificationChannel();
     
-    print('🔔 LocalNotificationService: Initialization completed (permissions not requested)');
+    // Clear badge count on app initialization (with delay to ensure plugin is ready)
+    // Note: The badge will be synced with actual unread count when notifications are loaded
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      await clearBadgeCount();
+    });
+    
+    AppLogger.log('🔔 LocalNotificationService: Initialization completed (permissions not requested)');
   }
 
   Future<void> _requestPermissions() async {
-    print('🔔 LocalNotificationService: Requesting notification permissions...');
+    AppLogger.log('🔔 LocalNotificationService: Requesting notification permissions...');
     
     // Check current permission status
     final status = await Permission.notification.status;
-    print('🔔 LocalNotificationService: Current notification permission status: $status');
+    AppLogger.log('🔔 LocalNotificationService: Current notification permission status: $status');
     
     if (status.isDenied) {
-      print('🔔 LocalNotificationService: Permission denied, requesting...');
+      AppLogger.log('🔔 LocalNotificationService: Permission denied, requesting...');
       final newStatus = await Permission.notification.request();
-      print('🔔 LocalNotificationService: New notification permission status: $newStatus');
+      AppLogger.log('🔔 LocalNotificationService: New notification permission status: $newStatus');
       
       // If still denied, show a dialog to guide user to settings
       if (newStatus.isDenied) {
-        print('🔔 LocalNotificationService: Permission still denied after request');
+        AppLogger.log('🔔 LocalNotificationService: Permission still denied after request');
       }
     }
   }
 
   Future<bool> requestNotificationPermission() async {
-    print('🔔 LocalNotificationService: Requesting notification permission...');
+    AppLogger.log('🔔 LocalNotificationService: Requesting notification permission...');
     
     try {
       // Check current status first
       final currentStatus = await Permission.notification.status;
-      print('🔔 LocalNotificationService: Current permission status: $currentStatus');
+      AppLogger.log('🔔 LocalNotificationService: Current permission status: $currentStatus');
       
       if (currentStatus.isGranted) {
-        print('🔔 LocalNotificationService: Permission already granted');
+        AppLogger.log('🔔 LocalNotificationService: Permission already granted');
         return true;
       }
       
       if (currentStatus.isPermanentlyDenied) {
-        print('🔔 LocalNotificationService: Permission permanently denied');
+        AppLogger.log('🔔 LocalNotificationService: Permission permanently denied');
         return false;
       }
       
       // For iOS, we need to handle it differently
       if (Platform.isIOS) {
-        print('🔔 LocalNotificationService: iOS detected, using notification plugin');
+        AppLogger.log('🔔 LocalNotificationService: iOS detected, using notification plugin');
         try {
           final iosPlugin = _notifications.resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>();
@@ -159,42 +166,42 @@ class LocalNotificationService {
               badge: true,
               sound: true,
             );
-            print('🔔 LocalNotificationService: iOS permission result: $granted');
+            AppLogger.log('🔔 LocalNotificationService: iOS permission result: $granted');
             return granted == true;
           } else {
-            print('🔔 LocalNotificationService: iOS plugin not available');
+            AppLogger.log('🔔 LocalNotificationService: iOS plugin not available');
             return false;
           }
         } catch (e) {
-          print('🔔 LocalNotificationService: iOS permission error: $e');
+          AppLogger.log('🔔 LocalNotificationService: iOS permission error: $e');
           return false;
         }
       } else {
         // For Android, use permission_handler
-        print('🔔 LocalNotificationService: Android detected, using permission_handler');
+        AppLogger.log('🔔 LocalNotificationService: Android detected, using permission_handler');
         try {
           final newStatus = await Permission.notification.request();
-          print('🔔 LocalNotificationService: Android permission result: $newStatus');
+          AppLogger.log('🔔 LocalNotificationService: Android permission result: $newStatus');
           return newStatus.isGranted;
         } catch (e) {
-          print('🔔 LocalNotificationService: Android permission error: $e');
+          AppLogger.log('🔔 LocalNotificationService: Android permission error: $e');
           return false;
         }
       }
     } catch (e) {
-      print('🔔 LocalNotificationService: General error requesting permission: $e');
+      AppLogger.log('🔔 LocalNotificationService: General error requesting permission: $e');
       return false;
     }
   }
 
   Future<bool> forceRequestNotificationPermission() async {
-    print('🔔 LocalNotificationService: Force requesting notification permission...');
+    AppLogger.log('🔔 LocalNotificationService: Force requesting notification permission...');
     
     // Try to reset the permission state
     try {
       // Request permission multiple times to ensure it's properly set
       final status1 = await Permission.notification.request();
-      print('🔔 LocalNotificationService: First request result: $status1');
+      AppLogger.log('🔔 LocalNotificationService: First request result: $status1');
       
       if (status1.isGranted) {
         return true;
@@ -203,17 +210,17 @@ class LocalNotificationService {
       // Wait a bit and try again
       await Future.delayed(const Duration(milliseconds: 500));
       final status2 = await Permission.notification.request();
-      print('🔔 LocalNotificationService: Second request result: $status2');
+      AppLogger.log('🔔 LocalNotificationService: Second request result: $status2');
       
       return status2.isGranted;
     } catch (e) {
-      print('🔔 LocalNotificationService: Error requesting permission: $e');
+      AppLogger.log('🔔 LocalNotificationService: Error requesting permission: $e');
       return false;
     }
   }
 
   Future<void> openAppSettings() async {
-    print('🔔 LocalNotificationService: Opening app settings...');
+    AppLogger.log('🔔 LocalNotificationService: Opening app settings...');
     await AppSettings.openAppSettings();
   }
 
@@ -230,10 +237,19 @@ class LocalNotificationService {
            '4. Restart the app';
   }
 
+  /// Get guidance message for enabling banners (when notifications only show on lock screen)
+  String getBannerGuidanceMessage() {
+    return 'To see notifications when your phone is unlocked:\n\n'
+           '1. Go to Settings > Notifications > Bottleji\n'
+           '2. Tap "Banners"\n'
+           '3. Select "Temporary" or "Persistent"\n'
+           '4. You will now see notifications even when the app is in background';
+  }
+
   /// Check iOS notification settings
   Future<void> checkIOSNotificationSettings() async {
     if (Platform.isIOS) {
-      print('🔔 LocalNotificationService: Checking iOS notification settings...');
+      AppLogger.log('🔔 LocalNotificationService: Checking iOS notification settings...');
       try {
         final iosPlugin = _notifications.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
@@ -245,10 +261,10 @@ class LocalNotificationService {
             badge: true,
             sound: true,
           );
-          print('🔔 LocalNotificationService: iOS can request permissions: $canRequest');
+          AppLogger.log('🔔 LocalNotificationService: iOS can request permissions: $canRequest');
         }
       } catch (e) {
-        print('🔔 LocalNotificationService: Error checking iOS settings: $e');
+        AppLogger.log('🔔 LocalNotificationService: Error checking iOS settings: $e');
       }
     }
   }
@@ -259,7 +275,7 @@ class LocalNotificationService {
     int id = 0,
     String? payload,
   }) async {
-    print('🔔 LocalNotificationService: Showing notification - Title: $title, Body: $body, ID: $id');
+    AppLogger.log('🔔 LocalNotificationService: Showing notification - Title: $title, Body: $body, ID: $id');
     
     // Get notification preferences from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
@@ -267,17 +283,17 @@ class LocalNotificationService {
     final soundEnabled = prefs.getBool('notification_sound') ?? true;
     final vibrationEnabled = prefs.getBool('notification_vibration') ?? true;
     
-    print('🔔 LocalNotificationService: Notification preferences - General: $generalNotifications, Sound: $soundEnabled, Vibration: $vibrationEnabled');
+    AppLogger.log('🔔 LocalNotificationService: Notification preferences - General: $generalNotifications, Sound: $soundEnabled, Vibration: $vibrationEnabled');
     
     // If general notifications are disabled, don't show anything
     if (!generalNotifications) {
-      print('🔔 LocalNotificationService: General notifications disabled, skipping notification');
+      AppLogger.log('🔔 LocalNotificationService: General notifications disabled, skipping notification');
       return;
     }
     
     // For iOS, use the notification plugin's permission check
     if (Platform.isIOS) {
-      print('🔔 LocalNotificationService: iOS detected, checking permission via notification plugin');
+      AppLogger.log('🔔 LocalNotificationService: iOS detected, checking permission via notification plugin');
       try {
         final iosPlugin = _notifications.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
@@ -288,36 +304,36 @@ class LocalNotificationService {
             badge: true,
             sound: soundEnabled,
           );
-          print('🔔 LocalNotificationService: iOS plugin permission check: $granted');
+          AppLogger.log('🔔 LocalNotificationService: iOS plugin permission check: $granted');
           
           if (granted != true) {
-            print('🔔 LocalNotificationService: iOS permission not granted via plugin');
+            AppLogger.log('🔔 LocalNotificationService: iOS permission not granted via plugin');
             return;
           }
         } else {
-          print('🔔 LocalNotificationService: iOS plugin not available');
+          AppLogger.log('🔔 LocalNotificationService: iOS plugin not available');
           return;
         }
       } catch (e) {
-        print('🔔 LocalNotificationService: iOS permission check error: $e');
+        AppLogger.log('🔔 LocalNotificationService: iOS permission check error: $e');
         return;
       }
     } else {
       // For Android, use permission_handler
       final permissionStatus = await Permission.notification.status;
-      print('🔔 LocalNotificationService: Android permission status: $permissionStatus');
+      AppLogger.log('🔔 LocalNotificationService: Android permission status: $permissionStatus');
       
       if (permissionStatus.isDenied) {
-        print('🔔 LocalNotificationService: Android permission denied, requesting...');
+        AppLogger.log('🔔 LocalNotificationService: Android permission denied, requesting...');
         final newStatus = await Permission.notification.request();
-        print('🔔 LocalNotificationService: Android new permission status: $newStatus');
+        AppLogger.log('🔔 LocalNotificationService: Android new permission status: $newStatus');
         
         if (!newStatus.isGranted) {
-          print('🔔 LocalNotificationService: Android permission still not granted, cannot show notification');
+          AppLogger.log('🔔 LocalNotificationService: Android permission still not granted, cannot show notification');
           return;
         }
       } else if (permissionStatus.isPermanentlyDenied) {
-        print('🔔 LocalNotificationService: Android permission permanently denied, cannot show notification');
+        AppLogger.log('🔔 LocalNotificationService: Android permission permanently denied, cannot show notification');
         return;
       }
     }
@@ -336,10 +352,10 @@ class LocalNotificationService {
     
     final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       presentAlert: true,  // Show alert/banner
-      presentBadge: true,  // Show badge
+      presentBadge: false,  // Don't automatically set badge - let it be managed separately
       presentSound: soundEnabled,  // Play sound based on user preference
       sound: soundEnabled ? 'default' : null,    // Use default sound if enabled
-      badgeNumber: 1,      // Set badge number
+      threadIdentifier: 'bottleji-notifications', // Group notifications together
     );
     
     final NotificationDetails details = NotificationDetails(
@@ -349,16 +365,16 @@ class LocalNotificationService {
     
     // Show the notification
     try {
-      print('🔔 LocalNotificationService: About to show notification with details: $details');
+      AppLogger.log('🔔 LocalNotificationService: About to show notification with details: $details');
       await _notifications.show(id, title, body, details, payload: payload);
-      print('🔔 LocalNotificationService: Notification shown successfully');
+      AppLogger.log('🔔 LocalNotificationService: Notification shown successfully');
       
       // Check if notification was actually scheduled
       final pendingNotifications = await _notifications.pendingNotificationRequests();
-      print('🔔 LocalNotificationService: Pending notifications count: ${pendingNotifications.length}');
+      AppLogger.log('🔔 LocalNotificationService: Pending notifications count: ${pendingNotifications.length}');
       
     } catch (e) {
-      print('🔔 LocalNotificationService: Error showing notification: $e');
+      AppLogger.log('🔔 LocalNotificationService: Error showing notification: $e');
     }
   }
 
@@ -375,7 +391,7 @@ class LocalNotificationService {
 
   /// Show force logout dialog when app is opened from notification
   Future<void> showForceLogoutDialog(String reason) async {
-    print('🔔 LocalNotificationService: Showing force logout dialog');
+    AppLogger.log('🔔 LocalNotificationService: Showing force logout dialog');
     
     // Use a global key or navigator to show dialog
     // This will be called from the main app when notification is tapped
@@ -391,18 +407,18 @@ class LocalNotificationService {
   }
 
   Future<void> showWelcomeNotification() async {
-    print('🔔 LocalNotificationService: Showing welcome notification');
+    AppLogger.log('🔔 LocalNotificationService: Showing welcome notification');
     await showNotification(
       title: 'Connected',
       body: 'You are now connected to real-time notifications',
       id: 1,
     );
-    print('🔔 LocalNotificationService: Welcome notification completed');
+    AppLogger.log('🔔 LocalNotificationService: Welcome notification completed');
   }
 
   /// Schedule a delayed notification to test if iOS shows banners in background
   Future<void> scheduleTestNotification() async {
-    print('🔔 LocalNotificationService: Scheduling delayed test notification...');
+    AppLogger.log('🔔 LocalNotificationService: Scheduling delayed test notification...');
     
     // Check iOS notification settings first
     await checkIOSNotificationSettings();
@@ -420,10 +436,9 @@ class LocalNotificationService {
     
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       presentAlert: true,
-      presentBadge: true,
+      presentBadge: false,  // Don't automatically set badge
       presentSound: true,
       sound: 'default',
-      badgeNumber: 1,
     );
     
     const NotificationDetails details = NotificationDetails(
@@ -441,19 +456,19 @@ class LocalNotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
-      print('🔔 LocalNotificationService: Scheduled notification for ${scheduledDate.toString()}');
+      AppLogger.log('🔔 LocalNotificationService: Scheduled notification for ${scheduledDate.toString()}');
       
       // Check pending notifications
       final pendingNotifications = await _notifications.pendingNotificationRequests();
-      print('🔔 LocalNotificationService: Pending notifications after scheduling: ${pendingNotifications.length}');
+      AppLogger.log('🔔 LocalNotificationService: Pending notifications after scheduling: ${pendingNotifications.length}');
       
     } catch (e) {
-      print('🔔 LocalNotificationService: Error scheduling notification: $e');
+      AppLogger.log('🔔 LocalNotificationService: Error scheduling notification: $e');
     }
   }
 
   Future<void> showTestNotification() async {
-    print('🔔 LocalNotificationService: Showing test notification');
+    AppLogger.log('🔔 LocalNotificationService: Showing test notification');
     
     // Check iOS notification settings first
     await checkIOSNotificationSettings();
@@ -465,28 +480,28 @@ class LocalNotificationService {
       body: 'This is a test notification to verify the system is working!',
       id: 999,
     );
-    print('🔔 LocalNotificationService: Test notification completed');
+    AppLogger.log('🔔 LocalNotificationService: Test notification completed');
   }
 
   /// Test method to check if permission requests work
   Future<void> testPermissionRequest() async {
-    print('🔔 LocalNotificationService: Testing permission request...');
+    AppLogger.log('🔔 LocalNotificationService: Testing permission request...');
     
     try {
       // Test basic permission status
       final status = await Permission.notification.status;
-      print('🔔 LocalNotificationService: Test - Current status: $status');
+      AppLogger.log('🔔 LocalNotificationService: Test - Current status: $status');
       
       // Test if we can request at all
       if (status.isDenied) {
-        print('🔔 LocalNotificationService: Test - Attempting to request permission...');
+        AppLogger.log('🔔 LocalNotificationService: Test - Attempting to request permission...');
         final newStatus = await Permission.notification.request();
-        print('🔔 LocalNotificationService: Test - Request result: $newStatus');
+        AppLogger.log('🔔 LocalNotificationService: Test - Request result: $newStatus');
       } else {
-        print('🔔 LocalNotificationService: Test - Status is not denied: $status');
+        AppLogger.log('🔔 LocalNotificationService: Test - Status is not denied: $status');
       }
     } catch (e) {
-      print('🔔 LocalNotificationService: Test - Error: $e');
+      AppLogger.log('🔔 LocalNotificationService: Test - Error: $e');
     }
   }
 
@@ -498,19 +513,69 @@ class LocalNotificationService {
     await _notifications.cancel(id);
   }
 
+  /// Update the badge count on the app icon
+  /// [count] - The number to display on the badge (0 to clear it)
+  Future<void> updateBadgeCount(int count) async {
+    AppLogger.log('🔔 LocalNotificationService: Updating badge count to $count...');
+    try {
+      if (Platform.isIOS) {
+        final iosPlugin = _notifications.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        if (iosPlugin != null) {
+          try {
+            // Set badge using a silent notification with the specified badge number
+            final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+              presentAlert: false,
+              presentBadge: true,
+              presentSound: false,
+              badgeNumber: count,  // Set to the actual count
+            );
+            final NotificationDetails details = NotificationDetails(iOS: iosDetails);
+            // Show a silent notification with the badge count
+            await _notifications.show(999999, '', '', details);
+            // Wait a bit to ensure it's processed
+            await Future.delayed(const Duration(milliseconds: 200));
+            // Cancel it so it doesn't show up as a visible notification
+            await _notifications.cancel(999999);
+            AppLogger.log('🔔 LocalNotificationService: Badge count updated to $count on iOS');
+          } catch (e) {
+            AppLogger.log('🔔 LocalNotificationService: Error updating badge count: $e');
+          }
+        } else {
+          AppLogger.log('🔔 LocalNotificationService: iOS plugin not available');
+        }
+      } else if (Platform.isAndroid) {
+        // For Android, badge is typically managed by the launcher
+        // Some Android launchers support badge counts, but it's not standardized
+        // We can't directly set badge count on Android, but we can clear notifications
+        if (count == 0) {
+          await _notifications.cancelAll();
+          AppLogger.log('🔔 LocalNotificationService: Android notifications cleared');
+        }
+      }
+    } catch (e) {
+      AppLogger.log('🔔 LocalNotificationService: Error updating badge count: $e');
+    }
+  }
+
+  /// Clear the badge count on the app icon (convenience method)
+  Future<void> clearBadgeCount() async {
+    await updateBadgeCount(0);
+  }
+
   /// Show drop expired notification without requiring context (for background scenarios)
   Future<void> showDropExpiredNotificationBackground({
     required String dropId,
     required String dropTitle,
   }) async {
-    print('🔔 LocalNotificationService: Starting background notification for drop: $dropId');
-    print('🔔 LocalNotificationService: Drop title: $dropTitle');
+    AppLogger.log('🔔 LocalNotificationService: Starting background notification for drop: $dropId');
+    AppLogger.log('🔔 LocalNotificationService: Drop title: $dropTitle');
     
     try {
       // Always show system notification for background scenarios
-      print('🔔 LocalNotificationService: Calling showNotification...');
+      AppLogger.log('🔔 LocalNotificationService: Calling showNotification...');
       final notificationId = 3000 + dropId.hashCode % 1000; // Unique ID based on drop ID
-      print('🔔 LocalNotificationService: Using notification ID: $notificationId');
+      AppLogger.log('🔔 LocalNotificationService: Using notification ID: $notificationId');
       
       await showNotification(
         title: 'Collection Expired',
@@ -518,9 +583,9 @@ class LocalNotificationService {
         id: notificationId,
         payload: 'drop_expired:$dropId',
       );
-      print('🔔 LocalNotificationService: Background notification sent successfully for drop expiration');
+      AppLogger.log('🔔 LocalNotificationService: Background notification sent successfully for drop expiration');
     } catch (e) {
-      print('❌ LocalNotificationService: Error sending background notification: $e');
+      AppLogger.log('❌ LocalNotificationService: Error sending background notification: $e');
       rethrow;
     }
   }
@@ -531,16 +596,16 @@ class LocalNotificationService {
     required String dropTitle,
     required BuildContext context,
   }) async {
-    print('🔔 LocalNotificationService: Showing drop expired notification for drop: $dropId');
+    AppLogger.log('🔔 LocalNotificationService: Showing drop expired notification for drop: $dropId');
     
     // Check if app is in foreground
     final isInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-    print('🔔 LocalNotificationService: App lifecycle state: ${WidgetsBinding.instance.lifecycleState}');
-    print('🔔 LocalNotificationService: Is in foreground: $isInForeground');
+    AppLogger.log('🔔 LocalNotificationService: App lifecycle state: ${WidgetsBinding.instance.lifecycleState}');
+    AppLogger.log('🔔 LocalNotificationService: Is in foreground: $isInForeground');
     
     if (isInForeground) {
       // Show in-app notification (SnackBar)
-      print('🔔 LocalNotificationService: App in foreground - showing SnackBar');
+      AppLogger.log('🔔 LocalNotificationService: App in foreground - showing SnackBar');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -560,7 +625,7 @@ class LocalNotificationService {
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to drop details or history
-                print('🔔 LocalNotificationService: User tapped view on expired drop');
+                AppLogger.log('🔔 LocalNotificationService: User tapped view on expired drop');
               },
             ),
           ),
@@ -568,7 +633,7 @@ class LocalNotificationService {
       }
     } else {
       // Show system notification (background)
-      print('🔔 LocalNotificationService: App in background - showing system notification');
+      AppLogger.log('🔔 LocalNotificationService: App in background - showing system notification');
       await showNotification(
         title: 'Collection Expired',
         body: 'Your collection for "$dropTitle" has expired',
@@ -585,7 +650,7 @@ class LocalNotificationService {
     required String status, // 'accepted', 'collected', 'cancelled', 'expired'
     required BuildContext context,
   }) async {
-    print('🔔 LocalNotificationService: Showing drop status notification: $status for drop: $dropId');
+    AppLogger.log('🔔 LocalNotificationService: Showing drop status notification: $status for drop: $dropId');
     
     // Check if app is in foreground
     final isInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
@@ -629,7 +694,7 @@ class LocalNotificationService {
     
     if (isInForeground) {
       // Show in-app notification (SnackBar)
-      print('🔔 LocalNotificationService: App in foreground - showing SnackBar');
+      AppLogger.log('🔔 LocalNotificationService: App in foreground - showing SnackBar');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -647,7 +712,7 @@ class LocalNotificationService {
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to drop details
-                print('🔔 LocalNotificationService: User tapped view on drop status');
+                AppLogger.log('🔔 LocalNotificationService: User tapped view on drop status');
               },
             ),
           ),
@@ -655,7 +720,7 @@ class LocalNotificationService {
       }
     } else {
       // Show system notification (background)
-      print('🔔 LocalNotificationService: App in background - showing system notification');
+      AppLogger.log('🔔 LocalNotificationService: App in background - showing system notification');
       await showNotification(
         title: title,
         body: message,
@@ -669,7 +734,7 @@ class LocalNotificationService {
   Future<void> showApplicationApprovedNotification({
     required BuildContext context,
   }) async {
-    print('🔔 LocalNotificationService: Showing application approved notification');
+    AppLogger.log('🔔 LocalNotificationService: Showing application approved notification');
     
     const title = 'Application Approved!';
     const message = 'Congratulations! Your collector application has been approved. You can now start collecting!';
@@ -679,7 +744,7 @@ class LocalNotificationService {
     
     if (isInForeground) {
       // Show in-app notification (SnackBar)
-      print('🔔 LocalNotificationService: App in foreground - showing SnackBar');
+      AppLogger.log('🔔 LocalNotificationService: App in foreground - showing SnackBar');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -697,7 +762,7 @@ class LocalNotificationService {
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to collector mode or home
-                print('🔔 LocalNotificationService: User tapped start collecting');
+                AppLogger.log('🔔 LocalNotificationService: User tapped start collecting');
               },
             ),
           ),
@@ -705,7 +770,7 @@ class LocalNotificationService {
       }
     } else {
       // Show system notification (background)
-      print('🔔 LocalNotificationService: App in background - showing system notification');
+      AppLogger.log('🔔 LocalNotificationService: App in background - showing system notification');
       await showNotification(
         title: title,
         body: message,
@@ -720,7 +785,7 @@ class LocalNotificationService {
     required String reason,
     required BuildContext context,
   }) async {
-    print('🔔 LocalNotificationService: Showing application rejected notification');
+    AppLogger.log('🔔 LocalNotificationService: Showing application rejected notification');
     
     const title = 'Application Update';
     final message = 'Your collector application was not approved: $reason';
@@ -730,7 +795,7 @@ class LocalNotificationService {
     
     if (isInForeground) {
       // Show in-app notification (SnackBar)
-      print('🔔 LocalNotificationService: App in foreground - showing SnackBar');
+      AppLogger.log('🔔 LocalNotificationService: App in foreground - showing SnackBar');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -748,7 +813,7 @@ class LocalNotificationService {
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to application details or support
-                print('🔔 LocalNotificationService: User tapped view details');
+                AppLogger.log('🔔 LocalNotificationService: User tapped view details');
               },
             ),
           ),
@@ -756,7 +821,7 @@ class LocalNotificationService {
       }
     } else {
       // Show system notification (background)
-      print('🔔 LocalNotificationService: App in background - showing system notification');
+      AppLogger.log('🔔 LocalNotificationService: App in background - showing system notification');
       await showNotification(
         title: title,
         body: message,

@@ -33,6 +33,26 @@ enum NotificationType {
   orderDelivered,
   pointsEarned,
   systemAnnouncement,
+  userDeleted,
+  applicationApproved,
+  applicationRejected,
+  applicationReversed,
+  // Drop-related notifications
+  dropAccepted,
+  dropCollected,
+  dropCollectedWithRewards,
+  dropCollectedWithTierUpgrade,
+  dropCancelled,
+  dropExpired,
+  dropNearExpiring,
+  dropCensored,
+  // Support ticket notifications
+  ticketMessage,
+  // Account notifications
+  accountLocked,
+  accountUnlocked,
+  // Other
+  test,
 }
 
 enum NotificationPriority {
@@ -195,6 +215,38 @@ class NotificationModel {
         return NotificationType.pointsEarned;
       case 'system_announcement':
         return NotificationType.systemAnnouncement;
+      case 'user_deleted':
+        return NotificationType.userDeleted;
+      case 'application_approved':
+        return NotificationType.applicationApproved;
+      case 'application_rejected':
+        return NotificationType.applicationRejected;
+      case 'application_reversed':
+        return NotificationType.applicationReversed;
+      case 'drop_accepted':
+        return NotificationType.dropAccepted;
+      case 'drop_collected':
+        return NotificationType.dropCollected;
+      case 'drop_collected_with_rewards':
+        return NotificationType.dropCollectedWithRewards;
+      case 'drop_collected_with_tier_upgrade':
+        return NotificationType.dropCollectedWithTierUpgrade;
+      case 'drop_cancelled':
+        return NotificationType.dropCancelled;
+      case 'drop_expired':
+        return NotificationType.dropExpired;
+      case 'drop_near_expiring':
+        return NotificationType.dropNearExpiring;
+      case 'drop_censored':
+        return NotificationType.dropCensored;
+      case 'ticket_message':
+        return NotificationType.ticketMessage;
+      case 'account_locked':
+        return NotificationType.accountLocked;
+      case 'account_unlocked':
+        return NotificationType.accountUnlocked;
+      case 'test':
+        return NotificationType.test;
       default:
         return NotificationType.systemAnnouncement;
     }
@@ -214,6 +266,38 @@ class NotificationModel {
         return 'points_earned';
       case NotificationType.systemAnnouncement:
         return 'system_announcement';
+      case NotificationType.userDeleted:
+        return 'user_deleted';
+      case NotificationType.applicationApproved:
+        return 'application_approved';
+      case NotificationType.applicationRejected:
+        return 'application_rejected';
+      case NotificationType.applicationReversed:
+        return 'application_reversed';
+      case NotificationType.dropAccepted:
+        return 'drop_accepted';
+      case NotificationType.dropCollected:
+        return 'drop_collected';
+      case NotificationType.dropCollectedWithRewards:
+        return 'drop_collected_with_rewards';
+      case NotificationType.dropCollectedWithTierUpgrade:
+        return 'drop_collected_with_tier_upgrade';
+      case NotificationType.dropCancelled:
+        return 'drop_cancelled';
+      case NotificationType.dropExpired:
+        return 'drop_expired';
+      case NotificationType.dropNearExpiring:
+        return 'drop_near_expiring';
+      case NotificationType.dropCensored:
+        return 'drop_censored';
+      case NotificationType.ticketMessage:
+        return 'ticket_message';
+      case NotificationType.accountLocked:
+        return 'account_locked';
+      case NotificationType.accountUnlocked:
+        return 'account_unlocked';
+      case NotificationType.test:
+        return 'test';
     }
   }
 

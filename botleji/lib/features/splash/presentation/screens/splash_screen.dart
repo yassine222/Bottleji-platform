@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 
@@ -45,8 +46,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
     ));
 
-    _animationController.forward();
-    _checkFirstTimeUser();
+    // Start animation and wait for it to complete before checking navigation
+    _startAnimationAndCheck();
+  }
+
+  Future<void> _startAnimationAndCheck() async {
+    // Start the animation
+    await _animationController.forward();
+    
+    // Wait for animation to fully complete and be visible
+    // Animation duration is 1500ms, wait additional 1500ms for users to appreciate it
+    // Total minimum display: 3 seconds
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    // Now check and navigate
+    if (mounted) {
+      _checkFirstTimeUser();
+    }
   }
 
   @override
@@ -56,8 +72,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkFirstTimeUser() async {
-    // Wait for minimum splash duration
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // Animation has already completed and been displayed
+    // No additional delay needed here - minimum display time already ensured in _startAnimationAndCheck
 
     if (!mounted) return;
 
@@ -88,13 +104,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final authState = ref.read(authNotifierProvider);
     final userMode = ref.read(userModeControllerProvider);
     
-    print('⏳ Splash: Checking auth and user mode...');
-    print('⏳ Splash: Auth state: ${authState.hasValue} (${authState.hasError ? 'error' : authState.isLoading ? 'loading' : 'ready'})');
-    print('⏳ Splash: UserMode state: ${userMode.hasValue} (${userMode.hasError ? 'error' : userMode.isLoading ? 'loading' : 'ready'})');
+    // If auth state is loaded and there's no logged-in user, go directly to login
+    if (authState.hasValue && authState.value == null) {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+      return;
+    }
+    
+    AppLogger.log('⏳ Splash: Checking auth and user mode...');
+    AppLogger.log('⏳ Splash: Auth state: ${authState.hasValue} (${authState.hasError ? 'error' : authState.isLoading ? 'loading' : 'ready'})');
+    AppLogger.log('⏳ Splash: UserMode state: ${userMode.hasValue} (${userMode.hasError ? 'error' : userMode.isLoading ? 'loading' : 'ready'})');
     
     // If both are already loaded, navigate immediately
-    if (authState.hasValue && userMode.hasValue) {
-      print('✅ Splash: Both auth and user mode already loaded, navigating to main');
+    if (authState.hasValue && authState.value != null && userMode.hasValue) {
+      AppLogger.log('✅ Splash: Both auth and user mode already loaded, navigating to main');
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/main');
       }
@@ -103,8 +127,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     
     // Check for errors - navigate anyway if there are errors
     if (authState.hasError || userMode.hasError) {
-      print('⚠️ Splash: Error detected, navigating anyway');
-      print('⚠️ Splash: Auth error: ${authState.hasError}, UserMode error: ${userMode.hasError}');
+      AppLogger.log('⚠️ Splash: Error detected, navigating anyway');
+      AppLogger.log('⚠️ Splash: Auth error: ${authState.hasError}, UserMode error: ${userMode.hasError}');
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/main');
       }
@@ -112,24 +136,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     
     // Otherwise, wait for both to load with polling
-    print('⏳ Splash: Waiting for auth and user mode to load...');
+    AppLogger.log('⏳ Splash: Waiting for auth and user mode to load...');
     
     // Listen to both auth and user mode changes
     bool hasNavigated = false;
     
     ref.listen(authNotifierProvider, (previous, next) {
       final currentUserMode = ref.read(userModeControllerProvider);
-      print('🔄 Splash: Auth changed - hasValue: ${next.hasValue}, UserMode hasValue: ${currentUserMode.hasValue}');
+      AppLogger.log('🔄 Splash: Auth changed - hasValue: ${next.hasValue}, UserMode hasValue: ${currentUserMode.hasValue}');
       
-      if (mounted && !hasNavigated && next.hasValue && currentUserMode.hasValue) {
+      if (mounted && !hasNavigated && next.hasValue && next.value == null) {
         hasNavigated = true;
-        print('✅ Splash: Auth and user mode loaded (via auth listener), navigating to main');
+        AppLogger.log('✅ Splash: Auth loaded with no user (via auth listener), navigating to login');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      } else if (mounted && !hasNavigated && next.hasValue && currentUserMode.hasValue) {
+        hasNavigated = true;
+        AppLogger.log('✅ Splash: Auth and user mode loaded (via auth listener), navigating to main');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
       } else if (mounted && !hasNavigated && next.hasError) {
         hasNavigated = true;
-        print('⚠️ Splash: Auth error detected, navigating anyway');
+        AppLogger.log('⚠️ Splash: Auth error detected, navigating anyway');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
@@ -138,17 +168,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     
     ref.listen(userModeControllerProvider, (previous, next) {
       final currentAuthState = ref.read(authNotifierProvider);
-      print('🔄 Splash: UserMode changed - hasValue: ${next.hasValue}, Auth hasValue: ${currentAuthState.hasValue}');
+      AppLogger.log('🔄 Splash: UserMode changed - hasValue: ${next.hasValue}, Auth hasValue: ${currentAuthState.hasValue}');
       
-      if (mounted && !hasNavigated && next.hasValue && currentAuthState.hasValue) {
+      if (mounted && !hasNavigated && currentAuthState.hasValue && currentAuthState.value == null) {
         hasNavigated = true;
-        print('✅ Splash: Auth and user mode loaded (via userMode listener), navigating to main');
+        AppLogger.log('✅ Splash: Auth loaded with no user (via userMode listener), navigating to login');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      } else if (mounted && !hasNavigated && next.hasValue && currentAuthState.hasValue && currentAuthState.value != null) {
+        hasNavigated = true;
+        AppLogger.log('✅ Splash: Auth and user mode loaded (via userMode listener), navigating to main');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
       } else if (mounted && !hasNavigated && next.hasError) {
         hasNavigated = true;
-        print('⚠️ Splash: UserMode error detected, navigating anyway');
+        AppLogger.log('⚠️ Splash: UserMode error detected, navigating anyway');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
@@ -164,9 +200,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final currentAuthState = ref.read(authNotifierProvider);
       final currentUserMode = ref.read(userModeControllerProvider);
       
-      if (currentAuthState.hasValue && currentUserMode.hasValue) {
+      if (currentAuthState.hasValue && currentAuthState.value == null) {
         hasNavigated = true;
-        print('✅ Splash: Providers ready after polling, navigating to main');
+        AppLogger.log('✅ Splash: Auth loaded with no user (via polling), navigating to login');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        break;
+      }
+      
+      if (currentAuthState.hasValue && currentAuthState.value != null && currentUserMode.hasValue) {
+        hasNavigated = true;
+        AppLogger.log('✅ Splash: Providers ready after polling, navigating to main');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
@@ -175,7 +220,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       
       if (currentAuthState.hasError || currentUserMode.hasError) {
         hasNavigated = true;
-        print('⚠️ Splash: Error detected during polling, navigating anyway');
+        AppLogger.log('⚠️ Splash: Error detected during polling, navigating anyway');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/main');
         }
@@ -185,7 +230,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     
     // Final fallback: navigate after maximum wait time (reduced from 5s to 3s)
     if (mounted && !hasNavigated) {
-      print('⏰ Splash: Timeout waiting for auth/user mode, navigating anyway');
+      AppLogger.log('⏰ Splash: Timeout waiting for auth/user mode, navigating anyway');
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

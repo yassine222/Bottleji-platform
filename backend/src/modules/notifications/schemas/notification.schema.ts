@@ -14,6 +14,22 @@ export enum NotificationType {
   APPLICATION_APPROVED = 'application_approved',
   APPLICATION_REJECTED = 'application_rejected',
   APPLICATION_REVERSED = 'application_reversed',
+  // Drop-related notifications
+  DROP_ACCEPTED = 'drop_accepted',
+  DROP_COLLECTED = 'drop_collected',
+  DROP_COLLECTED_WITH_REWARDS = 'drop_collected_with_rewards',
+  DROP_COLLECTED_WITH_TIER_UPGRADE = 'drop_collected_with_tier_upgrade',
+  DROP_CANCELLED = 'drop_cancelled',
+  DROP_EXPIRED = 'drop_expired',
+  DROP_NEAR_EXPIRING = 'drop_near_expiring',
+  DROP_CENSORED = 'drop_censored',
+  // Support ticket notifications
+  TICKET_MESSAGE = 'ticket_message',
+  // Account notifications
+  ACCOUNT_LOCKED = 'account_locked',
+  ACCOUNT_UNLOCKED = 'account_unlocked',
+  // Other
+  TEST = 'test',
 }
 
 export enum NotificationPriority {

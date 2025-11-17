@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/features/auth/presentation/screens/mode_switch_splash_screen.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
@@ -16,31 +17,31 @@ class ModeSwitchService {
     bool skipSplash = false,
   }) async {
     try {
-      print('🔄 ModeSwitchService: Starting mode switch to: ${newMode.name} (skipSplash: $skipSplash)');
+      AppLogger.log('🔄 ModeSwitchService: Starting mode switch to: ${newMode.name} (skipSplash: $skipSplash)');
 
       if (_isInSplashScreen) {
-        print('🔄 ModeSwitchService: Splash screen already in progress, skipping mode switch');
+        AppLogger.log('🔄 ModeSwitchService: Splash screen already in progress, skipping mode switch');
         return;
       }
 
       // Get current user info for debugging
       final authState = ref.read(authNotifierProvider);
       final user = authState.value;
-      print('🔄 ModeSwitchService: Current user roles: ${user?.roles}');
-      print('🔄 ModeSwitchService: Current user application status: ${user?.collectorApplicationStatus}');
+      AppLogger.log('🔄 ModeSwitchService: Current user roles: ${user?.roles}');
+      AppLogger.log('🔄 ModeSwitchService: Current user application status: ${user?.collectorApplicationStatus}');
 
       // Set the new mode BEFORE showing splash screen
-      print('🔄 ModeSwitchService: Setting new mode: ${newMode.name}');
+      AppLogger.log('🔄 ModeSwitchService: Setting new mode: ${newMode.name}');
       await ref.read(userModeControllerProvider.notifier).setMode(newMode);
-      print('🔄 ModeSwitchService: Mode set successfully');
+      AppLogger.log('🔄 ModeSwitchService: Mode set successfully');
 
       if (skipSplash) {
-        print('🔄 ModeSwitchService: Skipping splash screen, mode switch completed');
+        AppLogger.log('🔄 ModeSwitchService: Skipping splash screen, mode switch completed');
         if (context.mounted) Navigator.of(context).pop(); // Close drawer/dialog if any
         return;
       }
 
-      print('🔄 ModeSwitchService: Showing splash screen...');
+      AppLogger.log('🔄 ModeSwitchService: Showing splash screen...');
       _isInSplashScreen = true;
 
       await Navigator.of(context).push(
@@ -49,7 +50,7 @@ class ModeSwitchService {
             return ModeSwitchSplashScreen(
               targetMode: newMode,
               onTransitionComplete: () async {
-                print('🔄 ModeSwitchService: Splash screen completed');
+                AppLogger.log('🔄 ModeSwitchService: Splash screen completed');
 
                 _isInSplashScreen = false;
 
@@ -62,12 +63,12 @@ class ModeSwitchService {
                     try {
                       ref.invalidate(userModeControllerProvider);
                     } catch (e) {
-                      print('⚠️ ModeSwitchService: Could not invalidate provider (widget disposed): $e');
+                      AppLogger.log('⚠️ ModeSwitchService: Could not invalidate provider (widget disposed): $e');
                     }
                   }
                 }
 
-                print('🔄 ModeSwitchService: Mode switch completed successfully');
+                AppLogger.log('🔄 ModeSwitchService: Mode switch completed successfully');
               },
             );
           },
@@ -78,9 +79,9 @@ class ModeSwitchService {
         ),
       );
 
-      print('🔄 ModeSwitchService: Navigator.push completed');
+      AppLogger.log('🔄 ModeSwitchService: Navigator.push completed');
     } catch (e) {
-      print('❌ ModeSwitchService: Error during mode switch: $e');
+      AppLogger.log('❌ ModeSwitchService: Error during mode switch: $e');
       // Fallback: set mode directly
       await ref.read(userModeControllerProvider.notifier).setMode(newMode);
     }

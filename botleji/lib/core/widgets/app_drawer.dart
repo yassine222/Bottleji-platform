@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/collector/presentation/screens/collector_application_screen.dart';
@@ -94,7 +95,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   }
 
   void _handleLogout(BuildContext context) async {
-    print('Logout button pressed');
+    AppLogger.log('Logout button pressed');
     
     // Show confirmation dialog first
     final shouldLogout = await showDialog<bool>(
@@ -106,14 +107,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         actions: [
           TextButton(
             onPressed: () {
-              print('Logout cancelled');
+              AppLogger.log('Logout cancelled');
               Navigator.pop(dialogContext, false);
             },
             child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
-              print('Logout confirmed');
+              AppLogger.log('Logout confirmed');
               Navigator.pop(dialogContext, true);
             },
             child: const Text('Logout'),
@@ -122,35 +123,35 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
       ),
     );
 
-    print('Dialog result: $shouldLogout');
-    print('Context mounted: ${context.mounted}');
+    AppLogger.log('Dialog result: $shouldLogout');
+    AppLogger.log('Context mounted: ${context.mounted}');
 
     if (shouldLogout == true) {
       try {
-        print('Starting logout process...');
+        AppLogger.log('Starting logout process...');
         
         // Close the drawer
         if (context.mounted) {
           Navigator.pop(context);
-          print('Drawer closed');
+          AppLogger.log('Drawer closed');
         }
         
         // Perform logout
         await ref.read(authNotifierProvider.notifier).logout(ref);
-        print('Logout completed successfully');
+        AppLogger.log('Logout completed successfully');
         
         // Navigate to login screen
         if (context.mounted) {
-          print('Navigating to login screen...');
+          AppLogger.log('Navigating to login screen...');
           Navigator.of(context).pushNamedAndRemoveUntil(
             '/login',
             (route) => false,
           );
-          print('Navigation completed');
+          AppLogger.log('Navigation completed');
         }
       } catch (e, stack) {
-        print('Error during logout: $e');
-        print('Stack trace: $stack');
+        AppLogger.log('Error during logout: $e');
+        AppLogger.log('Stack trace: $stack');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -170,13 +171,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
       
       // Check if user is already in the selected mode
       if (currentMode != null && currentMode == newMode) {
-        print('🔄 AppDrawer: User is already in ${newMode.name} mode, skipping switch');
+        AppLogger.log('🔄 AppDrawer: User is already in ${newMode.name} mode, skipping switch');
         // Just close the drawer
         Navigator.pop(context);
         return;
       }
       
-      print('🔄 AppDrawer: Switching from ${currentMode?.name ?? 'unknown'} to ${newMode.name}');
+      AppLogger.log('🔄 AppDrawer: Switching from ${currentMode?.name ?? 'unknown'} to ${newMode.name}');
       
       // Check if user is trying to switch to collector mode
       if (newMode == UserMode.collector) {
@@ -195,15 +196,15 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         
         // Check application status first, then roles
           final applicationStatus = user.collectorApplicationStatus;
-          print('🔍 AppDrawer: User application status from shared preferences: $applicationStatus');
+          AppLogger.log('🔍 AppDrawer: User application status from shared preferences: $applicationStatus');
           
         // Priority 1: If user has collector role and isCollector is true, allow mode switch (legacy collectors)
         if (user.isCollector && user.roles.contains('collector')) {
-          print('🔄 AppDrawer: Legacy collector - has collector role and isCollector is true, allowing mode switch to collector');
+          AppLogger.log('🔄 AppDrawer: Legacy collector - has collector role and isCollector is true, allowing mode switch to collector');
         }
         // Priority 2: If user has collector role and application is approved, allow mode switch
         else if (user.roles.contains('collector') && applicationStatus == CollectorApplicationStatus.approved) {
-          print('🔄 AppDrawer: User has collector role and approved application, allowing mode switch to collector');
+          AppLogger.log('🔄 AppDrawer: User has collector role and approved application, allowing mode switch to collector');
         } else {
           // User needs to apply or has pending/rejected application
           String dialogMessage;
@@ -290,7 +291,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         }
         
         // User has collector role - allow mode switch
-        print('🔄 AppDrawer: User has collector role, allowing mode switch to collector');
+        AppLogger.log('🔄 AppDrawer: User has collector role, allowing mode switch to collector');
       }
       
       // Close the drawer first
@@ -299,7 +300,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
       // Use the new mode switch service with splash screen
       await ModeSwitchService.switchMode(context, ref, newMode);
       
-      print('🔄 AppDrawer: User mode switched to: ${newMode.name} with splash screen');
+      AppLogger.log('🔄 AppDrawer: User mode switched to: ${newMode.name} with splash screen');
 
     } catch (e) {
       // Silently handle mode switching errors

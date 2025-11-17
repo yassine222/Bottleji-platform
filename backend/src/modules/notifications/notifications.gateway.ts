@@ -8,11 +8,13 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from './notifications.service';
+import { NotificationType, NotificationPriority } from './schemas/notification.schema';
 
 export interface NotificationPayload {
   type: string;
@@ -39,6 +41,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   constructor(
     private jwtService: JwtService,
     private usersService: UsersService,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -184,10 +188,86 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   // Send notification to specific user
-  sendNotificationToUser(userId: string, notification: NotificationPayload) {
+  async sendNotificationToUser(userId: string, notification: NotificationPayload) {
+    console.log(`📤 ===== SENDING NOTIFICATION =====`);
+    console.log(`📤 User ID: ${userId}`);
+    console.log(`📤 Notification type: ${notification.type}`);
+    console.log(`📤 Notification title: ${notification.title}`);
+    console.log(`📤 Connected users: ${Array.from(this.connectedUsers.keys()).join(', ')}`);
+    
+    // Send via WebSocket if user is connected
     const userSocket = this.connectedUsers.get(userId);
     if (userSocket) {
+      console.log(`✅ User ${userId} is connected, sending via WebSocket`);
       userSocket.emit('notification', notification);
+      console.log(`✅ WebSocket notification sent to user ${userId}`);
+    } else {
+      console.log(`⚠️ User ${userId} is NOT connected to WebSocket, notification will only be saved to database`);
+    }
+
+    // Save notification to database
+    try {
+      // Map notification type to database enum
+      const dbType = this.mapNotificationTypeToEnum(notification.type);
+      if (dbType) {
+        await this.notificationsService.create({
+          userId,
+          type: dbType,
+          title: notification.title,
+          message: notification.message,
+          priority: this.getPriorityForType(notification.type),
+          data: notification.data || {},
+        });
+        console.log(`💾 Notification saved to database: ${notification.type} for user ${userId}`);
+      } else {
+        console.warn(`⚠️ Notification type ${notification.type} not mapped to database enum, skipping save`);
+      }
+    } catch (error) {
+      console.error(`❌ Error saving notification to database: ${error}`);
+      // Don't fail the WebSocket send if database save fails
+    }
+    console.log(`📤 =================================`);
+  }
+
+  // Map notification type string to NotificationType enum
+  private mapNotificationTypeToEnum(type: string): NotificationType | null {
+    const typeMap: { [key: string]: NotificationType } = {
+      'drop_accepted': NotificationType.DROP_ACCEPTED,
+      'drop_collected': NotificationType.DROP_COLLECTED,
+      'drop_collected_with_rewards': NotificationType.DROP_COLLECTED_WITH_REWARDS,
+      'drop_collected_with_tier_upgrade': NotificationType.DROP_COLLECTED_WITH_TIER_UPGRADE,
+      'drop_cancelled': NotificationType.DROP_CANCELLED,
+      'drop_expired': NotificationType.DROP_EXPIRED,
+      'drop_near_expiring': NotificationType.DROP_NEAR_EXPIRING,
+      'drop_censored': NotificationType.DROP_CENSORED,
+      'ticket_message': NotificationType.TICKET_MESSAGE,
+      'account_locked': NotificationType.ACCOUNT_LOCKED,
+      'account_unlocked': NotificationType.ACCOUNT_UNLOCKED,
+      'application_approved': NotificationType.APPLICATION_APPROVED,
+      'application_rejected': NotificationType.APPLICATION_REJECTED,
+      'application_reversed': NotificationType.APPLICATION_REVERSED,
+      'test': NotificationType.TEST,
+    };
+    return typeMap[type] || null;
+  }
+
+  // Get priority for notification type
+  private getPriorityForType(type: string): NotificationPriority {
+    const highPriorityTypes = [
+      'account_locked',
+      'drop_censored',
+      'application_rejected',
+    ];
+    const urgentPriorityTypes = [
+      'account_locked',
+    ];
+    
+    if (urgentPriorityTypes.includes(type)) {
+      return NotificationPriority.URGENT;
+    } else if (highPriorityTypes.includes(type)) {
+      return NotificationPriority.HIGH;
+    } else {
+      return NotificationPriority.MEDIUM;
     }
   }
 
@@ -317,7 +397,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   private async verifyToken(token: string): Promise<string | null> {
     try {
       const decoded = this.jwtService.verify(token);
-      const userId = decoded.sub;
+      const userId = decoded.sub?.toString() || decoded.sub; // Ensure it's a string
       const user = await this.usersService.findOne(userId);
 
       if (!user) {
@@ -325,7 +405,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         return null;
       }
 
-      return userId;
+      // Ensure we return a string
+      return userId?.toString() || null;
     } catch (error) {
       console.error('Error verifying WebSocket token:', error);
       return null;
