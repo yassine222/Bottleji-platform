@@ -1,6 +1,10 @@
 // Modern SupportContent component to replace the old one in dashboard/page.tsx
 // This goes from line 2718 to line 4688
 
+'use client';
+
+import { useState } from 'react';
+
 function SupportContent() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [stats, setStats] = useState<any | null>(null);
