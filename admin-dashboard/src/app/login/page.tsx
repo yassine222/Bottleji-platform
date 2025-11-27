@@ -95,14 +95,10 @@ export default function LoginPage() {
           {/* Logo and Header */}
           <div className="text-center">
             <div className="mx-auto w-48 h-48 mb-6">
-              <Image
+              <img
                 src="/logo_v2.png"
                 alt="Bottleji Logo"
-                width={200}
-                height={200}
                 className="w-full h-full object-contain"
-                priority
-                unoptimized
               />
             </div>
             <h1 className="text-3xl font-bold text-[#00695C] mb-2">
