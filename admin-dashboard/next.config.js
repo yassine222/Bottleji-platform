@@ -9,27 +9,9 @@ const nextConfig = {
       },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
-          },
-        ],
-      },
-    ];
-  },
+  // Remove CORS headers - Next.js doesn't need them for same-origin requests
+  // CORS should be handled by the backend API, not the frontend
+  // If you need CORS for API routes, configure it in the backend
 };
 
 module.exports = nextConfig;

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from './logger';
 
 // API Configuration - Use environment variable or default to production
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com/api';
@@ -18,11 +19,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('🚀 API Request:', config.method?.toUpperCase(), config.url, config.data || config.params);
+    logger.log('🚀 API Request:', config.method?.toUpperCase(), config.url, config.data || config.params);
     return config;
   },
   (error) => {
-    console.error('❌ API Request Error:', error);
+    logger.error('❌ API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -30,31 +31,33 @@ api.interceptors.request.use(
 // Response interceptor for logging and error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.status, response.config.url, response.data);
+    logger.log('✅ API Response:', response.status, response.config.url);
     return response;
   },
   (error) => {
-    // Enhanced error logging
+    // Enhanced error logging - only log non-auth errors to avoid spam
     if (error.code === 'ECONNABORTED') {
-      console.error('❌ API Timeout Error: Request timed out after', error.config?.timeout, 'ms');
+      logger.error('❌ API Timeout Error: Request timed out after', error.config?.timeout, 'ms');
     } else if (error.code === 'ERR_NETWORK') {
-      console.error('❌ API Network Error: Unable to connect to server');
+      logger.error('❌ API Network Error: Unable to connect to server');
     } else if (error.response?.status !== 403 && error.response?.status !== 401) {
-      console.error('❌ API Response Error:', error.response?.status, error.response?.data);
+      logger.error('❌ API Response Error:', error.response?.status, error.response?.data);
     }
     
-    // Log the full error for debugging
-    console.error('❌ Full Error Details:', {
-      message: error.message || 'Unknown error',
-      code: error.code || 'No error code',
-      status: error.response?.status || 'No status',
-      data: error.response?.data || 'No response data',
-      config: {
-        url: error.config?.url || 'No URL',
-        method: error.config?.method || 'No method',
-        timeout: error.config?.timeout || 'No timeout',
-      }
-    });
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('❌ Full Error Details:', {
+        message: error.message || 'Unknown error',
+        code: error.code || 'No error code',
+        status: error.response?.status || 'No status',
+        data: error.response?.data || 'No response data',
+        config: {
+          url: error.config?.url || 'No URL',
+          method: error.config?.method || 'No method',
+          timeout: error.config?.timeout || 'No timeout',
+        }
+      });
+    }
     
     return Promise.reject(error);
   }

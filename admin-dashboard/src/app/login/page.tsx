@@ -19,26 +19,20 @@ export default function LoginPage() {
     setError('');
 
     try {
-      console.log('🔍 Attempting login with:', { email, password: '***' });
-      console.log('🔍 API Base URL:', 'http://localhost:3000/api');
-      console.log('🔍 Full URL:', 'http://localhost:3000/api/auth/admin/login');
-      
-      // Test connectivity first
-      console.log('🔍 Testing connectivity...');
-      try {
-        // NEW: Using centralized API endpoint
-        const profileUrl = buildApiUrl(API_ENDPOINTS.AUTH.PROFILE);
-        const testResponse = await fetch(profileUrl, {
-        // OLD: Hardcoded URL (commented for fallback)
-        // const testResponse = await fetch('http://localhost:3000/api/auth/profile', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log('🔍 Connectivity test response:', testResponse.status, testResponse.statusText);
-      } catch (connectError) {
-        console.error('❌ Connectivity test failed:', connectError);
+      // Test connectivity first (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const profileUrl = buildApiUrl(API_ENDPOINTS.AUTH.PROFILE);
+          const testResponse = await fetch(profileUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('🔍 Connectivity test response:', testResponse.status, testResponse.statusText);
+        } catch (connectError) {
+          console.error('❌ Connectivity test failed:', connectError);
+        }
       }
       
       const response = await authAPI.login(email, password);
