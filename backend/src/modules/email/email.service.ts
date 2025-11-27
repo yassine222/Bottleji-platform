@@ -41,9 +41,11 @@ export class EmailService implements OnModuleInit {
       }
 
       // Check if using SendGrid (EMAIL_USER = 'apikey' or SMTP_PROVIDER = 'sendgrid')
+      // Also use SendGrid in production if Gmail fails (Render blocks Gmail SMTP)
       const isSendGrid = emailUser === 'apikey' || 
                         process.env.SMTP_PROVIDER === 'sendgrid' ||
-                        process.env.EMAIL_PROVIDER === 'sendgrid';
+                        process.env.EMAIL_PROVIDER === 'sendgrid' ||
+                        (process.env.NODE_ENV === 'production' && process.env.USE_SENDGRID === 'true');
       
       // Try multiple SMTP configurations for better compatibility
       const smtpConfigs = isSendGrid ? [
