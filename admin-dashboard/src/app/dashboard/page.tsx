@@ -8513,8 +8513,16 @@ function RewardShopContent() {
   const handleCreateReward = async () => {
     let usedMockData = false;
     
+    // Clear any previous errors
+    setError(null);
+    
     try {
       const token = sessionStorage.getItem('admin_token');
+      if (!token) {
+        setError('Authentication required. Please log in again.');
+        return;
+      }
+      
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8534,11 +8542,32 @@ function RewardShopContent() {
         if (editingReward) {
           // Update existing reward
           await axios.patch(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward._id || editingReward.id)), newReward, config);
+          console.log('✅ Reward updated via API');
         } else {
           // Create new reward
           await axios.post(buildApiUrl(API_ENDPOINTS.REWARDS.CREATE), newReward, config);
+          console.log('✅ Reward created via API');
         }
-        console.log('✅ Reward saved via API');
+        
+        // Success - refresh rewards list and close modal
+        await fetchRewards();
+        setShowCreateModal(false);
+        setEditingReward(null);
+        setNewReward({
+          name: '',
+          description: '',
+          category: 'collector',
+          subCategory: 'Tools',
+          pointCost: 0,
+          stock: 0,
+          imageUrl: '',
+          isActive: true,
+          isFootwear: false,
+          isJacket: false,
+          isBottoms: false
+        });
+        setError(null);
+        return;
       } catch (apiError: any) {
         console.error('❌ API Error:', apiError);
         console.error('❌ Error response:', apiError.response?.data);
@@ -8547,8 +8576,14 @@ function RewardShopContent() {
         
         if (apiError.response?.status === 400) {
           console.error('❌ Validation Error Details:', apiError.response?.data);
-          setError(`Validation Error: ${apiError.response?.data?.message || 'Invalid data provided'}`);
-          return;
+          const errorMessage = apiError.response?.data?.message || 'Invalid data provided. Please check all fields.';
+          setError(`Validation Error: ${errorMessage}`);
+          return; // Don't close modal, show error
+        }
+        
+        if (apiError.response?.status === 401 || apiError.response?.status === 403) {
+          setError('Authentication failed. Please log in again.');
+          return; // Don't close modal, show error
         }
         
         if (apiError.response?.status === 404) {
@@ -8572,52 +8607,36 @@ function RewardShopContent() {
             // Add new reward to local state
             setRewards(prev => [...prev, newRewardWithId]);
           }
-        } else {
-          // Handle other errors (401, 403, 500, etc.)
-          console.error('❌ Other API Error:', apiError.response?.status, apiError.response?.data);
-          setError(`API Error (${apiError.response?.status}): ${apiError.response?.data?.message || apiError.message}`);
+          
+          // Close modal after mock update
+          setShowCreateModal(false);
+          setEditingReward(null);
+          setNewReward({
+            name: '',
+            description: '',
+            category: 'collector',
+            subCategory: 'Tools',
+            pointCost: 0,
+            stock: 0,
+            imageUrl: '',
+            isActive: true,
+            isFootwear: false,
+            isJacket: false,
+            isBottoms: false
+          });
           return;
+        } else {
+          // Handle other errors (500, network errors, etc.)
+          console.error('❌ Other API Error:', apiError.response?.status, apiError.response?.data);
+          const errorMessage = apiError.response?.data?.message || apiError.message || 'An unexpected error occurred';
+          setError(`Error (${apiError.response?.status || 'Network'}): ${errorMessage}`);
+          return; // Don't close modal, show error
         }
       }
-
-      setShowCreateModal(false);
-      setEditingReward(null);
-      setNewReward({
-        name: '',
-        description: '',
-        category: 'collector',
-        subCategory: 'Tools',
-        pointCost: 0,
-        stock: 0,
-        imageUrl: '',
-        isActive: true,
-        isFootwear: false,
-        isJacket: false,
-        isBottoms: false
-      });
-      
-      // Only fetch from API if we didn't use mock data
-      if (!usedMockData) {
-        fetchRewards();
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating/updating reward:', error);
-      // Still close modal and reset form on error
-      setShowCreateModal(false);
-      setEditingReward(null);
-      setNewReward({
-        name: '',
-        description: '',
-        category: 'collector',
-        subCategory: 'Tools',
-        pointCost: 0,
-        stock: 0,
-        imageUrl: '',
-        isActive: true,
-        isFootwear: false,
-        isJacket: false,
-        isBottoms: false
-      });
+      setError(`Unexpected error: ${error.message || 'Please try again'}`);
+      // Don't close modal on unexpected errors
     }
   };
 
@@ -8893,6 +8912,7 @@ function RewardShopContent() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setEditingReward(null);
+                    setError(null);
                     setNewReward({
                       name: '',
                       description: '',
@@ -8914,6 +8934,22 @@ function RewardShopContent() {
                   </svg>
                 </button>
               </div>
+
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Error</h3>
+                      <div className="mt-1 text-sm text-red-700">{error}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -9063,6 +9099,7 @@ function RewardShopContent() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setEditingReward(null);
+                    setError(null);
                     setNewReward({
                       name: '',
                       description: '',
