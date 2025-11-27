@@ -40,8 +40,40 @@ export class EmailService implements OnModuleInit {
         return;
       }
 
+      // Check if using SendGrid (EMAIL_USER = 'apikey' or SMTP_PROVIDER = 'sendgrid')
+      const isSendGrid = emailUser === 'apikey' || 
+                        process.env.SMTP_PROVIDER === 'sendgrid' ||
+                        process.env.EMAIL_PROVIDER === 'sendgrid';
+      
       // Try multiple SMTP configurations for better compatibility
-      const smtpConfigs = [
+      const smtpConfigs = isSendGrid ? [
+        // SendGrid configuration
+        {
+          host: 'smtp.sendgrid.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'apikey',
+            pass: emailPass, // SendGrid API key
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
+        },
+        {
+          host: 'smtp.sendgrid.net',
+          port: 465,
+          secure: true,
+          auth: {
+            user: 'apikey',
+            pass: emailPass,
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
+        },
+      ] : [
+        // Gmail configurations
         {
           host: 'smtp.gmail.com',
           port: 465,
