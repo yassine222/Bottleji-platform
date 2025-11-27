@@ -28,38 +28,45 @@ async function bootstrap() {
     let allowedOrigins: string[] | boolean;
     
     if (process.env.NODE_ENV === 'production') {
-      // In production, use ALLOWED_ORIGINS or default to empty array
-      const origins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || [];
-      allowedOrigins = origins.length > 0 ? origins : [];
-    } else {
-      // In development, allow all origins for easier local testing
-      allowedOrigins = true;
-    }
-    
-    // For testing: If ALLOWED_ORIGINS includes localhost patterns, allow them even in production
-    // This helps when testing production API from local development
-    if (process.env.ALLOWED_ORIGINS) {
-      const origins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
-      // If any localhost or local IP patterns are found, add common localhost variants
-      const hasLocalhost = origins.some(o => 
-        o.includes('localhost') || 
-        o.includes('127.0.0.1') || 
-        o.match(/^http:\/\/172\.\d+\.\d+\.\d+/) ||
-        o.match(/^http:\/\/192\.168\.\d+\.\d+/)
-      );
-      
-      if (hasLocalhost) {
-        // Add common localhost variants for easier testing
-        const localhostVariants = [
+      // In production, use ALLOWED_ORIGINS
+      if (process.env.ALLOWED_ORIGINS) {
+        const origins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+        
+        // If any localhost or local IP patterns are found, add common localhost variants
+        const hasLocalhost = origins.some(o => 
+          o.includes('localhost') || 
+          o.includes('127.0.0.1') || 
+          o.match(/^http:\/\/172\.\d+\.\d+\.\d+/) ||
+          o.match(/^http:\/\/192\.168\.\d+\.\d+/)
+        );
+        
+        if (hasLocalhost) {
+          // Add common localhost variants for easier testing
+          const localhostVariants = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+          ];
+          allowedOrigins = [...new Set([...origins, ...localhostVariants])];
+        } else {
+          allowedOrigins = origins;
+        }
+      } else {
+        // TEMPORARY: Allow localhost for testing when ALLOWED_ORIGINS is not set
+        // TODO: Remove this fallback and require ALLOWED_ORIGINS to be set in production
+        logger.warn('⚠️ ALLOWED_ORIGINS not set in production - allowing localhost for testing');
+        logger.warn('⚠️ Set ALLOWED_ORIGINS environment variable for production security');
+        allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
           'http://127.0.0.1:3001',
         ];
-        allowedOrigins = [...new Set([...origins, ...localhostVariants])];
-      } else {
-        allowedOrigins = origins;
       }
+    } else {
+      // In development, allow all origins for easier local testing
+      allowedOrigins = true;
     }
     
     app.enableCors({
