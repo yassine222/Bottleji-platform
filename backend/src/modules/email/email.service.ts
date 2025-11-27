@@ -1,23 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private transporter: nodemailer.Transporter;
   private isEmailServiceEnabled: boolean = false;
+  private readonly logger = new Logger(EmailService.name);
 
-  constructor(private configService: ConfigService) {
-    this.initializeEmailService();
+  constructor(private configService: ConfigService) {}
+
+  async onModuleInit() {
+    await this.initializeEmailService();
   }
 
   private async initializeEmailService() {
     try {
-      const emailUser = this.configService.get<string>('EMAIL_USER');
-      const emailPass = this.configService.get<string>('EMAIL_PASS');
+      // Try ConfigService first, then fallback to process.env
+      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
+      const emailPass = this.configService.get<string>('EMAIL_PASS') || process.env.EMAIL_PASS;
+
+      // Debug logging
+      this.logger.log(`🔍 Checking email configuration...`);
+      this.logger.log(`   EMAIL_USER: ${emailUser ? '✅ Set' : '❌ Missing'}`);
+      this.logger.log(`   EMAIL_PASS: ${emailPass ? '✅ Set' : '❌ Missing'}`);
 
       if (!emailUser || !emailPass) {
-        console.log('⚠️ Email service disabled: Missing EMAIL_USER or EMAIL_PASS environment variables');
+        this.logger.warn('⚠️ Email service disabled: Missing EMAIL_USER or EMAIL_PASS environment variables');
+        this.logger.warn('   Please add EMAIL_USER and EMAIL_PASS to your environment variables');
         return;
       }
 
@@ -37,24 +47,29 @@ export class EmailService {
       // Test the connection
       await this.transporter.verify();
       this.isEmailServiceEnabled = true;
-      console.log('✅ Email service initialized successfully');
+      this.logger.log('✅ Email service initialized successfully');
+      this.logger.log(`   Sending emails from: ${emailUser}`);
       
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
-      console.log('📧 Email service will be disabled. OTP codes will be logged to console instead.');
+      this.logger.error('❌ Email service initialization failed:', error.message);
+      this.logger.warn('📧 Email service will be disabled. OTP codes will be logged to console instead.');
+      if (error.stack) {
+        this.logger.debug(error.stack);
+      }
       this.isEmailServiceEnabled = false;
     }
   }
 
   async sendOTPEmail(to: string, otp: string): Promise<void> {
     if (!this.isEmailServiceEnabled) {
-      console.log('📧 Email service disabled - OTP would be sent to:', to, 'Code:', otp);
+      this.logger.warn(`📧 Email service disabled - OTP would be sent to: ${to}, Code: ${otp}`);
       return;
     }
 
     try {
+      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
       await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+        from: emailUser,
         to: to,
         subject: 'Bottleji - Email Verification Code',
         html: `
@@ -67,22 +82,23 @@ export class EmailService {
           </div>
         `
       });
-      console.log('✅ OTP email sent successfully to:', to);
+      this.logger.log(`✅ OTP email sent successfully to: ${to}`);
     } catch (error) {
-      console.error('❌ Failed to send OTP email:', error.message);
-      console.log('📧 OTP code for manual verification:', otp);
+      this.logger.error(`❌ Failed to send OTP email to ${to}:`, error.message);
+      this.logger.warn(`📧 OTP code for manual verification: ${otp}`);
     }
   }
 
   async sendPasswordResetEmail(to: string, otp: string): Promise<void> {
     if (!this.isEmailServiceEnabled) {
-      console.log('📧 Email service disabled - Password reset would be sent to:', to, 'Code:', otp);
+      this.logger.warn(`📧 Email service disabled - Password reset would be sent to: ${to}, Code: ${otp}`);
       return;
     }
 
     try {
+      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
       await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+        from: emailUser,
         to: to,
         subject: 'Bottleji - Password Reset Code',
         html: `
@@ -95,22 +111,23 @@ export class EmailService {
           </div>
         `
       });
-      console.log('✅ Password reset email sent successfully to:', to);
+      this.logger.log(`✅ Password reset email sent successfully to: ${to}`);
     } catch (error) {
-      console.error('❌ Failed to send password reset email:', error.message);
-      console.log('📧 Password reset code for manual verification:', otp);
+      this.logger.error(`❌ Failed to send password reset email to ${to}:`, error.message);
+      this.logger.warn(`📧 Password reset code for manual verification: ${otp}`);
     }
   }
 
   async sendPhoneVerificationEmail(to: string, phoneNumber: string, verificationCode: string): Promise<void> {
     if (!this.isEmailServiceEnabled) {
-      console.log('📧 Email service disabled - Phone verification would be sent to:', to, 'Phone:', phoneNumber, 'Code:', verificationCode);
+      this.logger.warn(`📧 Email service disabled - Phone verification would be sent to: ${to}, Phone: ${phoneNumber}, Code: ${verificationCode}`);
       return;
     }
 
     try {
+      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
       await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+        from: emailUser,
         to: to,
         subject: 'Bottleji - Phone Verification Code',
         html: `
@@ -123,22 +140,23 @@ export class EmailService {
           </div>
         `
       });
-      console.log('✅ Phone verification email sent successfully to:', to);
+      this.logger.log(`✅ Phone verification email sent successfully to: ${to}`);
     } catch (error) {
-      console.error('❌ Failed to send phone verification email:', error.message);
-      console.log('📧 Phone verification code for manual verification:', verificationCode);
+      this.logger.error(`❌ Failed to send phone verification email to ${to}:`, error.message);
+      this.logger.warn(`📧 Phone verification code for manual verification: ${verificationCode}`);
     }
   }
 
   async sendAdminInvitation(to: string, name: string, role: string, tempPassword: string): Promise<void> {
     if (!this.isEmailServiceEnabled) {
-      console.log('📧 Email service disabled - Admin invitation would be sent to:', to, 'Name:', name, 'Role:', role, 'Temp Password:', tempPassword);
+      this.logger.warn(`📧 Email service disabled - Admin invitation would be sent to: ${to}, Name: ${name}, Role: ${role}`);
       return;
     }
 
     try {
+      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
       await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+        from: emailUser,
         to: to,
         subject: 'Bottleji - Admin Account Invitation',
         html: `
@@ -156,10 +174,10 @@ export class EmailService {
           </div>
         `
       });
-      console.log('✅ Admin invitation email sent successfully to:', to);
+      this.logger.log(`✅ Admin invitation email sent successfully to: ${to}`);
     } catch (error) {
-      console.error('❌ Failed to send admin invitation email:', error.message);
-      console.log('📧 Admin invitation details for manual verification:', { to, name, role, tempPassword });
+      this.logger.error(`❌ Failed to send admin invitation email to ${to}:`, error.message);
+      this.logger.warn(`📧 Admin invitation details - Email: ${to}, Name: ${name}, Role: ${role}`);
     }
   }
 } 
