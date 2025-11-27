@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import AuthGuard from '@/components/auth/AuthGuard';
@@ -9,10 +10,20 @@ export default function TrainingLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'dashboard') {
+      router.push('/dashboard');
+    } else {
+      router.push(`/${tabId}`);
+    }
+  };
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        <Sidebar activeTab="training" onTabChange={() => {}} />
+        <Sidebar activeTab="training" onTabChange={handleTabChange} />
         <div className="pl-56">
           <Header />
           <main className="pt-24 pb-8">
