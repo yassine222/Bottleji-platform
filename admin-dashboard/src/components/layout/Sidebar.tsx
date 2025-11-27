@@ -46,7 +46,8 @@ export default function Sidebar({ activeTab, onTabChange, userRoles = [] }: Side
             alt="Bottleji Logo" 
             width={40} 
             height={40} 
-            className="mr-2 flex-shrink-0"
+            className="mr-2 flex-shrink-0 object-contain"
+            style={{ maxWidth: '40px', maxHeight: '40px' }}
           />
           <h1 className="text-lg font-bold text-white whitespace-nowrap">Bottleji Admin</h1>
         </div>

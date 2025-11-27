@@ -61,11 +61,14 @@ export default function ChangePasswordPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto w-48 h-48 mb-6">
+          <div className="mx-auto w-48 h-48 mb-6 flex items-center justify-center">
             <img
               src="/logo_v2.png"
               alt="Bottleji Logo"
+              width={192}
+              height={192}
               className="w-full h-full object-contain"
+              style={{ maxWidth: '100%', height: 'auto' }}
             />
           </div>
           <h1 className="text-3xl font-bold text-[#00695C] mb-2">
