@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -19,22 +18,6 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Test connectivity first (only in development)
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          const profileUrl = buildApiUrl(API_ENDPOINTS.AUTH.PROFILE);
-          const testResponse = await fetch(profileUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          console.log('🔍 Connectivity test response:', testResponse.status, testResponse.statusText);
-        } catch (connectError) {
-          console.error('❌ Connectivity test failed:', connectError);
-        }
-      }
-      
       const response = await authAPI.login(email, password);
       
       console.log('✅ Login successful:', response.data);
