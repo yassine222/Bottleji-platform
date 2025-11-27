@@ -1,3 +1,5 @@
+'use client';
+
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import AuthGuard from '@/components/auth/AuthGuard';
