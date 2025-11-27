@@ -39,6 +39,34 @@ async function bootstrap() {
     // Set global prefix
     app.setGlobalPrefix('api');
 
+    // Add root route handler after global prefix is set
+    // This handles requests to / (without /api prefix)
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.get('/', (req, res) => {
+      res.status(200).json({
+        message: 'Bottleji API Server',
+        version: '1.0.0',
+        status: 'running',
+        environment: process.env.NODE_ENV || 'development',
+        api: {
+          baseUrl: '/api',
+          endpoints: {
+            health: '/api',
+            auth: '/api/auth',
+            dropoffs: '/api/dropoffs',
+            notifications: '/api/notifications',
+            rewards: '/api/rewards',
+            admin: '/api/admin',
+            collectorApplications: '/api/collector-applications',
+            supportTickets: '/api/support-tickets',
+            training: '/api/training',
+            earnings: '/api/earnings',
+          },
+        },
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     // Enable validation with better error handling
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
