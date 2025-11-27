@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
+import { useActivityTimeout } from '@/hooks/useActivityTimeout';
+import InactivityWarning from './InactivityWarning';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -12,6 +14,17 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+
+  // Activity timeout: 30 minutes inactivity, 2 minutes warning
+  const { showWarning, timeRemaining, extendSession, handleLogout } = useActivityTimeout({
+    timeoutMinutes: 30,
+    warningMinutes: 2,
+    onLogout: () => {
+      sessionStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_token');
+      router.push('/login');
+    },
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -84,5 +97,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     return null; // Will redirect to login
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <InactivityWarning
+        isOpen={showWarning}
+        timeRemaining={timeRemaining}
+        onExtend={extendSession}
+        onLogout={handleLogout}
+      />
+    </>
+  );
 } 
