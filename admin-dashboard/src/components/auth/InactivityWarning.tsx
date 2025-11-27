@@ -63,7 +63,7 @@ export default function InactivityWarning({
 
                 <div className="mt-4">
                   <p className="text-sm text-gray-500 mb-4">
-                    You've been inactive for a while. For security reasons, you'll be
+                    You&apos;ve been inactive for a while. For security reasons, you&apos;ll be
                     automatically logged out in:
                   </p>
                   
@@ -77,7 +77,7 @@ export default function InactivityWarning({
                   </div>
 
                   <p className="text-sm text-gray-600 mb-6 text-center">
-                    Click "Stay Logged In" to continue your session.
+                    Click &quot;Stay Logged In&quot; to continue your session.
                   </p>
                 </div>
 

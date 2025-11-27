@@ -12,7 +12,6 @@ import {
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
   UserGroupIcon,
   TicketIcon,
   ClockIcon,
@@ -25,7 +24,7 @@ import {
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
 import { supportTicketsAPI, trainingAPI } from '@/lib/api';
-import { API_ENDPOINTS, buildApiUrl, getEndpoint } from '@/lib/apiEndpoints';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 import RewardImageUpload from '@/components/rewards/RewardImageUpload';
 import { CollectorApplication } from '@/types';
 import { UserRole } from '@/types';
@@ -35,10 +34,8 @@ import {
   Co2SavingsChart,
 } from '@/components/dashboard/DashboardCharts';
 import FileUpload from '@/components/training/FileUpload';
-import VideoPlayer from '@/components/training/VideoPlayer';
 import VideoModal from '@/components/training/VideoModal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com/api';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {

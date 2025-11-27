@@ -1,0 +1,29 @@
+SENDGRID SETUP - NEXT STEPS
+===========================
+
+1. VERIFY EMAIL:
+   - Check your email inbox
+   - Click verification link from SendGrid
+   - ✅ Sender verified!
+
+2. GET API KEY:
+   - SendGrid Dashboard → Settings → API Keys
+   - Create API Key → Name: "Bottleji Backend"
+   - Permissions: Full Access
+   - COPY THE KEY (you'll only see it once!)
+
+3. ADD TO RENDER:
+   - Render Dashboard → bottleji-api → Environment
+   - Add:
+     EMAIL_USER=apikey
+     EMAIL_PASS=your-sendgrid-api-key
+     SENDGRID_FROM_EMAIL=your-verified-email@gmail.com
+     USE_SENDGRID=true
+   - Save (auto-redeploys)
+
+4. VERIFY:
+   - Wait 2-5 minutes for deployment
+   - Check Render logs for "✅ Email service initialized"
+   - Test by signing up a user
+
+Done! 🎉

@@ -3,50 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  MapPin, 
-  Clock, 
-  Package, 
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Trophy,
-  Users,
-  Calendar,
-  Filter,
-  Search,
-  Download,
-  Eye,
-  EyeOff,
-  BarChart3,
-  ClipboardList,
-  GraduationCap,
-  MessageCircle,
-  Settings,
-  Flag,
-  Shield,
-  Ban
-} from 'lucide-react';
-import { API_ENDPOINTS, buildApiUrl, getEndpoint } from '@/lib/apiEndpoints';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com/api';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 
 interface DropsStats {
   totalDrops: number;

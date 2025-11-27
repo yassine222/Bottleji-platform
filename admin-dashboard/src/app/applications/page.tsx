@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { applicationsAPI } from '@/lib/api';
 import { CollectorApplication } from '@/types';
+import { formatDateTime } from '@/lib/dateUtils';
 
 // Predefined rejection reasons
 const REJECTION_REASONS = [
@@ -54,20 +55,24 @@ export default function ApplicationsPage() {
   const [selectedApplication, setSelectedApplication] = useState<CollectorApplication | null>(null);
   const [selectedRejectionReason, setSelectedRejectionReason] = useState('');
 
+  const loadApplications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await applicationsAPI.getAllApplications(currentPage, 20, selectedStatus);
+      setApplications(response.data.applications || []);
+      setTotalPages(response.data.totalPages || 1);
+    } catch (error) {
+      console.error('Error loading applications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, selectedStatus]);
+
   useEffect(() => {
     loadApplications();
     loadStats();
-  }, [currentPage, selectedStatus]);
+  }, [loadApplications]);
 
-  const loadApplications = async () => {
-    try {
-      setLoading(true);
-      console.log('🔍 Loading applications with:', { currentPage, selectedStatus });
-      const response = await applicationsAPI.getAllApplications(currentPage, 20, selectedStatus);
-      console.log('🔍 API Response:', response);
-      console.log('🔍 Applications:', response.data.applications);
-      console.log('🔍 First application details:', response.data.applications[0]);
-      console.log('🔍 First application status:', response.data.applications[0]?.status);
       setApplications(response.data.applications || []);
       setTotalPages(response.data.pagination?.totalPages || 1);
     } catch (error) {
@@ -136,9 +141,6 @@ export default function ApplicationsPage() {
   };
 
   const openReviewModal = (application: CollectorApplication) => {
-    console.log('🔍 Opening review modal for application:', application);
-    console.log('🔍 Application status:', application.status);
-    console.log('🔍 Application status type:', typeof application.status);
     setSelectedApplication(application);
     setSelectedRejectionReason('');
     setShowReviewModal(true);
@@ -158,8 +160,6 @@ export default function ApplicationsPage() {
     );
   };
 
-  // Import centralized date utilities
-  const { formatDateTime, formatDateOnly, formatRelativeTime } = require('../../lib/dateUtils');
 
   return (
     <div className="space-y-6">
@@ -329,18 +329,6 @@ export default function ApplicationsPage() {
                   : 'Application has already been reviewed.'}
               </p>
               
-              {/* Debug info */}
-              <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-                <p><strong>Debug Info:</strong></p>
-                <p>Status: "{selectedApplication.status}"</p>
-                <p>Status type: {typeof selectedApplication.status}</p>
-                <p>Status length: {selectedApplication.status?.length}</p>
-                <p>Is pending: {selectedApplication.status === 'pending' ? 'true' : 'false'}</p>
-                <p>Is approved: {selectedApplication.status === 'approved' ? 'true' : 'false'}</p>
-                <p>Is rejected: {selectedApplication.status === 'rejected' ? 'true' : 'false'}</p>
-                <p>Status toLowerCase: "{selectedApplication.status?.toLowerCase()}"</p>
-                <p>Status includes 'approve': {selectedApplication.status?.includes('approve') ? 'true' : 'false'}</p>
-              </div>
               
               {selectedApplication.status === 'pending' && (
                 <>
@@ -401,13 +389,6 @@ export default function ApplicationsPage() {
                 </>
               )}
 
-              {/* Test section - always show for debugging */}
-              <div className="mb-4 p-2 bg-yellow-100 rounded text-xs">
-                <p><strong>Condition Test:</strong></p>
-                <p>Status === 'approved': {selectedApplication.status === 'approved' ? 'TRUE' : 'false'}</p>
-                <p>Status toLowerCase === 'approved': {selectedApplication.status?.toLowerCase() === 'approved' ? 'TRUE' : 'false'}</p>
-                <p>Status includes 'approve': {selectedApplication.status?.toLowerCase().includes('approve') ? 'TRUE' : 'false'}</p>
-              </div>
 
               {/* Force show approved section for testing */}
               <div className="mb-4 p-2 bg-red-100 rounded text-xs">

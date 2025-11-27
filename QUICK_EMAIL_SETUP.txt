@@ -1,0 +1,22 @@
+QUICK SETUP: Enable Email Service
+==================================
+
+1. GET GMAIL APP PASSWORD:
+   - Go to: https://myaccount.google.com/apppasswords
+   - Generate app password for "Mail" → "Other (Custom name)" → "Bottleji Backend"
+   - Copy the 16-character password
+
+2. ADD TO RENDER:
+   - Go to: https://dashboard.render.com/
+   - Select your backend service
+   - Go to "Environment" tab
+   - Add:
+     EMAIL_USER=your-email@gmail.com
+     EMAIL_PASS=your-16-char-app-password
+   - Save (auto-redeploys)
+
+3. VERIFY:
+   - Check Render logs for: "✅ Email service initialized successfully"
+   - Test by signing up a new user
+
+That's it! Email service will be functional.

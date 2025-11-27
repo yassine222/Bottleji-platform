@@ -36,7 +36,7 @@ export default function ChangePasswordPage() {
       
       // Password changed successfully, redirect to dashboard
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Password change error:', error);
       
       if (error.response?.status === 401) {

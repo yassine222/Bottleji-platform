@@ -1,0 +1,16 @@
+URGENT: Add Email to Render Dashboard
+=====================================
+
+Your .env file is LOCAL ONLY - it's NOT on Render!
+
+You MUST add these to Render Dashboard:
+
+1. Go to: https://dashboard.render.com/
+2. Click: bottleji-api service
+3. Click: "Environment" tab
+4. Add:
+   EMAIL_USER = your-email@gmail.com
+   EMAIL_PASS = ojwi qbpy kbcs zplx
+5. Save - Render will auto-redeploy
+
+That's it! The .env file doesn't get deployed.
