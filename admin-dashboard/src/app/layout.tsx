@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   title: 'Bottleji Admin',
   description: 'Admin dashboard for Bottleji application',
   icons: {
-    icon: '/logo_v2.png',
+    icon: [
+      { url: '/logo_v2.png', type: 'image/png', sizes: '32x32' },
+      { url: '/logo_v2.png', type: 'image/png', sizes: '16x16' },
+    ],
     shortcut: '/logo_v2.png',
     apple: '/logo_v2.png',
   },
@@ -21,11 +24,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" type="image/png" href="/logo_v2.png" />
-        <link rel="shortcut icon" type="image/png" href="/logo_v2.png" />
-        <link rel="apple-touch-icon" href="/logo_v2.png" />
-      </head>
       <body className={inter.className}>
         {children}
       </body>
