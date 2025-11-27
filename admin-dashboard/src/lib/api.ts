@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+// API Configuration - Use environment variable or default to production
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({

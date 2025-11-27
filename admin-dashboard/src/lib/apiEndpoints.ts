@@ -5,12 +5,10 @@
  * Update the base URL here to switch between environments.
  */
 
-// Base API URL - prefer env var, otherwise derive from window.location when available
+// Base API URL - prefer env var, otherwise use production
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:3000/api`
-    : 'http://localhost:3000/api');
+  'https://bottleji-api.onrender.com/api';
 
 /**
  * API Endpoints organized by category

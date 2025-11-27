@@ -38,7 +38,7 @@ import FileUpload from '@/components/training/FileUpload';
 import VideoPlayer from '@/components/training/VideoPlayer';
 import VideoModal from '@/components/training/VideoModal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com/api';
 
 // Dashboard Content Component
 function DashboardContent({ stats, loading, error }: any) {
@@ -5831,13 +5831,15 @@ function SupportContent() {
 
     const connectWebSocket = () => {
       console.log(`🔌 Admin Dashboard: Attempting WebSocket connection (attempt ${retryCount + 1}/${maxRetries})`);
-      console.log('🔌 Connecting to: http://localhost:3000/chat');
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+      console.log('🔌 Connecting to:', wsUrl);
       console.log('🔌 Token length:', token.length);
 
       // Import Socket.IO client dynamically
       import('socket.io-client').then(({ io }) => {
         console.log('🔌 Socket.IO client loaded, creating connection...');
-        const newSocket = io('http://localhost:3000/chat', {
+        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+        const newSocket = io(wsUrl, {
           auth: { token },
           transports: ['websocket'],
           timeout: 10000,
@@ -6113,7 +6115,8 @@ function SupportContent() {
       if (!activeSocket || !activeSocket.connected) {
         console.log('🔌 Admin Dashboard: Socket not connected, creating new connection...');
         const { io } = await import('socket.io-client');
-        activeSocket = io('http://localhost:3000/chat', {
+        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+        activeSocket = io(wsUrl, {
           auth: { token },
           transports: ['websocket'],
           timeout: 10000,

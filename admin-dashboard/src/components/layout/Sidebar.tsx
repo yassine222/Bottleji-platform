@@ -43,7 +43,7 @@ export default function Sidebar({ activeTab, onTabChange, userRoles = [] }: Side
       <div className="flex h-full flex-col">
         {/* Logo/Brand */}
         <div className="flex h-16 flex-shrink-0 items-center px-4">
-          <img src="/logo.png" alt="Bottleji Logo" className="h-10 w-10 mr-2 flex-shrink-0" />
+          <img src="/logo_v2.png" alt="Bottleji Logo" className="h-10 w-10 mr-2 flex-shrink-0" />
           <h1 className="text-lg font-bold text-white whitespace-nowrap">Bottleji Admin</h1>
         </div>
 
