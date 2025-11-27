@@ -3,7 +3,19 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Package } from 'lucide-react';
+import { 
+  Package, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Trophy, 
+  Users, 
+  Flag, 
+  Ban,
+  TrendingUp,
+  TrendingDown
+} from 'lucide-react';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 
 interface DropsStats {
