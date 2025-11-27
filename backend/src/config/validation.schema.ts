@@ -23,6 +23,9 @@ export const validationSchema = Joi.object({
   // Email Service (Gmail)
   EMAIL_USER: Joi.string().email().optional(),
   EMAIL_PASS: Joi.string().optional(),
+  // Alternative names (for compatibility)
+  MAIL_USER: Joi.string().email().optional(),
+  MAIL_PASS: Joi.string().optional(),
   
   // Google Maps
   GOOGLE_MAPS_API_KEY: Joi.string().optional(),

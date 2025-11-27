@@ -17,17 +17,26 @@ export class EmailService implements OnModuleInit {
   private async initializeEmailService() {
     try {
       // Try ConfigService first, then fallback to process.env
-      const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
-      const emailPass = this.configService.get<string>('EMAIL_PASS') || process.env.EMAIL_PASS;
+      // Support both EMAIL_USER and MAIL_USER for flexibility
+      const emailUser = this.configService.get<string>('EMAIL_USER') 
+        || process.env.EMAIL_USER 
+        || this.configService.get<string>('MAIL_USER')
+        || process.env.MAIL_USER;
+      
+      // Support both EMAIL_PASS and MAIL_PASS for flexibility
+      const emailPass = this.configService.get<string>('EMAIL_PASS') 
+        || process.env.EMAIL_PASS
+        || this.configService.get<string>('MAIL_PASS')
+        || process.env.MAIL_PASS;
 
       // Debug logging
       this.logger.log(`🔍 Checking email configuration...`);
-      this.logger.log(`   EMAIL_USER: ${emailUser ? '✅ Set' : '❌ Missing'}`);
-      this.logger.log(`   EMAIL_PASS: ${emailPass ? '✅ Set' : '❌ Missing'}`);
+      this.logger.log(`   EMAIL_USER/MAIL_USER: ${emailUser ? '✅ Set' : '❌ Missing'}`);
+      this.logger.log(`   EMAIL_PASS/MAIL_PASS: ${emailPass ? '✅ Set' : '❌ Missing'}`);
 
       if (!emailUser || !emailPass) {
-        this.logger.warn('⚠️ Email service disabled: Missing EMAIL_USER or EMAIL_PASS environment variables');
-        this.logger.warn('   Please add EMAIL_USER and EMAIL_PASS to your environment variables');
+        this.logger.warn('⚠️ Email service disabled: Missing email credentials');
+        this.logger.warn('   Please add EMAIL_USER (or MAIL_USER) and EMAIL_PASS (or MAIL_PASS) to your environment variables');
         return;
       }
 
