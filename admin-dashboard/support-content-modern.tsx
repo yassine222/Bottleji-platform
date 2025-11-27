@@ -3,7 +3,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supportTicketsAPI } from '@/lib/api';
 
 function SupportContent() {
   const [tickets, setTickets] = useState<any[]>([]);
