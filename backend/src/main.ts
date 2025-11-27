@@ -67,6 +67,11 @@ async function bootstrap() {
       });
     });
 
+    // Handle favicon requests to prevent 404 errors in logs
+    expressApp.get('/favicon.ico', (req, res) => {
+      res.status(204).end(); // No Content - standard response for favicon
+    });
+
     // Enable validation with better error handling
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
