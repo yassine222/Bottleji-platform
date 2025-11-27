@@ -25,9 +25,42 @@ async function bootstrap() {
     });
     
     // Enable CORS - Environment-specific configuration
-    const allowedOrigins = process.env.NODE_ENV === 'production'
-      ? (process.env.ALLOWED_ORIGINS?.split(',') || [])
-      : true; // Allow all in development
+    let allowedOrigins: string[] | boolean;
+    
+    if (process.env.NODE_ENV === 'production') {
+      // In production, use ALLOWED_ORIGINS or default to empty array
+      const origins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || [];
+      allowedOrigins = origins.length > 0 ? origins : [];
+    } else {
+      // In development, allow all origins for easier local testing
+      allowedOrigins = true;
+    }
+    
+    // For testing: If ALLOWED_ORIGINS includes localhost patterns, allow them even in production
+    // This helps when testing production API from local development
+    if (process.env.ALLOWED_ORIGINS) {
+      const origins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+      // If any localhost or local IP patterns are found, add common localhost variants
+      const hasLocalhost = origins.some(o => 
+        o.includes('localhost') || 
+        o.includes('127.0.0.1') || 
+        o.match(/^http:\/\/172\.\d+\.\d+\.\d+/) ||
+        o.match(/^http:\/\/192\.168\.\d+\.\d+/)
+      );
+      
+      if (hasLocalhost) {
+        // Add common localhost variants for easier testing
+        const localhostVariants = [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:3001',
+        ];
+        allowedOrigins = [...new Set([...origins, ...localhostVariants])];
+      } else {
+        allowedOrigins = origins;
+      }
+    }
     
     app.enableCors({
       origin: allowedOrigins,
@@ -126,6 +159,7 @@ async function bootstrap() {
     
     logger.log(`🚀 Application is running on: http://0.0.0.0:${port}/api`);
     logger.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.log(`🌐 CORS allowed origins: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : 'All origins (development mode)'}`);
   } catch (error) {
     logger.error('❌ Error starting the application', error.stack, 'Bootstrap');
     process.exit(1);
