@@ -93,6 +93,7 @@ Fill in these settings:
 - **Root Directory**: `backend` ← **IMPORTANT! Set this to `backend`**
 - **Runtime**: `Node`
 - **Build Command**: `npm install && npm run build`
+  - **Important**: Render installs all dependencies (including devDependencies) by default for builds
 - **Start Command**: `npm run start:prod`
 
 **⚠️ Important**: 
