@@ -57,12 +57,38 @@ async function bootstrap() {
         // TODO: Remove this fallback and require ALLOWED_ORIGINS to be set in production
         logger.warn('⚠️ ALLOWED_ORIGINS not set in production - allowing localhost for testing');
         logger.warn('⚠️ Set ALLOWED_ORIGINS environment variable for production security');
+        // Allow localhost and Render subdomains for testing
         allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
           'http://127.0.0.1:3001',
         ];
+        
+        // Dynamic CORS handler to allow Render subdomains
+        app.enableCors({
+          origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            // Allow requests with no origin
+            if (!origin) {
+              return callback(null, true);
+            }
+            
+            // Check if origin is in allowed list
+            if (allowedOrigins.includes(origin)) {
+              return callback(null, true);
+            }
+            
+            // Allow Render subdomains (*.onrender.com)
+            if (origin.includes('.onrender.com')) {
+              return callback(null, true);
+            }
+            
+            callback(new Error('Not allowed by CORS'));
+          },
+          methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+          credentials: true,
+          allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+        });
       }
     } else {
       // In development, allow all origins for easier local testing
