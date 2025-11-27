@@ -20,6 +20,8 @@ https://your-admin-dashboard-url.onrender.com,http://localhost:3001,http://local
 **For local development**, include:
 - `http://localhost:3001` (admin dashboard dev server)
 - `http://localhost:3000` (if you have other local services)
+- `http://172.20.10.12:3001` (if accessing from mobile/network device)
+- Any other local network IPs you use (e.g., `http://192.168.x.x:3001`)
 
 **For production**, include:
 - Your deployed admin dashboard URL (e.g., `https://bottleji-admin.onrender.com`)
