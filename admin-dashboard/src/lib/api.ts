@@ -40,6 +40,11 @@ api.interceptors.response.use(
       logger.error('❌ API Timeout Error: Request timed out after', error.config?.timeout, 'ms');
     } else if (error.code === 'ERR_NETWORK') {
       logger.error('❌ API Network Error: Unable to connect to server');
+      logger.error('   This is usually a CORS issue. Check that ALLOWED_ORIGINS includes your origin.');
+      logger.error('   API URL:', API_BASE_URL);
+      if (typeof window !== 'undefined') {
+        logger.error('   Current origin:', window.location.origin);
+      }
     } else if (error.response?.status !== 403 && error.response?.status !== 401) {
       logger.error('❌ API Response Error:', error.response?.status, error.response?.data);
     }
