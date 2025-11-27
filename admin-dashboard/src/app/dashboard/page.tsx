@@ -24,7 +24,7 @@ import {
 import { usersAPI } from '@/lib/api';
 import { applicationsAPI } from '@/lib/api';
 import { supportTicketsAPI, trainingAPI } from '@/lib/api';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
+import { API_ENDPOINTS, buildApiUrl, getEndpoint } from '@/lib/apiEndpoints';
 import RewardImageUpload from '@/components/rewards/RewardImageUpload';
 import { CollectorApplication } from '@/types';
 import { UserRole } from '@/types';
