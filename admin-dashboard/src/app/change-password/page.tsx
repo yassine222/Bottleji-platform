@@ -46,6 +46,9 @@ export default function ChangePasswordPage() {
           setError('Current password is incorrect');
         } else if (axiosError.response?.data?.message) {
           setError(axiosError.response.data.message);
+        } else {
+          setError('An error occurred while changing password. Please try again.');
+        }
       } else {
         setError('An error occurred while changing password. Please try again.');
       }
