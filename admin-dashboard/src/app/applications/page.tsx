@@ -68,20 +68,6 @@ export default function ApplicationsPage() {
     }
   }, [currentPage, selectedStatus]);
 
-  useEffect(() => {
-    loadApplications();
-    loadStats();
-  }, [loadApplications]);
-
-      setApplications(response.data.applications || []);
-      setTotalPages(response.data.pagination?.totalPages || 1);
-    } catch (error) {
-      console.error('Error loading applications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadStats = async () => {
     try {
       console.log('🔍 Loading application stats...');
