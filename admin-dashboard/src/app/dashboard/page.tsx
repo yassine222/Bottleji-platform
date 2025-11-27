@@ -8537,15 +8537,31 @@ function RewardShopContent() {
           console.log('🔍 Debug - API URL:', buildApiUrl(API_ENDPOINTS.REWARDS.CREATE));
         }
         
+        // Prepare data with proper types
+        const rewardData = {
+          name: newReward.name.trim(),
+          description: newReward.description.trim(),
+          category: newReward.category,
+          subCategory: newReward.subCategory.trim(),
+          pointCost: Number(newReward.pointCost) || 0,
+          stock: Number(newReward.stock) || 0,
+          imageUrl: newReward.imageUrl?.trim() || '',
+          isActive: Boolean(newReward.isActive),
+          isFootwear: Boolean(newReward.isFootwear),
+          isJacket: Boolean(newReward.isJacket),
+          isBottoms: Boolean(newReward.isBottoms),
+        };
+        
         console.log('🔍 Debug - newReward data:', newReward);
+        console.log('🔍 Debug - rewardData (sanitized):', rewardData);
         
         if (editingReward) {
           // Update existing reward
-          await axios.patch(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward._id || editingReward.id)), newReward, config);
+          await axios.patch(buildApiUrl(API_ENDPOINTS.REWARDS.UPDATE(editingReward._id || editingReward.id)), rewardData, config);
           console.log('✅ Reward updated via API');
         } else {
           // Create new reward
-          await axios.post(buildApiUrl(API_ENDPOINTS.REWARDS.CREATE), newReward, config);
+          await axios.post(buildApiUrl(API_ENDPOINTS.REWARDS.CREATE), rewardData, config);
           console.log('✅ Reward created via API');
         }
         
@@ -8576,7 +8592,32 @@ function RewardShopContent() {
         
         if (apiError.response?.status === 400) {
           console.error('❌ Validation Error Details:', apiError.response?.data);
-          const errorMessage = apiError.response?.data?.message || 'Invalid data provided. Please check all fields.';
+          
+          // Extract validation errors from the response
+          let errorMessage = 'Invalid data provided. Please check all fields.';
+          
+          if (apiError.response?.data?.message) {
+            errorMessage = apiError.response.data.message;
+          } else if (apiError.response?.data?.error) {
+            errorMessage = apiError.response.data.error;
+          } else if (Array.isArray(apiError.response?.data?.message)) {
+            // Handle array of validation errors
+            errorMessage = apiError.response.data.message.join(', ');
+          } else if (typeof apiError.response?.data === 'object') {
+            // Try to extract error messages from validation object
+            const errors = [];
+            for (const [key, value] of Object.entries(apiError.response.data)) {
+              if (Array.isArray(value)) {
+                errors.push(...value);
+              } else if (typeof value === 'string') {
+                errors.push(value);
+              }
+            }
+            if (errors.length > 0) {
+              errorMessage = errors.join(', ');
+            }
+          }
+          
           setError(`Validation Error: ${errorMessage}`);
           return; // Don't close modal, show error
         }
