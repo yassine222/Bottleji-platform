@@ -40,21 +40,75 @@ export class EmailService implements OnModuleInit {
         return;
       }
 
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: emailUser,
-          pass: emailPass,
+      // Try multiple SMTP configurations for better compatibility
+      const smtpConfigs = [
+        {
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true, // Use SSL for port 465
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+          tls: {
+            rejectUnauthorized: false,
+            ciphers: 'SSLv3'
+          },
+          connectionTimeout: 10000, // 10 seconds
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
         },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
+        {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false, // Use STARTTLS for port 587
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+          tls: {
+            rejectUnauthorized: false,
+            ciphers: 'SSLv3'
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
+        },
+      ];
 
-      // Test the connection
-      await this.transporter.verify();
+      let transporterCreated = false;
+      let lastError: Error | null = null;
+
+      // Try each configuration
+      for (let i = 0; i < smtpConfigs.length; i++) {
+        try {
+          this.logger.log(`🔌 Trying SMTP configuration ${i + 1}/${smtpConfigs.length} (port ${smtpConfigs[i].port})...`);
+          
+          this.transporter = nodemailer.createTransport(smtpConfigs[i]);
+          
+          // Test the connection with timeout
+          await Promise.race([
+            this.transporter.verify(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Connection timeout')), 15000)
+            )
+          ]);
+          
+          transporterCreated = true;
+          this.logger.log(`✅ SMTP connection successful on port ${smtpConfigs[i].port}`);
+          break;
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.warn(`⚠️ SMTP configuration ${i + 1} failed: ${error.message}`);
+          if (i < smtpConfigs.length - 1) {
+            this.logger.log(`   Trying next configuration...`);
+          }
+        }
+      }
+
+      if (!transporterCreated) {
+        throw lastError || new Error('All SMTP configurations failed');
+      }
       this.isEmailServiceEnabled = true;
       this.logger.log('✅ Email service initialized successfully');
       this.logger.log(`   Sending emails from: ${emailUser}`);
