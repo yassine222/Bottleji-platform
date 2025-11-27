@@ -24,21 +24,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
       
-      // Use sessionStorage for tab-specific authentication
-      // This prevents cross-tab interference when different users log in
-      let token = sessionStorage.getItem('admin_token');
-      if (!token) {
-        // Fallback to localStorage for backward compatibility
-        token = localStorage.getItem('admin_token');
-        if (token) {
-          console.log('🔐 Token found in localStorage, copying to sessionStorage');
-          sessionStorage.setItem('admin_token', token);
-        }
-      }
-      console.log('🔐 Token from storage:', token ? token.substring(0, 20) + '...' : 'No token found');
+      // Use sessionStorage only for tab-specific authentication
+      // Session ends when tab closes - more secure
+      const token = sessionStorage.getItem('admin_token');
+      console.log('🔐 Token from sessionStorage:', token ? token.substring(0, 20) + '...' : 'No token found');
       
       if (!token) {
         console.log('🔐 No admin token found, redirecting to login');
+        // Clear any stale localStorage tokens
+        localStorage.removeItem('admin_token');
         router.push('/login');
         return;
       }
@@ -56,14 +50,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         
         if (error.response?.status === 401 || error.response?.status === 403) {
           console.log('🔐 Unauthorized/Forbidden, redirecting to login');
-          localStorage.removeItem('admin_token');
+          // Clear session storage and any stale localStorage
           sessionStorage.removeItem('admin_token');
+          localStorage.removeItem('admin_token');
           router.push('/login');
         } else {
           // For other errors, still redirect to login
           console.log('🔐 Other error, redirecting to login');
-          localStorage.removeItem('admin_token');
           sessionStorage.removeItem('admin_token');
+          localStorage.removeItem('admin_token');
           router.push('/login');
         }
       } finally {

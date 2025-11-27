@@ -96,7 +96,8 @@ function TicketDetailModal({ ticket, onClose, onMessageSent, onStatusChange }: T
       setConnecting(true);
       setError(null);
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      // Use sessionStorage only for security (session ends when tab closes)
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('admin_token') : null;
       if (!token) {
         setError('Missing admin token. Please re-login.');
         setConnecting(false);

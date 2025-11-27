@@ -12,15 +12,8 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    // Try localStorage first, then sessionStorage as fallback
-    let token = localStorage.getItem('admin_token');
-    if (!token) {
-      token = sessionStorage.getItem('admin_token');
-      if (token) {
-        // If found in sessionStorage, copy to localStorage
-        localStorage.setItem('admin_token', token);
-      }
-    }
+    // Use sessionStorage only for security (session ends when tab closes)
+    const token = sessionStorage.getItem('admin_token');
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

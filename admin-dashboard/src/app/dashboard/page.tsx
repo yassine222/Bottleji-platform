@@ -474,7 +474,7 @@ function UsersContent() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token')}`
+            'Authorization': `Bearer ${sessionStorage.getItem('admin_token')}`
           },
           body: JSON.stringify({ action })
         });
@@ -1767,7 +1767,7 @@ function DropsContent() {
   const fetchDropsList = async () => {
     try {
       setDropsLoading(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const params = new URLSearchParams();
@@ -1812,7 +1812,7 @@ function DropsContent() {
   const fetchReportedDrops = async () => {
     try {
       setLoadingReportedDrops(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       console.log('📋 Fetching reported drops...');
@@ -1841,7 +1841,7 @@ function DropsContent() {
   const fetchFlaggedDrops = async () => {
     try {
       setLoadingFlaggedDrops(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching flagged drops...');
@@ -1870,7 +1870,7 @@ function DropsContent() {
   const fetchCollectedDrops = async () => {
     try {
       setLoadingCollectedDrops(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching collected drops...');
@@ -1911,7 +1911,7 @@ function DropsContent() {
   const fetchStaleDrops = async () => {
     try {
       setLoadingStaleDrops(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching stale drops...');
@@ -1940,7 +1940,7 @@ function DropsContent() {
   const fetchCensoredDrops = async () => {
     try {
       setLoadingCensoredDrops(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       console.log('📋 Fetching censored drops...');
@@ -1969,7 +1969,7 @@ function DropsContent() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       // Fetch each endpoint individually with error handling
@@ -2075,7 +2075,7 @@ function DropsContent() {
 
   const analyzeOldDrops = async () => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const analyzeOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.ANALYZE_OLD);
@@ -2093,7 +2093,7 @@ function DropsContent() {
     if (selectedOldDrops.length === 0) return;
     
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const hideOldUrl = buildApiUrl(API_ENDPOINTS.DROPS.HIDE_OLD);
@@ -2118,7 +2118,7 @@ function DropsContent() {
     try {
       setDropDetailsLoading(true);
       setShowDropDetails(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const dropDetailsUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.GET_DETAILS, dropId));
@@ -2144,7 +2144,7 @@ function DropsContent() {
 
   const flagDrop = async (dropId: string) => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const flagDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.FLAG, dropId));
@@ -2163,7 +2163,7 @@ function DropsContent() {
 
   const unflagDrop = async (dropId: string) => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const unflagDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.UNFLAG, dropId));
@@ -2190,7 +2190,7 @@ function DropsContent() {
   const submitCensor = async () => {
     if (!censorTargetDropId) return;
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const reasonPayload = censorNotes?.trim()
         ? `${selectedCensorReason}: ${censorNotes.trim()}`
@@ -2216,7 +2216,7 @@ function DropsContent() {
     if (!confirm('Are you sure you want to permanently delete this drop? This action cannot be undone.')) return;
     
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       // NEW: Using centralized API endpoint
       const deleteDropUrl = buildApiUrl(getEndpoint(API_ENDPOINTS.DROPS.DELETE, dropId));
@@ -5818,7 +5818,8 @@ function SupportContent() {
 
   // Real-time Socket.IO connection for support tickets with retry logic
   useEffect(() => {
-        const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+        // Use sessionStorage only for security (session ends when tab closes)
+        const token = sessionStorage.getItem('admin_token');
     if (!token) {
       console.log('❌ No admin token found for WebSocket connection');
       return;
@@ -6101,7 +6102,7 @@ function SupportContent() {
     if (!selectedTicket || chatConnecting) return;
     try {
       setChatConnecting(true);
-      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token')) : null;
+      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('admin_token')) : null;
       if (!token) {
         console.error('❌ Admin Dashboard: No admin token found');
         return;
@@ -8276,7 +8277,7 @@ function RewardShopContent() {
   const fetchRewards = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8346,7 +8347,7 @@ function RewardShopContent() {
   const fetchOrders = async () => {
     try {
       setOrdersLoading(true);
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8395,7 +8396,7 @@ function RewardShopContent() {
 
   const handleApproveOrder = async (orderId: string) => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8412,7 +8413,7 @@ function RewardShopContent() {
 
   const handleDownloadShippingLabel = async (orderId: string) => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       
       if (!token) {
         alert('No authentication token found. Please log in again.');
@@ -8465,7 +8466,7 @@ function RewardShopContent() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8513,7 +8514,7 @@ function RewardShopContent() {
     let usedMockData = false;
     
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -8629,7 +8630,7 @@ function RewardShopContent() {
   const handleDeleteReward = async (rewardId: string) => {
     if (!confirm('Are you sure you want to delete this reward?')) return;
     try {
-      const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+      const token = sessionStorage.getItem('admin_token');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -9328,7 +9329,8 @@ function RewardShopContent() {
                   if (!finalReason.trim()) return;
 
                   try {
-                    const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+                    // Use sessionStorage only for security (session ends when tab closes)
+        const token = sessionStorage.getItem('admin_token');
                     const config = {
                       headers: { Authorization: `Bearer ${token}` }
                     };
@@ -9374,7 +9376,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+        // Use sessionStorage only for security (session ends when tab closes)
+        const token = sessionStorage.getItem('admin_token');
         if (token) {
           // Try to decode JWT token to get user roles
           try {

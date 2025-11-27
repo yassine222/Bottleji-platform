@@ -46,21 +46,24 @@ export default function LoginPage() {
       console.log('✅ Login successful:', response.data);
       
       if (response.data.token) {
-        // Store token in both localStorage and sessionStorage for redundancy
+        // Store token only in sessionStorage for security
+        // Session ends when tab closes - user must login again
         try {
-          localStorage.setItem('admin_token', response.data.token);
+          // Clear any old tokens first (cleanup)
+          sessionStorage.removeItem('admin_token');
+          localStorage.removeItem('admin_token');
+          
+          // Store only in sessionStorage
           sessionStorage.setItem('admin_token', response.data.token);
-          console.log('✅ Token saved to localStorage and sessionStorage:', response.data.token.substring(0, 20) + '...');
+          console.log('✅ Token saved to sessionStorage (session-based):', response.data.token.substring(0, 20) + '...');
+          console.log('ℹ️ Session will end when tab closes for security');
           
           // Verify token was saved
-          const savedToken = localStorage.getItem('admin_token');
           const sessionToken = sessionStorage.getItem('admin_token');
-          if (savedToken && sessionToken) {
-            console.log('✅ Token verification successful in both storages');
+          if (sessionToken) {
+            console.log('✅ Token verification successful in sessionStorage');
           } else {
             console.error('❌ Token was not saved properly');
-            console.log('localStorage token:', savedToken ? 'Present' : 'Missing');
-            console.log('sessionStorage token:', sessionToken ? 'Present' : 'Missing');
           }
         } catch (error) {
           console.error('❌ Error saving token to storage:', error);

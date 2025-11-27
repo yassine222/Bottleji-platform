@@ -114,8 +114,10 @@ export default function Sidebar({ activeTab, onTabChange, userRoles = [] }: Side
         <div className="flex flex-shrink-0 p-4">
           <button
             onClick={() => {
-              localStorage.removeItem('admin_token');
+              // Clear session storage (session ends when tab closes)
               sessionStorage.removeItem('admin_token');
+              // Also clear any stale localStorage
+              localStorage.removeItem('admin_token');
               window.location.href = '/login';
             }}
             className="group flex w-full items-center px-3 py-3 text-sm font-medium text-green-100 hover:bg-red-600 hover:text-white rounded-md transition-colors duration-200"

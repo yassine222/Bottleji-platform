@@ -19,7 +19,8 @@ export default function Header() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('admin_token');
+        // Use sessionStorage only for security (session ends when tab closes)
+        const token = sessionStorage.getItem('admin_token');
         if (!token) {
           console.log('No admin token found, redirecting to login');
           window.location.href = '/login';
@@ -68,8 +69,9 @@ export default function Header() {
           console.error('API Error fetching user profile:', apiError);
           if (apiError.response?.status === 401) {
             console.log('Token expired or invalid, redirecting to login');
-            localStorage.removeItem('admin_token');
+            // Clear session storage and any stale localStorage
             sessionStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_token');
             window.location.href = '/login';
           }
           // Keep the fallback user from JWT
