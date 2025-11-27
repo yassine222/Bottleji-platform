@@ -102,6 +102,7 @@ export default function LoginPage() {
                 height={200}
                 className="w-full h-full object-contain"
                 priority
+                unoptimized
               />
             </div>
             <h1 className="text-3xl font-bold text-[#00695C] mb-2">
