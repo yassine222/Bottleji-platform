@@ -164,9 +164,14 @@ export class EmailService implements OnModuleInit {
     }
 
     try {
+      // For SendGrid, use verified sender email. For Gmail, use EMAIL_USER
       const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
+      const fromEmail = emailUser === 'apikey' 
+        ? (process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@bottleji.com')
+        : emailUser;
+      
       await this.transporter.sendMail({
-        from: emailUser,
+        from: fromEmail,
         to: to,
         subject: 'Bottleji - Email Verification Code',
         html: `
@@ -194,8 +199,12 @@ export class EmailService implements OnModuleInit {
 
     try {
       const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
+      const fromEmail = emailUser === 'apikey' 
+        ? (process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@bottleji.com')
+        : emailUser;
+      
       await this.transporter.sendMail({
-        from: emailUser,
+        from: fromEmail,
         to: to,
         subject: 'Bottleji - Password Reset Code',
         html: `
@@ -223,8 +232,12 @@ export class EmailService implements OnModuleInit {
 
     try {
       const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
+      const fromEmail = emailUser === 'apikey' 
+        ? (process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@bottleji.com')
+        : emailUser;
+      
       await this.transporter.sendMail({
-        from: emailUser,
+        from: fromEmail,
         to: to,
         subject: 'Bottleji - Phone Verification Code',
         html: `
@@ -252,8 +265,12 @@ export class EmailService implements OnModuleInit {
 
     try {
       const emailUser = this.configService.get<string>('EMAIL_USER') || process.env.EMAIL_USER;
+      const fromEmail = emailUser === 'apikey' 
+        ? (process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@bottleji.com')
+        : emailUser;
+      
       await this.transporter.sendMail({
-        from: emailUser,
+        from: fromEmail,
         to: to,
         subject: 'Bottleji - Admin Account Invitation',
         html: `
