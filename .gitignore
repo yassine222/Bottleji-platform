@@ -150,6 +150,9 @@ dist
 # Gatsby files
 .cache/
 public
+# Exception: Next.js public folder needs to be tracked
+!admin-dashboard/public/
+!admin-dashboard/public/**
 
 # Storybook build outputs
 .out
