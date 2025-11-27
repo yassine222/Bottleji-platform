@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class AccountLockCard extends StatefulWidget {
   final DateTime lockedUntil;
@@ -49,9 +50,25 @@ class _AccountLockCardState extends State<AccountLockCard> {
     _timeRemaining = difference.isNegative ? Duration.zero : difference;
   }
 
-  String _getTimeRemaining() {
+  String _formatUnlockTime(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    if (locale.languageCode == 'ar') {
+      // Arabic date format
+      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      final hour = widget.lockedUntil.hour;
+      final minute = widget.lockedUntil.minute;
+      final timeStr = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      return '${widget.lockedUntil.day} ${months[widget.lockedUntil.month - 1]} ${widget.lockedUntil.year}، $timeStr';
+    } else {
+      // English date format
+      return DateFormat('MMM d, h:mm a').format(widget.lockedUntil);
+    }
+  }
+
+  String _getTimeRemaining(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_timeRemaining == Duration.zero) {
-      return 'Lock expired';
+      return l10n.lockExpired;
     }
 
     final hours = _timeRemaining.inHours;
@@ -59,11 +76,11 @@ class _AccountLockCardState extends State<AccountLockCard> {
     final seconds = _timeRemaining.inSeconds % 60;
 
     if (hours > 0) {
-      return '$hours hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes != 1 ? 's' : ''}';
+      return '$hours ${hours > 1 ? l10n.hours : l10n.hour} $minutes ${minutes != 1 ? l10n.minutes : l10n.minute}';
     } else if (minutes > 0) {
-      return '$minutes minute${minutes != 1 ? 's' : ''} ${seconds} second${seconds != 1 ? 's' : ''}';
+      return '$minutes ${minutes != 1 ? l10n.minutes : l10n.minute} $seconds ${seconds != 1 ? l10n.seconds : l10n.second}';
     } else {
-      return '$seconds second${seconds != 1 ? 's' : ''}';
+      return '$seconds ${seconds != 1 ? l10n.seconds : l10n.second}';
     }
   }
 
@@ -104,7 +121,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           
           // Title
           Text(
-            'Account Temporarily Locked',
+            AppLocalizations.of(context).accountTemporarilyLocked,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -116,7 +133,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           
           // Reason
           Text(
-            'Your account has been locked for 24 hours due to 5 collection timeout warnings.',
+            AppLocalizations.of(context).accountLockedReason,
             style: TextStyle(
               fontSize: 14,
               color: Colors.red.shade800,
@@ -145,7 +162,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'Unlocks in ${_getTimeRemaining()}',
+                    AppLocalizations.of(context).unlocksIn(_getTimeRemaining(context)),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -161,7 +178,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           
           // Unlock time
           Text(
-            'Available again at ${DateFormat('MMM d, h:mm a').format(widget.lockedUntil)}',
+            AppLocalizations.of(context).availableAgainAt(_formatUnlockTime(context)),
             style: TextStyle(
               fontSize: 12,
               color: Colors.red.shade700,
@@ -189,7 +206,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'You can still browse drops and use other features, but cannot accept new drops until unlocked.',
+                    AppLocalizations.of(context).accountLockedInfo,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.amber.shade900,
@@ -206,7 +223,7 @@ class _AccountLockCardState extends State<AccountLockCard> {
           TextButton.icon(
             onPressed: widget.onDismiss,
             icon: const Icon(Icons.close, size: 18),
-            label: const Text('I Understand'),
+            label: Text(AppLocalizations.of(context).iUnderstand),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red.shade700,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

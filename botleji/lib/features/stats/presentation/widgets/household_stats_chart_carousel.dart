@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:botleji/core/services/timezone_service.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class HouseholdStatsChartCarousel extends StatefulWidget {
   final List<Drop> drops;
@@ -118,8 +119,8 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
             .toDouble();
 
     return _buildChartCard(
-      title: 'CO₂ Volume Saved',
-      secondaryText: 'Total CO₂ Saved: ${totalCo2.toStringAsFixed(1)} kg',
+      title: AppLocalizations.of(context).co2VolumeSaved,
+      secondaryText: AppLocalizations.of(context).totalCo2Saved(totalCo2.toStringAsFixed(1)),
       primaryColor: const Color(0xFF2E7D32),
       icon: Icons.recycling,
       chart: _buildBarChart(
@@ -158,8 +159,8 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
     final data = _generateDropActivityData();
 
     return _buildChartCard(
-      title: 'Drop Activity',
-      secondaryText: 'Drops Created (${_getTimeRangeText()}): $totalDrops',
+      title: AppLocalizations.of(context).dropActivity,
+      secondaryText: AppLocalizations.of(context).dropsCreated(_getTimeRangeText(), totalDrops),
       primaryColor: const Color(0xFF1E88E5),
       icon: Icons.assignment_outlined,
       chart: _buildAreaChart(
@@ -532,27 +533,62 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
   }
 
   String _getXAxisLabel(int index) {
+    final l10n = AppLocalizations.of(context);
     final now = TimezoneService.now();
     switch (widget.timeRange) {
       case 'week':
         final date = now.subtract(Duration(days: 6 - index));
         final today = DateTime(now.year, now.month, now.day);
         if (date.year == today.year && date.month == today.month && date.day == today.day) {
-          return 'Today';
+          return l10n.today;
         }
         final yesterday = today.subtract(const Duration(days: 1));
         if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
-          return 'Yesterday';
+          return l10n.yesterday;
         }
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final dayNames = [
+          l10n.monday,
+          l10n.tuesday,
+          l10n.wednesday,
+          l10n.thursday,
+          l10n.friday,
+          l10n.saturday,
+          l10n.sunday,
+        ];
         return dayNames[date.weekday - 1];
       case 'month':
         return '${index + 1}';
       case 'year':
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthNames = [
+          l10n.january,
+          l10n.february,
+          l10n.march,
+          l10n.april,
+          l10n.may,
+          l10n.june,
+          l10n.july,
+          l10n.august,
+          l10n.september,
+          l10n.october,
+          l10n.november,
+          l10n.december,
+        ];
         return monthNames[index];
       case '':
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthNames = [
+          l10n.january,
+          l10n.february,
+          l10n.march,
+          l10n.april,
+          l10n.may,
+          l10n.june,
+          l10n.july,
+          l10n.august,
+          l10n.september,
+          l10n.october,
+          l10n.november,
+          l10n.december,
+        ];
         final monthsAgo = 11 - index;
         final date = DateTime(now.year, now.month - monthsAgo, 1);
         return monthNames[date.month - 1];
@@ -562,17 +598,18 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
   }
 
   String _getTimeRangeText() {
+    final l10n = AppLocalizations.of(context);
     switch (widget.timeRange) {
       case 'week':
-        return 'this week';
+        return l10n.thisWeek;
       case 'month':
-        return 'this month';
+        return l10n.thisMonth;
       case 'year':
-        return 'this year';
+        return l10n.thisYear;
       case '':
-        return 'across the past year';
+        return l10n.allTime;
       default:
-        return 'this week';
+        return l10n.thisWeek;
     }
   }
 

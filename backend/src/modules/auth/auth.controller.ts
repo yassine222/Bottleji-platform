@@ -102,4 +102,16 @@ export class AuthController {
     return this.authService.changePassword(req.user.id, body.currentPassword, body.newPassword);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('fcm-token')
+  async saveFCMToken(@Request() req, @Body() body: { fcmToken: string }) {
+    return this.authService.saveFCMToken(req.user.id, body.fcmToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('invalidate-session')
+  async invalidateSession(@Request() req) {
+    return this.authService.invalidateSession(req.user.id);
+  }
+
 }

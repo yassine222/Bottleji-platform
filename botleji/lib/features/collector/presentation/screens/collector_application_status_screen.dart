@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 import 'package:botleji/core/theme/app_colors.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart' as auth_models;
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
@@ -34,9 +35,9 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Application Status',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context).applicationStatus,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -63,7 +64,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
               ),
               const SizedBox(height: 16),
               Text(
-                'Error loading application',
+                AppLocalizations.of(context).errorLoadingApplication,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: theme.colorScheme.error,
                 ),
@@ -86,6 +87,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
 
 
   Widget _buildNoApplicationFound() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -97,7 +99,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
           ),
           const SizedBox(height: 16),
           Text(
-            'No Application Found',
+            l10n.noApplicationFound,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -106,7 +108,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
           ),
           const SizedBox(height: 8),
           Text(
-            'You haven\'t submitted a collector application yet.',
+            l10n.youHaventSubmittedApplicationYet,
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 16,
@@ -124,7 +126,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
               );
             },
             icon: const Icon(Icons.add),
-            label: const Text('Apply Now'),
+            label: Text(l10n.applyNow),
             style: FilledButton.styleFrom(
               backgroundColor: appGreenColor,
               foregroundColor: Colors.white,
@@ -158,6 +160,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
   }
 
   Widget _buildStatusCard(CollectorApplication application) {
+    final l10n = AppLocalizations.of(context);
     Color statusColor;
     IconData statusIcon;
     String statusText;
@@ -167,26 +170,26 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
       case 'pending':
         statusColor = Colors.orange;
         statusIcon = Icons.schedule;
-        statusText = 'Pending Review';
-        statusDescription = 'Your application is being reviewed by our team.';
+        statusText = l10n.pendingReview;
+        statusDescription = l10n.yourApplicationIsBeingReviewed;
         break;
       case 'approved':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
-        statusText = 'Approved';
-        statusDescription = 'Congratulations! Your application has been approved.';
+        statusText = l10n.approved;
+        statusDescription = l10n.congratulationsApplicationApproved;
         break;
       case 'rejected':
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
-        statusText = 'Rejected';
-        statusDescription = 'Your application was not approved. You can apply again.';
+        statusText = l10n.rejected;
+        statusDescription = l10n.applicationNotApprovedCanApplyAgain;
         break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
-        statusText = 'Unknown';
-        statusDescription = 'Application status is unknown.';
+        statusText = l10n.unknown;
+        statusDescription = l10n.applicationStatusUnknown;
     }
 
     return Container(
@@ -228,6 +231,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
   }
 
   Widget _buildApplicationInfo(CollectorApplication application) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -240,7 +244,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Application Details',
+            l10n.applicationDetails,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -248,21 +252,21 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
             ),
           ),
           const SizedBox(height: 16),
-          _buildInfoRow('Application ID', application.id),
-          _buildInfoRow('ID Type', application.idCardType ?? 'Not specified'),
+          _buildInfoRow(l10n.applicationId, application.id),
+          _buildInfoRow(l10n.idType, application.idCardType ?? l10n.notSpecified),
           if (application.idCardNumber != null)
-            _buildInfoRow('ID Number', application.idCardNumber!),
+            _buildInfoRow(l10n.idNumber, application.idCardNumber!),
           if (application.idCardIssuingAuthority != null)
-            _buildInfoRow('Issuing Authority', application.idCardIssuingAuthority!),
+            _buildInfoRow(l10n.issuingAuthority, application.idCardIssuingAuthority!),
           if (application.idCardExpiryDate != null)
-            _buildInfoRow('Expiry Date', _formatDate(application.idCardExpiryDate!)),
+            _buildInfoRow(l10n.expiryDateLabel, _formatDate(application.idCardExpiryDate!)),
           if (application.passportIssueDate != null)
-            _buildInfoRow('Passport Issue Date', _formatDate(application.passportIssueDate!)),
+            _buildInfoRow(l10n.issueDateLabel, _formatDate(application.passportIssueDate!)),
           if (application.passportExpiryDate != null)
-            _buildInfoRow('Passport Expiry Date', _formatDate(application.passportExpiryDate!)),
-          _buildInfoRow('Applied On', _formatDate(application.appliedAt ?? DateTime.now())),
+            _buildInfoRow(l10n.expiryDateLabel, _formatDate(application.passportExpiryDate!)),
+          _buildInfoRow(l10n.appliedOn, _formatDate(application.appliedAt ?? DateTime.now())),
           if (application.reviewedAt != null)
-            _buildInfoRow('Reviewed On', _formatDate(application.reviewedAt!)),
+            _buildInfoRow(l10n.reviewedOn, _formatDate(application.reviewedAt!)),
           if (application.rejectionReason != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -276,7 +280,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Rejection Reason',
+                    l10n.rejectionReason,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.red[700],
@@ -306,7 +310,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Review Notes',
+                    l10n.reviewNotes,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.blue[700],
@@ -358,6 +362,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
   }
 
   Widget _buildActionButtons(CollectorApplication application) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         if (application.status.toLowerCase() == 'rejected') ...[
@@ -373,7 +378,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
                 );
               },
               icon: const Icon(Icons.edit),
-              label: const Text('Apply Again'),
+              label: Text(l10n.applyAgain),
               style: FilledButton.styleFrom(
                 backgroundColor: appGreenColor,
                 foregroundColor: Colors.white,
@@ -393,23 +398,19 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Application in Review'),
-                    content: const Text(
-                      'Your application is currently being reviewed by our team. '
-                      'This process typically takes 1-3 business days. '
-                      'You will be notified once a decision has been made.',
-                    ),
+                    title: Text(l10n.applicationInReview),
+                    content: Text(l10n.applicationInReviewDialogContent),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('OK'),
+                        child: Text(l10n.ok),
                       ),
                     ],
                   ),
                 );
               },
               icon: const Icon(Icons.info),
-              label: const Text('Review Process'),
+              label: Text(l10n.reviewProcess),
               style: OutlinedButton.styleFrom(
                 foregroundColor: appGreenColor,
                 side: BorderSide(color: appGreenColor),
@@ -427,7 +428,7 @@ class _CollectorApplicationStatusScreenState extends ConsumerState<CollectorAppl
           child: OutlinedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Back'),
+            label: Text(l10n.back),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.grey[600],
               side: BorderSide(color: Colors.grey[400]!),

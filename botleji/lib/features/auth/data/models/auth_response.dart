@@ -36,8 +36,9 @@ class AuthResponse {
   }) {
     return AuthResponse._(
       isSuccess: false,
+      errorMessage: message,
       statusCode: statusCode,
-  );
+    );
   }
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -59,7 +60,7 @@ class AuthResponse {
     if (json.containsKey('user') && json.containsKey('token')) {
       print('AuthResponse.fromJson: Login response detected');
       return AuthResponse.success(
-        user: UserData.fromJsonWithDebug(json['user'] as Map<String, dynamic>),
+        user: UserData.fromJson(json['user'] as Map<String, dynamic>),
         token: json['token'] as String,
         message: json['message'] as String?,  
   );
@@ -69,7 +70,7 @@ class AuthResponse {
     if (json.containsKey('user')) {
       print('AuthResponse.fromJson: Profile response detected');
       return AuthResponse.success(
-        user: UserData.fromJsonWithDebug(json['user'] as Map<String, dynamic>),
+        user: UserData.fromJson(json['user'] as Map<String, dynamic>),
         token: null,
         message: null,
   );
@@ -79,7 +80,7 @@ class AuthResponse {
     if (json.containsKey('token') && json.containsKey('user')) {
       print('AuthResponse.fromJson: OTP verification response with user data detected');
       print('AuthResponse.fromJson: User data: ${json['user']}');
-      final userData = UserData.fromJsonWithDebug(json['user'] as Map<String, dynamic>);
+      final userData = UserData.fromJson(json['user'] as Map<String, dynamic>);
       print('AuthResponse.fromJson: Parsed user data: $userData');
       return AuthResponse.success(
         message: json['message'] as String?,

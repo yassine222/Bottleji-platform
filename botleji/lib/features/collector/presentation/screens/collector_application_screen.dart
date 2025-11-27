@@ -1,3 +1,4 @@
+import 'package:botleji/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,12 +40,15 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   DateTime? _passportIssueDate;
   DateTime? _passportExpiryDate;
 
-  final List<String> _steps = [
-    'Welcome',
-    'ID Verification',
-    'Selfie with ID',
-    'Review & Submit',
-  ];
+  List<String> _getSteps(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.welcome,
+      l10n.idVerification,
+      l10n.selfieWithId,
+      l10n.reviewAndSubmit,
+    ];
+  }
 
   @override
   void initState() {
@@ -114,12 +118,14 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final userAsync = ref.watch(authNotifierProvider);
+    final l10n = AppLocalizations.of(context)!;
+    final steps = _getSteps(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Text(
-          'Become a Collector',
+          l10n.becomeACollector,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: theme.colorScheme.surface,
@@ -129,7 +135,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
       body: userAsync.when(
         data: (user) {
           if (user == null) {
-            return const Center(child: Text('User not found'));
+            return Center(child: Text(l10n.userNotFound));
           }
 
           return Column(
@@ -138,7 +144,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               Container(
                 padding: const EdgeInsets.all(16),
                 child: Row(
-                  children: List.generate(_steps.length, (index) {
+                  children: List.generate(steps.length, (index) {
                     final isActive = index == _currentStep;
                     final isCompleted = index < _currentStep;
                     
@@ -175,7 +181,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _steps[index],
+                              steps[index],
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isActive || isCompleted ? appGreenColor : Colors.grey,
@@ -221,6 +227,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   Widget _buildWelcomeStep() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(24),
@@ -243,7 +250,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           const SizedBox(height: 32),
           
           Text(
-            'Welcome to the Collector Program!',
+            l10n.welcomeToCollectorProgram,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -254,7 +261,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           const SizedBox(height: 16),
           
           Text(
-            'Join our community of eco-conscious collectors and help make a difference in recycling.',
+            l10n.joinOurCommunityOfEcoConsciousCollectors,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -266,22 +273,22 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           // Benefits
           _buildBenefitItem(
             icon: Icons.monetization_on,
-            title: 'Earn Money',
-            description: 'Get paid for every bottle and can you collect',
+            title: l10n.earnMoney,
+            description: l10n.getPaidForEveryBottleAndCan,
           ),
           const SizedBox(height: 16),
           
           _buildBenefitItem(
             icon: Icons.location_on,
-            title: 'Flexible Hours',
-            description: 'Collect whenever and wherever you want',
+            title: l10n.flexibleHours,
+            description: l10n.collectWheneverAndWherever,
           ),
           const SizedBox(height: 16),
           
           _buildBenefitItem(
             icon: Icons.eco,
-            title: 'Help the Environment',
-            description: 'Contribute to a cleaner, greener world',
+            title: l10n.helpTheEnvironment,
+            description: l10n.contributeToCleanerGreenerWorld,
           ),
           const SizedBox(height: 32),
           
@@ -301,7 +308,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                     Icon(Icons.info_outline, color: Colors.orange, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Requirements',
+                      l10n.requirements,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.orange,
@@ -311,7 +318,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '• Must be 18 years or older\n• Valid National ID Card\n• Clear photos of ID and selfie\n• Good standing in the community',
+                  '${l10n.mustBe18YearsOrOlder}\n${l10n.validNationalIdCard}\n${l10n.clearPhotosOfIdAndSelfie}\n${l10n.goodStandingInCommunity}',
                   style: TextStyle(
                     color: Colors.grey[700],
                     height: 1.5,
@@ -335,9 +342,9 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Get Started',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.getStarted,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -389,6 +396,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   Widget _buildIdVerificationStep() {
+    final l10n = AppLocalizations.of(context)!;
     final isPassport = _idCardTypeController.text == 'Passport';
     
     return SingleChildScrollView(
@@ -397,7 +405,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
       child: Column(
         children: [
           Text(
-            'ID Card Verification',
+            l10n.idCardVerification,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -408,7 +416,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           const SizedBox(height: 16),
           
           Text(
-            'Please provide your ${isPassport ? 'passport' : 'ID card'} information and take clear photos',
+            l10n.pleaseProvideYourIdCardInformation(isPassport ? l10n.passport : l10n.idCard),
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -429,7 +437,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${isPassport ? 'Passport' : 'ID Card'} Details',
+                  isPassport ? l10n.passportDetails : l10n.idCardDetails,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -442,21 +450,21 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 DropdownButtonFormField<String>(
                   value: _idCardTypeController.text.isNotEmpty ? _idCardTypeController.text : null,
                   decoration: InputDecoration(
-                    labelText: 'ID Card Type',
-                    hintText: 'Select your ID card type',
+                    labelText: l10n.idCardType,
+                    hintText: l10n.selectYourIdCardType,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     prefixIcon: const Icon(Icons.credit_card),
                   ),
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: 'National ID',
-                      child: Text('National ID'),
+                      child: Text(l10n.nationalId),
                     ),
                     DropdownMenuItem(
                       value: 'Passport',
-                      child: Text('Passport'),
+                      child: Text(l10n.passport),
                     ),
                   ],
                   onChanged: (value) {
@@ -467,7 +475,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please select an ID card type';
+                      return l10n.pleaseSelectAnIdCardType;
                     }
                     return null;
                   },
@@ -480,8 +488,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   TextFormField(
                     controller: _passportNumberController,
                     decoration: InputDecoration(
-                      labelText: 'Passport Number',
-                      hintText: 'Enter your passport number',
+                      labelText: l10n.passportNumber,
+                      hintText: l10n.enterYourPassportNumber,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -518,8 +526,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                           Expanded(
                             child: Text(
                               _passportIssueDate != null
-                                  ? 'Issue Date: ${_passportIssueDate!.day}/${_passportIssueDate!.month}/${_passportIssueDate!.year}'
-                                  : 'Select Issue Date',
+                                  ? l10n.issueDate('${_passportIssueDate!.day}/${_passportIssueDate!.month}/${_passportIssueDate!.year}')
+                                  : l10n.selectIssueDate,
                               style: TextStyle(
                                 color: _passportIssueDate != null ? Colors.black : Colors.grey[600],
                               ),
@@ -559,8 +567,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                           Expanded(
                             child: Text(
                               _passportExpiryDate != null
-                                  ? 'Expiry Date: ${_passportExpiryDate!.day}/${_passportExpiryDate!.month}/${_passportExpiryDate!.year}'
-                                  : 'Select Expiry Date',
+                                  ? l10n.expiryDate('${_passportExpiryDate!.day}/${_passportExpiryDate!.month}/${_passportExpiryDate!.year}')
+                                  : l10n.selectExpiryDate,
                               style: TextStyle(
                                 color: _passportExpiryDate != null ? Colors.black : Colors.grey[600],
                               ),
@@ -576,8 +584,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   TextFormField(
                     controller: _idCardIssuingAuthorityController,
                     decoration: InputDecoration(
-                      labelText: 'Issuing Authority',
-                      hintText: 'e.g., Ministry of Foreign Affairs',
+                      labelText: l10n.issuingAuthority,
+                      hintText: l10n.egMinistryOfForeignAffairs,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -594,8 +602,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                       FilteringTextInputFormatter.digitsOnly,
                     ],
                     decoration: InputDecoration(
-                      labelText: 'ID Card Number',
-                      hintText: '12345678',
+                      labelText: l10n.idCardNumber,
+                      hintText: l10n.idCardNumberPlaceholder,
                       counterText: '',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -604,13 +612,13 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'ID card number is required';
+                        return l10n.idCardNumberIsRequired;
                       }
                       if (value.length != 8) {
-                        return 'ID card number must be 8 digits';
+                        return l10n.idCardNumberMustBe8Digits;
                       }
                       if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                        return 'ID card number must contain only digits';
+                        return l10n.idCardNumberMustContainOnlyDigits;
                       }
                       return null;
                     },
@@ -623,7 +631,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           
           // Photo Section
           Text(
-            '${isPassport ? 'Passport' : 'ID Card'} Photos',
+            isPassport ? l10n.passportPhotos : l10n.idCardPhotos,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -660,7 +668,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No Passport Main Page Photo',
+                          l10n.noPassportMainPagePhoto,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
@@ -668,7 +676,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Take photo of the main page with your details',
+                          l10n.takePhotoOfMainPageWithDetails,
                           style: TextStyle(
                             color: Colors.grey[500],
                             fontSize: 12,
@@ -686,7 +694,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               child: OutlinedButton.icon(
                 onPressed: _takePassportMainPagePhoto,
                 icon: const Icon(Icons.camera_alt),
-                label: Text(_passportMainPagePhoto != null ? 'Retake Photo' : 'Take Passport Main Page Photo'),
+                label: Text(_passportMainPagePhoto != null ? l10n.retakePhoto : l10n.takePassportMainPagePhoto),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: appGreenColor,
                   side: BorderSide(color: appGreenColor),
@@ -725,7 +733,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No ID Card Front Photo',
+                          l10n.noIdCardFrontPhoto,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
@@ -733,7 +741,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Take photo of the front of your ID card',
+                          l10n.takePhotoOfFrontOfIdCard,
                           style: TextStyle(
                             color: Colors.grey[500],
                             fontSize: 12,
@@ -751,7 +759,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               child: OutlinedButton.icon(
                 onPressed: _takeIdCardPhoto,
                 icon: const Icon(Icons.camera_alt),
-                label: Text(_idCardPhoto != null ? 'Retake Front Photo' : 'Take ID Card Front Photo'),
+                label: Text(_idCardPhoto != null ? l10n.retakeFrontPhoto : l10n.takeIdCardFrontPhoto),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: appGreenColor,
                   side: BorderSide(color: appGreenColor),
@@ -791,7 +799,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No ID Card Back Photo',
+                          l10n.noIdCardBackPhoto,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
@@ -799,7 +807,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Take photo of the back of your ID card',
+                          l10n.takePhotoOfBackOfIdCard,
                           style: TextStyle(
                             color: Colors.grey[500],
                             fontSize: 12,
@@ -817,7 +825,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               child: OutlinedButton.icon(
                 onPressed: _takeIdCardBackPhoto,
                 icon: const Icon(Icons.camera_alt),
-                label: Text(_idCardBackPhoto != null ? 'Retake Back Photo' : 'Take ID Card Back Photo'),
+                label: Text(_idCardBackPhoto != null ? l10n.retakeBackPhoto : l10n.takeIdCardBackPhoto),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: appGreenColor,
                   side: BorderSide(color: appGreenColor),
@@ -844,9 +852,9 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.continueButton,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -874,13 +882,14 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   Widget _buildSelfieStep() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Text(
-            'Selfie with ID Card',
+            l10n.selfieWithIdCard,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -891,7 +900,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           const SizedBox(height: 16),
           
           Text(
-            'Please take a selfie while holding your ID card next to your face',
+            l10n.pleaseTakeSelfieWhileHoldingId,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -927,7 +936,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No Selfie Photo',
+                        l10n.noSelfiePhoto,
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 16,
@@ -944,7 +953,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
             child: OutlinedButton.icon(
               onPressed: _takeSelfiePhoto,
               icon: const Icon(Icons.camera_alt),
-              label: Text(_selfieWithIdPhoto != null ? 'Retake Photo' : 'Take Selfie'),
+              label: Text(_selfieWithIdPhoto != null ? l10n.retakePhoto : l10n.takeSelfie),
               style: OutlinedButton.styleFrom(
                 foregroundColor: appGreenColor,
                 side: BorderSide(color: appGreenColor),
@@ -970,9 +979,9 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.continueButton,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -982,6 +991,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   Widget _buildReviewStep() {
+    final l10n = AppLocalizations.of(context)!;
     final isPassport = _idCardTypeController.text == 'Passport';
     return SingleChildScrollView(
       controller: _scrollController,
@@ -989,7 +999,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
       child: Column(
         children: [
           Text(
-            'Review & Submit',
+            l10n.reviewAndSubmitTitle,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -1000,7 +1010,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
           const SizedBox(height: 16),
           
           Text(
-            'Please review your application before submitting',
+            l10n.pleaseReviewYourApplication,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -1021,7 +1031,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'ID Card Information',
+                  l10n.idCardInformation,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1029,15 +1039,15 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildReviewItem('ID Type', _idCardTypeController.text),
-                _buildReviewItem('ID Number', _idCardNumberController.text),
+                _buildReviewItem(l10n.idType, _idCardTypeController.text),
+                _buildReviewItem(l10n.idNumber, _idCardNumberController.text),
                 if (isPassport) ...[
-                  _buildReviewItem('Issuing Authority', _idCardIssuingAuthorityController.text.isNotEmpty 
+                  _buildReviewItem(l10n.issuingAuthority, _idCardIssuingAuthorityController.text.isNotEmpty 
                       ? _idCardIssuingAuthorityController.text 
-                      : 'Not provided'),
-                  _buildReviewItem('Expiry Date', _idCardExpiryDate != null 
+                      : l10n.notProvided),
+                  _buildReviewItem(l10n.expiryDateLabel, _idCardExpiryDate != null 
                       ? '${_idCardExpiryDate!.day}/${_idCardExpiryDate!.month}/${_idCardExpiryDate!.year}'
-                      : 'Not provided'),
+                      : l10n.notProvided),
                 ],
               ],
             ),
@@ -1051,7 +1061,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 child: Column(
                   children: [
                     Text(
-                      'ID Card',
+                      l10n.idCard,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: appGreenColor,
@@ -1085,7 +1095,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 child: Column(
                   children: [
                     Text(
-                      'Selfie',
+                      l10n.selfie,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: appGreenColor,
@@ -1134,7 +1144,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                     Icon(Icons.info_outline, color: Colors.blue, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'What happens next?',
+                      l10n.whatHappensNext,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.blue,
@@ -1144,7 +1154,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '• Your application will be reviewed by our team\n• Review typically takes 1-3 business days\n• You\'ll receive a notification once reviewed\n• If approved, you can start collecting immediately',
+                  l10n.applicationReviewProcess,
                   style: TextStyle(
                     color: Colors.grey[700],
                     height: 1.5,
@@ -1169,7 +1179,7 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                 ),
               ),
               child: _isSubmitting
-                  ? const Row(
+                  ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
@@ -1181,12 +1191,12 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
                           ),
                         ),
                         SizedBox(width: 12),
-                        Text('Submitting...'),
+                        Text(l10n.submitting),
                       ],
                     )
-                  : const Text(
-                      'Submit Application',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  : Text(
+                      l10n.submitApplication,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
           ),
@@ -1225,7 +1235,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
+    final steps = _getSteps(context);
+    if (_currentStep < steps.length - 1) {
       setState(() {
         _currentStep++;
       });
@@ -1325,10 +1336,11 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
   }
 
   Future<void> _submitApplication() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_idCardPhoto == null || _selfieWithIdPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please take both photos before submitting'),
+        SnackBar(
+          content: Text(l10n.pleaseTakeBothPhotosBeforeSubmitting),
           backgroundColor: Colors.red,
         ),
       );
@@ -1340,8 +1352,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
     if (isPassport) {
       if (_passportMainPagePhoto == null || _passportNumberController.text.isEmpty || _passportIssueDate == null || _passportExpiryDate == null || _idCardIssuingAuthorityController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all required passport information'),
+          SnackBar(
+            content: Text(l10n.pleaseFillInAllRequiredPassportInformation),
             backgroundColor: Colors.red,
           ),
         );
@@ -1350,8 +1362,8 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
     } else {
       if (_idCardNumberController.text.isEmpty || _idCardTypeController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all required ID card information (ID number and type)'),
+          SnackBar(
+            content: Text(l10n.pleaseFillInAllRequiredIdCardInformation),
             backgroundColor: Colors.red,
           ),
         );
@@ -1429,9 +1441,10 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
       print('🔍 CollectorApplicationScreen: Auth provider invalidated');
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEditing ? 'Application updated successfully!' : 'Application submitted successfully!'),
+            content: Text(isEditing ? l10n.applicationUpdatedSuccessfully : l10n.applicationSubmittedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -1443,9 +1456,10 @@ class _CollectorApplicationScreenState extends ConsumerState<CollectorApplicatio
       // Activity tracking removed
       
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error submitting application: $e'),
+            content: Text(l10n.errorSubmittingApplication(e.toString())),
             backgroundColor: Colors.red,
           ),
         );

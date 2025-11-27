@@ -1,0 +1,1032 @@
+{
+  "@@locale": "de",
+  "appTitle": "Bottleji",
+  "settings": "Einstellungen",
+  "language": "Sprache",
+  "changeLanguage": "App-Sprache ändern",
+  "selectLanguage": "Sprache auswählen",
+  "english": "Englisch",
+  "french": "Französisch",
+  "german": "Deutsch",
+  "arabic": "Arabisch",
+  "location": "Standort",
+  "manageLocationPreferences": "Standortpräferenzen verwalten",
+  "notifications": "Benachrichtigungen",
+  "manageNotificationPreferences": "Benachrichtigungseinstellungen verwalten",
+  "displayTheme": "Anzeigethema",
+  "changeAppAppearance": "App-Erscheinungsbild ändern",
+  "comingSoon": "Demnächst verfügbar",
+  "ok": "OK",
+  "cancel": "Abbrechen",
+  "save": "Speichern",
+  "loading": "Wird geladen...",
+  "login": "Anmelden",
+  "register": "Registrieren",
+  "email": "E-Mail",
+  "password": "Passwort",
+  "forgotPassword": "Passwort vergessen?",
+  "welcomeBack": "Willkommen zurück!",
+  "signInToContinue": "Melden Sie sich an, um fortzufahren",
+  "dontHaveAccount": "Haben Sie noch kein Konto?",
+  "enterYourEmail": "Geben Sie Ihre E-Mail ein",
+  "enterYourPassword": "Geben Sie Ihr Passwort ein",
+  "pleaseEnterEmail": "Bitte geben Sie Ihre E-Mail ein",
+  "pleaseEnterValidEmail": "Bitte geben Sie eine gültige E-Mail ein",
+  "pleaseEnterPassword": "Bitte geben Sie Ihr Passwort ein",
+  "passwordMinLength": "Das Passwort muss mindestens 6 Zeichen lang sein",
+  "invalidEmailOrPassword": "Ungültige E-Mail oder Passwort. Bitte versuchen Sie es erneut.",
+  "loginFailed": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten und versuchen Sie es erneut.",
+  "connectionTimeout": "Verbindungszeitüberschreitung. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+  "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.",
+  "requestTimeout": "Anfragezeitüberschreitung. Bitte versuchen Sie es erneut.",
+  "serverError": "Serverfehler. Bitte versuchen Sie es später erneut.",
+  "accountDeleted": "Konto gelöscht",
+  "accountDeletedMessage": "Ihr Konto wurde von einem Administrator gelöscht.\n\nWenn Sie glauben, dass dies ein Fehler ist, wenden Sie sich bitte an unser Support-Team:\n\n📧 E-Mail: support@bottleji.com\n📱 Support-Zeiten: 9-18 Uhr (GMT+1)\n\nWir entschuldigen uns für die Unannehmlichkeiten.",
+  "reason": "Grund",
+  "youWillBeRedirectedToLoginScreen": "Sie werden zur Anmeldeseite weitergeleitet.",
+  "resetPassword": "Passwort zurücksetzen",
+  "enterEmailToReceiveResetCode": "Geben Sie Ihre E-Mail-Adresse ein, um einen Reset-Code zu erhalten",
+  "sendResetCode": "Reset-Code senden",
+  "resetCodeSentToEmail": "Reset-Code wurde an Ihre E-Mail gesendet",
+  "enterResetCode": "Reset-Code eingeben",
+  "weHaveSentResetCodeTo": "Wir haben einen Reset-Code gesendet an\n{email}",
+  "@weHaveSentResetCodeTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verify": "Überprüfen",
+  "didntReceiveCode": "Code nicht erhalten?",
+  "resend": "Erneut senden",
+  "resendIn": "Erneut senden in {seconds}s",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resetCodeResentSuccessfully": "Reset-Code erfolgreich erneut gesendet!",
+  "createNewPassword": "Neues Passwort erstellen",
+  "pleaseEnterNewPassword": "Bitte geben Sie Ihr neues Passwort ein",
+  "newPassword": "Neues Passwort",
+  "enterNewPassword": "Geben Sie Ihr neues Passwort ein",
+  "confirmPassword": "Passwort bestätigen",
+  "confirmNewPassword": "Bestätigen Sie Ihr neues Passwort",
+  "pleaseEnterPassword": "Bitte geben Sie ein Passwort ein",
+  "passwordMustBeAtLeast6Characters": "Das Passwort muss mindestens 6 Zeichen lang sein",
+  "pleaseConfirmPassword": "Bitte bestätigen Sie Ihr Passwort",
+  "passwordsDoNotMatch": "Die Passwörter stimmen nicht überein",
+  "passwordResetSuccessful": "Passwort erfolgreich zurückgesetzt! Bitte melden Sie sich mit Ihrem neuen Passwort an.",
+  "verifyYourEmail": "E-Mail bestätigen",
+  "pleaseEnterOtpSentToEmail": "Bitte geben Sie den an Ihre E-Mail gesendeten OTP-Code ein",
+  "verifyOtp": "OTP-Code überprüfen",
+  "resendOtp": "OTP-Code erneut senden",
+  "resendOtpIn": "OTP-Code erneut senden in {seconds} Sekunden",
+  "@resendOtpIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "otpVerifiedSuccessfully": "OTP-Code erfolgreich überprüft",
+  "invalidVerificationResponse": "Fehler: Ungültige Verifizierungsantwort",
+  "otpResentSuccessfully": "OTP-Code erfolgreich erneut gesendet!",
+  "startYourBottlejiJourney": "Beginnen Sie Ihre Bottleji-Reise",
+  "createAccountToGetStarted": "Erstellen Sie ein Konto, um zu beginnen",
+  "createAPassword": "Passwort erstellen",
+  "confirmYourPassword": "Bestätigen Sie Ihr Passwort",
+  "createAccount": "Konto erstellen",
+  "alreadyHaveAccount": "Haben Sie bereits ein Konto?",
+  "registrationSuccessful": "Registrierung erfolgreich",
+  "skip": "Überspringen",
+  "next": "Weiter",
+  "getStarted": "Loslegen",
+  "welcomeToBottleji": "Willkommen bei Bottleji",
+  "yourSustainableWasteManagementSolution": "Ihre nachhaltige Abfallmanagement-Lösung",
+  "joinThousandsOfUsersMakingDifference": "Schließen Sie sich Tausenden von Benutzern an, die einen Unterschied machen, indem sie Flaschen und Dosen recyceln und dabei Belohnungen verdienen.",
+  "createAndTrackDrops": "Abgaben erstellen und verfolgen",
+  "forHouseholdUsers": "Für Haushaltsbenutzer",
+  "easilyCreateDropRequests": "Erstellen Sie einfach Abgabewünsche für Ihre recycelbaren Flaschen und Dosen. Verfolgen Sie den Sammelstatus und erhalten Sie Benachrichtigungen, wenn Sammler sie abholen.",
+  "collectAndEarn": "Sammeln und verdienen",
+  "forCollectors": "Für Sammler",
+  "findNearbyDropsCollectRecyclables": "Finden Sie nahegelegene Abgaben, sammeln Sie recycelbare Materialien und verdienen Sie Belohnungen. Helfen Sie beim Aufbau einer nachhaltigen Gemeinschaft und verdienen Sie dabei Geld.",
+  "realTimeUpdates": "Echtzeit-Updates",
+  "stayConnected": "Bleiben Sie verbunden",
+  "getInstantNotificationsAboutDrops": "Erhalten Sie sofortige Benachrichtigungen über Ihre Abgaben, Sammlungen und wichtige Updates. Verpassen Sie nie eine Gelegenheit.",
+  "appPermissions": "App-Berechtigungen",
+  "bottlejiRequiresAdditionalPermissions": "Bottleji benötigt zusätzliche Berechtigungen, um ordnungsgemäß zu funktionieren",
+  "permissionsHelpProvideBestExperience": "Diese Berechtigungen helfen uns, Ihnen die beste Erfahrung zu bieten.",
+  "locationServices": "Standortdienste",
+  "accessLocationToShowNearbyDrops": "Greifen Sie auf Ihren Standort zu, um nahegelegene Abgaben anzuzeigen und die Navigation für Sammler zu aktivieren.",
+  "localNetworkAccess": "Lokaler Netzwerkzugriff",
+  "allowAppToDiscoverServicesOnWifi": "Erlauben Sie der App, Dienste in Ihrem Wi‑Fi für Echtzeit-Funktionen zu entdecken.",
+  "receiveRealTimeUpdatesAboutDrops": "Erhalten Sie Echtzeit-Updates über Ihre Abgaben, Sammlungen und wichtige Ankündigungen.",
+  "photoStorage": "Fotospeicher",
+  "saveAndAccessPhotosOfRecyclableItems": "Speichern und greifen Sie auf Fotos Ihrer recycelbaren Artikel zu.",
+  "enable": "Aktivieren",
+  "continueToApp": "Zur App fortfahren",
+  "enableRequiredPermissions": "Erforderliche Berechtigungen aktivieren",
+  "accountDisabled": "Konto deaktiviert",
+  "accountDisabledMessage": "Ihr Konto wurde aufgrund wiederholter Verstöße gegen die Community-Richtlinien von Bottleji dauerhaft deaktiviert.\n\nSie können nicht mehr auf dieses Konto zugreifen oder es verwenden.\n\nWenn Sie glauben, dass diese Entscheidung fälschlicherweise getroffen wurde, wenden Sie sich bitte an den Support:",
+  "supportEmail": "support@bottleji.com",
+  "contactSupport": "Support kontaktieren",
+  "pleaseEmailSupport": "Bitte senden Sie eine E-Mail an support@bottleji.com für Unterstützung",
+  "sessionExpired": "Sitzung abgelaufen",
+  "sessionExpiredMessage": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um fortzufahren.",
+  "home": "Startseite",
+  "drops": "Abgaben",
+  "rewards": "Belohnungen",
+  "stats": "Statistiken",
+  "history": "Verlauf",
+  "profile": "Profil",
+  "account": "Konto",
+  "support": "Support",
+  "termsAndConditions": "Allgemeine Geschäftsbedingungen",
+  "logout": "Abmelden",
+  "areYouSureLogout": "Möchten Sie sich wirklich abmelden?",
+  "errorDuringLogout": "Fehler beim Abmelden: {error}",
+  "close": "Schließen",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "retry": "Wiederholen",
+  "confirm": "Bestätigen",
+  "yes": "Ja",
+  "no": "Nein",
+  "stay": "Bleiben",
+  "leave": "Verlassen",
+  "back": "Zurück",
+  "next": "Weiter",
+  "previous": "Zurück",
+  "done": "Fertig",
+  "gotIt": "Verstanden",
+  "clearAll": "Alle löschen",
+  "clearFilters": "Filter löschen",
+  "apply": "Anwenden",
+  "filterDrops": "Abgaben filtern",
+  "status": "Status",
+  "all": "Alle",
+  "date": "Datum",
+  "distance": "Entfernung",
+  "deleteDrop": "Abgabe löschen",
+  "areYouSureDelete": "Möchten Sie diese Abgabe wirklich löschen?",
+  "createDrop": "Abgabe erstellen",
+  "editDrop": "Abgabe bearbeiten",
+  "startCollection": "Sammlung starten",
+  "resumeNavigation": "Navigation fortsetzen",
+  "cancelCollection": "Sammlung abbrechen",
+  "areYouSureCancelCollection": "Möchten Sie diese Sammlung wirklich abbrechen?",
+  "yesCancel": "Ja, abbrechen",
+  "leaveCollection": "Sammlung verlassen?",
+  "areYouSureLeaveCollection": "Möchten Sie wirklich gehen? Ihre Sammlung bleibt aktiv.",
+  "exitNavigation": "Navigation beenden",
+  "areYouSureExitNavigation": "Möchten Sie die Navigation wirklich beenden? Ihre Sammlung bleibt aktiv.",
+  "reportDrop": "Abgabe melden",
+  "useCurrentLocation": "Aktuellen Standort verwenden",
+  "setCollectionRadius": "Sammelradius festlegen",
+  "takePhoto": "Foto aufnehmen",
+  "chooseFromGallery": "Aus Galerie wählen",
+  "galleryIOSSimulatorIssue": "Galerie (iOS-Simulator-Problem)",
+  "useCameraOrRealDevice": "Kamera oder echtes Gerät verwenden",
+  "leaveOutsideDoor": "Vor der Tür lassen",
+  "pleaseTakePhoto": "Bitte machen Sie ein Foto Ihrer Flaschen",
+  "pleaseWaitLoading": "Bitte warten Sie, während wir Ihre Kontoinformationen laden",
+  "mustBeLoggedIn": "Sie müssen angemeldet sein, um eine Abgabe zu erstellen",
+  "authenticationIssue": "Authentifizierungsproblem erkannt. Bitte melden Sie sich ab und wieder an.",
+  "dropCreatedSuccessfully": "Abgabe erfolgreich erstellt!",
+  "openSettings": "Einstellungen öffnen",
+  "tryAgain": "Erneut versuchen",
+  "reloadMap": "Karte neu laden",
+  "thisHelpsUsShowNearby": "Dies hilft uns, nahegelegene Abgaben anzuzeigen und genaue Sammeldienste anzubieten.",
+  "errorLoadingUserMode": "Fehler beim Laden des Benutzermodus: {error}",
+  "tryAdjustingFilters": "Versuchen Sie, Ihre Filter anzupassen",
+  "checkBackLater": "Schauen Sie später für neue Abgaben vorbei",
+  "createFirstDrop": "Erstellen Sie Ihre erste Abgabe, um zu beginnen",
+  "collectionInProgress": "Sammlung läuft",
+  "resumeCollection": "Sammlung fortsetzen",
+  "collectionTimeout": "⚠️ Sammelzeitüberschreitung",
+  "warningSystem": "Warnsystem",
+  "warningAddedToAccount": "Ihrem Konto wurde für diese Abgabe eine Warnung hinzugefügt. Bitte stellen Sie sicher, dass zukünftige Bilder den Community-Richtlinien entsprechen.",
+  "timerExpired": "⏰ Timer abgelaufen!",
+  "timerExpiredMessage": "Der Sammeltimer ist abgelaufen. Der Navigationsbildschirm wird jetzt geschlossen.",
+  "applicationRejected": "Bewerbung abgelehnt",
+  "applicationRejectedMessage": "Ihre Bewerbung wurde aus folgendem Grund abgelehnt:",
+  "noSpecificReason": "Kein spezifischer Grund angegeben",
+  "canEditApplication": "Sie können Ihre Bewerbung bearbeiten und erneut einreichen.",
+  "editApplication": "Bewerbung bearbeiten",
+  "pleaseLogInCollector": "Bitte melden Sie sich an, um auf den Sammler-Modus zuzugreifen",
+  "tierSystem": "Stufensystem",
+  "bySubscribingAgree": "Durch das Abonnieren stimmen Sie unseren Nutzungsbedingungen\nund unserer Datenschutzrichtlinie zu",
+  "startProSubscription": "PRO-Abonnement starten",
+  "termsOfService": "Nutzungsbedingungen",
+  "lastUpdated": "Zuletzt aktualisiert: 15. März 2024",
+  "acceptanceOfTerms": "1. Annahme der Bedingungen",
+  "acceptanceOfTermsContent": "Durch den Zugriff auf und die Nutzung der Bottleji-Anwendung stimmen Sie diesen Allgemeinen Geschäftsbedingungen zu. Wenn Sie mit einem Teil dieser Bedingungen nicht einverstanden sind, dürfen Sie nicht auf die Anwendung zugreifen.",
+  "userResponsibilities": "2. Benutzerverantwortlichkeiten",
+  "userResponsibilitiesContent": "Als Benutzer von Bottleji stimmen Sie zu:\n• Genaue und vollständige Informationen bereitzustellen\n• Die Sicherheit Ihres Kontos zu gewährleisten\n• Den Richtlinien zur Abfalltrennung zu folgen\n• Sammlungen verantwortungsbewusst zu planen\n• Den Service in Übereinstimmung mit den örtlichen Gesetzen zu nutzen",
+  "household": "Haushalt",
+  "collector": "Sammler",
+  "activeMode": "Aktiver Modus",
+  "myAccount": "Mein Konto",
+  "trainings": "Schulungen",
+  "referAndEarn": "Weiterempfehlen und verdienen",
+  "upgrade": "Upgrade",
+  "review": "Überprüfung",
+  "rejected": "Abgelehnt",
+  "apply": "Bewerben",
+  "becomeACollector": "Sammler werden",
+  "applicationUnderReview": "Ihre Bewerbung wird derzeit überprüft. Möchten Sie den Status Ihrer Bewerbung anzeigen?",
+  "viewStatus": "Status anzeigen",
+  "applicationRejectedReason": "Ihre Bewerbung wurde aus folgendem Grund abgelehnt:\n\n\"{rejectionReason}\"\n\nMöchten Sie Ihre Bewerbung bearbeiten und erneut einreichen?",
+  "applicationApprovedSuspended": "Ihre Bewerbung wurde genehmigt, aber Ihr Sammlerzugang wurde vorübergehend gesperrt. Bitte kontaktieren Sie den Support oder bewerben Sie sich erneut.",
+  "reapply": "Erneut bewerben",
+  "needToApplyCollector": "Sie müssen sich bewerben und genehmigt werden, um auf den Sammler-Modus zuzugreifen. Möchten Sie sich jetzt bewerben?",
+  "applyNow": "Jetzt bewerben",
+  "householdMode": "Haushaltsmodus",
+  "collectorMode": "Sammler-Modus",
+  "householdModeDescription": "Abgaben erstellen und Ihr Recycling verfolgen",
+  "collectorModeDescription": "Flaschen sammeln und Belohnungen verdienen",
+  "sustainableWasteManagement": "Nachhaltige Abfallwirtschaft",
+  "ecoFriendlyBottleCollection": "Umweltfreundliche Flaschensammlung",
+  "bottleType": "Flaschentyp",
+  "numberOfPlasticBottles": "Anzahl der Plastikflaschen",
+  "numberOfCans": "Anzahl der Dosen",
+  "notesOptional": "Notizen (optional)",
+  "notes": "Notizen",
+  "failedToCreateDrop": "Abgabe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+  "imageSelectedSuccessfully": "Bild erfolgreich ausgewählt!",
+  "errorSelectingImage": "Fehler beim Auswählen des Bildes",
+  "permissionDeniedPhoto": "Berechtigung verweigert. Bitte erlauben Sie den Foto-Zugriff in den Einstellungen.",
+  "galleryNotAvailableSimulator": "Galerie auf dem Simulator nicht verfügbar. Versuchen Sie die Kamera oder verwenden Sie ein echtes Gerät.",
+  "profileInformation": "Profilinformationen",
+  "fullName": "Vollständiger Name",
+  "notSet": "Nicht festgelegt",
+  "phone": "Telefon",
+  "address": "Adresse",
+  "collectorStatus": "Sammler-Status",
+  "approvedCollector": "Sie sind ein genehmigter Sammler",
+  "applicationStatus": "Bewerbungsstatus",
+  "applicationUnderReviewStatus": "Ihre Bewerbung wird überprüft",
+  "viewDetails": "Details anzeigen",
+  "applicationRejectedTitle": "Bewerbung abgelehnt",
+  "pleaseLoginToViewProfile": "Bitte melden Sie sich an, um Ihr Profil anzuzeigen",
+  "startYourBottlejiJourney": "Beginnen Sie Ihre Bottleji-Reise",
+  "bottlejiRequiresPermissions": "Bottleji benötigt zusätzliche Berechtigungen, um ordnungsgemäß zu funktionieren",
+  "galleryError": "Galeriefehler: {error}",
+  "galleryNotAvailableIOS": "Galerie auf iOS-Simulator nicht verfügbar: {error}",
+  "editProfile": "Profil bearbeiten",
+  "completeYourProfile": "Vervollständigen Sie Ihr Profil",
+  "profilePhoto": "Profilfoto",
+  "personalInformation": "Persönliche Informationen",
+  "tapToChangePhoto": "Tippen Sie, um das Foto zu ändern",
+  "saving": "Wird gespeichert...",
+  "completeSetup": "Einrichtung abschließen",
+  "saveProfile": "Profil speichern",
+  "phoneNumberRequired": "Telefonnummer ist erforderlich",
+  "phoneNumberMustBe8Digits": "Telefonnummer muss 8 Ziffern enthalten",
+  "phoneNumberMustContainOnlyDigits": "Telefonnummer darf nur Ziffern enthalten",
+  "pleaseEnterYourFullName": "Bitte geben Sie Ihren vollständigen Namen ein",
+  "pleaseEnterYourPhoneNumber": "Bitte geben Sie Ihre Telefonnummer ein",
+  "pleaseEnterYourAddress": "Bitte geben Sie Ihre Adresse ein",
+  "pleaseVerifyYourPhoneNumber": "Bitte verifizieren Sie Ihre Telefonnummer vor dem Speichern",
+  "noChangesDetected": "Keine Änderungen erkannt. Profil bleibt unverändert.",
+  "profileSetupCompletedSuccessfully": "Profil-Einrichtung erfolgreich abgeschlossen! Willkommen bei Bottleji!",
+  "profileUpdatedSuccessfully": "Profil erfolgreich aktualisiert!",
+  "failedToUploadImage": "Bild-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+  "smsCode": "SMS-Code",
+  "enter6DigitCode": "6-stelligen Code eingeben",
+  "sendCode": "Code senden",
+  "sending": "Wird gesendet...",
+  "resend": "Erneut senden",
+  "verifyCode": "Code verifizieren",
+  "verifying": "Wird verifiziert...",
+  "phoneNumberVerified": "Telefonnummer verifiziert",
+  "phoneNumberNotVerified": "Telefonnummer nicht verifiziert",
+  "phoneNumberNeedsVerification": "Telefonnummer muss verifiziert werden",
+  "phoneNumberVerifiedSuccessfully": "Telefonnummer erfolgreich verifiziert!",
+  "phoneNumber": "Telefonnummer",
+  "fullNameRequired": "Vollständiger Name ist erforderlich",
+  "addressRequired": "Adresse ist erforderlich",
+  "searchAddress": "Adresse suchen",
+  "tapToSearchAddress": "Tippen Sie, um nach Ihrer Adresse zu suchen",
+  "typeToSearch": "Tippen Sie zum Suchen...",
+  "noResultsFound": "Keine Ergebnisse gefunden",
+  "errorFetchingSuggestions": "Fehler beim Abrufen von Vorschlägen: {error}",
+  "@errorFetchingSuggestions": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterPhoneNumberFirst": "Bitte geben Sie zuerst eine Telefonnummer ein",
+  "pleaseEnterValidPhoneNumber": "Bitte geben Sie eine gültige Telefonnummer mit Ländercode ein (z. B. +49 123456789)",
+  "locationPermissionRequired": "Standortberechtigung ist für Adressfunktionen erforderlich",
+  "notificationsTitle": "Benachrichtigungen",
+  "markAllRead": "Alle als gelesen markieren",
+  "noNotificationsYet": "Noch keine Benachrichtigungen",
+  "failedToLoadNotifications": "Benachrichtigungen konnten nicht geladen werden",
+  "createNewDrop": "Neue Abgabe erstellen",
+  "photo": "Foto",
+  "takePhotoOrChooseFromGallery": "Machen Sie ein Foto oder wählen Sie aus der Galerie - zeigen Sie Ihre Flaschen klar, um Sammlern zu helfen",
+  "addPhoto": "Foto hinzufügen",
+  "cameraOrGallery": "Kamera oder Galerie",
+  "allDrops": "Alle Abgaben",
+  "myDrops": "Meine Abgaben",
+  "active": "Aktiv",
+  "collected": "Gesammelt",
+  "flagged": "Markiert",
+  "censored": "Zensiert",
+  "stale": "Abgelaufen",
+  "dropsInThisFilterCollected": "Abgaben in diesem Filter wurden erfolgreich von einem Sammler gesammelt. Diese Abgaben zeigen Ihre Recycling-Wirkung und können nicht bearbeitet werden.",
+  "dropsInThisFilterFlagged": "Abgaben in diesem Filter wurden aufgrund mehrerer Stornierungen oder verdächtiger Aktivitäten markiert. Markierte Abgaben sind auf der Karte ausgeblendet und können nicht bearbeitet werden.",
+  "dropsInThisFilterCensored": "Abgaben in diesem Filter wurden aufgrund unangemessener Inhalte zensiert. Zensierte Abgaben sind auf der Karte ausgeblendet und können nicht bearbeitet werden.",
+  "dropsInThisFilterStale": "Abgaben in diesem Filter wurden als abgelaufen markiert, da sie älter als 3 Tage waren und wahrscheinlich von externen Sammlern gesammelt wurden. Abgelaufene Abgaben sind auf der Karte ausgeblendet und können nicht bearbeitet werden.",
+  "inActiveCollection": "In aktiver Sammlung - Sammler ist unterwegs",
+  "censoredInappropriateImage": "Zensiert: {reason}",
+  "@censoredInappropriateImage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onTheWay": "Unterwegs",
+  "collectorOnHisWay": "Sammler ist auf dem Weg, um Ihre Abgabe abzuholen",
+  "waiting": "Warten...",
+  "notYetCollected": "Noch nicht gesammelt",
+  "yourPoints": "Ihre Punkte",
+  "pointsToGo": "{points} Punkte verbleibend",
+  "@pointsToGo": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "progressToNextTier": "Fortschritt zur nächsten Stufe",
+  "bronzeCollector": "Bronze-Sammler",
+  "silverCollector": "Silber-Sammler",
+  "goldCollector": "Gold-Sammler",
+  "platinumCollector": "Platin-Sammler",
+  "diamondCollector": "Diamant-Sammler",
+  "earnPointsPerDropCollected": "Verdienen Sie {points} Punkte pro gesammelte Abgabe",
+  "@earnPointsPerDropCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "earnPointsWhenDropsCollected": "Verdienen Sie {points} Punkte, wenn Ihre Abgaben gesammelt werden",
+  "@earnPointsWhenDropsCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardShop": "Belohnungsshop",
+  "orderHistory": "Bestellverlauf",
+  "noOrdersYet": "Noch keine Bestellungen",
+  "yourOrderHistoryWillAppearHere": "Ihr Bestellverlauf wird hier angezeigt",
+  "notEnoughPoints": "Nicht genug Punkte",
+  "pts": "Pkt",
+  "myStats": "Meine Statistiken",
+  "timeRange": "Zeitraum",
+  "thisWeek": "Diese Woche",
+  "thisMonth": "Diesen Monat",
+  "thisYear": "Dieses Jahr",
+  "allTime": "Gesamte Zeit",
+  "overview": "Übersicht",
+  "dropStatus": "Abgabe-Status",
+  "pending": "Ausstehend",
+  "collectionRate": "Sammelrate",
+  "avgCollectionTime": "Durchschnittliche Sammelzeit",
+  "recentCollections": "Letzte Sammlungen",
+  "supportAndHelp": "Support & Hilfe",
+  "howCanWeHelpYou": "Wie können wir Ihnen helfen?",
+  "selectCategoryToGetStarted": "Wählen Sie eine Kategorie, um zu beginnen",
+  "supportCategories": "Support-Kategorien",
+  "whatDoYouNeedHelpWith": "Wobei brauchen Sie Hilfe?",
+  "selectCategoryToContinue": "Wählen Sie eine Kategorie, um fortzufahren",
+  "trainingCenter": "Schulungszentrum",
+  "todayAt": "Heute um {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "yesterdayAt": "Gestern um {time}",
+  "@yesterdayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "daysAgo": "vor {days} Tagen",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "leaveOutside": "Draußen lassen",
+  "noImageAvailable": "Kein Bild verfügbar",
+  "distance": "Entfernung",
+  "estTime": "Geschätzte Zeit",
+  "yourLocation": "Ihr Standort",
+  "dropLocation": "Abgabe-Standort",
+  "routePreview": "Routen-Vorschau",
+  "dropInformation": "Abgabe-Informationen",
+  "plasticBottles": "Plastikflaschen",
+  "cans": "Dosen",
+  "plastic": "PLASTIK",
+  "can": "DOSE",
+  "mixed": "GEMISCHT",
+  "totalItems": "Gesamtartikel",
+  "estimatedValue": "Geschätzter Wert",
+  "created": "Erstellt",
+  "flagged": "MARKIERT",
+  "completeCurrentCollectionFirst": "Schließen Sie Ihre aktuelle Sammlung ab, bevor Sie eine neue starten.",
+  "youAreOffline": "Sie sind offline. Bitte überprüfen Sie Ihre Internetverbindung.",
+  "errorColon": "Fehler: {error}",
+  "@errorColon": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "yourInformation": "Ihre Informationen",
+  "createdBy": "Erstellt von",
+  "youWillSeeNotificationsHere": "Sie sehen Ihre Benachrichtigungen hier",
+  "pendingStatus": "AUSSTEHEND",
+  "acceptedStatus": "AKZEPTIERT",
+  "collectedStatus": "GESAMMELT",
+  "cancelledStatus": "STORNIERT",
+  "expiredStatus": "ABGELAUFEN",
+  "staleStatus": "VERALTET",
+  "howRewardsWork": "Wie Belohnungen funktionieren",
+  "howRewardsWorkCollector": "• Sammeln Sie Abgaben, um Punkte zu verdienen\n• Höhere Stufen = mehr Punkte pro Abgabe\n• Verwenden Sie Punkte im Belohnungsshop\n• Verfolgen Sie Ihren Fortschritt und Ihre Erfolge",
+  "howRewardsWorkHousehold": "• Erstellen Sie Abgaben, um zum Recycling beizutragen\n• Verdienen Sie Punkte, wenn Sammler Ihre Abgaben abholen\n• Höhere Stufen = mehr Punkte pro gesammelte Abgabe\n• Verwenden Sie Punkte im Belohnungsshop",
+  "today": "Heute",
+  "yesterday": "Gestern",
+  "retry": "Wiederholen",
+  "itemNotAvailable": "Artikel ist nicht verfügbar",
+  "outOfStock": "Nicht vorrätig",
+  "orderNow": "Jetzt bestellen",
+  "pleaseLogInToViewOrderHistory": "Bitte melden Sie sich an, um die Bestellhistorie anzuzeigen",
+  "failedToLoadOrderHistory": "Laden der Bestellhistorie fehlgeschlagen",
+  "refresh": "Aktualisieren",
+  "pointsSpent": "Ausgegebene Punkte",
+  "size": "Größe",
+  "orderDate": "Bestelldatum",
+  "tracking": "Verfolgung",
+  "estimatedDelivery": "Geschätzte Lieferung",
+  "deliveryAddress": "Lieferadresse",
+  "adminNote": "Admin-Hinweis",
+  "pending": "Ausstehend",
+  "approved": "Genehmigt",
+  "processing": "In Bearbeitung",
+  "shipped": "Versandt",
+  "delivered": "Geliefert",
+  "cancelled": "Storniert",
+  "cancellationReasons": "Stornierungsgründe",
+  "cancellationReason": "Stornierungsgrund",
+  "noAccess": "Kein Zugang",
+  "notFound": "Nicht gefunden",
+  "alreadyCollected": "Bereits gesammelt",
+  "wrongLocation": "Falscher Standort",
+  "unsafeLocation": "Unsicherer Standort",
+  "other": "Andere",
+  "rejected": "Abgelehnt",
+  "available": "{count} verfügbar",
+  "@available": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Erstellt",
+  "onTheWay": "Unterwegs",
+  "waiting": "Warten...",
+  "collectorOnHisWay": "Sammler ist unterwegs, um Ihre Abgabe abzuholen",
+  "notYetCollected": "Noch nicht gesammelt",
+  "updateDrop": "Abgabe aktualisieren",
+  "updating": "Aktualisierung...",
+  "recyclingImpact": "Recycling-Auswirkung",
+  "recentDrops": "Letzte Abgaben",
+  "viewAll": "Alle anzeigen",
+  "dropStatusDistribution": "Abgabe-Status",
+  "co2VolumeSaved": "CO₂-Volumen gespart",
+  "totalCo2Saved": "Gesamt CO₂ gespart: {amount} kg",
+  "@totalCo2Saved": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dropActivity": "Abgabe-Aktivität",
+  "dropsCreated": "Abgaben erstellt ({timeRange}): {count}",
+  "@dropsCreated": {
+    "placeholders": {
+      "timeRange": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPickingImage": "Fehler beim Auswählen des Bildes: {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToUploadImage": "Fehler beim Hochladen des Bildes: {error}",
+  "@failedToUploadImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropUpdatedSuccessfully": "Abgabe erfolgreich aktualisiert!",
+  "errorUpdatingDrop": "Fehler beim Aktualisieren der Abgabe: {error}",
+  "@errorUpdatingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDrop": "Abgabe löschen",
+  "areYouSureDeleteDrop": "Sind Sie sicher, dass Sie diese Abgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "dropDeletedSuccessfully": "Abgabe erfolgreich gelöscht!",
+  "errorDeletingDrop": "Fehler beim Löschen der Abgabe: {error}",
+  "@errorDeletingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterNumberOfBottles": "Bitte geben Sie die Anzahl der Flaschen ein",
+  "pleaseEnterValidNumber": "Bitte geben Sie eine gültige Zahl ein",
+  "pleaseEnterNumberOfCans": "Bitte geben Sie die Anzahl der Dosen ein",
+  "anyAdditionalInstructions": "Zusätzliche Anweisungen für den Sammler...",
+  "collectorCanLeaveOutside": "Sammler kann Artikel draußen lassen, wenn niemand zu Hause ist",
+  "location": "Standort",
+  "loadingAddress": "Adresse wird geladen...",
+  "locationFormat": "Standort: {lat}, {lng}",
+  "@locationFormat": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSelected": "Standort ausgewählt",
+  "currentDropLocation": "Aktueller Abgabe-Standort",
+  "tapConfirmToSetLocation": "Tippen Sie auf \"Bestätigen\", um diesen Standort festzulegen",
+  "confirm": "Bestätigen",
+  "gettingStarted": "Erste Schritte",
+  "advancedFeatures": "Erweiterte Funktionen",
+  "troubleshooting": "Fehlerbehebung",
+  "bestPractices": "Bewährte Praktiken",
+  "collectorApplication": "Sammler-Bewerbung",
+  "payments": "Zahlungen",
+  "notifications": "Benachrichtigungen",
+  "all": "Alle",
+  "help": "Hilfe",
+  "collector": "Sammler",
+  "advanced": "Erweitert",
+  "description": "Beschreibung",
+  "story": "Geschichte",
+  "totalDrops": "Gesamte Drops",
+  "aluminumCans": "Aluminiumdosen",
+  "recycled": "Recycelt",
+  "recycledBottles": "{count} Flaschen recycelt",
+  "@recycledBottles": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recycledCans": "{count} Dosen recycelt",
+  "@recycledCans": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "totalItemsRecycled": "Gesamte Recycelte Artikel",
+  "dropsCollected": "Gesammelte Drops",
+  "monday": "Mo",
+  "tuesday": "Di",
+  "wednesday": "Mi",
+  "thursday": "Do",
+  "friday": "Fr",
+  "saturday": "Sa",
+  "sunday": "So",
+  "january": "Jan",
+  "february": "Feb",
+  "march": "Mär",
+  "april": "Apr",
+  "may": "Mai",
+  "june": "Jun",
+  "july": "Jul",
+  "august": "Aug",
+  "september": "Sep",
+  "october": "Okt",
+  "november": "Nov",
+  "december": "Dez",
+  "todaysTotal": "Gesamt heute",
+  "earnings": "Verdienste",
+  "collections": "Sammlungen",
+  "noEarningsHistoryYet": "Noch kein Verdienstverlauf",
+  "earningsWillAppearHere": "Ihre Verdienste werden hier angezeigt, sobald Sie Sammlungen abgeschlossen haben",
+  "totalEarnings": "Gesamtverdienste",
+  "errorLoadingEarnings": "Fehler beim Laden der Verdienste: {error}",
+  "@errorLoadingEarnings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noCompletedCollectionsYet": "Noch keine abgeschlossenen Sammlungen",
+  "performanceMetrics": "Leistungsmetriken",
+  "collected": "Gesammelt",
+  "expired": "Abgelaufen",
+  "cancelled": "Abgebrochen",
+  "collectionsOverTime": "Sammlungen im Zeitverlauf",
+  "expiredOverTime": "Abgelaufen im Zeitverlauf",
+  "cancelledOverTime": "Abgebrochen im Zeitverlauf",
+  "totalThisWeek": "gesamt diese Woche",
+  "totalThisMonth": "gesamt diesen Monat",
+  "totalThisYear": "gesamt dieses Jahr",
+  "mon": "Mo",
+  "tue": "Di",
+  "wed": "Mi",
+  "thu": "Do",
+  "fri": "Fr",
+  "sat": "Sa",
+  "sun": "So",
+  "jan": "Jan",
+  "feb": "Feb",
+  "mar": "Mär",
+  "apr": "Apr",
+  "may": "Mai",
+  "jun": "Jun",
+  "jul": "Jul",
+  "aug": "Aug",
+  "sep": "Sep",
+  "oct": "Okt",
+  "nov": "Nov",
+  "dec": "Dez",
+  "daysAgoShort": "vor {days} T",
+  "@daysAgoShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "at": "um",
+  "total": "Gesamt",
+  "noDropsCreatedYet": "Noch keine Abgaben erstellt",
+  "createYourFirstDropToGetStarted": "Erstellen Sie Ihre erste Abgabe, um zu beginnen",
+  "noActiveDrops": "Keine aktiven Abgaben",
+  "noCollectedDrops": "Noch keine gesammelten Abgaben",
+  "noStaleDrops": "Keine abgelaufenen Abgaben",
+  "noCensoredDrops": "Keine zensierten Abgaben",
+  "noFlaggedDrops": "Keine markierten Abgaben",
+  "noDropsMatchYourFilters": "Keine Abgaben entsprechen Ihren Filtern",
+  "tryAdjustingYourFilters": "Versuchen Sie, Ihre Filter anzupassen",
+  "clearFilters": "Filter löschen",
+  "noDropsAvailable": "Keine Abgaben verfügbar",
+  "checkBackLaterForNewDrops": "Schauen Sie später nach neuen Abgaben",
+  "note": "Hinweis",
+  "outside": "Draußen",
+  "filterDrops": "Abgaben filtern",
+  "status": "Status",
+  "date": "Datum",
+  "distance": "Entfernung",
+  "apply": "Anwenden",
+  "cancel": "Abbrechen",
+  "last7Days": "Letzte 7 Tage",
+  "last30Days": "Letzte 30 Tage",
+  "thisMonth": "Diesen Monat",
+  "lastMonth": "Letzten Monat",
+  "within1Km": "Innerhalb von 1 km",
+  "within3Km": "Innerhalb von 3 km",
+  "within5Km": "Innerhalb von 5 km",
+  "within10Km": "Innerhalb von 10 km",
+  "rewardHistory": "Belohnungsverlauf",
+  "noRewardHistoryYet": "Noch kein Belohnungsverlauf",
+  "points": "Punkte",
+  "tier": "Stufe",
+  "tierUp": "Stufe aufgestiegen!",
+  "acceptDrop": "Abgabe akzeptieren",
+  "completeCurrentDropFirst": "Aktuelle Abgabe zuerst abschließen",
+  "distanceUnavailable": "Entfernung nicht verfügbar",
+  "away": "entfernt",
+  "meters": "m",
+  "kilometers": "km",
+  "minutesShort": "Min",
+  "hoursShort": "Std",
+  "tierSystem": "Stufensystem",
+  "current": "Aktuell",
+  "earnPointsPerDrop": "Verdienen Sie {points} Punkte pro Abgabe",
+  "@earnPointsPerDrop": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "dropsRequired": "{count} Abgaben erforderlich",
+  "@dropsRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "start": "Starten",
+  "close": "Schließen",
+  "filterHistory": "Verlauf filtern",
+  "searchHistory": "Verlauf durchsuchen",
+  "searchByNotesBottleTypeOrCancellationReason": "Nach Notizen, Flaschentyp oder Stornierungsgrund suchen...",
+  "viewType": "Ansichtstyp",
+  "status": "Status",
+  "timeRange": "Zeitraum",
+  "itemType": "Artikeltyp",
+  "bottleType": "Flaschentyp",
+  "allTime": "Gesamte Zeit",
+  "last3Months": "Letzte 3 Monate",
+  "last6Months": "Letzte 6 Monate",
+  "thisYear": "Dieses Jahr",
+  "allItems": "Alle Artikel",
+  "bottlesOnly": "Nur Flaschen",
+  "cansOnly": "Nur Dosen",
+  "mixed": "Gemischt",
+  "allTypes": "Alle Typen",
+  "clearAll": "Alle löschen",
+  "activeFilters": "AKTIV",
+  "waitingForCollector": "Warten auf Sammler",
+  "liveCollectorOnTheWay": "🟢 Live - Sammler unterwegs",
+  "collectorOnHisWay": "Der Sammler ist auf dem Weg, um Ihre Abgabe abzuholen",
+  "collectorWasOnTheWay": "Der Sammler war unterwegs",
+  "waiting": "Warten...",
+  "notYetCollected": "Noch nicht gesammelt",
+  "justNow": "Gerade eben",
+  "minutesAgo": "vor {minutes} Min",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "vor {hours} Std",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "vor {days} T",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Erstellt",
+  "onTheWay": "Unterwegs",
+  "wasOnTheWay": "War unterwegs",
+  "accepted": "Akzeptiert",
+  "sessionTime": "Sitzungszeit",
+  "completed": "Abgeschlossen",
+  "myDrops": "Meine Abgaben",
+  "pleaseLoginToViewYourDrops": "Bitte melden Sie sich an, um Ihre Abgaben anzuzeigen",
+  "errorLoadingUserData": "Fehler beim Laden der Benutzerdaten: {error}",
+  "@errorLoadingUserData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingUserMode": "Fehler beim Laden des Benutzermodus: {error}",
+  "@errorLoadingUserMode": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "earn500Points": "500 Punkte verdienen",
+  "forEachFriendWhoJoins": "Für jeden Freund, der beitritt",
+  "yourReferralCode": "Ihr Empfehlungscode",
+  "referralCodeCopiedToClipboard": "Empfehlungscode in die Zwischenablage kopiert",
+  "shareVia": "Teilen über",
+  "whatsapp": "WhatsApp",
+  "sms": "SMS",
+  "more": "Mehr",
+  "howItWorks": "So funktioniert's",
+  "shareYourCode": "Teilen Sie Ihren Code",
+  "shareYourUniqueReferralCodeWithFriends": "Teilen Sie Ihren eindeutigen Empfehlungscode mit Freunden",
+  "friendSignsUp": "Freund meldet sich an",
+  "yourFriendCreatesAnAccountUsingYourCode": "Ihr Freund erstellt ein Konto mit Ihrem Code",
+  "earnRewards": "Belohnungen verdienen",
+  "get500PointsWhenTheyCompleteFirstActivity": "Erhalten Sie 500 Punkte, wenn sie ihre erste Aktivität abschließen",
+  "trainingCenterInfo": "Schulungszentrum",
+  "trainingCenterInfoHousehold": "Zugriff auf Schulungsinhalte für Haushaltsbenutzer. Lernen Sie, Botleji effektiv zu nutzen!",
+  "trainingCenterInfoCollector": "Zugriff auf Schulungsinhalte für Sammler. Meistern Sie Sammeltechniken und Best Practices!",
+  "gotIt": "Verstanden",
+  "filter": "Filtern",
+  "search": "Suchen",
+  "clear": "Löschen",
+  "plastic": "Kunststoff",
+  "glass": "Glas",
+  "aluminum": "Aluminium",
+  "dropProgress": "Abgabe-Fortschritt",
+  "collectionIssues": "Sammelprobleme",
+  "cancelledTimes": "{count} Mal storniert",
+  "@cancelledTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dropAcceptedByCollector": "Abgabe vom Sammler akzeptiert",
+  "acceptedDropForCollection": "Abgabe zur Sammlung akzeptiert",
+  "collectionCompletedSuccessfullyNoExclamation": "Sammlung erfolgreich abgeschlossen",
+  "estimatedTime": "Geschätzte Ankunftszeit",
+  "applicationIssue": "Antragsproblem",
+  "paymentIssue": "Zahlungsproblem",
+  "accountIssue": "Kontoproblem",
+  "technicalIssue": "Technisches Problem",
+  "generalSupportRequest": "Allgemeine Supportanfrage",
+  "supportRequest": "Supportanfrage",
+  "noDescriptionProvided": "Keine Beschreibung angegeben",
+  "becomeACollector": "Sammler werden",
+  "userNotFound": "Benutzer nicht gefunden",
+  "welcome": "Willkommen",
+  "idVerification": "ID-Verifizierung",
+  "selfieWithId": "Selfie mit Ausweis",
+  "reviewAndSubmit": "Überprüfen und einreichen",
+  "welcomeToCollectorProgram": "Willkommen im Sammlerprogramm!",
+  "joinOurCommunityOfEcoConsciousCollectors": "Treten Sie unserer Gemeinschaft umweltbewusster Sammler bei und helfen Sie mit, beim Recycling einen Unterschied zu machen.",
+  "earnMoney": "Geld verdienen",
+  "getPaidForEveryBottleAndCan": "Werden Sie für jede Flasche und Dose bezahlt, die Sie sammeln",
+  "flexibleHours": "Flexible Arbeitszeiten",
+  "collectWheneverAndWherever": "Sammeln Sie wann und wo Sie möchten",
+  "helpTheEnvironment": "Helfen Sie der Umwelt",
+  "contributeToCleanerGreenerWorld": "Tragen Sie zu einer saubereren, grüneren Welt bei",
+  "requirements": "Anforderungen",
+  "mustBe18YearsOrOlder": "• Muss 18 Jahre oder älter sein",
+  "validNationalIdCard": "• Gültiger Personalausweis",
+  "clearPhotosOfIdAndSelfie": "• Klare Fotos des Ausweises und Selfie",
+  "goodStandingInCommunity": "• Guter Ruf in der Gemeinschaft",
+  "getStarted": "Loslegen",
+  "idCardVerification": "Personalausweis-Verifizierung",
+  "pleaseProvideYourIdCardInformation": "Bitte geben Sie Ihre {idType}-Informationen an und machen Sie klare Fotos",
+  "@pleaseProvideYourIdCardInformation": {
+    "placeholders": {
+      "idType": {
+        "type": "String"
+      }
+    }
+  },
+  "idCardDetails": "Personalausweis-Details",
+  "passportDetails": "Reisepass-Details",
+  "idCardType": "Personalausweis-Typ",
+  "selectYourIdCardType": "Wählen Sie Ihren Personalausweis-Typ",
+  "nationalId": "Personalausweis",
+  "passport": "Reisepass",
+  "pleaseSelectAnIdCardType": "Bitte wählen Sie einen Personalausweis-Typ",
+  "passportNumber": "Reisepassnummer",
+  "enterYourPassportNumber": "Geben Sie Ihre Reisepassnummer ein",
+  "selectIssueDate": "Ausstellungsdatum auswählen",
+  "issueDateLabel": "Ausstellungsdatum",
+  "issueDate": "Ausstellungsdatum: {date}",
+  "@issueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExpiryDate": "Ablaufdatum auswählen",
+  "expiryDateLabel": "Ablaufdatum",
+  "expiryDate": "Ablaufdatum: {date}",
+  "@expiryDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "issuingAuthority": "Ausstellende Behörde",
+  "egMinistryOfForeignAffairs": "z.B. Außenministerium",
+  "idCardNumber": "Personalausweisnummer",
+  "idCardNumberPlaceholder": "12345678",
+  "idCardNumberIsRequired": "Personalausweisnummer ist erforderlich",
+  "idCardNumberMustBe8Digits": "Personalausweisnummer muss 8 Ziffern enthalten",
+  "idCardNumberMustContainOnlyDigits": "Personalausweisnummer darf nur Ziffern enthalten",
+  "idCardPhotos": "Personalausweis-Fotos",
+  "passportPhotos": "Reisepass-Fotos",
+  "noPassportMainPagePhoto": "Kein Foto der Hauptseite des Reisepasses",
+  "takePhotoOfMainPageWithDetails": "Machen Sie ein Foto der Hauptseite mit Ihren Daten",
+  "retakePhoto": "Foto erneut aufnehmen",
+  "takePassportMainPagePhoto": "Foto der Hauptseite des Reisepasses aufnehmen",
+  "noIdCardFrontPhoto": "Kein Foto der Vorderseite des Personalausweises",
+  "takePhotoOfFrontOfIdCard": "Machen Sie ein Foto der Vorderseite Ihres Personalausweises",
+  "retakeFrontPhoto": "Foto der Vorderseite erneut aufnehmen",
+  "takeIdCardFrontPhoto": "Foto der Vorderseite des Personalausweises aufnehmen",
+  "noIdCardBackPhoto": "Kein Foto der Rückseite des Personalausweises",
+  "takePhotoOfBackOfIdCard": "Machen Sie ein Foto der Rückseite Ihres Personalausweises",
+  "retakeBackPhoto": "Foto der Rückseite erneut aufnehmen",
+  "takeIdCardBackPhoto": "Foto der Rückseite des Personalausweises aufnehmen",
+  "continueButton": "Weiter",
+  "selfieWithIdCard": "Selfie mit Personalausweis",
+  "pleaseTakeSelfieWhileHoldingId": "Bitte machen Sie ein Selfie, während Sie Ihren Personalausweis neben Ihr Gesicht halten",
+  "noSelfiePhoto": "Kein Selfie-Foto",
+  "takeSelfie": "Selfie aufnehmen",
+  "reviewAndSubmitTitle": "Überprüfen und einreichen",
+  "pleaseReviewYourApplication": "Bitte überprüfen Sie Ihre Bewerbung vor der Einreichung",
+  "idCardInformation": "Personalausweis-Informationen",
+  "idType": "ID-Typ",
+  "idNumber": "ID-Nummer",
+  "notProvided": "Nicht angegeben",
+  "idCard": "Personalausweis",
+  "selfie": "Selfie",
+  "whatHappensNext": "Was passiert als Nächstes?",
+  "applicationReviewProcess": "• Ihre Bewerbung wird von unserem Team überprüft\n• Die Überprüfung dauert normalerweise 1-3 Werktage\n• Sie erhalten eine Benachrichtigung nach der Überprüfung\n• Wenn genehmigt, können Sie sofort mit dem Sammeln beginnen",
+  "submitting": "Wird eingereicht...",
+  "submitApplication": "Bewerbung einreichen",
+  "pleaseTakeBothPhotosBeforeSubmitting": "Bitte machen Sie beide Fotos vor der Einreichung",
+  "pleaseFillInAllRequiredPassportInformation": "Bitte füllen Sie alle erforderlichen Reisepass-Informationen aus",
+  "pleaseFillInAllRequiredIdCardInformation": "Bitte füllen Sie alle erforderlichen Personalausweis-Informationen aus (ID-Nummer und Typ)",
+  "applicationUpdatedSuccessfully": "Bewerbung erfolgreich aktualisiert!",
+  "applicationSubmittedSuccessfully": "Bewerbung erfolgreich eingereicht!",
+  "errorSubmittingApplication": "Fehler beim Einreichen der Bewerbung: {error}",
+  "@errorSubmittingApplication": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationStatus": "Bewerbungsstatus",
+  "errorLoadingApplication": "Fehler beim Laden der Bewerbung",
+  "noApplicationFound": "Keine Bewerbung gefunden",
+  "youHaventSubmittedApplicationYet": "Sie haben noch keine Sammler-Bewerbung eingereicht.",
+  "pendingReview": "Ausstehende Überprüfung",
+  "yourApplicationIsBeingReviewed": "Ihre Bewerbung wird von unserem Team überprüft.",
+  "approved": "Genehmigt",
+  "congratulationsApplicationApproved": "Herzlichen Glückwunsch! Ihre Bewerbung wurde genehmigt.",
+  "rejected": "Abgelehnt",
+  "applicationNotApprovedCanApplyAgain": "Ihre Bewerbung wurde nicht genehmigt. Sie können sich erneut bewerben.",
+  "unknown": "Unbekannt",
+  "applicationStatusUnknown": "Der Bewerbungsstatus ist unbekannt.",
+  "applicationDetails": "Bewerbungsdetails",
+  "applicationId": "Bewerbungs-ID",
+  "notSpecified": "Nicht angegeben",
+  "appliedOn": "Beworben am",
+  "reviewedOn": "Überprüft am",
+  "rejectionReason": "Ablehnungsgrund",
+  "reviewNotes": "Überprüfungsnotizen",
+  "applyAgain": "Erneut bewerben",
+  "applicationInReview": "Bewerbung in Überprüfung",
+  "applicationInReviewDialogContent": "Ihre Bewerbung wird derzeit von unserem Team überprüft. Dieser Prozess dauert normalerweise 1-3 Werktage. Sie werden benachrichtigt, sobald eine Entscheidung getroffen wurde.",
+  "reviewProcess": "Überprüfungsprozess",
+  "back": "Zurück"
+}

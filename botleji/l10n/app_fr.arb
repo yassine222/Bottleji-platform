@@ -1,0 +1,1032 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Bottleji",
+  "settings": "Paramètres",
+  "language": "Langue",
+  "changeLanguage": "Changer la langue de l'application",
+  "selectLanguage": "Sélectionner la langue",
+  "english": "Anglais",
+  "french": "Français",
+  "german": "Allemand",
+  "arabic": "Arabe",
+  "location": "Localisation",
+  "manageLocationPreferences": "Gérer les préférences de localisation",
+  "notifications": "Notifications",
+  "manageNotificationPreferences": "Gérer les préférences de notifications",
+  "displayTheme": "Thème d'affichage",
+  "changeAppAppearance": "Changer l'apparence de l'application",
+  "comingSoon": "Bientôt disponible",
+  "ok": "OK",
+  "cancel": "Annuler",
+  "save": "Enregistrer",
+  "loading": "Chargement...",
+  "login": "Connexion",
+  "register": "S'inscrire",
+  "email": "E-mail",
+  "password": "Mot de passe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "welcomeBack": "Bon retour !",
+  "signInToContinue": "Connectez-vous pour continuer",
+  "dontHaveAccount": "Vous n'avez pas de compte ?",
+  "enterYourEmail": "Entrez votre e-mail",
+  "enterYourPassword": "Entrez votre mot de passe",
+  "pleaseEnterEmail": "Veuillez entrer votre e-mail",
+  "pleaseEnterValidEmail": "Veuillez entrer un e-mail valide",
+  "pleaseEnterPassword": "Veuillez entrer votre mot de passe",
+  "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+  "invalidEmailOrPassword": "E-mail ou mot de passe invalide. Veuillez réessayer.",
+  "loginFailed": "Échec de la connexion. Veuillez vérifier vos identifiants et réessayer.",
+  "connectionTimeout": "Délai de connexion dépassé. Veuillez vérifier votre connexion Internet et réessayer.",
+  "networkError": "Erreur réseau. Veuillez vérifier votre connexion Internet.",
+  "requestTimeout": "Délai d'attente de la requête dépassé. Veuillez réessayer.",
+  "serverError": "Erreur serveur. Veuillez réessayer plus tard.",
+  "accountDeleted": "Compte supprimé",
+  "accountDeletedMessage": "Votre compte a été supprimé par un administrateur.\n\nSi vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe de support :\n\n📧 E-mail : support@bottleji.com\n📱 Heures de support : 9h - 18h (GMT+1)\n\nNous nous excusons pour le désagrément.",
+  "reason": "Raison",
+  "youWillBeRedirectedToLoginScreen": "Vous serez redirigé vers l'écran de connexion.",
+  "resetPassword": "Réinitialiser le mot de passe",
+  "enterEmailToReceiveResetCode": "Entrez votre e-mail pour recevoir un code de réinitialisation",
+  "sendResetCode": "Envoyer le code de réinitialisation",
+  "resetCodeSentToEmail": "Code de réinitialisation envoyé à votre e-mail",
+  "enterResetCode": "Entrez le code de réinitialisation",
+  "weHaveSentResetCodeTo": "Nous avons envoyé un code de réinitialisation à\n{email}",
+  "@weHaveSentResetCodeTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verify": "Vérifier",
+  "didntReceiveCode": "Vous n'avez pas reçu le code ?",
+  "resend": "Renvoyer",
+  "resendIn": "Renvoyer dans {seconds}s",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resetCodeResentSuccessfully": "Code de réinitialisation renvoyé avec succès !",
+  "createNewPassword": "Créer un nouveau mot de passe",
+  "pleaseEnterNewPassword": "Veuillez entrer votre nouveau mot de passe",
+  "newPassword": "Nouveau mot de passe",
+  "enterNewPassword": "Entrez votre nouveau mot de passe",
+  "confirmPassword": "Confirmer le mot de passe",
+  "confirmNewPassword": "Confirmez votre nouveau mot de passe",
+  "pleaseEnterPassword": "Veuillez entrer un mot de passe",
+  "passwordMustBeAtLeast6Characters": "Le mot de passe doit contenir au moins 6 caractères",
+  "pleaseConfirmPassword": "Veuillez confirmer votre mot de passe",
+  "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+  "passwordResetSuccessful": "Réinitialisation du mot de passe réussie ! Veuillez vous connecter avec votre nouveau mot de passe.",
+  "verifyYourEmail": "Vérifiez votre e-mail",
+  "pleaseEnterOtpSentToEmail": "Veuillez entrer le code OTP envoyé à votre e-mail",
+  "verifyOtp": "Vérifier le code OTP",
+  "resendOtp": "Renvoyer le code OTP",
+  "resendOtpIn": "Renvoyer le code OTP dans {seconds} secondes",
+  "@resendOtpIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "otpVerifiedSuccessfully": "Code OTP vérifié avec succès",
+  "invalidVerificationResponse": "Erreur : Réponse de vérification invalide",
+  "otpResentSuccessfully": "Code OTP renvoyé avec succès !",
+  "startYourBottlejiJourney": "Commencez votre aventure Bottleji",
+  "createAccountToGetStarted": "Créez un compte pour commencer",
+  "createAPassword": "Créer un mot de passe",
+  "confirmYourPassword": "Confirmez votre mot de passe",
+  "createAccount": "Créer un compte",
+  "alreadyHaveAccount": "Vous avez déjà un compte ?",
+  "registrationSuccessful": "Inscription réussie",
+  "skip": "Passer",
+  "next": "Suivant",
+  "getStarted": "Commencer",
+  "welcomeToBottleji": "Bienvenue sur Bottleji",
+  "yourSustainableWasteManagementSolution": "Votre solution de gestion durable des déchets",
+  "joinThousandsOfUsersMakingDifference": "Rejoignez des milliers d'utilisateurs qui font la différence en recyclant des bouteilles et des canettes tout en gagnant des récompenses.",
+  "createAndTrackDrops": "Créer et suivre les dépôts",
+  "forHouseholdUsers": "Pour les utilisateurs domestiques",
+  "easilyCreateDropRequests": "Créez facilement des demandes de dépôt pour vos bouteilles et canettes recyclables. Suivez le statut de collecte et recevez des notifications lorsque les collecteurs les récupèrent.",
+  "collectAndEarn": "Collecter et gagner",
+  "forCollectors": "Pour les collecteurs",
+  "findNearbyDropsCollectRecyclables": "Trouvez des dépôts à proximité, collectez des matériaux recyclables et gagnez des récompenses. Aidez à construire une communauté durable tout en gagnant de l'argent.",
+  "realTimeUpdates": "Mises à jour en temps réel",
+  "stayConnected": "Restez connecté",
+  "getInstantNotificationsAboutDrops": "Recevez des notifications instantanées sur vos dépôts, collectes et mises à jour importantes. Ne manquez jamais une opportunité.",
+  "appPermissions": "Autorisations de l'application",
+  "bottlejiRequiresAdditionalPermissions": "Bottleji nécessite des autorisations supplémentaires pour fonctionner correctement",
+  "permissionsHelpProvideBestExperience": "Ces autorisations nous aident à vous offrir la meilleure expérience.",
+  "locationServices": "Services de localisation",
+  "accessLocationToShowNearbyDrops": "Accédez à votre localisation pour afficher les dépôts à proximité et activer la navigation pour les collecteurs.",
+  "localNetworkAccess": "Accès au réseau local",
+  "allowAppToDiscoverServicesOnWifi": "Autorisez l'application à découvrir les services sur votre Wi‑Fi pour les fonctionnalités en temps réel.",
+  "receiveRealTimeUpdatesAboutDrops": "Recevez des mises à jour en temps réel sur vos dépôts, collectes et annonces importantes.",
+  "photoStorage": "Stockage de photos",
+  "saveAndAccessPhotosOfRecyclableItems": "Enregistrez et accédez aux photos de vos articles recyclables.",
+  "enable": "Activer",
+  "continueToApp": "Continuer vers l'application",
+  "enableRequiredPermissions": "Activer les autorisations requises",
+  "accountDisabled": "Compte désactivé",
+  "accountDisabledMessage": "Votre compte a été définitivement désactivé en raison de violations répétées des directives communautaires de Bottleji.\n\nVous ne pouvez plus accéder à ce compte ou l'utiliser.\n\nSi vous pensez que cette décision a été prise par erreur, veuillez contacter le support :",
+  "supportEmail": "support@bottleji.com",
+  "contactSupport": "Contacter le support",
+  "pleaseEmailSupport": "Veuillez envoyer un e-mail à support@bottleji.com pour obtenir de l'aide",
+  "sessionExpired": "Session expirée",
+  "sessionExpiredMessage": "Votre session a expiré. Veuillez vous reconnecter pour continuer.",
+  "home": "Accueil",
+  "drops": "Dépôts",
+  "rewards": "Récompenses",
+  "stats": "Statistiques",
+  "history": "Historique",
+  "profile": "Profil",
+  "account": "Compte",
+  "support": "Support",
+  "termsAndConditions": "Conditions générales",
+  "logout": "Déconnexion",
+  "areYouSureLogout": "Êtes-vous sûr de vouloir vous déconnecter ?",
+  "errorDuringLogout": "Erreur lors de la déconnexion : {error}",
+  "close": "Fermer",
+  "edit": "Modifier",
+  "delete": "Supprimer",
+  "retry": "Réessayer",
+  "confirm": "Confirmer",
+  "yes": "Oui",
+  "no": "Non",
+  "stay": "Rester",
+  "leave": "Partir",
+  "back": "Retour",
+  "next": "Suivant",
+  "previous": "Précédent",
+  "done": "Terminé",
+  "gotIt": "Compris",
+  "clearAll": "Tout effacer",
+  "clearFilters": "Effacer les filtres",
+  "apply": "Appliquer",
+  "filterDrops": "Filtrer les dépôts",
+  "status": "Statut",
+  "all": "Tous",
+  "date": "Date",
+  "distance": "Distance",
+  "deleteDrop": "Supprimer le dépôt",
+  "areYouSureDelete": "Êtes-vous sûr de vouloir supprimer ce dépôt ?",
+  "createDrop": "Créer un dépôt",
+  "editDrop": "Modifier le dépôt",
+  "startCollection": "Démarrer la collecte",
+  "resumeNavigation": "Reprendre la navigation",
+  "cancelCollection": "Annuler la collecte",
+  "areYouSureCancelCollection": "Êtes-vous sûr de vouloir annuler cette collecte ?",
+  "yesCancel": "Oui, annuler",
+  "leaveCollection": "Quitter la collecte ?",
+  "areYouSureLeaveCollection": "Êtes-vous sûr de vouloir partir ? Votre collecte restera active.",
+  "exitNavigation": "Quitter la navigation",
+  "areYouSureExitNavigation": "Êtes-vous sûr de vouloir quitter la navigation ? Votre collecte restera active.",
+  "reportDrop": "Signaler le dépôt",
+  "useCurrentLocation": "Utiliser l'emplacement actuel",
+  "setCollectionRadius": "Définir le rayon de collecte",
+  "takePhoto": "Prendre une photo",
+  "chooseFromGallery": "Choisir dans la galerie",
+  "galleryIOSSimulatorIssue": "Galerie (problème simulateur iOS)",
+  "useCameraOrRealDevice": "Utiliser l'appareil photo ou un appareil réel",
+  "leaveOutsideDoor": "Laisser devant la porte",
+  "pleaseTakePhoto": "Veuillez prendre une photo de vos bouteilles",
+  "pleaseWaitLoading": "Veuillez patienter pendant le chargement de vos informations de compte",
+  "mustBeLoggedIn": "Vous devez être connecté pour créer un dépôt",
+  "authenticationIssue": "Problème d'authentification détecté. Veuillez vous déconnecter et vous reconnecter.",
+  "dropCreatedSuccessfully": "Dépôt créé avec succès !",
+  "openSettings": "Ouvrir les paramètres",
+  "tryAgain": "Réessayer",
+  "reloadMap": "Recharger la carte",
+  "thisHelpsUsShowNearby": "Cela nous aide à afficher les dépôts à proximité et à fournir des services de collecte précis.",
+  "errorLoadingUserMode": "Erreur lors du chargement du mode utilisateur : {error}",
+  "tryAdjustingFilters": "Essayez d'ajuster vos filtres",
+  "checkBackLater": "Revenez plus tard pour de nouveaux dépôts",
+  "createFirstDrop": "Créez votre premier dépôt pour commencer",
+  "collectionInProgress": "Collecte en cours",
+  "resumeCollection": "Reprendre la collecte",
+  "collectionTimeout": "⚠️ Délai de collecte dépassé",
+  "warningSystem": "Système d'avertissement",
+  "warningAddedToAccount": "Un avertissement a été ajouté à votre compte pour ce dépôt. Veuillez vous assurer que les images futures respectent les directives de la communauté.",
+  "timerExpired": "⏰ Minuteur expiré !",
+  "timerExpiredMessage": "Le minuteur de collecte a expiré. L'écran de navigation va maintenant se fermer.",
+  "applicationRejected": "Candidature rejetée",
+  "applicationRejectedMessage": "Votre candidature a été rejetée pour la raison suivante :",
+  "noSpecificReason": "Aucune raison spécifique fournie",
+  "canEditApplication": "Vous pouvez modifier votre candidature et la soumettre à nouveau.",
+  "editApplication": "Modifier la candidature",
+  "pleaseLogInCollector": "Veuillez vous connecter pour accéder au mode collecteur",
+  "tierSystem": "Système de niveaux",
+  "bySubscribingAgree": "En vous abonnant, vous acceptez nos Conditions de service\net notre Politique de confidentialité",
+  "startProSubscription": "Commencer l'abonnement PRO",
+  "termsOfService": "Conditions de service",
+  "lastUpdated": "Dernière mise à jour : 15 mars 2024",
+  "acceptanceOfTerms": "1. Acceptation des conditions",
+  "acceptanceOfTermsContent": "En accédant et en utilisant l'application Bottleji, vous acceptez d'être lié par ces Conditions générales. Si vous n'êtes pas d'accord avec une partie de ces conditions, vous ne pouvez pas accéder à l'application.",
+  "userResponsibilities": "2. Responsabilités de l'utilisateur",
+  "userResponsibilitiesContent": "En tant qu'utilisateur de Bottleji, vous acceptez de :\n• Fournir des informations exactes et complètes\n• Maintenir la sécurité de votre compte\n• Suivre les directives de tri des déchets\n• Planifier les collectes de manière responsable\n• Utiliser le service conformément aux lois locales",
+  "household": "Ménage",
+  "collector": "Collecteur",
+  "activeMode": "Mode actif",
+  "myAccount": "Mon compte",
+  "trainings": "Formations",
+  "referAndEarn": "Parrainer et gagner",
+  "upgrade": "Mettre à niveau",
+  "review": "En révision",
+  "rejected": "Rejeté",
+  "apply": "Postuler",
+  "becomeACollector": "Devenir collecteur",
+  "applicationUnderReview": "Votre candidature est actuellement en cours d'examen. Souhaitez-vous consulter le statut de votre candidature ?",
+  "viewStatus": "Voir le statut",
+  "applicationRejectedReason": "Votre candidature a été rejetée pour la raison suivante :\n\n\"{rejectionReason}\"\n\nSouhaitez-vous modifier votre candidature et la soumettre à nouveau ?",
+  "applicationApprovedSuspended": "Votre candidature a été approuvée mais votre accès collecteur a été temporairement suspendu. Veuillez contacter le support ou postuler à nouveau.",
+  "reapply": "Repostuler",
+  "needToApplyCollector": "Vous devez postuler et être approuvé pour accéder au mode collecteur. Souhaitez-vous postuler maintenant ?",
+  "applyNow": "Postuler maintenant",
+  "householdMode": "Mode ménage",
+  "collectorMode": "Mode collecteur",
+  "householdModeDescription": "Créer des dépôts et suivre votre recyclage",
+  "collectorModeDescription": "Collecter des bouteilles et gagner des récompenses",
+  "sustainableWasteManagement": "Gestion durable des déchets",
+  "ecoFriendlyBottleCollection": "Collecte de bouteilles écologique",
+  "bottleType": "Type de bouteille",
+  "numberOfPlasticBottles": "Nombre de bouteilles en plastique",
+  "numberOfCans": "Nombre de canettes",
+  "notesOptional": "Notes (optionnel)",
+  "notes": "Notes",
+  "failedToCreateDrop": "Échec de la création du dépôt. Veuillez réessayer.",
+  "imageSelectedSuccessfully": "Image sélectionnée avec succès !",
+  "errorSelectingImage": "Erreur lors de la sélection de l'image",
+  "permissionDeniedPhoto": "Permission refusée. Veuillez autoriser l'accès aux photos dans les paramètres.",
+  "galleryNotAvailableSimulator": "Galerie non disponible sur le simulateur. Essayez l'appareil photo ou utilisez un appareil réel.",
+  "profileInformation": "Informations du profil",
+  "fullName": "Nom complet",
+  "notSet": "Non défini",
+  "phone": "Téléphone",
+  "address": "Adresse",
+  "collectorStatus": "Statut collecteur",
+  "approvedCollector": "Vous êtes un collecteur approuvé",
+  "applicationStatus": "Statut de la candidature",
+  "applicationUnderReviewStatus": "Votre candidature est en cours d'examen",
+  "viewDetails": "Voir les détails",
+  "applicationRejectedTitle": "Candidature rejetée",
+  "pleaseLoginToViewProfile": "Veuillez vous connecter pour voir votre profil",
+  "startYourBottlejiJourney": "Commencez votre parcours Bottleji",
+  "bottlejiRequiresPermissions": "Bottleji nécessite des permissions supplémentaires pour fonctionner correctement",
+  "galleryError": "Erreur de galerie : {error}",
+  "galleryNotAvailableIOS": "Galerie non disponible sur le simulateur iOS : {error}",
+  "editProfile": "Modifier le profil",
+  "completeYourProfile": "Complétez votre profil",
+  "profilePhoto": "Photo de profil",
+  "personalInformation": "Informations personnelles",
+  "tapToChangePhoto": "Appuyez pour changer la photo",
+  "saving": "Enregistrement...",
+  "completeSetup": "Terminer la configuration",
+  "saveProfile": "Enregistrer le profil",
+  "phoneNumberRequired": "Le numéro de téléphone est requis",
+  "phoneNumberMustBe8Digits": "Le numéro de téléphone doit contenir 8 chiffres",
+  "phoneNumberMustContainOnlyDigits": "Le numéro de téléphone ne doit contenir que des chiffres",
+  "pleaseEnterYourFullName": "Veuillez entrer votre nom complet",
+  "pleaseEnterYourPhoneNumber": "Veuillez entrer votre numéro de téléphone",
+  "pleaseEnterYourAddress": "Veuillez entrer votre adresse",
+  "pleaseVerifyYourPhoneNumber": "Veuillez vérifier votre numéro de téléphone avant d'enregistrer",
+  "noChangesDetected": "Aucun changement détecté. Le profil reste inchangé.",
+  "profileSetupCompletedSuccessfully": "Configuration du profil terminée avec succès ! Bienvenue sur Bottleji !",
+  "profileUpdatedSuccessfully": "Profil mis à jour avec succès !",
+  "failedToUploadImage": "Échec du téléchargement de l'image. Veuillez réessayer.",
+  "smsCode": "Code SMS",
+  "enter6DigitCode": "Entrez le code à 6 chiffres",
+  "sendCode": "Envoyer le code",
+  "sending": "Envoi...",
+  "resend": "Renvoyer",
+  "verifyCode": "Vérifier le code",
+  "verifying": "Vérification...",
+  "phoneNumberVerified": "Numéro de téléphone vérifié",
+  "phoneNumberNotVerified": "Numéro de téléphone non vérifié",
+  "phoneNumberNeedsVerification": "Le numéro de téléphone doit être vérifié",
+  "phoneNumberVerifiedSuccessfully": "Numéro de téléphone vérifié avec succès!",
+  "phoneNumber": "Numéro de téléphone",
+  "fullNameRequired": "Le nom complet est requis",
+  "addressRequired": "L'adresse est requise",
+  "searchAddress": "Rechercher une adresse",
+  "tapToSearchAddress": "Appuyez pour rechercher votre adresse",
+  "typeToSearch": "Tapez pour rechercher...",
+  "noResultsFound": "Aucun résultat trouvé",
+  "errorFetchingSuggestions": "Erreur lors de la récupération des suggestions: {error}",
+  "@errorFetchingSuggestions": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterPhoneNumberFirst": "Veuillez d'abord entrer un numéro de téléphone",
+  "pleaseEnterValidPhoneNumber": "Veuillez entrer un numéro de téléphone valide avec l'indicatif du pays (ex: +49 123456789)",
+  "locationPermissionRequired": "L'autorisation de localisation est requise pour les fonctionnalités d'adresse",
+  "notificationsTitle": "Notifications",
+  "markAllRead": "Tout marquer comme lu",
+  "noNotificationsYet": "Aucune notification pour le moment",
+  "failedToLoadNotifications": "Échec du chargement des notifications",
+  "createNewDrop": "Créer un nouveau dépôt",
+  "photo": "Photo",
+  "takePhotoOrChooseFromGallery": "Prenez une photo ou choisissez dans la galerie - montrez clairement vos bouteilles pour aider les collecteurs",
+  "addPhoto": "Ajouter une photo",
+  "cameraOrGallery": "Appareil photo ou galerie",
+  "allDrops": "Tous les dépôts",
+  "myDrops": "Mes dépôts",
+  "active": "Actif",
+  "collected": "Collecté",
+  "flagged": "Signalé",
+  "censored": "Censuré",
+  "stale": "Périmé",
+  "dropsInThisFilterCollected": "Les dépôts de ce filtre ont été collectés avec succès par un collecteur. Ces dépôts montrent votre impact sur le recyclage et ne peuvent pas être modifiés.",
+  "dropsInThisFilterFlagged": "Les dépôts de ce filtre ont été signalés en raison de multiples annulations ou d'activités suspectes. Les dépôts signalés sont masqués de la carte et ne peuvent pas être modifiés.",
+  "dropsInThisFilterCensored": "Les dépôts de ce filtre ont été censurés en raison de contenu inapproprié. Les dépôts censurés sont masqués de la carte et ne peuvent pas être modifiés.",
+  "dropsInThisFilterStale": "Les dépôts de ce filtre ont été marqués comme périmés car ils étaient plus anciens que 3 jours et probablement collectés par des collecteurs externes. Les dépôts périmés sont masqués de la carte et ne peuvent pas être modifiés.",
+  "inActiveCollection": "En collecte active - Le collecteur est en route",
+  "censoredInappropriateImage": "Censuré : {reason}",
+  "@censoredInappropriateImage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onTheWay": "En route",
+  "collectorOnHisWay": "Le collecteur est en route pour récupérer votre dépôt",
+  "waiting": "En attente...",
+  "notYetCollected": "Pas encore collecté",
+  "yourPoints": "Vos points",
+  "pointsToGo": "{points} points restants",
+  "@pointsToGo": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "progressToNextTier": "Progression vers le niveau suivant",
+  "bronzeCollector": "Collecteur Bronze",
+  "silverCollector": "Collecteur Argent",
+  "goldCollector": "Collecteur Or",
+  "platinumCollector": "Collecteur Platine",
+  "diamondCollector": "Collecteur Diamant",
+  "earnPointsPerDropCollected": "Gagnez {points} points par dépôt collecté",
+  "@earnPointsPerDropCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "earnPointsWhenDropsCollected": "Gagnez {points} points lorsque vos dépôts sont collectés",
+  "@earnPointsWhenDropsCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardShop": "Boutique de récompenses",
+  "orderHistory": "Historique des commandes",
+  "noOrdersYet": "Aucune commande pour le moment",
+  "yourOrderHistoryWillAppearHere": "Votre historique de commandes apparaîtra ici",
+  "notEnoughPoints": "Points insuffisants",
+  "pts": "pts",
+  "myStats": "Mes statistiques",
+  "timeRange": "Période",
+  "thisWeek": "Cette semaine",
+  "thisMonth": "Ce mois",
+  "thisYear": "Cette année",
+  "allTime": "Tout le temps",
+  "overview": "Aperçu",
+  "dropStatus": "Statut des dépôts",
+  "pending": "En attente",
+  "collectionRate": "Taux de collecte",
+  "avgCollectionTime": "Temps de collecte moyen",
+  "recentCollections": "Collectes récentes",
+  "supportAndHelp": "Support et aide",
+  "howCanWeHelpYou": "Comment pouvons-nous vous aider ?",
+  "selectCategoryToGetStarted": "Sélectionnez une catégorie pour commencer",
+  "supportCategories": "Catégories de support",
+  "whatDoYouNeedHelpWith": "De quoi avez-vous besoin d'aide ?",
+  "selectCategoryToContinue": "Sélectionnez une catégorie pour continuer",
+  "trainingCenter": "Centre de formation",
+  "todayAt": "Aujourd'hui à {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "yesterdayAt": "Hier à {time}",
+  "@yesterdayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "daysAgo": "Il y a {days} jours",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "leaveOutside": "Laisser à l'extérieur",
+  "noImageAvailable": "Aucune image disponible",
+  "distance": "Distance",
+  "estTime": "Temps estimé",
+  "yourLocation": "Votre emplacement",
+  "dropLocation": "Emplacement du dépôt",
+  "routePreview": "Aperçu de l'itinéraire",
+  "dropInformation": "Informations sur le dépôt",
+  "plasticBottles": "Bouteilles en plastique",
+  "cans": "Canettes",
+  "plastic": "PLASTIQUE",
+  "can": "CANETTE",
+  "mixed": "MIXTE",
+  "totalItems": "Total des articles",
+  "estimatedValue": "Valeur Estimée",
+  "created": "Créé",
+  "flagged": "SIGNALÉ",
+  "completeCurrentCollectionFirst": "Terminez votre collecte actuelle avant d'en commencer une nouvelle.",
+  "youAreOffline": "Vous êtes hors ligne. Veuillez vérifier votre connexion Internet.",
+  "errorColon": "Erreur : {error}",
+  "@errorColon": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "yourInformation": "Vos informations",
+  "createdBy": "Créé par",
+  "youWillSeeNotificationsHere": "Vous verrez vos notifications ici",
+  "pendingStatus": "EN ATTENTE",
+  "acceptedStatus": "ACCEPTÉ",
+  "collectedStatus": "COLLECTÉ",
+  "cancelledStatus": "ANNULÉ",
+  "expiredStatus": "EXPIRÉ",
+  "staleStatus": "OBSOLÈTE",
+  "howRewardsWork": "Comment fonctionnent les récompenses",
+  "howRewardsWorkCollector": "• Collectez des dépôts pour gagner des points\n• Des niveaux plus élevés = plus de points par dépôt\n• Utilisez vos points dans la boutique de récompenses\n• Suivez vos progrès et réalisations",
+  "howRewardsWorkHousehold": "• Créez des dépôts pour contribuer au recyclage\n• Gagnez des points lorsque les collecteurs récupèrent vos dépôts\n• Des niveaux plus élevés = plus de points par dépôt collecté\n• Utilisez vos points dans la boutique de récompenses",
+  "today": "Aujourd'hui",
+  "yesterday": "Hier",
+  "retry": "Réessayer",
+  "itemNotAvailable": "L'article n'est pas disponible",
+  "outOfStock": "Rupture de stock",
+  "orderNow": "Commander maintenant",
+  "pleaseLogInToViewOrderHistory": "Veuillez vous connecter pour voir l'historique des commandes",
+  "failedToLoadOrderHistory": "Échec du chargement de l'historique des commandes",
+  "refresh": "Actualiser",
+  "pointsSpent": "Points dépensés",
+  "size": "Taille",
+  "orderDate": "Date de commande",
+  "tracking": "Suivi",
+  "estimatedDelivery": "Livraison estimée",
+  "deliveryAddress": "Adresse de livraison",
+  "adminNote": "Note de l'administrateur",
+  "pending": "En attente",
+  "approved": "Approuvé",
+  "processing": "En cours de traitement",
+  "shipped": "Expédié",
+  "delivered": "Livré",
+  "cancelled": "Annulé",
+  "rejected": "Rejeté",
+  "available": "{count} disponible",
+  "@available": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Créé",
+  "onTheWay": "En chemin",
+  "waiting": "En attente...",
+  "collectorOnHisWay": "Le collecteur est en chemin pour récupérer votre dépôt",
+  "notYetCollected": "Pas encore collecté",
+  "updateDrop": "Mettre à jour le dépôt",
+  "updating": "Mise à jour...",
+  "recyclingImpact": "Impact du recyclage",
+  "recentDrops": "Dépôts récents",
+  "viewAll": "Voir tout",
+  "dropStatusDistribution": "Statut des dépôts",
+  "co2VolumeSaved": "Volume de CO₂ économisé",
+  "totalCo2Saved": "Total CO₂ économisé : {amount} kg",
+  "@totalCo2Saved": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dropActivity": "Activité des dépôts",
+  "dropsCreated": "Dépôts créés ({timeRange}) : {count}",
+  "@dropsCreated": {
+    "placeholders": {
+      "timeRange": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPickingImage": "Erreur lors de la sélection de l'image : {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToUploadImage": "Échec du téléchargement de l'image : {error}",
+  "@failedToUploadImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropUpdatedSuccessfully": "Dépôt mis à jour avec succès !",
+  "errorUpdatingDrop": "Erreur lors de la mise à jour du dépôt : {error}",
+  "@errorUpdatingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDrop": "Supprimer le dépôt",
+  "areYouSureDeleteDrop": "Êtes-vous sûr de vouloir supprimer ce dépôt ? Cette action ne peut pas être annulée.",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "dropDeletedSuccessfully": "Dépôt supprimé avec succès !",
+  "errorDeletingDrop": "Erreur lors de la suppression du dépôt : {error}",
+  "@errorDeletingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterNumberOfBottles": "Veuillez entrer le nombre de bouteilles",
+  "pleaseEnterValidNumber": "Veuillez entrer un nombre valide",
+  "pleaseEnterNumberOfCans": "Veuillez entrer le nombre de canettes",
+  "anyAdditionalInstructions": "Toutes instructions supplémentaires pour le collecteur...",
+  "collectorCanLeaveOutside": "Le collecteur peut laisser les articles à l'extérieur si personne n'est à la maison",
+  "location": "Emplacement",
+  "loadingAddress": "Chargement de l'adresse...",
+  "locationFormat": "Emplacement : {lat}, {lng}",
+  "@locationFormat": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSelected": "Emplacement sélectionné",
+  "currentDropLocation": "Emplacement actuel du dépôt",
+  "tapConfirmToSetLocation": "Appuyez sur \"Confirmer\" pour définir cet emplacement",
+  "confirm": "Confirmer",
+  "gettingStarted": "Pour commencer",
+  "advancedFeatures": "Fonctionnalités avancées",
+  "troubleshooting": "Dépannage",
+  "bestPractices": "Meilleures pratiques",
+  "collectorApplication": "Demande de collecteur",
+  "payments": "Paiements",
+  "notifications": "Notifications",
+  "all": "Tout",
+  "help": "Aide",
+  "collector": "Collecteur",
+  "advanced": "Avancé",
+  "description": "Description",
+  "story": "Histoire",
+  "totalDrops": "Total des Drops",
+  "aluminumCans": "Cannettes en Aluminium",
+  "recycled": "Recyclé",
+  "recycledBottles": "{count} bouteilles recyclées",
+  "@recycledBottles": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recycledCans": "{count} cannettes recyclées",
+  "@recycledCans": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "totalItemsRecycled": "Total des Articles Recyclés",
+  "dropsCollected": "Drops Collectés",
+  "monday": "Lun",
+  "tuesday": "Mar",
+  "wednesday": "Mer",
+  "thursday": "Jeu",
+  "friday": "Ven",
+  "saturday": "Sam",
+  "sunday": "Dim",
+  "january": "Jan",
+  "february": "Fév",
+  "march": "Mar",
+  "april": "Avr",
+  "may": "Mai",
+  "june": "Jun",
+  "july": "Jul",
+  "august": "Aoû",
+  "september": "Sep",
+  "october": "Oct",
+  "november": "Nov",
+  "december": "Déc",
+  "todaysTotal": "Total d'aujourd'hui",
+  "earnings": "Gains",
+  "collections": "Collectes",
+  "noEarningsHistoryYet": "Aucun historique de gains pour le moment",
+  "earningsWillAppearHere": "Vos gains apparaîtront ici une fois que vous aurez terminé les collectes",
+  "totalEarnings": "Gains totaux",
+  "errorLoadingEarnings": "Erreur lors du chargement des gains : {error}",
+  "@errorLoadingEarnings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noCompletedCollectionsYet": "Aucune collecte terminée pour le moment",
+  "performanceMetrics": "Métriques de performance",
+  "collected": "Collecté",
+  "expired": "Expiré",
+  "cancelled": "Annulé",
+  "cancellationReasons": "Raisons d'annulation",
+  "cancellationReason": "Raison d'annulation",
+  "noAccess": "Pas d'accès",
+  "notFound": "Introuvable",
+  "alreadyCollected": "Déjà collecté",
+  "wrongLocation": "Mauvais emplacement",
+  "unsafeLocation": "Emplacement dangereux",
+  "other": "Autre",
+  "collectionsOverTime": "Collectes au fil du temps",
+  "expiredOverTime": "Expiré au fil du temps",
+  "cancelledOverTime": "Annulé au fil du temps",
+  "totalThisWeek": "total cette semaine",
+  "totalThisMonth": "total ce mois",
+  "totalThisYear": "total cette année",
+  "mon": "Lun",
+  "tue": "Mar",
+  "wed": "Mer",
+  "thu": "Jeu",
+  "fri": "Ven",
+  "sat": "Sam",
+  "sun": "Dim",
+  "jan": "Jan",
+  "feb": "Fév",
+  "mar": "Mar",
+  "apr": "Avr",
+  "may": "Mai",
+  "jun": "Jun",
+  "jul": "Jul",
+  "aug": "Aoû",
+  "sep": "Sep",
+  "oct": "Oct",
+  "nov": "Nov",
+  "dec": "Déc",
+  "daysAgoShort": "il y a {days}j",
+  "@daysAgoShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "at": "à",
+  "total": "Total",
+  "noDropsCreatedYet": "Aucune chute créée pour le moment",
+  "createYourFirstDropToGetStarted": "Créez votre première chute pour commencer",
+  "noActiveDrops": "Aucune chute active",
+  "noCollectedDrops": "Aucune chute collectée pour le moment",
+  "noStaleDrops": "Aucune chute périmée",
+  "noCensoredDrops": "Aucune chute censurée",
+  "noFlaggedDrops": "Aucune chute signalée",
+  "noDropsMatchYourFilters": "Aucune chute ne correspond à vos filtres",
+  "tryAdjustingYourFilters": "Essayez d'ajuster vos filtres",
+  "clearFilters": "Effacer les filtres",
+  "noDropsAvailable": "Aucune chute disponible",
+  "checkBackLaterForNewDrops": "Revenez plus tard pour de nouvelles chutes",
+  "note": "Note",
+  "outside": "Extérieur",
+  "filterDrops": "Filtrer les chutes",
+  "status": "Statut",
+  "date": "Date",
+  "distance": "Distance",
+  "apply": "Appliquer",
+  "cancel": "Annuler",
+  "last7Days": "7 derniers jours",
+  "last30Days": "30 derniers jours",
+  "thisMonth": "Ce mois",
+  "lastMonth": "Mois dernier",
+  "within1Km": "Dans 1 km",
+  "within3Km": "Dans 3 km",
+  "within5Km": "Dans 5 km",
+  "within10Km": "Dans 10 km",
+  "rewardHistory": "Historique des récompenses",
+  "noRewardHistoryYet": "Aucun historique de récompenses pour le moment",
+  "points": "Points",
+  "tier": "Niveau",
+  "tierUp": "Niveau supérieur!",
+  "acceptDrop": "Accepter la chute",
+  "completeCurrentDropFirst": "Terminez d'abord la chute actuelle",
+  "distanceUnavailable": "Distance indisponible",
+  "away": "loin",
+  "meters": "m",
+  "kilometers": "km",
+  "minutesShort": "min",
+  "hoursShort": "h",
+  "tierSystem": "Système de niveaux",
+  "current": "Actuel",
+  "earnPointsPerDrop": "Gagnez {points} points par chute",
+  "@earnPointsPerDrop": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "dropsRequired": "{count} chutes requises",
+  "@dropsRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "start": "Commencer",
+  "close": "Fermer",
+  "filterHistory": "Filtrer l'historique",
+  "searchHistory": "Rechercher dans l'historique",
+  "searchByNotesBottleTypeOrCancellationReason": "Rechercher par notes, type de bouteille ou raison d'annulation...",
+  "viewType": "Type de vue",
+  "status": "Statut",
+  "timeRange": "Plage de temps",
+  "itemType": "Type d'article",
+  "bottleType": "Type de bouteille",
+  "allTime": "Tout le temps",
+  "last3Months": "3 derniers mois",
+  "last6Months": "6 derniers mois",
+  "thisYear": "Cette année",
+  "allItems": "Tous les articles",
+  "bottlesOnly": "Bouteilles uniquement",
+  "cansOnly": "Cannettes uniquement",
+  "mixed": "Mixte",
+  "allTypes": "Tous les types",
+  "clearAll": "Tout effacer",
+  "activeFilters": "ACTIF",
+  "waitingForCollector": "En attente du collecteur",
+  "liveCollectorOnTheWay": "🟢 En direct - Collecteur en route",
+  "collectorOnHisWay": "Le collecteur est en route pour récupérer votre dépôt",
+  "collectorWasOnTheWay": "Le collecteur était en route",
+  "waiting": "En attente...",
+  "notYetCollected": "Pas encore collecté",
+  "justNow": "À l'instant",
+  "minutesAgo": "Il y a {minutes} min",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "Il y a {hours} h",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "Il y a {days} j",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Créé",
+  "onTheWay": "En route",
+  "wasOnTheWay": "Était en route",
+  "accepted": "Accepté",
+  "sessionTime": "Durée de la session",
+  "completed": "Terminé",
+  "myDrops": "Mes dépôts",
+  "pleaseLoginToViewYourDrops": "Veuillez vous connecter pour voir vos dépôts",
+  "errorLoadingUserData": "Erreur lors du chargement des données utilisateur : {error}",
+  "@errorLoadingUserData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingUserMode": "Erreur lors du chargement du mode utilisateur : {error}",
+  "@errorLoadingUserMode": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "earn500Points": "Gagnez 500 points",
+  "forEachFriendWhoJoins": "Pour chaque ami qui rejoint",
+  "yourReferralCode": "Votre code de parrainage",
+  "referralCodeCopiedToClipboard": "Code de parrainage copié dans le presse-papiers",
+  "shareVia": "Partager via",
+  "whatsapp": "WhatsApp",
+  "sms": "SMS",
+  "more": "Plus",
+  "howItWorks": "Comment ça marche",
+  "shareYourCode": "Partagez votre code",
+  "shareYourUniqueReferralCodeWithFriends": "Partagez votre code de parrainage unique avec vos amis",
+  "friendSignsUp": "L'ami s'inscrit",
+  "yourFriendCreatesAnAccountUsingYourCode": "Votre ami crée un compte en utilisant votre code",
+  "earnRewards": "Gagnez des récompenses",
+  "get500PointsWhenTheyCompleteFirstActivity": "Obtenez 500 points lorsqu'ils terminent leur première activité",
+  "trainingCenterInfo": "Centre de formation",
+  "trainingCenterInfoHousehold": "Accédez au contenu de formation adapté aux utilisateurs des ménages. Apprenez à utiliser Botleji efficacement !",
+  "trainingCenterInfoCollector": "Accédez au contenu de formation pour les collecteurs. Maîtrisez les techniques de collecte et les meilleures pratiques !",
+  "gotIt": "Compris",
+  "filter": "Filtrer",
+  "search": "Rechercher",
+  "clear": "Effacer",
+  "plastic": "Plastique",
+  "glass": "Verre",
+  "aluminum": "Aluminium",
+  "dropProgress": "Progression du dépôt",
+  "collectionIssues": "Problèmes de collecte",
+  "cancelledTimes": "Annulé {count} fois",
+  "@cancelledTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dropAcceptedByCollector": "Dépôt accepté par le collecteur",
+  "acceptedDropForCollection": "Dépôt accepté pour collecte",
+  "collectionCompletedSuccessfullyNoExclamation": "Collecte terminée avec succès",
+  "estimatedTime": "Heure d'arrivée estimée",
+  "applicationIssue": "Problème d'application",
+  "paymentIssue": "Problème de paiement",
+  "accountIssue": "Problème de compte",
+  "technicalIssue": "Problème technique",
+  "generalSupportRequest": "Demande de support générale",
+  "supportRequest": "Demande de support",
+  "noDescriptionProvided": "Aucune description fournie",
+  "becomeACollector": "Devenir un collecteur",
+  "userNotFound": "Utilisateur introuvable",
+  "welcome": "Bienvenue",
+  "idVerification": "Vérification d'identité",
+  "selfieWithId": "Selfie avec pièce d'identité",
+  "reviewAndSubmit": "Révision et soumission",
+  "welcomeToCollectorProgram": "Bienvenue dans le programme de collecteurs !",
+  "joinOurCommunityOfEcoConsciousCollectors": "Rejoignez notre communauté de collecteurs soucieux de l'environnement et aidez à faire la différence dans le recyclage.",
+  "earnMoney": "Gagner de l'argent",
+  "getPaidForEveryBottleAndCan": "Soyez payé pour chaque bouteille et canette que vous collectez",
+  "flexibleHours": "Heures flexibles",
+  "collectWheneverAndWherever": "Collectez quand et où vous voulez",
+  "helpTheEnvironment": "Aider l'environnement",
+  "contributeToCleanerGreenerWorld": "Contribuez à un monde plus propre et plus vert",
+  "requirements": "Exigences",
+  "mustBe18YearsOrOlder": "• Doit avoir 18 ans ou plus",
+  "validNationalIdCard": "• Carte d'identité nationale valide",
+  "clearPhotosOfIdAndSelfie": "• Photos claires de la pièce d'identité et du selfie",
+  "goodStandingInCommunity": "• Bonne réputation dans la communauté",
+  "getStarted": "Commencer",
+  "idCardVerification": "Vérification de la carte d'identité",
+  "pleaseProvideYourIdCardInformation": "Veuillez fournir vos informations {idType} et prendre des photos claires",
+  "@pleaseProvideYourIdCardInformation": {
+    "placeholders": {
+      "idType": {
+        "type": "String"
+      }
+    }
+  },
+  "idCardDetails": "Détails de la carte d'identité",
+  "passportDetails": "Détails du passeport",
+  "idCardType": "Type de carte d'identité",
+  "selectYourIdCardType": "Sélectionnez votre type de carte d'identité",
+  "nationalId": "Carte d'identité nationale",
+  "passport": "Passeport",
+  "pleaseSelectAnIdCardType": "Veuillez sélectionner un type de carte d'identité",
+  "passportNumber": "Numéro de passeport",
+  "enterYourPassportNumber": "Entrez votre numéro de passeport",
+  "selectIssueDate": "Sélectionner la date d'émission",
+  "issueDateLabel": "Date d'émission",
+  "issueDate": "Date d'émission : {date}",
+  "@issueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExpiryDate": "Sélectionner la date d'expiration",
+  "expiryDateLabel": "Date d'expiration",
+  "expiryDate": "Date d'expiration : {date}",
+  "@expiryDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "issuingAuthority": "Autorité émettrice",
+  "egMinistryOfForeignAffairs": "ex. Ministère des Affaires étrangères",
+  "idCardNumber": "Numéro de carte d'identité",
+  "idCardNumberPlaceholder": "12345678",
+  "idCardNumberIsRequired": "Le numéro de carte d'identité est requis",
+  "idCardNumberMustBe8Digits": "Le numéro de carte d'identité doit contenir 8 chiffres",
+  "idCardNumberMustContainOnlyDigits": "Le numéro de carte d'identité ne doit contenir que des chiffres",
+  "idCardPhotos": "Photos de la carte d'identité",
+  "passportPhotos": "Photos du passeport",
+  "noPassportMainPagePhoto": "Aucune photo de la page principale du passeport",
+  "takePhotoOfMainPageWithDetails": "Prenez une photo de la page principale avec vos détails",
+  "retakePhoto": "Reprendre la photo",
+  "takePassportMainPagePhoto": "Prendre une photo de la page principale du passeport",
+  "noIdCardFrontPhoto": "Aucune photo du recto de la carte d'identité",
+  "takePhotoOfFrontOfIdCard": "Prenez une photo du recto de votre carte d'identité",
+  "retakeFrontPhoto": "Reprendre la photo du recto",
+  "takeIdCardFrontPhoto": "Prendre une photo du recto de la carte d'identité",
+  "noIdCardBackPhoto": "Aucune photo du verso de la carte d'identité",
+  "takePhotoOfBackOfIdCard": "Prenez une photo du verso de votre carte d'identité",
+  "retakeBackPhoto": "Reprendre la photo du verso",
+  "takeIdCardBackPhoto": "Prendre une photo du verso de la carte d'identité",
+  "continueButton": "Continuer",
+  "selfieWithIdCard": "Selfie avec carte d'identité",
+  "pleaseTakeSelfieWhileHoldingId": "Veuillez prendre un selfie en tenant votre carte d'identité à côté de votre visage",
+  "noSelfiePhoto": "Aucune photo selfie",
+  "takeSelfie": "Prendre un selfie",
+  "reviewAndSubmitTitle": "Révision et soumission",
+  "pleaseReviewYourApplication": "Veuillez réviser votre demande avant de la soumettre",
+  "idCardInformation": "Informations sur la carte d'identité",
+  "idType": "Type d'identité",
+  "idNumber": "Numéro d'identité",
+  "notProvided": "Non fourni",
+  "idCard": "Carte d'identité",
+  "selfie": "Selfie",
+  "whatHappensNext": "Que se passe-t-il ensuite ?",
+  "applicationReviewProcess": "• Votre demande sera examinée par notre équipe\n• L'examen prend généralement 1 à 3 jours ouvrables\n• Vous recevrez une notification une fois examinée\n• Si approuvée, vous pouvez commencer à collecter immédiatement",
+  "submitting": "Soumission en cours...",
+  "submitApplication": "Soumettre la demande",
+  "pleaseTakeBothPhotosBeforeSubmitting": "Veuillez prendre les deux photos avant de soumettre",
+  "pleaseFillInAllRequiredPassportInformation": "Veuillez remplir toutes les informations de passeport requises",
+  "pleaseFillInAllRequiredIdCardInformation": "Veuillez remplir toutes les informations de carte d'identité requises (numéro et type d'identité)",
+  "applicationUpdatedSuccessfully": "Demande mise à jour avec succès !",
+  "applicationSubmittedSuccessfully": "Demande soumise avec succès !",
+  "errorSubmittingApplication": "Erreur lors de la soumission de la demande : {error}",
+  "@errorSubmittingApplication": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationStatus": "Statut de la demande",
+  "errorLoadingApplication": "Erreur lors du chargement de la demande",
+  "noApplicationFound": "Aucune demande trouvée",
+  "youHaventSubmittedApplicationYet": "Vous n'avez pas encore soumis de demande de collecteur.",
+  "pendingReview": "En attente d'examen",
+  "yourApplicationIsBeingReviewed": "Votre demande est en cours d'examen par notre équipe.",
+  "approved": "Approuvé",
+  "congratulationsApplicationApproved": "Félicitations ! Votre demande a été approuvée.",
+  "rejected": "Rejeté",
+  "applicationNotApprovedCanApplyAgain": "Votre demande n'a pas été approuvée. Vous pouvez postuler à nouveau.",
+  "unknown": "Inconnu",
+  "applicationStatusUnknown": "Le statut de la demande est inconnu.",
+  "applicationDetails": "Détails de la demande",
+  "applicationId": "ID de la demande",
+  "notSpecified": "Non spécifié",
+  "appliedOn": "Postulé le",
+  "reviewedOn": "Examiné le",
+  "rejectionReason": "Raison du rejet",
+  "reviewNotes": "Notes d'examen",
+  "applyAgain": "Postuler à nouveau",
+  "applicationInReview": "Demande en cours d'examen",
+  "applicationInReviewDialogContent": "Votre demande est actuellement en cours d'examen par notre équipe. Ce processus prend généralement 1 à 3 jours ouvrables. Vous serez notifié une fois qu'une décision aura été prise.",
+  "reviewProcess": "Processus d'examen",
+  "back": "Retour"
+}

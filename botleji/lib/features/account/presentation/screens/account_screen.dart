@@ -6,6 +6,7 @@ import 'package:botleji/features/profile/presentation/screens/profile_setup_scre
 import 'package:botleji/features/collector/presentation/screens/collector_application_screen.dart';
 import 'package:botleji/features/collector/presentation/screens/collector_application_status_screen.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -19,14 +20,17 @@ class AccountScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'My Account',
-          style: TextStyle(fontWeight: FontWeight.w600),
-          overflow: TextOverflow.ellipsis,
+        title: Builder(
+          builder: (context) => Text(
+            AppLocalizations.of(context).myAccount,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -45,24 +49,34 @@ class AccountScreen extends ConsumerWidget {
                     color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'Please login to view your profile',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n.pleaseLoginToViewProfile,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/login');
-                    },
-                    icon: const Icon(Icons.login),
-                    label: const Text('Login'),
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                        icon: const Icon(Icons.login),
+                        label: Text(l10n.login),
                     style: FilledButton.styleFrom(
                       backgroundColor: appGreenColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    ),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                    );
+                    },
                   ),
                 ],
               ),
@@ -128,13 +142,18 @@ class AccountScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       // User Name
-                      Text(
-                        user.name ?? 'Not set',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                      Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(
+                            user.name ?? l10n.notSet,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          );
+                        },
                       ),
                       const SizedBox(height: 6),
                       // Email
@@ -161,52 +180,77 @@ class AccountScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Profile Information',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return Text(
+                              l10n.profileInformation,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 20),
                         
                         // Full Name
-                        _buildInfoTile(
-                          context,
-                          icon: Icons.person_outline,
-                          title: 'Full Name',
-                          value: user.name ?? 'Not set',
-                          iconColor: appGreenColor,
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return _buildInfoTile(
+                              context,
+                              icon: Icons.person_outline,
+                              title: l10n.fullName,
+                              value: user.name ?? l10n.notSet,
+                              iconColor: appGreenColor,
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         
                         // Email
-                        _buildInfoTile(
-                          context,
-                          icon: Icons.email_outlined,
-                          title: 'Email',
-                          value: user.email,
-                          iconColor: AppColors.lightSecondary,
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return _buildInfoTile(
+                              context,
+                              icon: Icons.email_outlined,
+                              title: l10n.email,
+                              value: user.email,
+                              iconColor: AppColors.lightSecondary,
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         
                         // Phone
-                        _buildInfoTile(
-                          context,
-                          icon: Icons.phone_outlined,
-                          title: 'Phone',
-                          value: user.phoneNumber ?? 'Not set',
-                          iconColor: AppColors.lightMapPin,
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return _buildInfoTile(
+                              context,
+                              icon: Icons.phone_outlined,
+                              title: l10n.phone,
+                              value: user.phoneNumber ?? l10n.notSet,
+                              iconColor: AppColors.lightMapPin,
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         
                         // Address
-                        _buildInfoTile(
-                          context,
-                          icon: Icons.location_on_outlined,
-                          title: 'Address',
-                          value: user.address ?? 'Not set',
-                          iconColor: AppColors.lightSuccess,
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return _buildInfoTile(
+                              context,
+                              icon: Icons.location_on_outlined,
+                              title: l10n.address,
+                              value: user.address ?? l10n.notSet,
+                              iconColor: AppColors.lightSuccess,
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -241,20 +285,30 @@ class AccountScreen extends ConsumerWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Collector Status',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: appGreenColor,
-                                        ),
+                                      Builder(
+                                        builder: (context) {
+                                          final l10n = AppLocalizations.of(context);
+                                          return Text(
+                                            l10n.collectorStatus,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: appGreenColor,
+                                            ),
+                                          );
+                                        },
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        'You are an approved collector',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 14,
-                                        ),
+                                      Builder(
+                                        builder: (context) {
+                                          final l10n = AppLocalizations.of(context);
+                                          return Text(
+                                            l10n.approvedCollector,
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 14,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
@@ -286,34 +340,49 @@ class AccountScreen extends ConsumerWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            'Application Status',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.orange,
-                                            ),
+                                          Builder(
+                                            builder: (context) {
+                                              final l10n = AppLocalizations.of(context);
+                                              return Text(
+                                                l10n.applicationStatus,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.orange,
+                                                ),
+                                              );
+                                            },
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(
-                                            'Your application is under review',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 14,
-                                            ),
+                                          Builder(
+                                            builder: (context) {
+                                              final l10n = AppLocalizations.of(context);
+                                              return Text(
+                                                l10n.applicationUnderReviewStatus,
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const CollectorApplicationStatusScreen(),
-                                          ),
+                                    Builder(
+                                      builder: (context) {
+                                        final l10n = AppLocalizations.of(context);
+                                        return TextButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const CollectorApplicationStatusScreen(),
+                                              ),
+                                            );
+                                          },
+                                          child: Text(l10n.viewDetails),
                                         );
                                       },
-                                      child: const Text('View Details'),
                                     ),
                                   ],
                                 ),
@@ -338,20 +407,30 @@ class AccountScreen extends ConsumerWidget {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                'Application Rejected',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.red.shade800,
-                                                ),
+                                              Builder(
+                                                builder: (context) {
+                                                  final l10n = AppLocalizations.of(context);
+                                                  return Text(
+                                                    l10n.applicationRejectedTitle,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.red.shade800,
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                               const SizedBox(height: 4),
-                                              Text(
-                                                'Tap to view rejection reason',
-                                                style: TextStyle(
-                                                  color: Colors.red.shade600,
-                                                  fontSize: 14,
-                                                ),
+                                              Builder(
+                                                builder: (context) {
+                                                  final l10n = AppLocalizations.of(context);
+                                                  return Text(
+                                                    l10n.tapToViewRejectionReason,
+                                                    style: TextStyle(
+                                                      color: Colors.red.shade600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
@@ -379,7 +458,9 @@ class AccountScreen extends ConsumerWidget {
                                           );
                                         },
                                         icon: const Icon(Icons.edit),
-                                        label: const Text('Edit Application'),
+                                        label: Builder(
+                                          builder: (context) => Text(AppLocalizations.of(context).editApplication),
+                                        ),
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: Colors.red.shade700,
                                           side: BorderSide(color: Colors.red.shade300),
@@ -410,20 +491,30 @@ class AccountScreen extends ConsumerWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            'Collector Status',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: appGreenColor,
-                                            ),
+                                          Builder(
+                                            builder: (context) {
+                                              final l10n = AppLocalizations.of(context);
+                                              return Text(
+                                                l10n.collectorStatus,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: appGreenColor,
+                                                ),
+                                              );
+                                            },
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(
-                                            'You are an approved collector',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 14,
-                                            ),
+                                          Builder(
+                                            builder: (context) {
+                                              final l10n = AppLocalizations.of(context);
+                                              return Text(
+                                                l10n.approvedCollector,
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),
@@ -447,7 +538,7 @@ class AccountScreen extends ConsumerWidget {
                               );
                             },
                             icon: const Icon(Icons.eco),
-                            label: const Text('Become a Collector'),
+                            label: Text(AppLocalizations.of(context).becomeACollector),
                             style: FilledButton.styleFrom(
                               backgroundColor: appGreenColor,
                               foregroundColor: Colors.white,
@@ -500,7 +591,7 @@ class AccountScreen extends ConsumerWidget {
                             );
                           },
                           icon: const Icon(Icons.eco),
-                          label: const Text('Become a Collector'),
+                          label: Text(AppLocalizations.of(context).becomeACollector),
                           style: FilledButton.styleFrom(
                             backgroundColor: appGreenColor,
                             foregroundColor: Colors.white,
@@ -529,7 +620,9 @@ class AccountScreen extends ConsumerWidget {
                       );
                     },
                     icon: const Icon(Icons.edit),
-                    label: const Text('Edit Profile'),
+                    label: Builder(
+                      builder: (context) => Text(AppLocalizations.of(context).editProfile),
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: appGreenColor,
                       foregroundColor: Colors.white,
@@ -674,25 +767,26 @@ class AccountScreen extends ConsumerWidget {
   }
 
   static void _showRejectionReason(BuildContext context, UserData user) {
-    final rejectionReason = user.collectorApplicationRejectionReason ?? 'No specific reason provided';
+    final l10n = AppLocalizations.of(context);
+    final rejectionReason = user.collectorApplicationRejectionReason ?? l10n.noSpecificReason;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Application Rejected'),
+            const Icon(Icons.info_outline, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(l10n.applicationRejectedTitle),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Your application was rejected for the following reason:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Text(
+              l10n.applicationRejectedMessage(rejectionReason),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Container(
@@ -708,16 +802,16 @@ class AccountScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'You can edit your application and submit it again.',
-              style: TextStyle(fontSize: 14),
+            Text(
+              l10n.canEditApplication,
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(l10n.close),
           ),
           FilledButton(
             onPressed: () {
@@ -729,7 +823,7 @@ class AccountScreen extends ConsumerWidget {
                 ),
               );
             },
-            child: const Text('Edit Application'),
+            child: Text(l10n.editApplication),
           ),
         ],
       ),

@@ -9,12 +9,14 @@ import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
+import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 import 'package:botleji/features/stats/presentation/widgets/stats_chart_carousel.dart';
 import 'package:botleji/features/stats/presentation/widgets/household_stats_chart_carousel.dart';
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -25,6 +27,20 @@ class StatsScreen extends ConsumerStatefulWidget {
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   TimeRange _selectedTimeRange = TimeRange.week;
+  
+  String _getLocalizedTimeRange(TimeRange timeRange) {
+    final l10n = AppLocalizations.of(context);
+    switch (timeRange) {
+      case TimeRange.week:
+        return l10n.thisWeek;
+      case TimeRange.month:
+        return l10n.thisMonth;
+      case TimeRange.year:
+        return l10n.thisYear;
+      case TimeRange.allTime:
+        return l10n.allTime;
+    }
+  }
 
   @override
   void initState() {
@@ -123,7 +139,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Row(
             children: [
               Text(
-                'My Stats',
+                AppLocalizations.of(context).myStats,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF00695C),
@@ -218,7 +234,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Time Range',
+          AppLocalizations.of(context).timeRange,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: Colors.grey[700],
@@ -233,7 +249,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: Text(timeRange.displayName),
+                  label: Text(_getLocalizedTimeRange(timeRange)),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (!selected) return;
@@ -261,7 +277,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Time Range',
+          AppLocalizations.of(context).timeRange,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: Colors.grey[700],
@@ -276,7 +292,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: Text(timeRange.displayName),
+                  label: Text(_getLocalizedTimeRange(timeRange)),
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
@@ -419,22 +435,22 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Total Drops',
+            AppLocalizations.of(context).totalDrops,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[600],
             ),
           ),
           const SizedBox(height: 16),
           // Status breakdown
-          _buildStatusRow('Active', pendingDrops, totalDrops, Colors.orange),
+          _buildStatusRow(AppLocalizations.of(context).active, pendingDrops, totalDrops, Colors.orange),
           const SizedBox(height: 8),
-          _buildStatusRow('Collected', collectedDrops, totalDrops, Colors.green),
+          _buildStatusRow(AppLocalizations.of(context).collected, collectedDrops, totalDrops, Colors.green),
           const SizedBox(height: 8),
-          _buildStatusRow('Flagged', flaggedDrops, totalDrops, Colors.red),
+          _buildStatusRow(AppLocalizations.of(context).flagged, flaggedDrops, totalDrops, Colors.red),
           const SizedBox(height: 8),
-          _buildStatusRow('Stale', staleDrops, totalDrops, Colors.brown),
+          _buildStatusRow(AppLocalizations.of(context).stale, staleDrops, totalDrops, Colors.brown),
           const SizedBox(height: 8),
-          _buildStatusRow('Censored', censoredDrops, totalDrops, Colors.purple),
+          _buildStatusRow(AppLocalizations.of(context).censored, censoredDrops, totalDrops, Colors.purple),
         ],
       ),
     );
@@ -486,7 +502,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Items Recycled',
+            AppLocalizations.of(context).totalItemsRecycled,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[600],
             ),
@@ -521,7 +537,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Drop Status',
+          AppLocalizations.of(context).dropStatusDistribution,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF00695C),
@@ -545,15 +561,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
           child: Column(
             children: [
-              _buildStatusRow('Pending', pending, total, Colors.orange),
+              _buildStatusRow(AppLocalizations.of(context).pending, pending, total, Colors.orange),
               const SizedBox(height: 8),
-              _buildStatusRow('Collected', collected, total, Colors.green),
+              _buildStatusRow(AppLocalizations.of(context).collected, collected, total, Colors.green),
               const SizedBox(height: 8),
-              _buildStatusRow('Flagged', flagged, total, Colors.red),
+              _buildStatusRow(AppLocalizations.of(context).flagged, flagged, total, Colors.red),
               const SizedBox(height: 8),
-              _buildStatusRow('Stale', stale, total, Colors.brown),
+              _buildStatusRow(AppLocalizations.of(context).stale, stale, total, Colors.brown),
               const SizedBox(height: 8),
-              _buildStatusRow('Censored', censored, total, Colors.purple),
+              _buildStatusRow(AppLocalizations.of(context).censored, censored, total, Colors.purple),
             ],
           ),
         ),
@@ -609,7 +625,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recycling Impact',
+          AppLocalizations.of(context).recyclingImpact,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF00695C),
@@ -646,13 +662,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Plastic Bottles',
+                          AppLocalizations.of(context).plasticBottles,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
-                          'Recycled ${_formatLargeNumber(totalBottles)} bottles',
+                          AppLocalizations.of(context).recycledBottles(_formatLargeNumber(totalBottles)),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -683,13 +699,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Aluminum Cans',
+                          AppLocalizations.of(context).aluminumCans,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
-                          'Recycled ${_formatLargeNumber(totalCans)} cans',
+                          AppLocalizations.of(context).recycledCans(_formatLargeNumber(totalCans)),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -715,7 +731,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Total Items Recycled',
+                      AppLocalizations.of(context).totalItemsRecycled,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -750,7 +766,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent Drops',
+              AppLocalizations.of(context).recentDrops,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF00695C),
@@ -759,9 +775,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             TextButton(
               onPressed: () {
                 print('Stats: View All button pressed for recent drops');
-                Navigator.pushNamed(context, AppRoutes.history);
+                // Set the initial filter to "Active" and navigate to Drops tab (index 1)
+                final l10n = AppLocalizations.of(context);
+                ref.read(dropsInitialFilterProvider.notifier).state = l10n.active;
+                ref.read(tabControllerProvider.notifier).setTab(1);
               },
-              child: const Text('View All'),
+              child: Text(AppLocalizations.of(context).viewAll),
             ),
           ],
         ),
@@ -813,6 +832,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildRecentDropCard(Drop drop) {
+    final itemsText = AppLocalizations.of(context).items;
+    final itemCount = drop.numberOfBottles + drop.numberOfCans;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -879,14 +900,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${drop.numberOfBottles + drop.numberOfCans} items',
+                  '$itemCount $itemsText',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  drop.bottleType.name.toUpperCase(),
+                  drop.bottleType.localizedDisplayName(context),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -909,7 +930,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              drop.status.name.toUpperCase(),
+              drop.status.localizedDisplayName(context),
               style: TextStyle(
                 color: _getStatusColor(drop.status.name),
                 fontSize: 10,
@@ -950,7 +971,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Row(
             children: [
               Text(
-                'My Stats',
+                AppLocalizations.of(context).myStats,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF00695C), // Green color
@@ -989,7 +1010,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Overview',
+          AppLocalizations.of(context).overview,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF00695C), // Green color
@@ -1046,7 +1067,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Performance Metrics',
+              AppLocalizations.of(context).performanceMetrics,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF00695C), // Green color
@@ -1054,14 +1075,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             ),
             const SizedBox(height: 16),
             _buildMetricRow(
-              'Collection Rate',
+              AppLocalizations.of(context).collectionRate,
               '${stats.collectionRate.toStringAsFixed(1)}%',
               Icons.trending_up,
               Colors.green,
             ),
             const SizedBox(height: 12),
             _buildMetricRow(
-              'Avg Collection Time',
+              AppLocalizations.of(context).avgCollectionTime,
               _formatDuration(stats.averageCollectionTime),
               Icons.access_time,
               Colors.blue,
@@ -1107,7 +1128,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cancellation Reasons',
+              AppLocalizations.of(context).cancellationReasons,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF00695C), // Green color
@@ -1167,7 +1188,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recent Collections',
+                  AppLocalizations.of(context).recentCollections,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF00695C), // Green color
@@ -1175,9 +1196,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 ),
                 TextButton(
                   onPressed: () {
+                    // For collector mode: navigate to History page
                     Navigator.pushNamed(context, AppRoutes.history);
                   },
-                  child: const Text('View All'),
+                  child: Text(AppLocalizations.of(context).viewAll),
                 ),
               ],
             ),
@@ -1195,10 +1217,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   });
                 
                 if (completedAttempts.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'No completed collections yet',
-                      style: TextStyle(
+                      AppLocalizations.of(context).noCompletedCollectionsYet,
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontStyle: FontStyle.italic,
                       ),
@@ -1312,10 +1334,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       const SizedBox(width: 12),
                     ],
                     Text(
-                      'Total: ${dropSnapshot.totalItems}',
+                      '${AppLocalizations.of(context).total}: ${dropSnapshot.totalItems}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.green[600],
+                        color: Color(0xFF00695C),
                       ),
                     ),
                   ],
@@ -1358,7 +1380,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 Row(
                   children: [
                     Text(
-                      'Collected ${_formatDate(attempt.completedAt ?? attempt.updatedAt)}',
+                      '${AppLocalizations.of(context).collected} ${_formatDate(attempt.completedAt ?? attempt.updatedAt)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[500],
                         fontWeight: FontWeight.w500,
@@ -1521,10 +1543,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       const SizedBox(width: 12),
                     ],
                     Text(
-                      'Total: ${dropoff.numberOfBottles + dropoff.numberOfCans}',
+                      '${AppLocalizations.of(context).total}: ${dropoff.numberOfBottles + dropoff.numberOfCans}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.green[600],
+                        color: const Color(0xFF00695C),
                       ),
                     ),
                   ],
@@ -1565,7 +1587,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 
                 // Collection date
                 Text(
-                  'Collected ${_formatDate(interaction.interactionTime)}',
+                  '${AppLocalizations.of(context).collected} ${_formatDate(interaction.interactionTime)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[500],
                     fontWeight: FontWeight.w500,
@@ -1579,7 +1601,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: const Color(0xFF00695C).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1587,14 +1609,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               children: [
                 const Icon(
                   Icons.check_circle,
-                  color: Colors.green,
+                  color: Color(0xFF00695C),
                   size: 14,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'COLLECTED',
                   style: TextStyle(
-                    color: Colors.green[700],
+                    color: Color(0xFF00695C),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1906,7 +1928,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Cancelled: ${interaction.cancellationReason}',
+                              '${AppLocalizations.of(context).cancelled}: ${_formatCancellationReason(interaction.cancellationReason!)}',
                               style: TextStyle(
                                 color: Colors.red[800],
                                 fontSize: 12,
@@ -2048,6 +2070,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _formatDate(DateTime date) {
+    final l10n = AppLocalizations.of(context);
     // Convert to German timezone
     final germanDate = TimezoneService.toGermanTime(date);
     
@@ -2060,26 +2083,26 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final timeString = '${germanDate.hour.toString().padLeft(2, '0')}:${germanDate.minute.toString().padLeft(2, '0')}';
     
     if (dateOnly == today) {
-      return 'Today at $timeString';
+      return '${l10n.todayAt(timeString)}';
     } else if (dateOnly == yesterday) {
-      return 'Yesterday at $timeString';
+      return '${l10n.yesterdayAt(timeString)}';
     } else {
       final difference = today.difference(dateOnly).inDays;
       
       if (difference < 7) {
         // Show day name for recent dates
-        final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final dayNames = [l10n.mon, l10n.tue, l10n.wed, l10n.thu, l10n.fri, l10n.sat, l10n.sun];
         final dayName = dayNames[germanDate.weekday - 1];
-        return '$dayName at $timeString';
+        return '$dayName ${l10n.at} $timeString';
       } else if (difference < 30) {
         // Show "X days ago" for older dates
-        return '${difference}d ago at $timeString';
+        return '${l10n.daysAgoShort(difference)} ${l10n.at} $timeString';
       } else {
         // Show full date for very old dates
-        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthNames = [l10n.jan, l10n.feb, l10n.mar, l10n.apr, l10n.may, l10n.jun, 
+                           l10n.jul, l10n.aug, l10n.sep, l10n.oct, l10n.nov, l10n.dec];
         final monthName = monthNames[germanDate.month - 1];
-        return '$monthName ${germanDate.day} at $timeString';
+        return '$monthName ${germanDate.day} ${l10n.at} $timeString';
       }
     }
   }
@@ -2139,19 +2162,20 @@ Widget _buildErrorWidget(String error) {
   }
 
   String _formatCancellationReason(String reason) {
+    final l10n = AppLocalizations.of(context);
     switch (reason) {
       case 'noAccess':
-        return 'No Access';
+        return l10n.noAccess;
       case 'notFound':
-        return 'Not Found';
+        return l10n.notFound;
       case 'alreadyCollected':
-        return 'Already Collected';
+        return l10n.alreadyCollected;
       case 'wrongLocation':
-        return 'Wrong Location';
+        return l10n.wrongLocation;
       case 'unsafe':
-        return 'Unsafe Location';
+        return l10n.unsafeLocation;
       case 'other':
-        return 'Other';
+        return l10n.other;
       default:
         return reason;
     }
@@ -2354,13 +2378,13 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                               );
                             },
                           ),
-                          // Pin overlay
+                          // Pin overlay - using same green/white pin as drop cards
                           Center(
                             child: Container(
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: const Color(0xFF00695C), // Green color to match drop cards
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                                 boxShadow: [
@@ -2759,7 +2783,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                 ),
                               ),
                             ),
-                          // Custom pin overlay (always visible)
+                          // Custom pin overlay (always visible) - using same green/white pin as drop cards
                           Positioned(
                             left: 0,
                             top: 0,
@@ -2770,7 +2794,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
+                                  color: const Color(0xFF00695C), // Green color to match drop cards
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                   boxShadow: [
@@ -2872,10 +2896,10 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Total ${_formatLargeNumber(dropSnapshot.numberOfBottles + dropSnapshot.numberOfCans)}',
+                      '${AppLocalizations.of(context).total} ${_formatLargeNumber(dropSnapshot.numberOfBottles + dropSnapshot.numberOfCans)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.green[600],
+                        color: const Color(0xFF00695C),
                       ),
                     ),
                   ],
@@ -2897,7 +2921,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: const Color(0xFF00695C).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -2905,14 +2929,14 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                     children: [
                       const Icon(
                         Icons.check_circle,
-                        color: Colors.green,
+                        color: Color(0xFF00695C),
                         size: 16,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'COLLECTED',
+                        AppLocalizations.of(context).collected.toUpperCase(),
                         style: TextStyle(
-                          color: Colors.green[700],
+                          color: Color(0xFF00695C),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),

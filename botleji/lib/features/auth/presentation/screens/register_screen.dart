@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:botleji/core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
 import 'otp_verification_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -52,7 +52,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           );
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message ?? 'Registration successful')),
+            SnackBar(content: Text(message ?? AppLocalizations.of(context).registrationSuccessful)),
           );
         },
         error: (message, _) {
@@ -79,74 +79,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: const Color(0xFF00695C),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo
-                  Image.asset(
-                    'assets/images/logo.png',
-                    height: 120,
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Join Bottleji',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create an account to get started',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white70,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo
+                    Image.asset(
+                      'assets/images/logo_v2.png',
+                      height:200,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).startYourBottlejiJourney,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: appGreenColor,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context).createAccountToGetStarted,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: appGreenColor.withOpacity(0.7),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
                   const SizedBox(height: 32),
 
                   // Email Field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      hintText: 'Enter your email',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
+                      labelText: AppLocalizations.of(context).email,
+                      labelStyle: const TextStyle(color: appGreenColor),
+                      hintText: AppLocalizations.of(context).enterYourEmail,
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      prefixIcon: const Icon(Icons.email_outlined, color: appGreenColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: const BorderSide(color: appGreenColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
+                      fillColor: Colors.grey[50],
                     ),
                     validator: (value) {
+                      final l10n = AppLocalizations.of(context);
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
+                        return l10n.pleaseEnterEmail;
                       }
                       if (!value.contains('@') || !value.contains('.')) {
-                        return 'Please enter a valid email';
+                        return l10n.pleaseEnterValidEmail;
                       }
                       return null;
                     },
@@ -157,19 +159,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      hintText: 'Create a password',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                      labelText: AppLocalizations.of(context).password,
+                      labelStyle: const TextStyle(color: appGreenColor),
+                      hintText: AppLocalizations.of(context).createAPassword,
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
                               ? Icons.visibility_off
                               : Icons.visibility,
-                          color: Colors.white70,
+                          color: appGreenColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -179,25 +181,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: const BorderSide(color: appGreenColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
+                      fillColor: Colors.grey[50],
                     ),
                     validator: (value) {
+                      final l10n = AppLocalizations.of(context);
                       if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
+                        return l10n.pleaseEnterPassword;
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                        return l10n.passwordMustBeAtLeast6Characters;
                       }
                       return null;
                     },
@@ -208,19 +211,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      hintText: 'Confirm your password',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                      labelText: AppLocalizations.of(context).confirmPassword,
+                      labelStyle: const TextStyle(color: appGreenColor),
+                      hintText: AppLocalizations.of(context).confirmYourPassword,
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isConfirmPasswordVisible
                               ? Icons.visibility_off
                               : Icons.visibility,
-                          color: Colors.white70,
+                          color: appGreenColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -230,25 +233,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: const BorderSide(color: appGreenColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white70),
+                        borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
+                      fillColor: Colors.grey[50],
                     ),
                     validator: (value) {
+                      final l10n = AppLocalizations.of(context);
                       if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
+                        return l10n.pleaseConfirmPassword;
                       }
                       if (value != _passwordController.text) {
-                        return 'Passwords do not match';
+                        return l10n.passwordsDoNotMatch;
                       }
                       return null;
                     },
@@ -260,11 +264,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF00695C),
+                      backgroundColor: appGreenColor,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 2,
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -272,11 +277,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00695C)),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
-                        ) : const Text(
-                            'Create Account',
-                            style: TextStyle(
+                        ) : Text(
+                            AppLocalizations.of(context).createAccount,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -289,18 +294,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account?',
+                        AppLocalizations.of(context).alreadyHaveAccount,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white,
+                          color: Colors.black87,
                         ),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(color: Colors.white70),
+                        child: Text(
+                          AppLocalizations.of(context).login,
+                          style: const TextStyle(color: appGreenColor, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],

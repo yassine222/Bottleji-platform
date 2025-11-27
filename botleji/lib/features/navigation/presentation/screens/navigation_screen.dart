@@ -8,6 +8,7 @@ import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/core/theme/app_colors.dart';
+import 'package:botleji/core/utils/map_styles.dart';
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/core/config/api_config.dart';
@@ -19,6 +20,9 @@ import 'package:botleji/features/home/presentation/screens/home_screen.dart';
 import 'package:botleji/features/drops/presentation/widgets/report_drop_dialog.dart';
 import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
+import 'package:botleji/features/earnings/presentation/providers/earnings_provider.dart';
 
 // Navigation step model
 class NavigationStep {
@@ -53,7 +57,7 @@ class NavigationScreen extends ConsumerStatefulWidget {
   ConsumerState<NavigationScreen> createState() => _NavigationScreenState();
 }
 
-class _NavigationScreenState extends ConsumerState<NavigationScreen> with TickerProviderStateMixin {
+class _NavigationScreenState extends ConsumerState<NavigationScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   GoogleMapController? _mapController;
   LatLng? _currentLocation;
   Set<Polyline> _polylines = {};
@@ -85,6 +89,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   int _totalTimeoutSeconds = 0;
   bool _hasTimedOut = false;
   bool _warningNotificationSent = false;
+  DateTime? _timerPausedAt; // Track when timer was paused
 
   // Proximity and slide button variables
   static const double _arrivalThreshold = 100.0; // 100 meters threshold - increased for better UX
@@ -107,6 +112,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _collectionStartTime = DateTime.now();
     _loadCustomMarker(); // Load custom marker icon
     
@@ -120,9 +126,96 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     _initializeLocation();
   }
 
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    debugPrint('🔄 NavigationScreen: App lifecycle changed to: $state');
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App went to background - pause timer
+      debugPrint('🔄 NavigationScreen: App going to background, pausing timer');
+      _pauseTimer();
+    } else if (state == AppLifecycleState.resumed) {
+      // App came to foreground - recalculate and resume timer
+      debugPrint('🔄 NavigationScreen: App resumed, recalculating timer');
+      // Use a small delay to ensure the screen is fully built before checking timer
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _resumeTimer();
+        }
+      });
+    }
+  }
+
+  void _pauseTimer() {
+    if (_timer != null && _timer!.isActive) {
+      _timerPausedAt = DateTime.now();
+      _timer?.cancel();
+      debugPrint('⏰ Timer paused at: $_timerPausedAt');
+    }
+  }
+
+  void _resumeTimer() {
+    // Always recalculate remaining time based on actual elapsed time when resuming
+    final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
+    if (activeCollection != null && activeCollection.acceptedAt != null) {
+      // If timer wasn't initialized yet, initialize it first
+      if (_totalTimeoutSeconds == 0) {
+        debugPrint('⏰ Timer not initialized on resume, initializing now...');
+        _initializeTimer();
+        return; // _initializeTimer will handle the expired check
+      }
+      
+      // Cancel existing timer if any
+      _timer?.cancel();
+      
+      // Recalculate remaining time based on actual elapsed time
+      final elapsed = DateTime.now().difference(activeCollection.acceptedAt!).inSeconds;
+      _remainingSeconds = _totalTimeoutSeconds - elapsed;
+      
+      // Ensure remaining time is not negative
+      if (_remainingSeconds <= 0) {
+        _remainingSeconds = 0;
+        debugPrint('⏰ Timer expired while in background - elapsed: ${elapsed}s, timeout: ${_totalTimeoutSeconds}s');
+        _timerPausedAt = null;
+        
+        // Handle timeout immediately - show popup (force show even if already timed out)
+        // Use forceShow=true to ensure popup appears when resuming from background
+        _handleTimeout(forceShow: true);
+        return;
+      }
+      
+      debugPrint('⏰ Timer resumed - Recalculated remaining time: $_remainingSeconds seconds (elapsed: ${elapsed}s)');
+      _timerPausedAt = null;
+      
+      // Restart the timer with recalculated time
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_remainingSeconds > 0 && !_hasTimedOut) {
+          setState(() {
+            _remainingSeconds--;
+          });
+          debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
+          
+          // Check for warning notification at 30% of total time remaining
+          final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
+          if (_remainingSeconds <= warningThreshold && !_warningNotificationSent) {
+            debugPrint('⚠️ Warning threshold reached: ${_remainingSeconds}s <= ${warningThreshold}s (30% of ${_totalTimeoutSeconds}s)');
+            _showWarningNotification();
+          }
+        } else if (_remainingSeconds <= 0 && !_hasTimedOut) {
+          // Timeout reached - only handle once
+          debugPrint('⏰ TIMEOUT REACHED - Calling _handleTimeout()');
+          _handleTimeout();
+          timer.cancel();
+        }
+      });
+    }
+  }
+
   void _initializeTimer() {
     // Cancel any existing timer
     _timer?.cancel();
+    _timerPausedAt = null; // Reset pause time
     
     // Reset timeout flag
     _hasTimedOut = false;
@@ -163,13 +256,14 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Calculate remaining time based on elapsed time since accepted
     final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
-    if (activeCollection?.acceptedAt != null) {
-      final elapsed = DateTime.now().difference(activeCollection!.acceptedAt!).inSeconds;
+    if (activeCollection != null && activeCollection.acceptedAt != null) {
+      final elapsed = DateTime.now().difference(activeCollection.acceptedAt!).inSeconds;
       _remainingSeconds = _totalTimeoutSeconds - elapsed;
       
       // Ensure remaining time is not negative
       if (_remainingSeconds <= 0) {
         _remainingSeconds = 0; // Timer already expired
+        _hasTimedOut = true;
       }
     } else {
       _remainingSeconds = _totalTimeoutSeconds;
@@ -181,32 +275,40 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     debugPrint('⏰ Total timeout: ${_totalTimeoutSeconds} seconds');
     debugPrint('⏰ Remaining time: ${_remainingSeconds} seconds');
     
-    // Start countdown timer
-    debugPrint('⏰ Starting countdown timer with ${_remainingSeconds} seconds remaining...');
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_remainingSeconds > 0 && !_hasTimedOut) {
-        setState(() {
-          _remainingSeconds--;
-        });
-        debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
-        
-        // Check for warning notification at 30% of total time remaining
-        final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
-        if (_remainingSeconds <= warningThreshold && !_warningNotificationSent) {
-          debugPrint('⚠️ Warning threshold reached: ${_remainingSeconds}s <= ${warningThreshold}s (30% of ${_totalTimeoutSeconds}s)');
-          _showWarningNotification();
+    // Only start timer if not already timed out
+    if (!_hasTimedOut) {
+      // Start countdown timer
+      debugPrint('⏰ Starting countdown timer with ${_remainingSeconds} seconds remaining...');
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_remainingSeconds > 0 && !_hasTimedOut) {
+          setState(() {
+            _remainingSeconds--;
+          });
+          debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
+          
+          // Check for warning notification at 30% of total time remaining
+          final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
+          if (_remainingSeconds <= warningThreshold && !_warningNotificationSent) {
+            debugPrint('⚠️ Warning threshold reached: ${_remainingSeconds}s <= ${warningThreshold}s (30% of ${_totalTimeoutSeconds}s)');
+            _showWarningNotification();
+          }
+        } else if (_remainingSeconds <= 0 && !_hasTimedOut) {
+          // Timeout reached - only handle once
+          debugPrint('⏰ TIMEOUT REACHED - Calling _handleTimeout()');
+          _handleTimeout();
+          timer.cancel();
         }
-      } else if (_remainingSeconds <= 0 && !_hasTimedOut) {
-        // Timeout reached - only handle once
-        debugPrint('⏰ TIMEOUT REACHED - Calling _handleTimeout()');
-        _handleTimeout();
-        timer.cancel();
-      }
-    });
+      });
+    } else {
+      debugPrint('⏰ Timer already expired, not starting countdown');
+      // Force show timeout popup when initializing with expired timer
+      _handleTimeout(forceShow: true);
+    }
   }
 
-  void _handleTimeout() async {
-    if (_hasTimedOut) {
+  void _handleTimeout({bool forceShow = false}) async {
+    // Check if already handled, but allow force show when resuming from background
+    if (_hasTimedOut && !forceShow) {
       debugPrint('⏰ Timeout already handled, skipping...');
       return;
     }
@@ -214,7 +316,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     // Set flag immediately to prevent multiple calls
     _hasTimedOut = true;
     
-    debugPrint('⏰ TIMEOUT REACHED - Starting timeout handling...');
+    debugPrint('⏰ TIMEOUT REACHED - Starting timeout handling... (forceShow: $forceShow)');
     
     // Show notification immediately when timeout occurs
     debugPrint('🔔 Showing drop expired notification immediately on timeout');
@@ -226,7 +328,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       try {
         await LocalNotificationService().showDropExpiredNotification(
           dropId: activeCollection.dropoffId,
-          dropTitle: 'Drop Collection',
+          dropTitle: AppLocalizations.of(context).dropCollection,
           context: context,
         );
         debugPrint('🔔 Notification service call completed successfully');
@@ -239,23 +341,28 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Show immediate alert to confirm timer is working
     if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('⏰ Timer Expired!'),
-          content: const Text('The collection timer has expired. The navigation screen will now exit.'),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                _continueTimeoutHandling();
-              },
-              child: const Text('OK'),
+      // Use a small delay to ensure the dialog shows even if called during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text(AppLocalizations.of(context).timerExpired),
+              content: Text(AppLocalizations.of(context).timerExpiredMessage),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    _continueTimeoutHandling();
+                  },
+                  child: Text(AppLocalizations.of(context).ok),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
+          );
+        }
+      });
     }
   }
   
@@ -385,7 +492,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         // Use background notification method (no context required)
         await LocalNotificationService().showDropExpiredNotificationBackground(
           dropId: activeCollection.dropoffId,
-          dropTitle: 'Drop Collection', // You can customize this title
+          dropTitle: AppLocalizations.of(context).dropCollection, // You can customize this title
         );
         debugPrint('🔔 Notification service call completed successfully');
       } catch (e) {
@@ -426,6 +533,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _slideAnimationController.dispose();
     _timer?.cancel();
     _locationTimer?.cancel();
@@ -777,9 +885,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       _polylines = {polyline};
       _navigationSteps = [];
       _currentStepIndex = 0;
-      _nextTurnInstruction = 'Walk straight to destination';
+      _nextTurnInstruction = AppLocalizations.of(context).walkStraightToDestination;
       _nextTurnDistance = '${distance.toStringAsFixed(0)}m';
-      _nextStreetName = 'Direct route';
+      _nextStreetName = AppLocalizations.of(context).directRoute;
       _routeDistance = '${distance.toStringAsFixed(0)}m';
       _routeDuration = '1 min'; // Estimated walking time
     });
@@ -1245,7 +1353,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Route to Drop',
+                          AppLocalizations.of(context).routeToDrop,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           color: isDark
@@ -1311,7 +1419,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${_formatDistance(_distanceToDestination)} remaining',
+                        '${_formatDistance(_distanceToDestination)} ${AppLocalizations.of(context).remaining}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: isDark
@@ -1424,8 +1532,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     Expanded(
                       child: Text(
                         _hasReachedDestination 
-                            ? 'You have arrived at the destination!'
-                            : '${_formatDistance(_distanceToDestination)} remaining',
+                            ? AppLocalizations.of(context).youHaveArrivedAtDestination
+                            : '${_formatDistance(_distanceToDestination)} ${AppLocalizations.of(context).remaining}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: _hasReachedDestination 
@@ -1469,7 +1577,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Complete collection in: ${_formatTime(_remainingSeconds)}',
+                        '${AppLocalizations.of(context).completeCollectionIn} ${_formatTime(_remainingSeconds)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         color: _remainingSeconds < 300
@@ -1496,14 +1604,14 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                           final confirmed = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text('Cancel Collection'),
-                            content: const Text(
-                                'Are you sure you want to cancel this collection?'),
+                              title: Text(AppLocalizations.of(context).cancelCollection),
+                            content: Text(
+                                AppLocalizations.of(context).areYouSureCancelCollection),
                               actions: [
                                 TextButton(
                                 onPressed: () =>
                                     Navigator.pop(context, false),
-                                  child: const Text('No'),
+                                  child: Text(AppLocalizations.of(context).no),
                                 ),
                                 FilledButton(
                                 onPressed: () =>
@@ -1511,7 +1619,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.lightError,
                                 ),
-                                  child: const Text('Yes, Cancel'),
+                                  child: Text(AppLocalizations.of(context).yesCancel),
                                 ),
                               ],
                             ),
@@ -1522,7 +1630,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                           }
                         },
                         icon: const Icon(Icons.cancel),
-                        label: const Text('Cancel'),
+                        label: Text(AppLocalizations.of(context).cancel),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.lightError,
                           side: BorderSide(color: AppColors.lightError),
@@ -1594,7 +1702,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                   CircularProgressIndicator(color: AppColors.lightPrimary),
                     const SizedBox(height: 16),
                     Text(
-                      'Calculating route...',
+                      AppLocalizations.of(context).calculatingRoute,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                       ),
@@ -1614,15 +1722,14 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         final shouldPop = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Leave Collection?'),
-            content: const Text(
-              'You have an active collection. Are you sure you want to leave? '
-              'You must complete or cancel the collection to proceed.',
+            title: Text(AppLocalizations.of(context).leaveCollection),
+            content: Text(
+              AppLocalizations.of(context).leaveCollectionMessage,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Stay'),
+                child: Text(AppLocalizations.of(context).stay),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
@@ -1630,7 +1737,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                   backgroundColor: AppColors.lightError,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Leave'),
+                child: Text(AppLocalizations.of(context).leave),
               ),
             ],
           ),
@@ -1646,12 +1753,16 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           children: [
             // Google Map
             GoogleMap(
-              onMapCreated: (GoogleMapController controller) {
+              onMapCreated: (GoogleMapController controller) async {
                 _mapController = controller;
                 setState(() {
                   _hasInitialCameraPosition = true;
                 });
                 debugPrint('🗺️ Map created - Initial camera position set');
+                // Apply map style based on theme
+                final brightness = Theme.of(context).brightness;
+                final style = brightness == Brightness.dark ? MapStyles.dark : MapStyles.light;
+                await controller.setMapStyle(style);
               },
               onCameraMoveStarted: () {
                 debugPrint('👆 User started interacting with map');
@@ -1681,7 +1792,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                   markerId: const MarkerId('destination'),
                   position: widget.destination,
                 icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                  infoWindow: const InfoWindow(title: 'Drop Location'),
+                  infoWindow: InfoWindow(title: AppLocalizations.of(context).dropLocation),
                 ),
               },
               polylines: _polylines,
@@ -1876,7 +1987,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           Positioned.fill(
             child: Center(
               child: Text(
-                _slideProgress > 0.5 ? 'Release to Collect' : 'Slide to Collect',
+                _slideProgress > 0.5 ? AppLocalizations.of(context).releaseToCollect : AppLocalizations.of(context).slideToCollect,
                 style: TextStyle(
                   color: _slideProgress > 0.5
                       ? Colors.white
@@ -1890,6 +2001,31 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         ],
       ),
     );
+  }
+
+  String _getLocalizedBottleType(String bottleTypeString) {
+    try {
+      // Convert string to BottleType enum
+      BottleType bottleType;
+      switch (bottleTypeString.toLowerCase()) {
+        case 'plastic':
+          bottleType = BottleType.plastic;
+          break;
+        case 'can':
+          bottleType = BottleType.can;
+          break;
+        case 'mixed':
+          bottleType = BottleType.mixed;
+          break;
+        default:
+          bottleType = BottleType.plastic; // Default fallback
+      }
+      // Use the localized display name
+      return bottleType.localizedDisplayName(context);
+    } catch (e) {
+      // Fallback to original string if conversion fails
+      return bottleTypeString;
+    }
   }
 
   Widget _buildCancelButton() {
@@ -1907,7 +2043,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           }
         },
         icon: const Icon(Icons.cancel),
-        label: const Text('Cancel Collection'),
+        label: Text(AppLocalizations.of(context).cancelCollection),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.red,
           side: const BorderSide(color: Colors.red),
@@ -1928,8 +2064,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Show success feedback
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Collection confirmed!'),
+        SnackBar(
+        content: Text(AppLocalizations.of(context).collectionConfirmed),
         backgroundColor: Color(0xFF00695C),
         duration: Duration(seconds: 1),
       ),
@@ -1973,10 +2109,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Drop Details',
-                      style: TextStyle(
+                      AppLocalizations.of(context).dropInformation,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2037,9 +2173,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              'Bottles',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            Text(
+                              AppLocalizations.of(context).plasticBottles,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -2063,9 +2199,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              'Cans',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            Text(
+                              AppLocalizations.of(context).cans,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -2078,12 +2214,12 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Type: ',
-                            style: TextStyle(color: Colors.grey),
+                          Text(
+                            '${AppLocalizations.of(context).bottleType}: ',
+                            style: const TextStyle(color: Colors.grey),
                           ),
                           Text(
-                            activeCollection.bottleType!.toUpperCase(),
+                            _getLocalizedBottleType(activeCollection.bottleType!),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF00695C),
@@ -2132,13 +2268,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.blue[200]!),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.door_front_door, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.door_front_door, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        'Leave outside',
-                        style: TextStyle(
+                        AppLocalizations.of(context).leaveOutside,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -2162,7 +2298,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     );
                   },
                   icon: const Icon(Icons.flag, size: 20),
-                  label: const Text('Report Drop'),
+                  label: Text(AppLocalizations.of(context).reportDrop),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -2188,19 +2324,19 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Cancel Collection'),
+          title: Text(AppLocalizations.of(context).cancelCollection),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Are you sure you want to cancel this collection? Please select a reason:',
-                style: TextStyle(fontSize: 16),
+              Text(
+                AppLocalizations.of(context).cancelCollectionMessage,
+                style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
             ...CancellationReason.values.map(
               (reason) => RadioListTile<CancellationReason>(
-                title: Text(reason.displayName),
+                title: Text(reason.localizedDisplayName(context)),
                 value: reason,
                 groupValue: selectedReason,
                 contentPadding: EdgeInsets.zero,
@@ -2216,7 +2352,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Back'),
+              child: Text(AppLocalizations.of(context).back),
             ),
             FilledButton(
             onPressed: selectedReason == null
@@ -2229,7 +2365,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 backgroundColor: AppColors.lightError,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Cancel Collection'),
+              child: Text(AppLocalizations.of(context).cancelCollection),
             ),
           ],
         ),
@@ -2255,14 +2391,14 @@ void _showWarningNotification() async {
                 const Icon(Icons.warning, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Collection timer running low: ${_formatTime(_remainingSeconds)} remaining'),
+                  child: Text(AppLocalizations.of(context).collectionTimerRunningLow(_formatTime(_remainingSeconds))),
                 ),
               ],
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'View',
+              label: AppLocalizations.of(context).view,
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to navigation screen if not already there
@@ -2275,8 +2411,8 @@ void _showWarningNotification() async {
       
       // Also show system notification for background cases
       await LocalNotificationService().showNotification(
-        title: 'Collection Timer Warning',
-        body: 'Your collection timer is running low: ${_formatTime(_remainingSeconds)} remaining',
+        title: AppLocalizations.of(context).collectionTimerWarning,
+        body: AppLocalizations.of(context).yourCollectionTimerRunningLow(_formatTime(_remainingSeconds)),
         id: 2000,
         payload: 'timer_warning:${activeCollection.dropoffId}',
       );
@@ -2296,8 +2432,8 @@ void _showWarningNotification() async {
       if (collectorId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: User not authenticated'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).errorUserNotAuthenticated),
               backgroundColor: AppColors.lightError,
             ),
           );
@@ -2315,7 +2451,7 @@ void _showWarningNotification() async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
           // ⚠️ Removed `const` so string interpolation works
-            content: Text('Collection cancelled: ${reason.displayName}'),
+            content: Text(AppLocalizations.of(context).collectionCancelled(reason.localizedDisplayName(context))),
             backgroundColor: AppColors.lightMapPin,
           ),
         );
@@ -2327,7 +2463,7 @@ void _showWarningNotification() async {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error cancelling collection: $e'),
+            content: Text(AppLocalizations.of(context).errorCancellingCollection(e.toString())),
             backgroundColor: AppColors.lightError,
           ),
         );
@@ -2349,8 +2485,8 @@ void _showWarningNotification() async {
         debugPrint('🧪 DEBUG: No collector ID found');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: User not authenticated'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).errorUserNotAuthenticated),
               backgroundColor: AppColors.lightError,
             ),
           );
@@ -2387,11 +2523,39 @@ void _showWarningNotification() async {
       // Clear the persistent collection state
       await ref.read(navigationControllerProvider.notifier).completeCollection();
       
+      // Refresh collection attempts to update the session value card
+      try {
+        ref.read(collectionAttemptsProvider.notifier).refresh();
+        debugPrint('✅ Collection attempts refreshed');
+      } catch (e) {
+        debugPrint('⚠️ Failed to refresh collection attempts: $e');
+      }
+      
+      // Wait a moment for backend to process earnings
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Refresh user data to get updated earningsHistory (like rewardHistory)
+      try {
+        await ref.read(authNotifierProvider.notifier).refreshUserData();
+        debugPrint('✅ User data refreshed (earningsHistory should be updated)');
+      } catch (e) {
+        debugPrint('⚠️ Failed to refresh user data: $e');
+      }
+      
+      // Refresh earnings providers to update session value card
+      try {
+        ref.invalidate(todayEarningsProvider);
+        ref.invalidate(earningsHistoryProvider({'page': 1, 'limit': 20}));
+        debugPrint('✅ Earnings providers refreshed');
+      } catch (e) {
+        debugPrint('⚠️ Failed to refresh earnings providers: $e');
+      }
+      
       debugPrint('🧪 DEBUG: State cleared, navigating to home...');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Collection completed successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).collectionCompletedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -2534,12 +2698,37 @@ void _showWarningNotification() async {
           );
         }
         
+        // Refresh collection attempts to update the session value card
+        try {
+          ref.read(collectionAttemptsProvider.notifier).refresh();
+          debugPrint('✅ Collection attempts refreshed');
+        } catch (e) {
+          debugPrint('⚠️ Failed to refresh collection attempts: $e');
+        }
+        
         // CRITICAL: Clear the active collection state to stop the timer
         debugPrint('🧹 Clearing active collection state...');
         await ref.read(navigationControllerProvider.notifier).completeCollection();
         
-        // Wait a moment for real-time updates to propagate
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Wait a moment for backend to process earnings
+        await Future.delayed(const Duration(milliseconds: 1000));
+        
+        // Refresh user data to get updated earningsHistory (like rewardHistory)
+        try {
+          await ref.read(authNotifierProvider.notifier).refreshUserData();
+          debugPrint('✅ User data refreshed (earningsHistory should be updated)');
+        } catch (e) {
+          debugPrint('⚠️ Failed to refresh user data: $e');
+        }
+        
+        // Refresh earnings providers to update session value card
+        try {
+          ref.invalidate(todayEarningsProvider);
+          ref.invalidate(earningsHistoryProvider({'page': 1, 'limit': 20}));
+          debugPrint('✅ Earnings providers refreshed');
+        } catch (e) {
+          debugPrint('⚠️ Failed to refresh earnings providers: $e');
+        }
         
         // Force refresh the drops list to ensure UI updates
         debugPrint('🔄 Force refreshing drops list...');
@@ -2551,8 +2740,8 @@ void _showWarningNotification() async {
         debugPrint('❌ No collector ID found');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: No collector ID found'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).errorNoCollectorIdFound),
               backgroundColor: Colors.red,
             ),
           );
@@ -2563,7 +2752,7 @@ void _showWarningNotification() async {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error confirming collection: $e'),
+            content: Text(AppLocalizations.of(context).errorConfirmingCollection(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2606,7 +2795,7 @@ void _showWarningNotification() async {
 
               // Success Title
               Text(
-                'Drop Collected!',
+                AppLocalizations.of(context).dropCollected,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2E7D32),
@@ -2629,7 +2818,7 @@ void _showWarningNotification() async {
                     const Icon(Icons.stars, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      '+$pointsAwarded Points Earned!',
+                      AppLocalizations.of(context).pointsEarned(pointsAwarded),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -2675,7 +2864,7 @@ void _showWarningNotification() async {
                             ),
                           ),
                           Text(
-                            'Current Tier',
+                            AppLocalizations.of(context).currentTier,
                             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                           ),
                         ],
@@ -2685,7 +2874,7 @@ void _showWarningNotification() async {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Total Points',
+                          AppLocalizations.of(context).totalPoints,
                           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         Text(
@@ -2720,9 +2909,9 @@ void _showWarningNotification() async {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text(
-                    'Awesome!',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    AppLocalizations.of(context).awesome,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -2746,19 +2935,19 @@ void _showWarningNotification() async {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Exit Navigation'),
-          content: const Text('Are you sure you want to exit navigation? Your collection will remain active.'),
+          title: Text(AppLocalizations.of(context).exitNavigation),
+          content: Text(AppLocalizations.of(context).exitNavigationMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
               },
-              child: const Text('Exit'),
+              child: Text(AppLocalizations.of(context).exit),
             ),
           ],
         );
@@ -2780,5 +2969,25 @@ enum CancellationReason {
   const CancellationReason(this.displayName, this.value);
   final String displayName;
   final String value;
+}
+
+extension CancellationReasonLocalization on CancellationReason {
+  String localizedDisplayName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case CancellationReason.NoAccess:
+        return l10n.noAccess;
+      case CancellationReason.NotFound:
+        return l10n.notFound;
+      case CancellationReason.AlreadyCollected:
+        return l10n.alreadyCollected;
+      case CancellationReason.WrongLocation:
+        return l10n.wrongLocation;
+      case CancellationReason.Unsafe:
+        return l10n.unsafeLocation;
+      case CancellationReason.Other:
+        return l10n.other;
+    }
+  }
 } 
   

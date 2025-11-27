@@ -5,6 +5,7 @@ import 'package:botleji/features/stats/data/models/collector_stats.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/collection/data/models/collection_attempt.dart';
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class StatsChartCarousel extends ConsumerStatefulWidget {
   final CollectorStats stats;
@@ -81,13 +82,14 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   Widget _buildCollectedChart() {
+    final l10n = AppLocalizations.of(context);
     return _buildChartContent(
-      title: 'Collected',
+      title: l10n.collected,
       value: _getWeeklyCount('collected'),
       color: Colors.green,
       icon: Icons.recycling,
       chart: _buildAreaChart(
-        title: 'Collections Over Time',
+        title: l10n.collectionsOverTime,
         color: Colors.green,
         data: _generateCollectedData(),
       ),
@@ -95,13 +97,14 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   Widget _buildExpiredChart() {
+    final l10n = AppLocalizations.of(context);
     return _buildChartContent(
-      title: 'Expired',
+      title: l10n.expired,
       value: _getWeeklyCount('expired'),
       color: Colors.purple,
       icon: Icons.timer_off,
       chart: _buildAreaChart(
-        title: 'Expired Over Time',
+        title: l10n.expiredOverTime,
         color: Colors.purple,
         data: _generateExpiredData(),
       ),
@@ -109,13 +112,14 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   Widget _buildCancelledChart() {
+    final l10n = AppLocalizations.of(context);
     return _buildChartContent(
-      title: 'Cancelled',
+      title: l10n.cancelled,
       value: _getWeeklyCount('cancelled'),
       color: Colors.red,
       icon: Icons.cancel,
       chart: _buildAreaChart(
-        title: 'Cancelled Over Time',
+        title: l10n.cancelledOverTime,
         color: Colors.red,
         data: _generateCancelledData(),
       ),
@@ -161,7 +165,7 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
                       ),
                     ),
                     Text(
-                      '$value total ${_getTimeRangeText()}',
+                      '$value ${_getTimeRangeText()}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -441,29 +445,30 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   String _getXAxisLabel(int index) {
+    final l10n = AppLocalizations.of(context);
     final now = TimezoneService.now();
     switch (widget.timeRange) {
       case 'week':
         final date = now.subtract(Duration(days: 6 - index));
         if (date.weekday == now.weekday) {
-          return 'Today';
+          return l10n.today;
         } else if (date.weekday == (now.weekday == 1 ? 7 : now.weekday - 1)) {
-          return 'Yesterday';
+          return l10n.yesterday;
         } else {
-          final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          final dayNames = [l10n.mon, l10n.tue, l10n.wed, l10n.thu, l10n.fri, l10n.sat, l10n.sun];
           return dayNames[date.weekday - 1];
         }
       case 'month':
         return '${index + 1}';
       case 'year':
-        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthNames = [l10n.jan, l10n.feb, l10n.mar, l10n.apr, l10n.may, l10n.jun, 
+                           l10n.jul, l10n.aug, l10n.sep, l10n.oct, l10n.nov, l10n.dec];
         return monthNames[index];
       case '':
         final monthsAgo = 11 - index;
         final date = DateTime(now.year, now.month - monthsAgo, 1);
-        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthNames = [l10n.jan, l10n.feb, l10n.mar, l10n.apr, l10n.may, l10n.jun, 
+                           l10n.jul, l10n.aug, l10n.sep, l10n.oct, l10n.nov, l10n.dec];
         return monthNames[date.month - 1];
       default:
         return index.toString();
@@ -471,17 +476,18 @@ class _StatsChartCarouselState extends ConsumerState<StatsChartCarousel> {
   }
 
   String _getTimeRangeText() {
+    final l10n = AppLocalizations.of(context);
     switch (widget.timeRange) {
       case 'week':
-        return 'this week';
+        return l10n.totalThisWeek;
       case 'month':
-        return 'this month';
+        return l10n.totalThisMonth;
       case 'year':
-        return 'this year';
+        return l10n.totalThisYear;
       case '':
-        return 'all time';
+        return l10n.allTime;
       default:
-        return 'this week';
+        return l10n.totalThisWeek;
     }
   }
 

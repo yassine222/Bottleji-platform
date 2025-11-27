@@ -253,11 +253,13 @@ function UsersContent() {
   const [editingWarning, setEditingWarning] = useState<{ index: number; reason: string; date: string } | null>(null);
 
   // Load users from API
-  const loadUsers = async (page = 1) => {
+  const loadUsers = async (page = 1, useIncludeDeleted?: boolean) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await usersAPI.getAllUsers(page, 20, includeDeleted);
+      // Use the parameter if provided, otherwise use current state
+      const shouldIncludeDeleted = useIncludeDeleted !== undefined ? useIncludeDeleted : includeDeleted;
+      const response = await usersAPI.getAllUsers(page, 20, shouldIncludeDeleted);
       const { users, total, totalPages } = response.data;
       setUsers(users);
       setTotalUsers(total);
@@ -344,10 +346,23 @@ function UsersContent() {
   };
 
   useEffect(() => {
-    loadUsers();
-  }, [includeDeleted]); // Add includeDeleted to dependency array
+    // Reset to page 1 when toggling includeDeleted
+    setCurrentPage(1);
+    // Pass includeDeleted explicitly to avoid stale closure issues
+    loadUsers(1, includeDeleted);
+  }, [includeDeleted]); // Reload when includeDeleted changes
 
   const filteredUsers = users.filter(user => {
+    // When showing deleted users, all users in the list should be deleted
+    // When not showing deleted users, all users should not be deleted
+    // (This is already handled by the backend query, but we add a safety check)
+    if (includeDeleted && !user.isDeleted) {
+      return false; // Safety: if includeDeleted is true, only show deleted users
+    }
+    if (!includeDeleted && user.isDeleted) {
+      return false; // Safety: if includeDeleted is false, don't show deleted users
+    }
+    
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -674,8 +689,12 @@ function UsersContent() {
               id="includeDeleted"
               checked={includeDeleted}
               onChange={(e) => {
-                setIncludeDeleted(e.target.checked);
-                loadUsers(1);
+                const newValue = e.target.checked;
+                setIncludeDeleted(newValue);
+                setCurrentPage(1); // Reset to first page when toggling
+                setSearchTerm(''); // Clear search when toggling
+                setFilterStatus('all'); // Reset filter when toggling
+                // loadUsers will be called by useEffect when includeDeleted changes
               }}
               className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
             />
@@ -755,7 +774,7 @@ function UsersContent() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-50">
               {filteredUsers.map((user, index) => (
-                <tr key={user.id} className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                <tr key={user.id || user._id || `user-${index}`} className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                   <td className="px-3 py-3">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 relative">
@@ -1449,11 +1468,11 @@ function UsersContent() {
                       const filteredActivities = getFilteredActivities();
                       return filteredActivities.length > 0 ? (
                         <div className="space-y-4">
-                          {filteredActivities.map((activity) => {
+                          {filteredActivities.map((activity, activityIndex) => {
                             // For collection history with grouped interactions, show timeline card
                             if (activeActivityTab === 'collection-history' && activity.interactions && activity.interactions.length > 0) {
                               return (
-                                <div key={activity.id} className={`rounded-xl border-2 p-5 shadow-sm ${
+                                <div key={activity.id || activity._id || `activity-${activityIndex}`} className={`rounded-xl border-2 p-5 shadow-sm ${
                                   activity.interactionType === 'collected' ? 'bg-green-50 border-green-300' :
                                   activity.interactionType === 'cancelled' ? 'bg-red-50 border-red-300' :
                                   activity.interactionType === 'expired' ? 'bg-orange-50 border-orange-300' :
@@ -1504,7 +1523,7 @@ function UsersContent() {
                             
                             // For drops created or simple activities, show simple timeline
                             return (
-                              <div key={activity.id} className="flex items-start space-x-3 p-3 bg-surface rounded-lg">
+                              <div key={activity.id || activity._id || `activity-${activityIndex}`} className="flex items-start space-x-3 p-3 bg-surface rounded-lg">
                                 <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5837,6 +5856,14 @@ function SupportContent() {
           console.log('🔌 Socket auth:', newSocket.auth);
           retryCount = 0; // Reset retry count on successful connection
           setSocket(newSocket);
+          
+          // If a ticket is already selected, automatically join its room
+          if (selectedTicket) {
+            const ticketId = selectedTicket._id || selectedTicket.id;
+            console.log('🔌 Admin Dashboard: Auto-joining ticket room on connect:', ticketId);
+            newSocket.emit('join_ticket', { ticketId, senderType: 'agent' });
+            newSocket.emit('presence_indicator', { ticketId, isPresent: true, senderType: 'agent' });
+          }
         });
 
         newSocket.on('connect_error', (error) => {
@@ -5912,7 +5939,12 @@ function SupportContent() {
 
   // Handle ticket-specific events when selectedTicket changes
   useEffect(() => {
-    if (!socket || !selectedTicket) return;
+    if (!socket || !selectedTicket) {
+      console.log('📨 Admin Dashboard: WebSocket or ticket not ready, skipping event listener setup');
+      return;
+    }
+
+    console.log('📨 Admin Dashboard: Setting up WebSocket event listeners for ticket:', selectedTicket._id || selectedTicket.id);
 
     // Handle new messages from chat
     const handleNewMessage = (data: any) => {
@@ -5938,10 +5970,14 @@ function SupportContent() {
           console.log('📨 Current messages:', prev.messages);
           
           // Check if message already exists to prevent duplicates
-          const messageExists = prev.messages?.some((msg: any) => 
-            msg.message === newMessage.message && 
-            msg.sentAt === newMessage.sentAt
-          );
+          // Use a more robust check: message content + senderType + sentAt timestamp
+          const messageExists = prev.messages?.some((msg: any) => {
+            const msgSentAt = typeof msg.sentAt === 'string' ? new Date(msg.sentAt).getTime() : new Date(msg.sentAt).getTime();
+            const newMsgSentAt = typeof newMessage.sentAt === 'string' ? new Date(newMessage.sentAt).getTime() : new Date(newMessage.sentAt).getTime();
+            return msg.message === newMessage.message && 
+                   msg.senderType === newMessage.senderType &&
+                   Math.abs(msgSentAt - newMsgSentAt) < 1000; // Within 1 second
+          });
           
           if (messageExists) {
             console.log('📨 ⚠️ Message already exists, skipping duplicate');
@@ -6029,15 +6065,36 @@ function SupportContent() {
     }
   }, [notifications]);
 
-  const handleViewTicket = (ticket: any) => {
-    setSelectedTicket(ticket);
-    setShowTicketModal(true);
-    // Note: connection is now manual via the Connect to Chat button in the modal
-
-    // Auto-scroll to bottom when opening ticket
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
+  const handleViewTicket = async (ticket: any) => {
+    // First, refresh the ticket from backend to get latest messages
+    try {
+      console.log('🔄 Admin Dashboard: Refreshing ticket data before opening modal...');
+      const ticketId = ticket._id || ticket.id;
+      const response = await supportTicketsAPI.getTicketById(ticketId);
+      console.log('✅ Admin Dashboard: Ticket refreshed, messages count:', response.data.messages?.length || 0);
+      
+      // Use the fresh ticket data from backend
+      setSelectedTicket(response.data);
+      setShowTicketModal(true);
+      
+      // Auto-connect to chat when opening ticket
+      setTimeout(() => {
+        handleConnectToChat();
+      }, 300);
+      
+      // Auto-scroll to bottom when opening ticket
+      setTimeout(() => {
+        scrollToBottom();
+      }, 500);
+    } catch (err: any) {
+      console.error('❌ Admin Dashboard: Error refreshing ticket:', err);
+      // Fallback to using the ticket from list if refresh fails
+      setSelectedTicket(ticket);
+      setShowTicketModal(true);
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }
   };
 
   const handleConnectToChat = async () => {
@@ -6053,12 +6110,13 @@ function SupportContent() {
       // If already connected, just join the room
       let activeSocket = socket;
       if (!activeSocket || !activeSocket.connected) {
+        console.log('🔌 Admin Dashboard: Socket not connected, creating new connection...');
         const { io } = await import('socket.io-client');
         activeSocket = io('http://localhost:3000/chat', {
           auth: { token },
           transports: ['websocket'],
           timeout: 10000,
-          forceNew: true,
+          forceNew: false, // Don't force new connection, reuse if possible
           reconnection: true,
           reconnectionAttempts: 3,
           reconnectionDelay: 1000,
@@ -6067,16 +6125,27 @@ function SupportContent() {
 
         await new Promise<void>((resolve, reject) => {
           const t = setTimeout(() => reject(new Error('Connection timeout')), 10000);
-          activeSocket.on('connect', () => { clearTimeout(t); resolve(); });
-          activeSocket.on('connect_error', (err: any) => { clearTimeout(t); reject(err); });
+          activeSocket.on('connect', () => { 
+            clearTimeout(t); 
+            console.log('🔌 Admin Dashboard: Socket connected successfully');
+            resolve(); 
+          });
+          activeSocket.on('connect_error', (err: any) => { 
+            clearTimeout(t); 
+            console.error('❌ Admin Dashboard: Connection error:', err);
+            reject(err); 
+          });
         });
         setSocket(activeSocket);
+      } else {
+        console.log('🔌 Admin Dashboard: Socket already connected, joining room...');
       }
 
       const ticketId = selectedTicket._id || selectedTicket.id;
+      console.log('👤 Admin Dashboard: Joining ticket room:', ticketId);
       activeSocket.emit('join_ticket', { ticketId, senderType: 'agent' });
       activeSocket.emit('presence_indicator', { ticketId, isPresent: true, senderType: 'agent' });
-      console.log('👤 Admin Dashboard: Joined ticket room via manual connect:', ticketId);
+      console.log('👤 Admin Dashboard: Successfully joined ticket room:', ticketId);
     } catch (err) {
       console.error('❌ Admin Dashboard: Failed to connect/join chat:', err);
     } finally {
@@ -6165,6 +6234,17 @@ function SupportContent() {
       
       console.log('✅ Message sent successfully:', response);
       
+      // Refresh ticket to get the latest messages from backend
+      // This ensures we have the correct message data even if WebSocket fails
+      try {
+        const refreshedTicket = await supportTicketsAPI.getTicketById(ticketId);
+        setSelectedTicket(refreshedTicket.data);
+        console.log('✅ Ticket refreshed after sending message, messages count:', refreshedTicket.data.messages?.length || 0);
+      } catch (refreshErr) {
+        console.error('⚠️ Error refreshing ticket after sending message:', refreshErr);
+        // Continue anyway - WebSocket should deliver the message
+      }
+      
       // Clear the message input
       setNewMessage('');
       
@@ -6175,7 +6255,10 @@ function SupportContent() {
         setTypingTimeout(null);
       }
 
-      // The message will be added via WebSocket notification automatically
+      // Auto-scroll to bottom after sending
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     } catch (err: any) {
       console.error('❌ Error sending message:', err);
       console.error('❌ Error response:', err.response);

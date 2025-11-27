@@ -127,9 +127,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const SizedBox.shrink(),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: true,
       ),
       body: SafeArea(
         child: Center(

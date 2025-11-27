@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/notification_card.dart';
 import '../../data/models/notification_models.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -30,8 +31,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Notifications'),
+            Text(AppLocalizations.of(context).notificationsTitle),
             if (notificationState.unreadCount > 0) ...[
               const SizedBox(width: 8),
               Container(
@@ -52,6 +54,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ],
           ],
         ),
+        centerTitle: true,
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -62,9 +65,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 notificationNotifier.markAllAsRead();
               },
               icon: const Icon(Icons.done_all, size: 18),
-              label: const Text(
-                'Mark All Read',
-                style: TextStyle(color: Colors.white),
+              label: Text(
+                AppLocalizations.of(context).markAllRead,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
         ],
@@ -97,7 +100,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load notifications',
+              AppLocalizations.of(context).failedToLoadNotifications,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -113,7 +116,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               onPressed: () {
                 notificationNotifier.loadNotifications(refresh: true);
               },
-              child: const Text('Retry'),
+              child: Text(AppLocalizations.of(context).retry),
             ),
           ],
         ),
@@ -146,7 +149,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'No notifications yet',
+              AppLocalizations.of(context).noNotificationsYet,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -155,7 +158,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'You\'ll see your notifications here',
+              AppLocalizations.of(context).youWillSeeNotificationsHere,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -229,15 +232,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String _getDateKey(DateTime date) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final notificationDate = DateTime(date.year, date.month, date.day);
     
     if (notificationDate == today) {
-      return 'Today';
+      return l10n.today;
     } else if (notificationDate == yesterday) {
-      return 'Yesterday';
+      return l10n.yesterday;
     } else {
       // Format: "Mon, Jan 15" or "Jan 15, 2024" if older than a week
       final difference = now.difference(notificationDate).inDays;
@@ -252,18 +256,46 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String _formatWeekday(DateTime date) {
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return weekdays[date.weekday - 1];
+    // Use localized weekday names
+    final locale = Localizations.localeOf(context);
+    
+    if (locale.languageCode == 'ar') {
+      // Arabic weekday names
+      const weekdays = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+      return weekdays[date.weekday - 1];
+    } else {
+      // English weekday abbreviations
+      const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return weekdays[date.weekday - 1];
+    }
   }
 
   String _formatMonthDay(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}';
+    final locale = Localizations.localeOf(context);
+    
+    if (locale.languageCode == 'ar') {
+      // Arabic month names
+      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      return '${date.day} ${months[date.month - 1]}';
+    } else {
+      // English month abbreviations
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}';
+    }
   }
 
   String _formatFullDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    final locale = Localizations.localeOf(context);
+    
+    if (locale.languageCode == 'ar') {
+      // Arabic date format: "15 يناير 2024"
+      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } else {
+      // English date format: "Jan 15, 2024"
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    }
   }
 
   void _handleNotificationTap(notification) {

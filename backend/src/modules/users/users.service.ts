@@ -90,4 +90,15 @@ export class UsersService {
     console.log(`✅ Account unlocked for user: ${userId}`);
     return user;
   }
+
+  async invalidateSession(userId: string): Promise<void> {
+    console.log(`🔒 Invalidating session for user: ${userId}`);
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        sessionInvalidatedAt: new Date(),
+      }
+    ).exec();
+    console.log(`✅ Session invalidated for user: ${userId}`);
+  }
 } 

@@ -9,6 +9,7 @@ import 'package:botleji/features/rewards/presentation/widgets/order_history_widg
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/rewards/data/services/reward_service.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
@@ -17,14 +18,17 @@ class RewardsScreen extends ConsumerStatefulWidget {
   ConsumerState<RewardsScreen> createState() => _RewardsScreenState();
 }
 
-class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTickerProviderStateMixin {
+class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   RewardStats? _previousStats;
   late TabController _tabController;
+  bool _hasRefreshedOnVisible = false;
+  DateTime? _lastRefreshTime;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
     
     // Only refresh reward data if it's not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -32,13 +36,55 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
       if (rewardStats.hasError) {
         ref.invalidate(rewardStatsProvider);
       }
+      
+      // Refresh when screen first becomes visible
+      _refreshDataIfNeeded();
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _refreshDataIfNeeded();
+    }
+  }
+
+  void _refreshDataIfNeeded() {
+    // Refresh if we haven't refreshed yet, or if it's been more than 30 seconds
+    final now = DateTime.now();
+    if (!_hasRefreshedOnVisible || 
+        _lastRefreshTime == null || 
+        now.difference(_lastRefreshTime!).inSeconds > 30) {
+      _hasRefreshedOnVisible = true;
+      _lastRefreshTime = now;
+      
+      // Refresh user data to get latest reward history and points
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      authNotifier.refreshUserData().catchError((e) {
+        debugPrint('Error refreshing user data on rewards screen: $e');
+      });
+      
+      // Refresh reward stats
+      ref.invalidate(rewardStatsProvider);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when screen becomes visible (tab is tapped)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshDataIfNeeded();
+    });
   }
 
   @override
@@ -178,7 +224,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Order History',
+                    AppLocalizations.of(context).orderHistory,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF00695C),
@@ -263,13 +309,26 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Your Points',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).yourPoints,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _showRewardHistory(context),
+                        child: Icon(
+                          Icons.history,
+                          color: Colors.white.withOpacity(0.8),
+                          size: 18,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -314,15 +373,15 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Progress to Next Tier',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).progressToNextTier,
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
               ),
             ),
             Text(
-              '${(nextTierPoints - currentPoints).clamp(0, nextTierPoints)} points to go',
+              AppLocalizations.of(context).pointsToGo((nextTierPoints - currentPoints).clamp(0, nextTierPoints)),
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -388,8 +447,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                 const SizedBox(height: 4),
                 Text(
                   mode == UserMode.collector 
-                    ? 'Earn ${_getPointsPerDrop(stats.currentTier)} points per drop collected'
-                    : 'Earn ${(_getPointsPerDrop(stats.currentTier) * 0.5).round()} points when your drops are collected',
+                    ? AppLocalizations.of(context).earnPointsPerDropCollected(_getPointsPerDrop(stats.currentTier))
+                    : AppLocalizations.of(context).earnPointsWhenDropsCollected((_getPointsPerDrop(stats.currentTier) * 0.5).round()),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -442,7 +501,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
               ),
               const SizedBox(width: 8),
               Text(
-                'How Rewards Work',
+                AppLocalizations.of(context).howRewardsWork,
                 style: TextStyle(
                   color: Colors.blue[700],
                   fontSize: 16,
@@ -454,8 +513,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
           const SizedBox(height: 12),
           Text(
             mode == UserMode.collector
-              ? '• Collect drops to earn points\n• Higher tiers = more points per drop\n• Use points in the reward shop\n• Track your progress and achievements'
-              : '• Create drops to contribute to recycling\n• Earn points when collectors pick up your drops\n• Higher tiers = more points per collected drop\n• Use points in the reward shop',
+              ? AppLocalizations.of(context).howRewardsWorkCollector
+              : AppLocalizations.of(context).howRewardsWorkHousehold,
             style: TextStyle(
               color: Colors.blue[600],
               fontSize: 14,
@@ -477,7 +536,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
         ),
         const SizedBox(width: 8),
         Text(
-          'Reward Shop',
+          AppLocalizations.of(context).rewardShop,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF00695C),
@@ -503,17 +562,18 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
 
   // Helper methods for tier calculations
   String _getTierName(int tier) {
+    final l10n = AppLocalizations.of(context);
     switch (tier) {
       case 1:
-        return 'Bronze Collector';
+        return l10n.bronzeCollector;
       case 2:
-        return 'Silver Collector';
+        return l10n.silverCollector;
       case 3:
-        return 'Gold Collector';
+        return l10n.goldCollector;
       case 4:
-        return 'Platinum Collector';
+        return l10n.platinumCollector;
       case 5:
-        return 'Diamond Collector';
+        return l10n.diamondCollector;
       default:
         return 'Tier $tier';
     }
@@ -578,7 +638,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
           children: [
             const Icon(Icons.emoji_events, color: Color(0xFF00695C)),
             const SizedBox(width: 8),
-            const Text('Tier System'),
+            Text(AppLocalizations.of(context).tierSystem),
           ],
         ),
         content: SizedBox(
@@ -599,7 +659,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                     const Icon(Icons.star, color: Color(0xFF00695C), size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Current: ${_getTierName(stats.currentTier)}',
+                      '${AppLocalizations.of(context).current}: ${_getTierName(stats.currentTier)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF00695C),
@@ -670,8 +730,8 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                             const SizedBox(height: 4),
                             Text(
                               mode == UserMode.collector
-                                ? 'Earn $pointsPerDrop points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}'
-                                : 'Earn ${(pointsPerDrop * 0.5).round()} points per drop • ${dropsRequired == 0 ? "Start" : "$dropsRequired drops required"}',
+                                ? '${AppLocalizations.of(context).earnPointsPerDrop(pointsPerDrop)} • ${dropsRequired == 0 ? AppLocalizations.of(context).start : AppLocalizations.of(context).dropsRequired(dropsRequired)}'
+                                : '${AppLocalizations.of(context).earnPointsPerDrop((pointsPerDrop * 0.5).round())} • ${dropsRequired == 0 ? AppLocalizations.of(context).start : AppLocalizations.of(context).dropsRequired(dropsRequired)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -690,7 +750,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).close),
           ),
         ],
       ),
@@ -739,14 +799,14 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
             final redemptions = snapshot.data ?? [];
             
             if (redemptions.isEmpty) {
-              return const Center(
+              return Center(
                 child: Column(
                   children: [
-                    Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                    SizedBox(height: 8),
-                    Text('Your order history will appear here', style: TextStyle(color: Colors.grey)),
+                    const Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(AppLocalizations.of(context).noOrdersYet, style: const TextStyle(fontSize: 18, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    Text(AppLocalizations.of(context).yourOrderHistoryWillAppearHere, style: const TextStyle(color: Colors.grey)),
                   ],
                 ),
               );
@@ -829,5 +889,244 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  void _showRewardHistory(BuildContext context) async {
+    final userMode = ref.read(userModeControllerProvider).valueOrNull;
+    
+    if (userMode == null) {
+      return;
+    }
+    
+    // Use existing user data without refreshing (to avoid page refresh effect)
+    final userData = ref.read(authNotifierProvider).value;
+    if (userData == null) {
+      return;
+    }
+    
+    // Get reward history from user data
+    final rewardHistory = userData.rewardHistory ?? [];
+    
+    debugPrint('📊 _showRewardHistory - User data: ${userData.id}');
+    debugPrint('📊 _showRewardHistory - Reward history from user data: ${rewardHistory.length} items');
+    debugPrint('📊 _showRewardHistory - Reward history type: ${rewardHistory.runtimeType}');
+    debugPrint('📊 _showRewardHistory - Raw reward history: $rewardHistory');
+    if (rewardHistory.isNotEmpty) {
+      debugPrint('📊 _showRewardHistory - First item: ${rewardHistory.first}');
+      debugPrint('📊 _showRewardHistory - First item keys: ${rewardHistory.first.keys}');
+    }
+    
+    // Filter based on current mode
+    // Fetch entire reward history, then filter to show only rewards relevant to current mode
+    // Also filter out null/empty objects
+    List<Map<String, dynamic>> filteredHistory;
+    if (userMode == UserMode.household) {
+      // Household mode: show only rewards with type === "household_drop_collected"
+      filteredHistory = rewardHistory.where((item) {
+        // Skip null/empty objects
+        if (item.isEmpty || item['dropId'] == null) {
+          debugPrint('📊 Household mode - skipping empty/null item: $item');
+          return false;
+        }
+        final hasType = item['type'] == 'household_drop_collected';
+        debugPrint('📊 Household mode - item type: ${item['type']}, dropId: ${item['dropId']}, matches: $hasType');
+        return hasType;
+      }).toList();
+    } else {
+      // Collector mode: show only rewards without type field (collector rewards don't have type)
+      filteredHistory = rewardHistory.where((item) {
+        // Skip null/empty objects
+        if (item.isEmpty || item['dropId'] == null) {
+          debugPrint('📊 Collector mode - skipping empty/null item: $item');
+          return false;
+        }
+        // Collector rewards: no type field, or type is null/empty string
+        final hasNoType = item['type'] == null || item['type'] == '';
+        debugPrint('📊 Collector mode - item type: ${item['type']}, dropId: ${item['dropId']}, matches: $hasNoType');
+        return hasNoType;
+      }).toList();
+    }
+    
+    debugPrint('📊 Filtered history for ${userMode.name} mode: ${filteredHistory.length} items (from ${rewardHistory.length} total)');
+    
+    // Sort by date (newest first)
+    filteredHistory.sort((a, b) {
+      final dateA = a['collectedAt'] != null 
+          ? (a['collectedAt'] is String 
+              ? DateTime.parse(a['collectedAt']) 
+              : a['collectedAt'] is DateTime
+                  ? a['collectedAt'] as DateTime
+                  : DateTime.now())
+          : DateTime(1970);
+      final dateB = b['collectedAt'] != null
+          ? (b['collectedAt'] is String
+              ? DateTime.parse(b['collectedAt'])
+              : b['collectedAt'] is DateTime
+                  ? b['collectedAt'] as DateTime
+                  : DateTime.now())
+          : DateTime(1970);
+      return dateB.compareTo(dateA);
+    });
+    
+    if (!context.mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 600),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).rewardHistory,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // History list
+              if (filteredHistory.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.of(context).noRewardHistoryYet,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredHistory.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredHistory[index];
+                      final pointsAwarded = item['pointsAwarded'] ?? 0;
+                      final tier = item['tier'] ?? 1;
+                      final tierUpgraded = item['tierUpgraded'] ?? false;
+                      final collectedAt = item['collectedAt'] != null
+                          ? (item['collectedAt'] is String
+                              ? DateTime.parse(item['collectedAt'])
+                              : item['collectedAt'] as DateTime)
+                          : DateTime.now();
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey[200]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Icon
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00695C).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.stars,
+                                color: Color(0xFF00695C),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Content
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '+$pointsAwarded ${AppLocalizations.of(context).points}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF00695C),
+                                        ),
+                                      ),
+                                      if (tierUpgraded) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.amber.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            AppLocalizations.of(context).tierUp,
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${AppLocalizations.of(context).tier} $tier • ${_formatDate(collectedAt)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -14,6 +14,7 @@ import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from './notifications.service';
+import { FCMService } from './fcm.service';
 import { NotificationType, NotificationPriority } from './schemas/notification.schema';
 
 export interface NotificationPayload {
@@ -43,6 +44,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     private usersService: UsersService,
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
+    private fcmService: FCMService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -64,13 +66,17 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         return;
       }
 
-      // Store connected user
-      this.connectedUsers.set(userId, client);
+      // Normalize userId to string to ensure consistent storage
+      const normalizedUserId = String(userId);
+      
+      // Store connected user with normalized ID
+      this.connectedUsers.set(normalizedUserId, client);
       
       // Join user to their personal room
-      await client.join(`user:${userId}`);
+      await client.join(`user:${normalizedUserId}`);
       
-      console.log(`✅ User ${userId} connected`);
+      console.log(`✅ User ${normalizedUserId} connected (original: ${userId})`);
+      console.log(`📊 Total connected users: ${this.connectedUsers.size}`);
       
       // Removed welcome notification - no longer needed for testing
 
@@ -189,20 +195,33 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   // Send notification to specific user
   async sendNotificationToUser(userId: string, notification: NotificationPayload) {
+    // Normalize userId to string to ensure consistent matching
+    const normalizedUserId = String(userId);
+    
     console.log(`📤 ===== SENDING NOTIFICATION =====`);
-    console.log(`📤 User ID: ${userId}`);
+    console.log(`📤 User ID: ${normalizedUserId} (original: ${userId})`);
     console.log(`📤 Notification type: ${notification.type}`);
     console.log(`📤 Notification title: ${notification.title}`);
     console.log(`📤 Connected users: ${Array.from(this.connectedUsers.keys()).join(', ')}`);
     
-    // Send via WebSocket if user is connected
-    const userSocket = this.connectedUsers.get(userId);
+    // Try to find user socket - check both normalized and original format
+    let userSocket = this.connectedUsers.get(normalizedUserId);
+    if (!userSocket) {
+      // Try original format in case it's stored differently
+      userSocket = this.connectedUsers.get(userId);
+    }
+    
     if (userSocket) {
-      console.log(`✅ User ${userId} is connected, sending via WebSocket`);
+      console.log(`✅ User ${normalizedUserId} is connected, sending via WebSocket`);
       userSocket.emit('notification', notification);
-      console.log(`✅ WebSocket notification sent to user ${userId}`);
+      console.log(`✅ WebSocket notification sent to user ${normalizedUserId}`);
     } else {
-      console.log(`⚠️ User ${userId} is NOT connected to WebSocket, notification will only be saved to database`);
+      console.log(`⚠️ User ${normalizedUserId} is NOT connected to WebSocket`);
+      console.log(`⚠️ FCM is not configured/available - notification will be saved to database only`);
+      console.log(`⚠️ User will receive notification when they reconnect to WebSocket`);
+      // Note: Since FCM is not available, we only save to database
+      // The user will receive the notification when they reconnect via WebSocket
+      // or when they fetch notifications from the API
     }
 
     // Save notification to database
@@ -211,14 +230,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       const dbType = this.mapNotificationTypeToEnum(notification.type);
       if (dbType) {
         await this.notificationsService.create({
-          userId,
+          userId: normalizedUserId,
           type: dbType,
           title: notification.title,
           message: notification.message,
           priority: this.getPriorityForType(notification.type),
           data: notification.data || {},
         });
-        console.log(`💾 Notification saved to database: ${notification.type} for user ${userId}`);
+        console.log(`💾 Notification saved to database: ${notification.type} for user ${normalizedUserId}`);
       } else {
         console.warn(`⚠️ Notification type ${notification.type} not mapped to database enum, skipping save`);
       }
@@ -328,7 +347,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   // Send ticket message update to user
-  sendTicketMessageUpdate(userId: string, ticketId: string, message: any) {
+  async sendTicketMessageUpdate(userId: string, ticketId: string, message: any) {
     console.log(`📤 ===== SEND TICKET MESSAGE UPDATE =====`);
     console.log(`📤 Target User ID: ${userId}`);
     console.log(`📤 Ticket ID: ${ticketId}`);
@@ -351,7 +370,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     
     console.log(`📤 Notification payload:`, notification);
     
-    this.sendNotificationToUser(userId, notification);
+    await this.sendNotificationToUser(userId, notification);
     console.log(`📤 ======================================`);
   }
 

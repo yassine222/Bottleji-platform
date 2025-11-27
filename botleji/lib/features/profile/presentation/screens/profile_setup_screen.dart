@@ -19,6 +19,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/phone_verification_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 
 const kGoogleApiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
@@ -67,12 +68,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   bool _isPhoneModified = false;
   bool _hasPhoneBeenCleared = false;
   
+  // Track if address has been cleared
+  bool _hasAddressBeenCleared = false;
+  
 
   
   File? _profilePhotoFile;
   bool _isLoading = false;
   bool _isInitializing = true;
   GoogleMapsPlaces? _places;
+  
+  // Address search state
+  List<Prediction> _addressSuggestions = [];
+  bool _isLoadingAddressSuggestions = false;
+  String? _addressSearchError;
+  Timer? _addressSearchDebounce;
 
   @override
   void initState() {
@@ -91,6 +101,25 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           _isPhoneModified = true; // Set to true since user is starting to edit
           _originalPhone = ''; // Reset original phone to empty since we cleared the field
         });
+      }
+    });
+    
+    // Add listener to address controller to detect when it's cleared
+    _addressController.addListener(() {
+      if (_addressController.text.isEmpty && _originalAddress != null && _originalAddress!.isNotEmpty) {
+        // User has cleared the address field
+        if (!_hasAddressBeenCleared) {
+          setState(() {
+            _hasAddressBeenCleared = true;
+          });
+        }
+      } else if (_addressController.text.isNotEmpty) {
+        // Address has been entered, reset the cleared flag
+        if (_hasAddressBeenCleared) {
+          setState(() {
+            _hasAddressBeenCleared = false;
+          });
+        }
       }
     });
     
@@ -141,6 +170,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       _places?.dispose();
     }
     _resendTimer?.cancel();
+    _addressSearchDebounce?.cancel();
     _phoneFocusNode.dispose();
     super.dispose();
   }
@@ -149,8 +179,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Future<void> _sendSMSVerification() async {
     if (_phoneController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a phone number first'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseEnterPhoneNumberFirst),
           backgroundColor: Colors.red,
         ),
       );
@@ -159,8 +189,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
     if (!PhoneVerificationService.isValidPhoneNumber(_phoneController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid phone number with country code (e.g., +49 123456789)'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseEnterValidPhoneNumber),
           backgroundColor: Colors.red,
         ),
       );
@@ -266,8 +296,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         });
         _resendTimer?.cancel();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Phone number verified successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).phoneNumberVerifiedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -322,16 +352,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   // Helper method to get the appropriate verification message
   String _getPhoneVerificationMessage(UserData? user) {
+    final l10n = AppLocalizations.of(context);
     // If user is actively editing the phone field
     if (_isPhoneModified || (_hasPhoneBeenCleared && _originalPhone != null && _originalPhone!.isNotEmpty)) {
-      return 'Phone number needs verification';
+      return l10n.phoneNumberNeedsVerification;
     }
     
     // Check if the user has a phone number and it's verified
     if (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) {
-      return user.isPhoneVerified == true ? 'Phone number verified' : 'Phone number not verified';
+      return user.isPhoneVerified == true ? l10n.phoneNumberVerified : l10n.phoneNumberNotVerified;
     }
-    return 'Phone number not verified';
+    return l10n.phoneNumberNotVerified;
   }
 
   // Helper method to determine if verification UI should be shown
@@ -387,8 +418,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         final result = await Permission.location.request();
         if (result.isDenied && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permission is required for address features'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).locationPermissionRequired),
               backgroundColor: Colors.red,
             ),
           );
@@ -692,8 +723,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (widget.isNewUserSetup) {
       if (_fullNameController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter your full name'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseEnterYourFullName),
             backgroundColor: Colors.red,
           ),
         );
@@ -702,8 +733,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       
       if (_phoneController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter your phone number'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseEnterYourPhoneNumber),
             backgroundColor: Colors.red,
           ),
         );
@@ -712,8 +743,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       
       if (_addressController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter your address'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseEnterYourAddress),
             backgroundColor: Colors.red,
           ),
         );
@@ -725,8 +756,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (widget.isNewUserSetup || (_isPhoneModified && _phoneController.text.isNotEmpty)) {
       if (!_isPhoneVerified) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please verify your phone number before saving'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseVerifyYourPhoneNumber),
             backgroundColor: Colors.red,
           ),
         );
@@ -768,8 +799,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (newProfilePhotoUrl == null) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to upload image. Please try again.'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).failedToUploadImage('Unknown error')),
               backgroundColor: Colors.red,
             ),
           );
@@ -788,10 +819,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       if (changedFields.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No changes detected. Profile remains unchanged.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).noChangesDetected),
             backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         setState(() => _isLoading = false);
@@ -834,8 +865,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isNewUserSetup 
-                ? 'Profile setup completed successfully! Welcome to Bottleji!' 
-                : 'Profile updated successfully!'),
+                ? AppLocalizations.of(context).profileSetupCompletedSuccessfully
+                : AppLocalizations.of(context).profileUpdatedSuccessfully),
             backgroundColor: Colors.green,
             duration: Duration(seconds: widget.isNewUserSetup ? 3 : 2),
           ),
@@ -897,159 +928,79 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     }
   }
 
-  Future<void> _showAddressSearchDialog() async {
-    // Use the global instance if available, otherwise create a new one
-    if (_places == null) {
-      print('Using global Google Places API instance');
-      _places = _globalPlaces;
+  Future<void> _searchAddress(String query) async {
+    // Cancel previous debounce timer
+    _addressSearchDebounce?.cancel();
+    
+    // Clear suggestions if query is empty
+    if (query.isEmpty) {
+      setState(() {
+        _addressSuggestions = [];
+        _addressSearchError = null;
+        _isLoadingAddressSuggestions = false;
+      });
+      return;
     }
+    
+    // Debounce the search to avoid too many API calls
+    _addressSearchDebounce = Timer(const Duration(milliseconds: 500), () async {
+      // Use the global instance if available, otherwise create a new one
+      if (_places == null) {
+        _places = _globalPlaces;
+      }
 
-    // Test the API before showing the dialog
-    try {
-      final testResponse = await _places?.autocomplete(
-        'test',
-        language: "en",
-        components: [Component(Component.country, "tn")],
-      );
-      if (testResponse?.status != "OK") {
-        print('Google Places API test failed, creating new instance...');
+      // Test the API before searching
+      try {
+        final testResponse = await _places?.autocomplete(
+          'test',
+          language: "en",
+          components: [Component(Component.country, "tn")],
+        );
+        if (testResponse?.status != "OK") {
+          _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
+        }
+      } catch (e) {
         _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
       }
-    } catch (e) {
-      print('Error testing Google Places API: $e');
-      _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
-    }
 
-    final TextEditingController searchController = TextEditingController();
-    List<Prediction> suggestions = [];
-    bool isLoading = false;
-    String? errorMessage;
-    
-    print('Opening address search dialog');
-    print('Using Google Places API key: $kGoogleApiKey');
-    
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Search Address'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  autofocus: true,
-                  controller: searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Type to search...',
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                  onChanged: (value) async {
-                    print('Search text changed: $value');
-                    
-                    if (value.isEmpty) {
-                      setState(() {
-                        suggestions = [];
-                        errorMessage = null;
-                      });
-                      return;
-                    }
-                    
-                    setState(() {
-                      isLoading = true;
-                      errorMessage = null;
-                    });
-                    
-                    try {
-                      print('Calling Google Places API...');
-                      final response = await _places?.autocomplete(
-                        value,
-                        language: "en",
-                        components: [Component(Component.country, "tn")],
-                      );
-                      
-                      print('Google Places API response status: ${response?.status}');
-                      print('Google Places API response: ${response?.toJson()}');
-                      
-                      if (response?.status == "OK") {
-                        setState(() {
-                          suggestions = response?.predictions ?? [];
-                          errorMessage = null;
-                        });
-                        print('Found ${suggestions.length} suggestions');
-                      } else {
-                        print('No results found. Status: ${response?.status}');
-                        setState(() {
-                          errorMessage = "No results found";
-                          suggestions = [];
-                        });
-                      }
-                    } catch (e, stackTrace) {
-                      print('Error fetching address suggestions: $e');
-                      print('Stack trace: $stackTrace');
-                      setState(() {
-                        errorMessage = "Error fetching suggestions: ${e.toString()}";
-                        suggestions = [];
-                      });
-                    } finally {
-                      setState(() {
-                        isLoading = false;
-                      });
-                    }
-                  }
-                ),
-                const SizedBox(height: 16),
-                if (isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (errorMessage != null)
-                  Center(
-                    child: Text(
-                      errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  )
-                else if (suggestions.isEmpty && searchController.text.isNotEmpty)
-                  const Center(
-                    child: Text(
-                      "No results found",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: suggestions.length,
-                      itemBuilder: (context, index) {
-                        final prediction = suggestions[index];
-                        return ListTile(
-                          leading: const Icon(Icons.location_on),
-                          title: Text(prediction.description ?? ''),
-                          onTap: () {
-                            print('Selected address: ${prediction.description}');
-                            _addressController.text = prediction.description ?? '';
-                            Navigator.pop(context);
-                          },
-                        );
-                      }
-                    ),
-                  )
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                print('Cancelled address search');
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        ),
-      ),
-    );
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoadingAddressSuggestions = true;
+        _addressSearchError = null;
+      });
+
+      try {
+        final response = await _places?.autocomplete(
+          query,
+          language: "en",
+          components: [Component(Component.country, "tn")],
+        );
+
+        if (!mounted) return;
+
+        if (response?.status == "OK") {
+          setState(() {
+            _addressSuggestions = response?.predictions ?? [];
+            _addressSearchError = null;
+            _isLoadingAddressSuggestions = false;
+          });
+        } else {
+          setState(() {
+            _addressSearchError = AppLocalizations.of(context).noResultsFound;
+            _addressSuggestions = [];
+            _isLoadingAddressSuggestions = false;
+          });
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _addressSearchError = AppLocalizations.of(context).errorFetchingSuggestions(e.toString());
+          _addressSuggestions = [];
+          _isLoadingAddressSuggestions = false;
+        });
+      }
+    });
   }
 
   @override
@@ -1102,7 +1053,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               // Reset the cleared flag when phone number is loaded
               _hasPhoneBeenCleared = false;
             }
-            if (_addressController.text.isEmpty) {
+            if (_addressController.text.isEmpty && !_hasAddressBeenCleared) {
               _addressController.text = user.address ?? '';
             }
           } else {
@@ -1125,13 +1076,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         //                          user.address!.isNotEmpty;
 
         // Determine the title based on context
-        String screenTitle;
-        if (widget.isNewUserSetup) {
-          screenTitle = 'Complete Your Profile';
-        } else {
-          // When editing existing profile, always show "Edit Profile"
-          screenTitle = 'Edit Profile';
-        }
+        final l10n = AppLocalizations.of(context);
+        final screenTitle = widget.isNewUserSetup 
+            ? l10n.completeYourProfile 
+            : l10n.editProfile;
 
         return Scaffold(
           backgroundColor: theme.colorScheme.surface,
@@ -1160,7 +1108,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               screenTitle,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            backgroundColor: theme.colorScheme.surface,
+            backgroundColor: const Color(0xFF00695C),
+            foregroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
             actions: [],
@@ -1185,7 +1134,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           child: Column(
                             children: [
                               Text(
-                                'Profile Photo',
+                                AppLocalizations.of(context).profilePhoto,
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
@@ -1229,7 +1178,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Tap to change photo',
+                                AppLocalizations.of(context).tapToChangePhoto,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                                 ),
@@ -1253,7 +1202,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Personal Information',
+                                AppLocalizations.of(context).personalInformation,
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
@@ -1264,16 +1213,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               // Full Name Field
                               _buildFormField(
                                 controller: _fullNameController,
-                                label: 'Full Name',
+                                label: AppLocalizations.of(context).fullName,
                                 icon: Icons.person_outline,
                                 validator: (v) {
+                                  final l10n = AppLocalizations.of(context);
                                   // Always validate as required for new users
                                   if (widget.isNewUserSetup) {
-                                    return v == null || v.isEmpty ? 'Full name is required' : null;
+                                    return v == null || v.isEmpty ? l10n.fullNameRequired : null;
                                   }
                                   // For existing users, only validate if the name has changed
                                   if (_fullNameController.text != _originalName) {
-                                    return v == null || v.isEmpty ? 'Full name is required' : null;
+                                    return v == null || v.isEmpty ? l10n.fullNameRequired : null;
                                   }
                                   return null; // Skip validation if name hasn't changed
                                 },
@@ -1284,7 +1234,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               // Email Field (Read-only)
                               _buildFormField(
                                 controller: TextEditingController(text: widget.email),
-                                label: 'Email',
+                                label: AppLocalizations.of(context).email,
                                 icon: Icons.email_outlined,
                                 readOnly: true,
                                 iconColor: AppColors.lightSecondary,
@@ -1315,7 +1265,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                           ),
                                           const SizedBox(width: 12),
                                           Text(
-                                            'Phone Number',
+                                            AppLocalizations.of(context).phoneNumber,
                                             style: theme.textTheme.bodyMedium?.copyWith(
                                               fontWeight: FontWeight.w600,
                                               color: theme.colorScheme.onSurface,
@@ -1388,29 +1338,29 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                                 // Always validate as required for new users
                                                 if (widget.isNewUserSetup) {
                                                   if (v == null || v.isEmpty) {
-                                                    return 'Phone number is required';
+                                                    return AppLocalizations.of(context).phoneNumberRequired;
                                                   }
                                                   // Remove spaces and check if it's exactly 8 digits
                                                   final digitsOnly = v.replaceAll(RegExp(r'[^0-9]'), '');
                                                   if (digitsOnly.length != 8) {
-                                                    return 'Phone number must be 8 digits';
+                                                    return AppLocalizations.of(context).phoneNumberMustBe8Digits;
                                                   }
                                                   if (!RegExp(r'^[0-9]+$').hasMatch(digitsOnly)) {
-                                                    return 'Phone number must contain only digits';
+                                                    return AppLocalizations.of(context).phoneNumberMustContainOnlyDigits;
                                                   }
                                                 }
                                                 // For existing users, only validate if the phone has been modified and is not empty
                                                 if (_isPhoneModified && (v != null && v.isNotEmpty)) {
                                                   if (v == null || v.isEmpty) {
-                                                    return 'Phone number is required';
+                                                    return AppLocalizations.of(context).phoneNumberRequired;
                                                   }
                                                   // Remove spaces and check if it's exactly 8 digits
                                                   final digitsOnly = v.replaceAll(RegExp(r'[^0-9]'), '');
                                                   if (digitsOnly.length != 8) {
-                                                    return 'Phone number must be 8 digits';
+                                                    return AppLocalizations.of(context).phoneNumberMustBe8Digits;
                                                   }
                                                   if (!RegExp(r'^[0-9]+$').hasMatch(digitsOnly)) {
-                                                    return 'Phone number must contain only digits';
+                                                    return AppLocalizations.of(context).phoneNumberMustContainOnlyDigits;
                                                   }
                                                 }
                                                 return null; // Skip validation if phone hasn't changed or is empty
@@ -1468,7 +1418,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                                   )
                                                 : const Icon(Icons.send, size: 16),
                                             label: Text(
-                                              _isSendingSMS ? 'Sending...' : 'Send Code',
+                                              _isSendingSMS ? AppLocalizations.of(context).sending : AppLocalizations.of(context).sendCode,
                                               style: const TextStyle(fontSize: 12),
                                             ),
                                             style: OutlinedButton.styleFrom(
@@ -1485,7 +1435,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               onPressed: _resendCountdown > 0 ? null : _resendSMS,
                                               icon: const Icon(Icons.refresh, size: 16),
                                               label: Text(
-                                                _resendCountdown > 0 ? '$_resendCountdown' : 'Resend',
+                                                _resendCountdown > 0 ? '$_resendCountdown' : AppLocalizations.of(context).resend,
                                                 style: const TextStyle(fontSize: 12),
                                               ),
                                               style: OutlinedButton.styleFrom(
@@ -1509,9 +1459,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               controller: _smsCodeController,
                                               keyboardType: TextInputType.number,
                                               maxLength: 6,
+                                              textDirection: TextDirection.ltr, // Force LTR for OTP codes
                                               decoration: InputDecoration(
-                                                labelText: 'SMS Code',
-                                                hintText: 'Enter 6-digit code',
+                                                labelText: AppLocalizations.of(context).smsCode,
+                                                hintText: AppLocalizations.of(context).enter6DigitCode,
                                                 border: OutlineInputBorder(
                                                   borderRadius: BorderRadius.circular(12),
                                                   borderSide: BorderSide(color: theme.colorScheme.outline),
@@ -1545,7 +1496,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                                       ),
                                                     )
                                                   : const Icon(Icons.check),
-                                              label: Text(_isVerifyingCode ? 'Verifying...' : 'Verify Code'),
+                                              label: Text(_isVerifyingCode ? AppLocalizations.of(context).verifying : AppLocalizations.of(context).verifyCode),
                                               style: FilledButton.styleFrom(
                                                 backgroundColor: appGreenColor,
                                                 foregroundColor: Colors.white,
@@ -1571,7 +1522,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               Icon(Icons.check_circle, color: Colors.green, size: 16),
                                               const SizedBox(width: 8),
                                               Text(
-                                                'Phone number verified',
+                                                AppLocalizations.of(context).phoneNumberVerified,
                                                 style: TextStyle(
                                                   color: Colors.green.shade800,
                                                   fontWeight: FontWeight.w500,
@@ -1611,8 +1562,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                 )
                               : const Icon(Icons.save),
                           label: Text(_isLoading 
-                              ? 'Saving...' 
-                              : (widget.isNewUserSetup ? 'Complete Setup' : 'Save Profile')),
+                              ? AppLocalizations.of(context).saving
+                              : (widget.isNewUserSetup ? AppLocalizations.of(context).completeSetup : AppLocalizations.of(context).saveProfile)),
                           style: FilledButton.styleFrom(
                             backgroundColor: appGreenColor,
                             foregroundColor: Colors.white,
@@ -1642,11 +1593,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       loading: () => Scaffold(
         backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
-          title: const Text(
-            'Edit Profile',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          title: Builder(
+            builder: (context) => Text(
+              AppLocalizations.of(context).editProfile,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: const Color(0xFF00695C),
+          foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
         ),
@@ -1657,11 +1611,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       error: (error, stackTrace) => Scaffold(
         backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
-          title: const Text(
-            'Edit Profile',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          title: Builder(
+            builder: (context) => Text(
+              AppLocalizations.of(context).editProfile,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: const Color(0xFF00695C),
+          foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
         ),
@@ -1801,7 +1758,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'Address',
+              AppLocalizations.of(context).address,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
@@ -1815,10 +1772,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         FormField<String>(
           validator: (value) {
           // Validate only if new user or address changed
+          final l10n = AppLocalizations.of(context);
           if (widget.isNewUserSetup ||
               _addressController.text != _originalAddress) {
             return value == null || value.isEmpty
-                ? 'Address is required'
+                ? l10n.addressRequired
                 : null;
           }
           return null; // Skip validation if unchanged
@@ -1830,6 +1788,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 TextFormField(
                   controller: _addressController,
                   decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context).typeToSearch,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: theme.colorScheme.outline),
@@ -1847,32 +1806,81 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     fillColor: theme.colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: () async {
-                        await _showAddressSearchDialog();
-                        field.didChange(_addressController.text);
-                        _formKey.currentState?.validate();
-                      },
-                    ),
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _isLoadingAddressSuggestions
+                        ? const Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : null,
                     errorText: field.errorText,
                   ),
-                  onTap: () async {
-                    await _showAddressSearchDialog();
-                    field.didChange(_addressController.text);
-                    _formKey.currentState?.validate();
-                  },
                   onChanged: (value) {
                     field.didChange(value);
+                    _searchAddress(value);
                   },
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tap to search for your address',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                // Show suggestions list
+                if (_addressSuggestions.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.3),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _addressSuggestions.length,
+                      itemBuilder: (context, index) {
+                        final prediction = _addressSuggestions[index];
+                        return ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.location_on, size: 20),
+                          title: Text(
+                            prediction.description ?? '',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          onTap: () {
+                            _addressController.text = prediction.description ?? '';
+                            setState(() {
+                              _addressSuggestions = [];
+                              _hasAddressBeenCleared = false; // Reset cleared flag when address is selected
+                            });
+                            field.didChange(_addressController.text);
+                            _formKey.currentState?.validate();
+                            // Remove focus to hide keyboard
+                            FocusScope.of(context).unfocus();
+                          },
+                        );
+                      },
+                    ),
+                  )
+                else if (_addressSearchError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 12),
+                    child: Text(
+                      _addressSearchError!,
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
               ],
             );
           },

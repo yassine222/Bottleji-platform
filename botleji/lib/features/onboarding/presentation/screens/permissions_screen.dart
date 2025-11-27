@@ -8,6 +8,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:botleji/core/services/network_initialization_service.dart';
 import 'package:botleji/core/config/server_config.dart';
 import 'package:botleji/features/notifications/data/services/notification_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+// TODO: FCM is not yet implemented
+// import 'package:botleji/core/services/fcm_service.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -22,47 +25,57 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
   Map<Permission, bool> _permissionStatuses = {};
   bool _isLoading = false;
 
-  final List<PermissionItem> _permissions = [
-    PermissionItem(
-      permission: Permission.location,
-      title: 'Location Services',
-      description: 'Access your location to show nearby drops and enable navigation for collectors.',
-      icon: Icons.location_on,
-      isRequired: true,
-    ),
-    PermissionItem(
-      permission: Permission.bluetooth, // placeholder; not used for iOS local network
-      title: 'Local Network Access',
-      description: 'Allow the app to discover services on your Wi‑Fi for real-time features.',
-      icon: Icons.wifi,
-      isRequired: true,
-      isLocalNetwork: true,
-    ),
-    PermissionItem(
-      permission: Permission.notification,
-      title: 'Notifications',
-      description: 'Receive real-time updates about your drops, collections, and important announcements.',
-      icon: Icons.notifications,
-      isRequired: true,
-    ),
-    PermissionItem(
-      permission: Permission.storage,
-      title: 'Photo Storage',
-      description: 'Save and access photos of your recyclable items.',
-      icon: Icons.photo_library,
-      isRequired: false,
-    ),
-  ];
+  List<PermissionItem> _getPermissions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      PermissionItem(
+        permission: Permission.location,
+        title: l10n.locationServices,
+        description: l10n.accessLocationToShowNearbyDrops,
+        icon: Icons.location_on,
+        isRequired: true,
+      ),
+      PermissionItem(
+        permission: Permission.bluetooth, // placeholder; not used for iOS local network
+        title: l10n.localNetworkAccess,
+        description: l10n.allowAppToDiscoverServicesOnWifi,
+        icon: Icons.wifi,
+        isRequired: true,
+        isLocalNetwork: true,
+      ),
+      PermissionItem(
+        permission: Permission.notification,
+        title: l10n.notifications,
+        description: l10n.receiveRealTimeUpdatesAboutDrops,
+        icon: Icons.notifications,
+        isRequired: true,
+      ),
+      PermissionItem(
+        permission: Permission.storage,
+        title: l10n.photoStorage,
+        description: l10n.saveAndAccessPhotosOfRecyclableItems,
+        icon: Icons.photo_library,
+        isRequired: false,
+      ),
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _checkPermissionStatuses();
   }
 
   Future<void> _checkPermissionStatuses() async {
+    if (!mounted) return;
+    final permissions = _getPermissions(context);
     final statuses = <Permission, bool>{};
-    for (final permission in _permissions) {
+    for (final permission in permissions) {
       bool isGranted = false;
       final item = permission;
       
@@ -195,6 +208,18 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                      status.authorizationStatus == AuthorizationStatus.provisional;
           
           print('FirebaseMessaging notification permission: ${status.authorizationStatus} (granted: $isGranted)');
+          
+          // TODO: Initialize FCM service after user grants notification permission
+          // FCM is not yet implemented, so commenting out for now
+          // if (isGranted) {
+          //   try {
+          //     await FCMService().initialize();
+          //     print('✅ FCM service initialized after user granted notification permission');
+          //   } catch (e) {
+          //     print('⚠️ Error initializing FCM service: $e');
+          //     // Don't fail the permission request if FCM init fails
+          //   }
+          // }
         } catch (e) {
           print('Error requesting notification permission: $e');
           isGranted = false;
@@ -274,10 +299,10 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                     onPressed: () => Navigator.of(context).pushReplacementNamed('/onboarding'),
                     icon: const Icon(Icons.arrow_back, color: appGreenColor),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'App Permissions',
-                      style: TextStyle(
+                      AppLocalizations.of(context).appPermissions,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
@@ -309,9 +334,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Bottleji requires additional permissions to work properly',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).bottlejiRequiresAdditionalPermissions,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
@@ -319,9 +344,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'These permissions help us provide you with the best experience.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).permissionsHelpProvideBestExperience,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
@@ -335,10 +360,13 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
               
               // Permissions list
               Expanded(
-                child: ListView.builder(
-                  itemCount: _permissions.length,
-                  itemBuilder: (context, index) {
-                    final permission = _permissions[index];
+                child: Builder(
+                  builder: (context) {
+                    final permissions = _getPermissions(context);
+                    return ListView.builder(
+                      itemCount: permissions.length,
+                      itemBuilder: (context, index) {
+                        final permission = permissions[index];
                     final isGranted = _permissionStatuses[permission.permission] ?? false;
                     
                     return Container(
@@ -438,9 +466,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                                   ),
                                   elevation: 0,
                                 ),
-                                child: const Text(
-                                  'Enable',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context).enable,
+                                  style: const TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -449,6 +477,8 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                             ),
                         ],
                       ),
+                    );
+                      },
                     );
                   },
                 ),
@@ -471,7 +501,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    _canContinueToApp ? 'Continue to App' : 'Enable Required Permissions',
+                    _canContinueToApp 
+                        ? AppLocalizations.of(context).continueToApp 
+                        : AppLocalizations.of(context).enableRequiredPermissions,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

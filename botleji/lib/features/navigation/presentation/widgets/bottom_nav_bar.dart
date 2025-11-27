@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
-import 'package:botleji/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class BottomNavBar extends ConsumerWidget {
   final int currentIndex;
@@ -19,16 +19,16 @@ class BottomNavBar extends ConsumerWidget {
     final userMode = ref.watch(userModeControllerProvider);
     final pendingCount = ref.watch(pendingDropsCountProvider);
     final userDropsCount = ref.watch(userDropsCountProvider);
-    final unreadCount = ref.watch(unreadCountProvider);
 
     return userMode.when(
-      data: (mode) => _buildFloatingNavBar(context, mode, pendingCount, userDropsCount, unreadCount),
-      loading: () => _buildFloatingNavBar(context, null, 0, 0, 0),
-      error: (_, __) => _buildFloatingNavBar(context, null, 0, 0, 0),
+      data: (mode) => _buildFloatingNavBar(context, mode, pendingCount, userDropsCount),
+      loading: () => _buildFloatingNavBar(context, null, 0, 0),
+      error: (_, __) => _buildFloatingNavBar(context, null, 0, 0),
     );
   }
 
-  Widget _buildFloatingNavBar(BuildContext context, UserMode? mode, int pendingCount, int userDropsCount, int unreadCount) {
+  Widget _buildFloatingNavBar(BuildContext context, UserMode? mode, int pendingCount, int userDropsCount) {
+    final l10n = AppLocalizations.of(context);
     return Positioned(
       left: 16,
       right: 16,
@@ -59,14 +59,14 @@ class BottomNavBar extends ConsumerWidget {
               index: 0,
               icon: Icons.home_outlined,
               activeIcon: Icons.home,
-              label: 'Home',
+              label: l10n.home,
             ),
             _buildNavItem(
               context,
               index: 1,
               icon: Icons.list_outlined,
               activeIcon: Icons.list,
-              label: 'Drops',
+              label: l10n.drops,
               badgeCount: mode == UserMode.collector ? pendingCount : userDropsCount,
             ),
             _buildNavItem(
@@ -74,15 +74,14 @@ class BottomNavBar extends ConsumerWidget {
               index: 2,
               icon: Icons.card_giftcard_outlined,
               activeIcon: Icons.card_giftcard,
-              label: 'Rewards',
-              badgeCount: unreadCount > 0 ? unreadCount : null,
+              label: l10n.rewards,
             ),
             _buildNavItem(
               context,
               index: 3,
               icon: Icons.bar_chart_outlined,
               activeIcon: Icons.bar_chart,
-              label: 'Stats',
+              label: l10n.stats,
             ),
           ],
         ),

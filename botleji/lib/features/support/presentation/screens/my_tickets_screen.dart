@@ -4,6 +4,7 @@ import '../../data/models/support_ticket.dart';
 import '../providers/support_ticket_provider.dart';
 import 'ticket_detail_screen_new.dart';
 import 'support_categories_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class MyTicketsScreen extends ConsumerStatefulWidget {
   const MyTicketsScreen({super.key});
@@ -29,218 +30,272 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Support Tickets'),
+        title: Text(AppLocalizations.of(context).mySupportTickets),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (value) {
-              setState(() {
-                _statusFilter = value;
-              });
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'All',
-                child: Row(
-                  children: [
-                    Icon(Icons.list, size: 18, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('All Tickets'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'Open',
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 12, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text('Open'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'InProgress',
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 12, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('In Progress'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'Resolved',
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 12, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Resolved'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'Closed',
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 12, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Closed'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(supportTicketProvider.notifier).loadMyTickets();
-            },
-          ),
-        ],
       ),
-      body: ticketsState.when(
-        data: (tickets) {
-          final filteredTickets = _statusFilter == 'All'
-              ? tickets
-              : tickets.where((t) {
-                  switch (_statusFilter) {
-                    case 'Open':
-                      return t.status == TicketStatus.open;
-                    case 'InProgress':
-                      return t.status == TicketStatus.inProgress;
-                    case 'Resolved':
-                      return t.status == TicketStatus.resolved;
-                    case 'Closed':
-                      return t.status == TicketStatus.closed;
-                    default:
-                      return true;
-                  }
-                }).toList();
-          if (tickets.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.support_agent,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No support tickets yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
+      body: Column(
+        children: [
+          // Filter and Reload Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Filter Button
+                Expanded(
+                  child: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      setState(() {
+                        _statusFilter = value;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.filter_list, size: 20, color: Color(0xFF00695C)),
+                              const SizedBox(width: 8),
+                              Text(
+                                _statusFilter == 'All'
+                                    ? AppLocalizations.of(context).allTickets
+                                    : _statusFilter == 'Open'
+                                        ? AppLocalizations.of(context).open
+                                        : _statusFilter == 'InProgress'
+                                            ? AppLocalizations.of(context).inProgress
+                                            : _statusFilter == 'Resolved'
+                                                ? AppLocalizations.of(context).resolved
+                                                : AppLocalizations.of(context).closed,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Create your first support ticket if you need help',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(supportTicketProvider.notifier).loadMyTickets();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredTickets.length,
-              itemBuilder: (context, index) {
-                final ticket = filteredTickets[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: Text(
-                      ticket.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(
-                          ticket.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'All',
+                        child: Row(
                           children: [
-                            _buildStatusChip(ticket.status),
+                            const Icon(Icons.list, size: 18, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).allTickets),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                      ),
+                      PopupMenuItem(
+                        value: 'Open',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle, size: 12, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).open),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'InProgress',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle, size: 12, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).inProgress),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'Resolved',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle, size: 12, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).resolved),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'Closed',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle, size: 12, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).closed),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Tickets List
+          Expanded(
+            child: ticketsState.when(
+              data: (tickets) {
+                final filteredTickets = _statusFilter == 'All'
+                    ? tickets
+                    : tickets.where((t) {
+                        switch (_statusFilter) {
+                          case 'Open':
+                            return t.status == TicketStatus.open;
+                          case 'InProgress':
+                            return t.status == TicketStatus.inProgress;
+                          case 'Resolved':
+                            return t.status == TicketStatus.resolved;
+                          case 'Closed':
+                            return t.status == TicketStatus.closed;
+                          default:
+                            return true;
+                        }
+                      }).toList();
+                if (tickets.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.support_agent,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
                         Text(
-                          'Created: ${_formatDate(ticket.createdAt)}',
+                          AppLocalizations.of(context).noSupportTicketsYet,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                             color: Colors.grey,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context).createFirstSupportTicket,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              TicketDetailScreenNew(ticket: ticket),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ref.read(supportTicketProvider.notifier).loadMyTickets();
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filteredTickets.length,
+                    itemBuilder: (context, index) {
+                      final ticket = filteredTickets[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          title: Text(
+                            ticket.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                ticket.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _buildStatusChip(ticket.status),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${AppLocalizations.of(context).created}: ${_formatDate(ticket.createdAt)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    TicketDetailScreenNew(ticket: ticket),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
                 );
               },
-            ),
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Error loading tickets',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).errorLoadingTickets,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.read(supportTicketProvider.notifier).loadMyTickets();
+                      },
+                      child: Text(AppLocalizations.of(context).retry),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  ref.read(supportTicketProvider.notifier).loadMyTickets();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -262,26 +317,27 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     Color color;
     String text;
 
+    final l10n = AppLocalizations.of(context);
     switch (status) {
       case TicketStatus.open:
         color = Colors.blue;
-        text = 'Open';
+        text = l10n.open;
         break;
       case TicketStatus.inProgress:
         color = Colors.orange;
-        text = 'In Progress';
+        text = l10n.inProgress;
         break;
       case TicketStatus.onHold:
         color = Colors.yellow[700]!;
-        text = 'On Hold';
+        text = l10n.onHold;
         break;
       case TicketStatus.resolved:
         color = Colors.green;
-        text = 'Resolved';
+        text = l10n.resolved;
         break;
       case TicketStatus.closed:
         color = Colors.grey;
-        text = 'Closed';
+        text = l10n.closed;
         break;
     }
 
@@ -304,25 +360,26 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
   }
 
   Widget _buildPriorityChip(TicketPriority priority) {
+    final l10n = AppLocalizations.of(context);
     Color color;
     String text;
 
     switch (priority) {
       case TicketPriority.low:
         color = Colors.green;
-        text = 'Low';
+        text = l10n.lowPriority;
         break;
       case TicketPriority.medium:
         color = Colors.orange;
-        text = 'Medium';
+        text = l10n.mediumPriority;
         break;
       case TicketPriority.high:
         color = Colors.red;
-        text = 'High';
+        text = l10n.highPriority;
         break;
       case TicketPriority.urgent:
         color = Colors.purple;
-        text = 'Urgent';
+        text = l10n.urgent;
         break;
     }
 
@@ -345,17 +402,18 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
   }
 
   String _formatDate(DateTime date) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+      return l10n.daysAgo(difference.inDays);
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+      return l10n.hoursAgo(difference.inHours);
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+      return l10n.minutesAgo(difference.inMinutes);
     } else {
-      return 'Just now';
+      return l10n.justNow;
     }
   }
 }

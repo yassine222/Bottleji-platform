@@ -1,0 +1,1481 @@
+{
+  "@@locale": "en",
+  "appTitle": "Bottleji",
+  "settings": "Settings",
+  "language": "Language",
+  "changeLanguage": "Change app language",
+  "selectLanguage": "Select Language",
+  "english": "English",
+  "french": "French",
+  "german": "German",
+  "arabic": "Arabic",
+  "location": "Location",
+  "manageLocationPreferences": "Manage location preferences",
+  "notifications": "Notifications",
+  "manageNotificationPreferences": "Manage notification preferences",
+  "displayTheme": "Display Theme",
+  "changeAppAppearance": "Change app appearance",
+  "comingSoon": "Coming Soon",
+  "ok": "OK",
+  "cancel": "Cancel",
+  "save": "Save",
+  "loading": "Loading...",
+  "login": "Login",
+  "register": "Register",
+  "email": "Email",
+  "password": "Password",
+  "forgotPassword": "Forgot Password?",
+  "welcomeBack": "Welcome Back!",
+  "signInToContinue": "Sign in to continue",
+  "dontHaveAccount": "Don't have an account?",
+  "enterYourEmail": "Enter your email",
+  "enterYourPassword": "Enter your password",
+  "pleaseEnterEmail": "Please enter your email",
+  "pleaseEnterValidEmail": "Please enter a valid email",
+  "pleaseEnterPassword": "Please enter your password",
+  "passwordMinLength": "Password must be at least 6 characters",
+  "invalidEmailOrPassword": "Invalid email or password. Please try again.",
+  "loginFailed": "Login failed. Please check your credentials and try again.",
+  "connectionTimeout": "Connection timeout. Please check your internet connection and try again.",
+  "networkError": "Network error. Please check your internet connection.",
+  "requestTimeout": "Request timeout. Please try again.",
+  "serverError": "Server error. Please try again later.",
+  "accountDeleted": "Account Deleted",
+  "accountDeletedMessage": "Your account has been deleted by an administrator.\n\nIf you believe this is a mistake, please contact our support team:\n\n📧 Email: support@bottleji.com\n📱 Support Hours: 9 AM - 6 PM (GMT+1)\n\nWe apologize for any inconvenience.",
+  "reason": "Reason",
+  "youWillBeRedirectedToLoginScreen": "You will be redirected to the login screen.",
+  "resetPassword": "Reset Password",
+  "enterEmailToReceiveResetCode": "Enter your email to receive a reset code",
+  "sendResetCode": "Send Reset Code",
+  "resetCodeSentToEmail": "Reset code sent to your email",
+  "enterResetCode": "Enter Reset Code",
+  "weHaveSentResetCodeTo": "We have sent a reset code to\n{email}",
+  "@weHaveSentResetCodeTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verify": "Verify",
+  "didntReceiveCode": "Didn't receive the code?",
+  "resend": "Resend",
+  "resendIn": "Resend in {seconds}s",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resetCodeResentSuccessfully": "Reset code resent successfully!",
+  "createNewPassword": "Create New Password",
+  "pleaseEnterNewPassword": "Please enter your new password",
+  "newPassword": "New Password",
+  "enterNewPassword": "Enter your new password",
+  "confirmPassword": "Confirm Password",
+  "confirmNewPassword": "Confirm your new password",
+  "pleaseEnterPassword": "Please enter a password",
+  "passwordMustBeAtLeast6Characters": "Password must be at least 6 characters",
+  "pleaseConfirmPassword": "Please confirm your password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "passwordResetSuccessful": "Password reset successful! Please login with your new password.",
+  "verifyYourEmail": "Verify Your Email",
+  "pleaseEnterOtpSentToEmail": "Please enter the OTP sent to your email",
+  "verifyOtp": "Verify OTP",
+  "resendOtp": "Resend OTP",
+  "resendOtpIn": "Resend OTP in {seconds} seconds",
+  "@resendOtpIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "otpVerifiedSuccessfully": "OTP verified successfully",
+  "invalidVerificationResponse": "Error: Invalid verification response",
+  "otpResentSuccessfully": "OTP resent successfully!",
+  "startYourBottlejiJourney": "Start Your Bottleji Journey",
+  "createAccountToGetStarted": "Create an account to get started",
+  "createAPassword": "Create a password",
+  "confirmYourPassword": "Confirm your password",
+  "createAccount": "Create Account",
+  "alreadyHaveAccount": "Already have an account?",
+  "registrationSuccessful": "Registration successful",
+  "skip": "Skip",
+  "next": "Next",
+  "getStarted": "Get Started",
+  "welcomeToBottleji": "Welcome to Bottleji",
+  "yourSustainableWasteManagementSolution": "Your Sustainable Waste Management Solution",
+  "joinThousandsOfUsersMakingDifference": "Join thousands of users making a difference by recycling bottles and cans while earning rewards.",
+  "createAndTrackDrops": "Create & Track Drops",
+  "forHouseholdUsers": "For Household Users",
+  "easilyCreateDropRequests": "Easily create drop requests for your recyclable bottles and cans. Track collection status and get notified when collectors pick them up.",
+  "collectAndEarn": "Collect & Earn",
+  "forCollectors": "For Collectors",
+  "findNearbyDropsCollectRecyclables": "Find nearby drops, collect recyclables, and earn rewards. Help build a sustainable community while making money.",
+  "realTimeUpdates": "Real-time Updates",
+  "stayConnected": "Stay Connected",
+  "getInstantNotificationsAboutDrops": "Get instant notifications about your drops, collections, and important updates. Never miss an opportunity.",
+  "appPermissions": "App Permissions",
+  "bottlejiRequiresAdditionalPermissions": "Bottleji requires additional permissions to work properly",
+  "permissionsHelpProvideBestExperience": "These permissions help us provide you with the best experience.",
+  "locationServices": "Location Services",
+  "accessLocationToShowNearbyDrops": "Access your location to show nearby drops and enable navigation for collectors.",
+  "localNetworkAccess": "Local Network Access",
+  "allowAppToDiscoverServicesOnWifi": "Allow the app to discover services on your Wi‑Fi for real-time features.",
+  "receiveRealTimeUpdatesAboutDrops": "Receive real-time updates about your drops, collections, and important announcements.",
+  "photoStorage": "Photo Storage",
+  "saveAndAccessPhotosOfRecyclableItems": "Save and access photos of your recyclable items.",
+  "enable": "Enable",
+  "continueToApp": "Continue to App",
+  "enableRequiredPermissions": "Enable Required Permissions",
+  "accountDisabled": "Account Disabled",
+  "accountDisabledMessage": "Your account has been permanently disabled due to repeated violations of Bottleji's community guidelines.\n\nYou can no longer access or use this account.\n\nIf you believe this decision was made in error, please contact support:",
+  "supportEmail": "support@bottleji.com",
+  "contactSupport": "Contact Support",
+  "pleaseEmailSupport": "Please email support@bottleji.com for assistance",
+  "sessionExpired": "Session Expired",
+  "sessionExpiredMessage": "Your session has expired. Please login again to continue.",
+  "home": "Home",
+  "drops": "Drops",
+  "rewards": "Rewards",
+  "stats": "Stats",
+  "history": "History",
+  "profile": "Profile",
+  "account": "Account",
+  "support": "Support",
+  "termsAndConditions": "Terms and Conditions",
+  "logout": "Logout",
+  "areYouSureLogout": "Are you sure you want to logout?",
+  "errorDuringLogout": "Error during logout: {error}",
+  "@errorDuringLogout": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Close",
+  "edit": "Edit",
+  "delete": "Delete",
+  "retry": "Retry",
+  "confirm": "Confirm",
+  "yes": "Yes",
+  "no": "No",
+  "stay": "Stay",
+  "leave": "Leave",
+  "back": "Back",
+  "next": "Next",
+  "previous": "Previous",
+  "done": "Done",
+  "gotIt": "Got it",
+  "clearAll": "Clear All",
+  "clearFilters": "Clear Filters",
+  "apply": "Apply",
+  "filterDrops": "Filter Drops",
+  "status": "Status",
+  "all": "All",
+  "date": "Date",
+  "distance": "Distance",
+  "deleteDrop": "Delete Drop",
+  "areYouSureDelete": "Are you sure you want to delete this drop?",
+  "createDrop": "Create Drop",
+  "editDrop": "Edit Drop",
+  "startCollection": "Start Collection",
+  "resumeNavigation": "Resume Navigation",
+  "cancelCollection": "Cancel Collection",
+  "areYouSureCancelCollection": "Are you sure you want to cancel this collection?",
+  "yesCancel": "Yes, Cancel",
+  "leaveCollection": "Leave Collection?",
+  "areYouSureLeaveCollection": "Are you sure you want to leave? Your collection will remain active.",
+  "exitNavigation": "Exit Navigation",
+  "areYouSureExitNavigation": "Are you sure you want to exit navigation? Your collection will remain active.",
+  "reportDrop": "Report Drop",
+  "useCurrentLocation": "Use Current Location",
+  "setCollectionRadius": "Set Collection Radius",
+  "setCollectionRadiusDescription": "Set the radius (in kilometers) within which you want to collect bottles.",
+  "kilometers": "km",
+  "collectionRadiusUpdated": "Collection radius updated!",
+  "saveRadius": "Save Radius",
+  "takePhoto": "Take Photo",
+  "chooseFromGallery": "Choose from Gallery",
+  "galleryIOSSimulatorIssue": "Gallery (iOS Simulator Issue)",
+  "useCameraOrRealDevice": "Use camera or real device",
+  "leaveOutsideDoor": "Leave outside the door",
+  "pleaseTakePhoto": "Please take a photo of your bottles",
+  "pleaseWaitLoading": "Please wait while we load your account information",
+  "mustBeLoggedIn": "You must be logged in to create a drop",
+  "authenticationIssue": "Authentication issue detected. Please log out and log in again.",
+  "dropCreatedSuccessfully": "Drop created successfully!",
+  "openSettings": "Open Settings",
+  "tryAgain": "Try Again",
+  "reloadMap": "Reload Map",
+  "thisHelpsUsShowNearby": "This helps us show nearby drops and provide accurate collection services.",
+  "errorLoadingUserMode": "Error loading user mode: {error}",
+  "@errorLoadingUserMode": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tryAdjustingFilters": "Try adjusting your filters",
+  "checkBackLater": "Check back later for new drops",
+  "createFirstDrop": "Create your first drop to get started",
+  "collectionInProgress": "Collection in Progress",
+  "resumeCollection": "Resume Collection",
+  "collectionTimeout": "⚠️ Collection Timeout",
+  "warningSystem": "Warning System",
+  "warningAddedToAccount": "A warning was added to your account for this drop. Please make sure future images follow the community guidelines.",
+  "timerExpired": "⏰ Timer Expired!",
+  "timerExpiredMessage": "The collection timer has expired. The navigation screen will now exit.",
+  "applicationRejected": "Application Rejected",
+  "applicationRejectedMessage": "Your application was rejected for the following reason:",
+  "noSpecificReason": "No specific reason provided",
+  "canEditApplication": "You can edit your application and submit it again.",
+  "editApplication": "Edit Application",
+  "pleaseLogInCollector": "Please log in to access collector mode",
+  "tierSystem": "Tier System",
+  "bySubscribingAgree": "By subscribing, you agree to our Terms of Service\nand Privacy Policy",
+  "startProSubscription": "Start PRO Subscription",
+  "termsOfService": "Terms of Service",
+  "lastUpdated": "Last updated: March 15, 2024",
+  "acceptanceOfTerms": "1. Acceptance of Terms",
+  "acceptanceOfTermsContent": "By accessing and using the Bottleji application, you agree to be bound by these Terms and Conditions. If you disagree with any part of these terms, you may not access the application.",
+  "userResponsibilities": "2. User Responsibilities",
+  "userResponsibilitiesContent": "As a user of Bottleji, you agree to:\n• Provide accurate and complete information\n• Maintain the security of your account\n• Follow waste segregation guidelines\n• Schedule collections responsibly\n• Use the service in accordance with local laws",
+  "household": "Household",
+  "collector": "Collector",
+  "activeMode": "Active Mode",
+  "myAccount": "My Account",
+  "trainings": "Trainings",
+  "referAndEarn": "Refer and Earn",
+  "upgrade": "Upgrade",
+  "review": "Review",
+  "rejected": "Rejected",
+  "apply": "Apply",
+  "becomeACollector": "Become a Collector",
+  "applicationUnderReview": "Your application is currently under review. Would you like to view your application status?",
+  "viewStatus": "View Status",
+  "applicationRejectedReason": "Your application was rejected for the following reason:\n\n\"{rejectionReason}\"\n\nWould you like to edit your application and submit it again?",
+  "@applicationRejectedReason": {
+    "placeholders": {
+      "rejectionReason": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationApprovedSuspended": "Your application was approved but your collector access has been temporarily suspended. Please contact support or reapply.",
+  "reapply": "Reapply",
+  "needToApplyCollector": "You need to apply and be approved to access collector mode. Would you like to apply now?",
+  "applyNow": "Apply Now",
+  "householdMode": "Household Mode",
+  "collectorMode": "Collector Mode",
+  "householdModeDescription": "Create drops and track your recycling",
+  "collectorModeDescription": "Collect bottles and earn rewards",
+  "sustainableWasteManagement": "Sustainable Waste Management",
+  "ecoFriendlyBottleCollection": "Eco-friendly bottle collection",
+  "bottleType": "Bottle Type",
+  "numberOfPlasticBottles": "Number of Plastic Bottles",
+  "numberOfCans": "Number of Cans",
+  "notesOptional": "Notes (Optional)",
+  "notes": "Notes",
+  "failedToCreateDrop": "Failed to create drop. Please try again.",
+  "imageSelectedSuccessfully": "Image selected successfully!",
+  "errorSelectingImage": "Error selecting image",
+  "permissionDeniedPhoto": "Permission denied. Please allow photo access in Settings.",
+  "galleryNotAvailableSimulator": "Gallery not available on simulator. Try camera or use a real device.",
+  "profileInformation": "Profile Information",
+  "fullName": "Full Name",
+  "notSet": "Not set",
+  "phone": "Phone",
+  "address": "Address",
+  "collectorStatus": "Collector Status",
+  "approvedCollector": "You are an approved collector",
+  "applicationStatus": "Application Status",
+  "applicationUnderReviewStatus": "Your application is under review",
+  "viewDetails": "View Details",
+  "applicationRejectedTitle": "Application Rejected",
+  "pleaseLoginToViewProfile": "Please login to view your profile",
+  "startYourBottlejiJourney": "Start Your Bottleji Journey",
+  "bottlejiRequiresPermissions": "Bottleji requires additional permissions to work properly",
+  "galleryError": "Gallery error: {error}",
+  "@galleryError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "galleryNotAvailableIOS": "Gallery not available on iOS simulator: {error}",
+  "@galleryNotAvailableIOS": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editProfile": "Edit Profile",
+  "completeYourProfile": "Complete Your Profile",
+  "profilePhoto": "Profile Photo",
+  "personalInformation": "Personal Information",
+  "tapToChangePhoto": "Tap to change photo",
+  "saving": "Saving...",
+  "completeSetup": "Complete Setup",
+  "saveProfile": "Save Profile",
+  "phoneNumberRequired": "Phone number is required",
+  "phoneNumberMustBe8Digits": "Phone number must be 8 digits",
+  "phoneNumberMustContainOnlyDigits": "Phone number must contain only digits",
+  "pleaseEnterYourFullName": "Please enter your full name",
+  "pleaseEnterYourPhoneNumber": "Please enter your phone number",
+  "pleaseEnterYourAddress": "Please enter your address",
+  "pleaseVerifyYourPhoneNumber": "Please verify your phone number before saving",
+  "noChangesDetected": "No changes detected. Profile remains unchanged.",
+  "profileSetupCompletedSuccessfully": "Profile setup completed successfully! Welcome to Bottleji!",
+  "profileUpdatedSuccessfully": "Profile updated successfully!",
+  "failedToUploadImage": "Failed to upload image. Please try again.",
+  "smsCode": "SMS Code",
+  "enter6DigitCode": "Enter 6-digit code",
+  "sendCode": "Send Code",
+  "sending": "Sending...",
+  "resend": "Resend",
+  "verifyCode": "Verify Code",
+  "verifying": "Verifying...",
+  "phoneNumberVerified": "Phone number verified",
+  "phoneNumberNotVerified": "Phone number not verified",
+  "phoneNumberNeedsVerification": "Phone number needs verification",
+  "phoneNumberVerifiedSuccessfully": "Phone number verified successfully!",
+  "phoneNumber": "Phone Number",
+  "fullNameRequired": "Full name is required",
+  "addressRequired": "Address is required",
+  "searchAddress": "Search Address",
+  "tapToSearchAddress": "Tap to search for your address",
+  "typeToSearch": "Type to search...",
+  "noResultsFound": "No results found",
+  "errorFetchingSuggestions": "Error fetching suggestions: {error}",
+  "@errorFetchingSuggestions": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterPhoneNumberFirst": "Please enter a phone number first",
+  "pleaseEnterValidPhoneNumber": "Please enter a valid phone number with country code (e.g., +49 123456789)",
+  "locationPermissionRequired": "Location permission is required for address features",
+  "notificationsTitle": "Notifications",
+  "markAllRead": "Mark All Read",
+  "noNotificationsYet": "No notifications yet",
+  "failedToLoadNotifications": "Failed to load notifications",
+  "createNewDrop": "Create New Drop",
+  "photo": "Photo",
+  "takePhotoOrChooseFromGallery": "Take a photo or choose from gallery - show your bottles clearly to help collectors",
+  "addPhoto": "Add Photo",
+  "cameraOrGallery": "Camera or Gallery",
+  "allDrops": "All Drops",
+  "myDrops": "My Drops",
+  "active": "Active",
+  "collected": "Collected",
+  "flagged": "Flagged",
+  "censored": "Censored",
+  "stale": "Stale",
+  "dropsInThisFilterCollected": "Drops in this filter have been successfully collected by a collector. These drops show your recycling impact and cannot be edited.",
+  "dropsInThisFilterFlagged": "Drops in this filter were flagged due to multiple cancellations or suspicious activity. Flagged drops are hidden from the map and cannot be edited.",
+  "dropsInThisFilterCensored": "Drops in this filter were censored due to inappropriate content. Censored drops are hidden from the map and cannot be edited.",
+  "dropsInThisFilterStale": "Drops in this filter were marked as stale because they were older than 3 days and likely collected by external collectors. Stale drops are hidden from the map and cannot be edited.",
+  "inActiveCollection": "In Active Collection - Collector on the way",
+  "censoredInappropriateImage": "Censored: {reason}",
+  "@censoredInappropriateImage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onTheWay": "On the way",
+  "collectorOnHisWay": "Collector on his way to pick up your drop",
+  "waiting": "Waiting...",
+  "notYetCollected": "Not yet collected",
+  "yourPoints": "Your Points",
+  "pointsToGo": "{points} points to go",
+  "@pointsToGo": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "progressToNextTier": "Progress to Next Tier",
+  "bronzeCollector": "Bronze Collector",
+  "silverCollector": "Silver Collector",
+  "goldCollector": "Gold Collector",
+  "platinumCollector": "Platinum Collector",
+  "diamondCollector": "Diamond Collector",
+  "earnPointsPerDropCollected": "Earn {points} points per drop collected",
+  "@earnPointsPerDropCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "earnPointsWhenDropsCollected": "Earn {points} points when your drops are collected",
+  "@earnPointsWhenDropsCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardShop": "Reward Shop",
+  "orderHistory": "Order History",
+  "noOrdersYet": "No orders yet",
+  "yourOrderHistoryWillAppearHere": "Your order history will appear here",
+  "notEnoughPoints": "Not enough points",
+  "pts": "pts",
+  "myStats": "My Stats",
+  "timeRange": "Time Range",
+  "thisWeek": "This Week",
+  "thisMonth": "This Month",
+  "thisYear": "This Year",
+  "allTime": "All Time",
+  "overview": "Overview",
+  "dropStatus": "Drop Status",
+  "pending": "Pending",
+  "collectionRate": "Collection Rate",
+  "avgCollectionTime": "Avg Collection Time",
+  "recentCollections": "Recent Collections",
+  "supportAndHelp": "Support & Help",
+  "howCanWeHelpYou": "How can we help you?",
+  "selectCategoryToGetStarted": "Select a category to get started",
+  "supportCategories": "Support Categories",
+  "whatDoYouNeedHelpWith": "What do you need help with?",
+  "selectCategoryToContinue": "Select a category to continue",
+  "trainingCenter": "Training Center",
+  "all": "All",
+  "todayAt": "Today at {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "yesterdayAt": "Yesterday at {time}",
+  "@yesterdayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "daysAgo": "{days} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "leaveOutside": "Leave Outside",
+  "noImageAvailable": "No image available",
+  "distance": "Distance",
+  "estTime": "Est. Time",
+  "estimatedTime": "Estimated Arrival Time",
+  "yourLocation": "Your Location",
+  "dropLocation": "Drop Location",
+  "routePreview": "Route Preview",
+  "dropInformation": "Drop Information",
+  "plasticBottles": "Plastic Bottles",
+  "cans": "Cans",
+  "plastic": "PLASTIC",
+  "can": "CAN",
+  "mixed": "MIXED",
+  "totalItems": "Total Items",
+  "estimatedValue": "Estimated Value",
+  "created": "Created",
+  "notes": "Notes",
+  "flagged": "FLAGGED",
+  "completeCurrentCollectionFirst": "Complete your current collection before starting a new one.",
+  "youAreOffline": "You are offline. Please check your internet connection.",
+  "errorColon": "Error: {error}",
+  "@errorColon": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "yourInformation": "Your Information",
+  "createdBy": "Created by",
+  "youWillSeeNotificationsHere": "You'll see your notifications here",
+  "pendingStatus": "PENDING",
+  "acceptedStatus": "ACCEPTED",
+  "collectedStatus": "COLLECTED",
+  "cancelledStatus": "CANCELLED",
+  "expiredStatus": "EXPIRED",
+  "staleStatus": "STALE",
+  "howRewardsWork": "How Rewards Work",
+  "howRewardsWorkCollector": "• Collect drops to earn points\n• Higher tiers = more points per drop\n• Use points in the reward shop\n• Track your progress and achievements",
+  "howRewardsWorkHousehold": "• Create drops to contribute to recycling\n• Earn points when collectors pick up your drops\n• Higher tiers = more points per collected drop\n• Use points in the reward shop",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "retry": "Retry",
+  "itemNotAvailable": "Item is not available",
+  "outOfStock": "Out of stock",
+  "orderNow": "Order Now",
+  "pleaseLogInToViewOrderHistory": "Please log in to view order history",
+  "failedToLoadOrderHistory": "Failed to load order history",
+  "refresh": "Refresh",
+  "pointsSpent": "Points Spent",
+  "size": "Size",
+  "orderDate": "Order Date",
+  "tracking": "Tracking",
+  "estimatedDelivery": "Estimated Delivery",
+  "deliveryAddress": "Delivery Address",
+  "adminNote": "Admin Note",
+  "pending": "Pending",
+  "approved": "Approved",
+  "processing": "Processing",
+  "shipped": "Shipped",
+  "delivered": "Delivered",
+  "cancelled": "Cancelled",
+  "rejected": "Rejected",
+  "available": "{count} available",
+  "@available": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Created",
+  "onTheWay": "On the way",
+  "waiting": "Waiting...",
+  "collectorOnHisWay": "Collector on his way to pick up your drop",
+  "notYetCollected": "Not yet collected",
+  "updateDrop": "Update Drop",
+  "updating": "Updating...",
+  "recyclingImpact": "Recycling Impact",
+  "recentDrops": "Recent Drops",
+  "viewAll": "View All",
+  "dropStatusDistribution": "Drop Status",
+  "co2VolumeSaved": "CO₂ Volume Saved",
+  "totalCo2Saved": "Total CO₂ Saved: {amount} kg",
+  "@totalCo2Saved": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dropActivity": "Drop Activity",
+  "dropsCreated": "Drops Created ({timeRange}): {count}",
+  "@dropsCreated": {
+    "placeholders": {
+      "timeRange": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPickingImage": "Error picking image: {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToUploadImage": "Failed to upload image: {error}",
+  "@failedToUploadImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropUpdatedSuccessfully": "Drop updated successfully!",
+  "errorUpdatingDrop": "Error updating drop: {error}",
+  "@errorUpdatingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDrop": "Delete Drop",
+  "areYouSureDeleteDrop": "Are you sure you want to delete this drop? This action cannot be undone.",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "dropDeletedSuccessfully": "Drop deleted successfully!",
+  "errorDeletingDrop": "Error deleting drop: {error}",
+  "@errorDeletingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterNumberOfBottles": "Please enter number of bottles",
+  "pleaseEnterValidNumber": "Please enter a valid number",
+  "pleaseEnterNumberOfCans": "Please enter number of cans",
+  "anyAdditionalInstructions": "Any additional instructions for the collector...",
+  "collectorCanLeaveOutside": "Collector can leave items outside if no one is home",
+  "location": "Location",
+  "loadingAddress": "Loading address...",
+  "locationFormat": "Location: {lat}, {lng}",
+  "@locationFormat": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSelected": "Location selected",
+  "currentDropLocation": "Current Drop Location",
+  "tapConfirmToSetLocation": "Tap \"Confirm\" to set this location",
+  "confirm": "Confirm",
+  "userNotFound": "User not found",
+  "quickActions": "Quick Actions",
+  "getHelp": "Get Help",
+  "selectCategoryAndGetSupport": "Select a category and get support for your issue",
+  "mySupportTickets": "My Support Tickets",
+  "viewAndManageTickets": "View and manage your existing support tickets",
+  "contactInformation": "Contact Information",
+  "emailSupport": "Email Support",
+  "phoneSupport": "Phone Support",
+  "frequentlyAskedQuestions": "Frequently Asked Questions",
+  "findAnswersToCommonQuestions": "Find answers to common questions",
+  "needMoreHelp": "Need More Help?",
+  "supportTeamAvailable247": "If you can't find what you're looking for, our support team is here to help 24/7.",
+  "selectCategoryToContinue": "Select a category to continue",
+  "dropIssues": "Drop Issues",
+  "getHelpWithDropProblems": "Get help with drop-related problems",
+  "dropIssuesSubtitle": "Expired drops, canceled collections, active collections",
+  "applicationIssues": "Application Issues",
+  "getHelpWithApplications": "Get help with collector applications",
+  "applicationIssuesSubtitle": "Rejected applications, pending reviews",
+  "accountIssues": "Account Issues",
+  "getHelpWithAccount": "Get help with your account",
+  "accountIssuesSubtitle": "Profile updates, login problems, account settings",
+  "technicalIssues": "Technical Issues",
+  "getHelpWithAppProblems": "Get help with app problems",
+  "technicalIssuesSubtitle": "App crashes, bugs, performance issues",
+  "paymentIssues": "Payment Issues",
+  "getHelpWithPayments": "Get help with payments",
+  "paymentIssuesSubtitle": "Payment delays, missing payments, payment methods",
+  "generalSupport": "General Support",
+  "getHelpWithAnythingElse": "Get help with anything else",
+  "generalSupportSubtitle": "Questions, suggestions, other issues",
+  "selectItemToGetHelp": "Select an item to get help",
+  "selectDropFromLast3Days": "Select a drop from the last 3 days to get help",
+  "selectApplicationToGetHelp": "Select your collector application to get help",
+  "getHelpWithAccountIssues": "Get help with your account issues",
+  "getHelpWithTechnicalProblems": "Get help with technical problems",
+  "getHelpWithPaymentIssues": "Get help with payment issues",
+  "getHelpWithAnyOtherIssue": "Get help with any other issue",
+  "authenticationError": "Authentication Error",
+  "pleaseLogInAgain": "Please log in again to view your items.",
+  "noCollectionsFound": "No Collections Found",
+  "noCollectionsToReport": "You don't have any collections to report issues for.",
+  "yourCollectionsLast3Days": "Your Collections (Last 3 Days)",
+  "errorLoadingCollections": "Error loading collections: {error}",
+  "@errorLoadingCollections": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noDropsFound": "No Drops Found",
+  "noDropsToReport": "You don't have any drops to report issues for.",
+  "yourDropsLast3Days": "Your Drops (Last 3 Days)",
+  "errorLoadingDrops": "Error loading drops: {error}",
+  "@errorLoadingDrops": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noApplications": "No Applications",
+  "noCollectorApplications": "You don't have any collector applications.",
+  "noIssuesFound": "No Issues Found",
+  "applicationBeingProcessed": "Your application is being processed normally.",
+  "noPaymentsYet": "No Payments Yet",
+  "paymentFeatureNotAvailable": "Payment feature is not available yet. Select a payment to get help with payment-related issues.",
+  "paymentSupport": "Payment Support",
+  "getHelpWithPaymentRelatedIssues": "Get help with payment-related issues",
+  "supportOptions": "Support Options",
+  "collectorApplication": "Collector Application",
+  "status": "Status",
+  "applied": "Applied",
+  "items": "items",
+  "drop": "Drop",
+  "collection": "Collection",
+  "unknown": "Unknown",
+  "justNow": "Just now",
+  "daysAgo": "{days} day{plural} ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+  "hoursAgo": "{hours} hour{plural} ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+  "minutesAgo": "{minutes} minute{plural} ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewTicket": "Review Ticket",
+  "reviewYourTicket": "Review Your Ticket",
+  "pleaseReviewDetailsBeforeCreating": "Please review the details before creating",
+  "title": "Title",
+  "category": "Category",
+  "priority": "Priority",
+  "description": "Description",
+  "confirmAndCreateTicket": "Confirm & Create Ticket",
+  "supportTicketCreatedSuccessfully": "Support ticket created successfully!",
+  "failedToCreateTicket": "Failed to create ticket: {error}",
+  "@failedToCreateTicket": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "allTickets": "All Tickets",
+  "open": "Open",
+  "inProgress": "In Progress",
+  "resolved": "Resolved",
+  "closed": "Closed",
+  "onHold": "On Hold",
+  "noSupportTicketsYet": "No support tickets yet",
+  "createFirstSupportTicket": "Create your first support ticket if you need help",
+  "errorLoadingTickets": "Error loading tickets",
+  "retry": "Retry",
+  "created": "Created",
+  "lowPriority": "Low Priority",
+  "mediumPriority": "Medium Priority",
+  "highPriority": "High Priority",
+  "urgent": "Urgent",
+  "dropIssue": "Drop Issue",
+  "collectionIssue": "Collection Issue",
+  "issueWithDropCreatedOn": "Issue with drop created on {date}",
+  "@issueWithDropCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "bottles": "Bottles",
+  "issueWithCollection": "Issue with collection {status} on {date}",
+  "@issueWithCollection": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "authenticationAccount": "🔐 Authentication & Account",
+  "appTechnicalIssues": "📱 App Technical Issues",
+  "dropCreationManagement": "🏠 Drop Creation & Management",
+  "collectionNavigation": "🚚 Collection & Navigation",
+  "collectorApplicationCategory": "👤 Collector Application",
+  "paymentRewards": "💰 Payment & Rewards",
+  "statisticsHistory": "📊 Statistics & History",
+  "roleSwitching": "🔄 Role Switching",
+  "communication": "📞 Communication",
+  "generalSupportCategory": "🛠️ General Support",
+  "supportTicket": "Support Ticket",
+  "cannotSendMessageTicketClosed": "Cannot send message. This ticket is closed.",
+  "failedToSendMessage": "Failed to send message: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminIsOnline": "Admin is online",
+  "adminIsTyping": "Admin is typing...",
+  "helpUsMaintainQuality": "Help us maintain quality",
+  "selectReason": "Select Reason",
+  "inappropriateImage": "🚫 Inappropriate Image",
+  "fakeDrop": "❌ Fake Drop",
+  "amountMismatch": "📊 Amount of bottles not matching the real drop",
+  "additionalDetailsOptional": "Additional Details (Optional)",
+  "provideMoreInformation": "Provide more information...",
+  "pleaseSelectReason": "Please select a reason",
+  "dropReportedSuccessfully": "Drop reported successfully. Thank you for helping keep our community safe!",
+  "errorReportingDrop": "Error reporting drop: {error}",
+  "@errorReportingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "submitReport": "Submit Report",
+  "timerExpired": "⏰ Timer Expired!",
+  "timerExpiredMessage": "The collection timer has expired. The navigation screen will now exit.",
+  "dropCollection": "Drop Collection",
+  "walkStraightToDestination": "Walk straight to destination",
+  "directRoute": "Direct route",
+  "unknownDistance": "Unknown distance",
+  "unknownDuration": "Unknown duration",
+  "routeToDrop": "Route to Drop",
+  "remaining": "remaining",
+  "completeCollectionIn": "Complete collection in:",
+  "youHaveArrivedAtDestination": "You have arrived at the destination!",
+  "calculatingRoute": "Calculating route...",
+  "leaveCollection": "Leave Collection?",
+  "leaveCollectionMessage": "You have an active collection. Are you sure you want to leave? You must complete or cancel the collection to proceed.",
+  "stay": "Stay",
+  "leave": "Leave",
+  "dropLocation": "Drop Location",
+  "slideToCollect": "Slide to Collect",
+  "releaseToCollect": "Release to Collect",
+  "collectionConfirmed": "Collection confirmed!",
+  "collectionCancelled": "Collection cancelled: {reason}",
+  "@collectionCancelled": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUserNotAuthenticated": "Error: User not authenticated",
+  "errorCancellingCollection": "Error cancelling collection: {error}",
+  "@errorCancellingCollection": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "collectionCompletedSuccessfully": "Collection completed successfully!",
+  "collectionCompletedSuccessfullyNoExclamation": "Collection completed successfully",
+  "errorNoCollectorIdFound": "Error: No collector ID found",
+  "errorConfirmingCollection": "Error confirming collection: {error}",
+  "@errorConfirmingCollection": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropCollected": "Drop Collected!",
+  "pointsEarned": "+{points} Points Earned!",
+  "@pointsEarned": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "currentTier": "Current Tier",
+  "totalPoints": "Total Points",
+  "awesome": "Awesome!",
+  "exitNavigation": "Exit Navigation",
+  "exitNavigationMessage": "Are you sure you want to exit navigation? Your collection will remain active.",
+  "exit": "Exit",
+  "collectionTimerRunningLow": "Collection timer running low: {time} remaining",
+  "@collectionTimerRunningLow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "view": "View",
+  "collectionTimerWarning": "Collection Timer Warning",
+  "yourCollectionTimerRunningLow": "Your collection timer is running low: {time} remaining",
+  "@yourCollectionTimerRunningLow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelCollection": "Cancel Collection",
+  "cancelCollectionMessage": "Are you sure you want to cancel this collection? Please select a reason:",
+  "back": "Back",
+  "noAccess": "No Access",
+  "notFound": "Not Found",
+  "alreadyCollected": "Already Collected",
+  "wrongLocation": "Wrong Location",
+  "unsafeLocation": "Unsafe Location",
+  "other": "Other",
+  "cancellationReasons": "Cancellation Reasons",
+  "cancellationReason": "Cancellation Reason",
+  "cancelled": "Cancelled",
+  "accountTemporarilyLocked": "Account Temporarily Locked",
+  "accountLockedReason": "Your account has been locked for 24 hours due to 5 collection timeout warnings.",
+  "unlocksIn": "Unlocks in {time}",
+  "@unlocksIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "lockExpired": "Lock expired",
+  "hour": "hour",
+  "hours": "hours",
+  "minute": "minute",
+  "minutes": "minutes",
+  "second": "second",
+  "seconds": "seconds",
+  "availableAgainAt": "Available again at {time}",
+  "@availableAgainAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "accountLockedInfo": "You can still browse drops and use other features, but cannot accept new drops until unlocked.",
+  "iUnderstand": "I Understand",
+  "orderApproved": "Order Approved",
+  "orderApprovedMessage": "Your order {orderId} has been approved and is being processed.",
+  "@orderApprovedMessage": {
+    "placeholders": {
+      "orderId": {
+        "type": "String"
+      }
+    }
+  },
+  "orderRejected": "Order Rejected",
+  "orderRejectedMessage": "Your order has been rejected. Reason: {reason}",
+  "@orderRejectedMessage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "orderShipped": "Order Shipped",
+  "orderShippedMessage": "Your order has been shipped. Tracking: {tracking}",
+  "@orderShippedMessage": {
+    "placeholders": {
+      "tracking": {
+        "type": "String"
+      }
+    }
+  },
+  "orderDelivered": "Order Delivered",
+  "orderDeliveredMessage": "Your order has been delivered successfully.",
+  "pointsEarnedTitle": "Points Earned",
+  "pointsEarnedMessage": "You earned {points} points!",
+  "@pointsEarnedMessage": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "applicationApproved": "Application Approved",
+  "applicationApprovedMessage": "Congratulations! Your collector application has been approved.",
+  "applicationRejected": "Application Rejected",
+  "applicationRejectedMessage": "Your collector application was rejected. Reason: {reason}",
+  "@applicationRejectedMessage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationReversed": "Application Reversed",
+  "applicationReversedMessage": "Your collector application status has been reversed.",
+  "dropAccepted": "Drop Accepted",
+  "dropAcceptedMessage": "A collector has accepted your drop.",
+  "dropCollected": "Drop Collected",
+  "dropCollectedMessage": "Your drop has been collected successfully.",
+  "dropCollectedWithRewards": "Drop Collected",
+  "dropCollectedWithRewardsMessage": "Your drop has been collected! You earned {points} points.",
+  "@dropCollectedWithRewardsMessage": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "dropCollectedWithTierUpgrade": "Drop Collected",
+  "dropCollectedWithTierUpgradeMessage": "Congratulations! Your drop was collected and you've been upgraded to a higher tier!",
+  "dropCancelled": "Drop Cancelled",
+  "dropCancelledMessage": "Your drop has been cancelled.",
+  "dropExpired": "Drop Expired",
+  "dropExpiredMessage": "Your drop has expired and is no longer available.",
+  "dropNearExpiring": "Drop Near Expiring",
+  "dropNearExpiringMessage": "Your drop is about to expire soon.",
+  "dropCensored": "Drop Censored",
+  "dropCensoredMessage": "Your drop has been censored due to inappropriate content.",
+  "ticketMessage": "New Ticket Message",
+  "ticketMessageNotification": "You have a new message in your support ticket.",
+  "accountUnlocked": "Account Unlocked",
+  "accountUnlockedMessage": "Your account has been unlocked. You can now start collecting drops again!",
+  "userDeleted": "Account Deleted",
+  "userDeletedMessage": "Your account has been deleted.",
+  "highPriority": "HIGH",
+  "trackOrder": "Track Order",
+  "viewOrder": "View Order",
+  "shopAgain": "Shop Again",
+  "viewRewards": "View Rewards",
+  "tapToViewRejectionReason": "Tap to view rejection reason",
+  "gettingStarted": "Getting Started",
+  "advancedFeatures": "Advanced Features",
+  "troubleshooting": "Troubleshooting",
+  "bestPractices": "Best Practices",
+  "collectorApplication": "Collector Application",
+  "payments": "Payments",
+  "notifications": "Notifications",
+  "all": "All",
+  "help": "Help",
+  "collector": "Collector",
+  "advanced": "Advanced",
+  "description": "Description",
+  "story": "Story",
+  "totalDrops": "Total Drops",
+  "aluminumCans": "Aluminum Cans",
+  "recycled": "Recycled",
+  "recycledBottles": "Recycled {count} bottles",
+  "@recycledBottles": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recycledCans": "Recycled {count} cans",
+  "@recycledCans": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "totalItemsRecycled": "Total Items Recycled",
+  "dropsCollected": "Drops Collected",
+  "monday": "Mon",
+  "tuesday": "Tue",
+  "wednesday": "Wed",
+  "thursday": "Thu",
+  "friday": "Fri",
+  "saturday": "Sat",
+  "sunday": "Sun",
+  "january": "Jan",
+  "february": "Feb",
+  "march": "Mar",
+  "april": "Apr",
+  "may": "May",
+  "june": "Jun",
+  "july": "Jul",
+  "august": "Aug",
+  "september": "Sep",
+  "october": "Oct",
+  "november": "Nov",
+  "december": "Dec",
+  "todaysTotal": "Today's Total",
+  "earnings": "Earnings",
+  "collections": "Collections",
+  "noEarningsHistoryYet": "No earnings history yet",
+  "earningsWillAppearHere": "Your earnings will appear here once you complete collections",
+  "totalEarnings": "Total Earnings",
+  "errorLoadingEarnings": "Error loading earnings: {error}",
+  "@errorLoadingEarnings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noCompletedCollectionsYet": "No completed collections yet",
+  "performanceMetrics": "Performance Metrics",
+  "collected": "Collected",
+  "expired": "Expired",
+  "cancelled": "Cancelled",
+  "collectionsOverTime": "Collections Over Time",
+  "expiredOverTime": "Expired Over Time",
+  "cancelledOverTime": "Cancelled Over Time",
+  "totalThisWeek": "total this week",
+  "totalThisMonth": "total this month",
+  "totalThisYear": "total this year",
+  "mon": "Mon",
+  "tue": "Tue",
+  "wed": "Wed",
+  "thu": "Thu",
+  "fri": "Fri",
+  "sat": "Sat",
+  "sun": "Sun",
+  "jan": "Jan",
+  "feb": "Feb",
+  "mar": "Mar",
+  "apr": "Apr",
+  "may": "May",
+  "jun": "Jun",
+  "jul": "Jul",
+  "aug": "Aug",
+  "sep": "Sep",
+  "oct": "Oct",
+  "nov": "Nov",
+  "dec": "Dec",
+  "daysAgoShort": "{days}d ago",
+  "@daysAgoShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "at": "at",
+  "total": "Total",
+  "noDropsCreatedYet": "No drops created yet",
+  "createYourFirstDropToGetStarted": "Create your first drop to get started",
+  "noActiveDrops": "No active drops",
+  "noCollectedDrops": "No collected drops yet",
+  "noStaleDrops": "No stale drops",
+  "noCensoredDrops": "No censored drops",
+  "noFlaggedDrops": "No flagged drops",
+  "noDropsMatchYourFilters": "No drops match your filters",
+  "tryAdjustingYourFilters": "Try adjusting your filters",
+  "clearFilters": "Clear Filters",
+  "noDropsAvailable": "No drops available",
+  "checkBackLaterForNewDrops": "Check back later for new drops",
+  "note": "Note",
+  "outside": "Outside",
+  "filterDrops": "Filter Drops",
+  "status": "Status",
+  "date": "Date",
+  "distance": "Distance",
+  "apply": "Apply",
+  "cancel": "Cancel",
+  "last7Days": "Last 7 days",
+  "last30Days": "Last 30 days",
+  "thisMonth": "This month",
+  "lastMonth": "Last month",
+  "within1Km": "Within 1 km",
+  "within3Km": "Within 3 km",
+  "within5Km": "Within 5 km",
+  "within10Km": "Within 10 km",
+  "rewardHistory": "Reward History",
+  "noRewardHistoryYet": "No reward history yet",
+  "points": "Points",
+  "tier": "Tier",
+  "tierUp": "Tier Up!",
+  "acceptDrop": "Accept Drop",
+  "completeCurrentDropFirst": "Complete Current Drop First",
+  "distanceUnavailable": "Distance unavailable",
+  "away": "away",
+  "meters": "m",
+  "kilometers": "km",
+  "minutesShort": "min",
+  "hoursShort": "h",
+  "tierSystem": "Tier System",
+  "current": "Current",
+  "earnPointsPerDrop": "Earn {points} points per drop",
+  "@earnPointsPerDrop": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "dropsRequired": "{count} drops required",
+  "@dropsRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "start": "Start",
+  "close": "Close",
+  "filterHistory": "Filter History",
+  "searchHistory": "Search History",
+  "searchByNotesBottleTypeOrCancellationReason": "Search by notes, bottle type, or cancellation reason...",
+  "viewType": "View Type",
+  "status": "Status",
+  "timeRange": "Time Range",
+  "itemType": "Item Type",
+  "bottleType": "Bottle Type",
+  "allTime": "All Time",
+  "last3Months": "Last 3 Months",
+  "last6Months": "Last 6 Months",
+  "thisYear": "This Year",
+  "allItems": "All Items",
+  "bottlesOnly": "Bottles Only",
+  "cansOnly": "Cans Only",
+  "mixed": "Mixed",
+  "allTypes": "All Types",
+  "clearAll": "Clear All",
+  "activeFilters": "ACTIVE",
+  "waitingForCollector": "Waiting for collector",
+  "liveCollectorOnTheWay": "🟢 Live - Collector on the way",
+  "collectorOnHisWay": "Collector on his way to pick up your drop",
+  "collectorWasOnTheWay": "Collector was on the way",
+  "waiting": "Waiting...",
+  "notYetCollected": "Not yet collected",
+  "justNow": "Just now",
+  "minutesAgo": "{minutes}m ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{hours}h ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{days}d ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "Created",
+  "onTheWay": "On the way",
+  "wasOnTheWay": "Was on the way",
+  "accepted": "Accepted",
+  "sessionTime": "Session Time",
+  "completed": "Completed",
+  "myDrops": "My Drops",
+  "pleaseLoginToViewYourDrops": "Please login to view your drops",
+  "errorLoadingUserData": "Error loading user data: {error}",
+  "@errorLoadingUserData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingUserMode": "Error loading user mode: {error}",
+  "@errorLoadingUserMode": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "earn500Points": "Earn 500 Points",
+  "forEachFriendWhoJoins": "For each friend who joins",
+  "yourReferralCode": "Your Referral Code",
+  "referralCodeCopiedToClipboard": "Referral code copied to clipboard",
+  "shareVia": "Share via",
+  "whatsapp": "WhatsApp",
+  "sms": "SMS",
+  "more": "More",
+  "howItWorks": "How it works",
+  "shareYourCode": "Share your code",
+  "shareYourUniqueReferralCodeWithFriends": "Share your unique referral code with friends",
+  "friendSignsUp": "Friend signs up",
+  "yourFriendCreatesAnAccountUsingYourCode": "Your friend creates an account using your code",
+  "earnRewards": "Earn rewards",
+  "get500PointsWhenTheyCompleteFirstActivity": "Get 500 points when they complete first activity",
+  "trainingCenterInfo": "Training Center",
+  "trainingCenterInfoHousehold": "Access training content tailored for household users. Learn how to use Botleji effectively!",
+  "trainingCenterInfoCollector": "Access training content for collectors. Master collection techniques and best practices!",
+  "gotIt": "Got it",
+  "filter": "Filter",
+  "search": "Search",
+  "clear": "Clear",
+  "plastic": "Plastic",
+  "glass": "Glass",
+  "aluminum": "Aluminum",
+  "dropProgress": "Drop Progress",
+  "collectionIssues": "Collection issues",
+  "cancelledTimes": "Cancelled {count} times",
+  "@cancelledTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dropAcceptedByCollector": "Drop accepted by collector",
+  "acceptedDropForCollection": "Accepted drop for collection",
+  "collectionCompletedSuccessfullyNoExclamation": "Collection completed successfully",
+  "applicationIssue": "Application Issue",
+  "paymentIssue": "Payment Issue",
+  "accountIssue": "Account Issue",
+  "technicalIssue": "Technical Issue",
+  "generalSupportRequest": "General Support Request",
+  "supportRequest": "Support Request",
+  "noDescriptionProvided": "No description provided",
+  "becomeACollector": "Become a Collector",
+  "userNotFound": "User not found",
+  "welcome": "Welcome",
+  "idVerification": "ID Verification",
+  "selfieWithId": "Selfie with ID",
+  "reviewAndSubmit": "Review & Submit",
+  "welcomeToCollectorProgram": "Welcome to the Collector Program!",
+  "joinOurCommunityOfEcoConsciousCollectors": "Join our community of eco-conscious collectors and help make a difference in recycling.",
+  "earnMoney": "Earn Money",
+  "getPaidForEveryBottleAndCan": "Get paid for every bottle and can you collect",
+  "flexibleHours": "Flexible Hours",
+  "collectWheneverAndWherever": "Collect whenever and wherever you want",
+  "helpTheEnvironment": "Help the Environment",
+  "contributeToCleanerGreenerWorld": "Contribute to a cleaner, greener world",
+  "requirements": "Requirements",
+  "mustBe18YearsOrOlder": "• Must be 18 years or older",
+  "validNationalIdCard": "• Valid National ID Card",
+  "clearPhotosOfIdAndSelfie": "• Clear photos of ID and selfie",
+  "goodStandingInCommunity": "• Good standing in the community",
+  "getStarted": "Get Started",
+  "idCardVerification": "ID Card Verification",
+  "pleaseProvideYourIdCardInformation": "Please provide your {idType} information and take clear photos",
+  "@pleaseProvideYourIdCardInformation": {
+    "placeholders": {
+      "idType": {
+        "type": "String"
+      }
+    }
+  },
+  "idCardDetails": "ID Card Details",
+  "passportDetails": "Passport Details",
+  "idCardType": "ID Card Type",
+  "selectYourIdCardType": "Select your ID card type",
+  "nationalId": "National ID",
+  "passport": "Passport",
+  "pleaseSelectAnIdCardType": "Please select an ID card type",
+  "passportNumber": "Passport Number",
+  "enterYourPassportNumber": "Enter your passport number",
+  "selectIssueDate": "Select Issue Date",
+  "issueDateLabel": "Issue Date",
+  "issueDate": "Issue Date: {date}",
+  "@issueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExpiryDate": "Select Expiry Date",
+  "expiryDateLabel": "Expiry Date",
+  "expiryDate": "Expiry Date: {date}",
+  "@expiryDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "issuingAuthority": "Issuing Authority",
+  "egMinistryOfForeignAffairs": "e.g., Ministry of Foreign Affairs",
+  "idCardNumber": "ID Card Number",
+  "idCardNumberPlaceholder": "12345678",
+  "idCardNumberIsRequired": "ID card number is required",
+  "idCardNumberMustBe8Digits": "ID card number must be 8 digits",
+  "idCardNumberMustContainOnlyDigits": "ID card number must contain only digits",
+  "idCardPhotos": "ID Card Photos",
+  "passportPhotos": "Passport Photos",
+  "noPassportMainPagePhoto": "No Passport Main Page Photo",
+  "takePhotoOfMainPageWithDetails": "Take photo of the main page with your details",
+  "retakePhoto": "Retake Photo",
+  "takePassportMainPagePhoto": "Take Passport Main Page Photo",
+  "noIdCardFrontPhoto": "No ID Card Front Photo",
+  "takePhotoOfFrontOfIdCard": "Take photo of the front of your ID card",
+  "retakeFrontPhoto": "Retake Front Photo",
+  "takeIdCardFrontPhoto": "Take ID Card Front Photo",
+  "noIdCardBackPhoto": "No ID Card Back Photo",
+  "takePhotoOfBackOfIdCard": "Take photo of the back of your ID card",
+  "retakeBackPhoto": "Retake Back Photo",
+  "takeIdCardBackPhoto": "Take ID Card Back Photo",
+  "continueButton": "Continue",
+  "selfieWithIdCard": "Selfie with ID Card",
+  "pleaseTakeSelfieWhileHoldingId": "Please take a selfie while holding your ID card next to your face",
+  "noSelfiePhoto": "No Selfie Photo",
+  "takeSelfie": "Take Selfie",
+  "reviewAndSubmitTitle": "Review & Submit",
+  "pleaseReviewYourApplication": "Please review your application before submitting",
+  "idCardInformation": "ID Card Information",
+  "idType": "ID Type",
+  "idNumber": "ID Number",
+  "notProvided": "Not provided",
+  "idCard": "ID Card",
+  "selfie": "Selfie",
+  "whatHappensNext": "What happens next?",
+  "applicationReviewProcess": "• Your application will be reviewed by our team\n• Review typically takes 1-3 business days\n• You'll receive a notification once reviewed\n• If approved, you can start collecting immediately",
+  "submitting": "Submitting...",
+  "submitApplication": "Submit Application",
+  "pleaseTakeBothPhotosBeforeSubmitting": "Please take both photos before submitting",
+  "pleaseFillInAllRequiredPassportInformation": "Please fill in all required passport information",
+  "pleaseFillInAllRequiredIdCardInformation": "Please fill in all required ID card information (ID number and type)",
+  "applicationUpdatedSuccessfully": "Application updated successfully!",
+  "applicationSubmittedSuccessfully": "Application submitted successfully!",
+  "errorSubmittingApplication": "Error submitting application: {error}",
+  "@errorSubmittingApplication": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationStatus": "Application Status",
+  "errorLoadingApplication": "Error loading application",
+  "noApplicationFound": "No Application Found",
+  "youHaventSubmittedApplicationYet": "You haven't submitted a collector application yet.",
+  "pendingReview": "Pending Review",
+  "yourApplicationIsBeingReviewed": "Your application is being reviewed by our team.",
+  "approved": "Approved",
+  "congratulationsApplicationApproved": "Congratulations! Your application has been approved.",
+  "rejected": "Rejected",
+  "applicationNotApprovedCanApplyAgain": "Your application was not approved. You can apply again.",
+  "unknown": "Unknown",
+  "applicationStatusUnknown": "Application status is unknown.",
+  "applicationDetails": "Application Details",
+  "applicationId": "Application ID",
+  "notSpecified": "Not specified",
+  "appliedOn": "Applied On",
+  "reviewedOn": "Reviewed On",
+  "rejectionReason": "Rejection Reason",
+  "reviewNotes": "Review Notes",
+  "applyAgain": "Apply Again",
+  "applicationInReview": "Application in Review",
+  "applicationInReviewDialogContent": "Your application is currently being reviewed by our team. This process typically takes 1-3 business days. You will be notified once a decision has been made.",
+  "reviewProcess": "Review Process",
+  "back": "Back"
+}

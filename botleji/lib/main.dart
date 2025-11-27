@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:botleji/core/theme/app_theme.dart';
+import 'package:botleji/core/localization/localization_controller.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/auth/presentation/screens/login_screen.dart';
 import 'package:botleji/features/home/presentation/screens/home_screen.dart';
@@ -26,6 +29,8 @@ import 'package:botleji/features/notifications/data/services/notification_servic
 // import 'package:botleji/core/services/network_initialization_service.dart';
 // import 'package:botleji/core/config/server_config.dart';
 import 'package:botleji/core/config/server_config.dart';
+import 'package:botleji/core/services/fcm_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +48,7 @@ void main() async {
   // Force use of Cloudflare Tunnel for all network calls (avoids local network probing on iOS)
   // Quick tunnel URL from `cloudflared tunnel --url http://localhost:3000`
   await ServerConfig.setTunnelUrlOverride(
-    'https://sheer-sheriff-military-drilling.trycloudflare.com',
+    'https://creator-ruled-signal-makeup.trycloudflare.com',
   );
 
   // Defer network detection and notification service initialization
@@ -82,6 +87,20 @@ void main() async {
     );
     AppLogger.log('Firebase initialized successfully');
 
+    // Set up FCM background message handler (must be top-level function)
+    // This is safe to call even if FCM is not fully configured
+    try {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      AppLogger.log('FCM background message handler registered');
+    } catch (e) {
+      AppLogger.log('⚠️ Could not register FCM background handler: $e');
+      AppLogger.log('ℹ️ App will continue to work, but background notifications may not work');
+    }
+
+    // Defer FCM initialization until after onboarding is completed
+    // FCM will be initialized in the permissions screen after user grants permission
+    AppLogger.log('FCM initialization deferred until after onboarding');
+
     // Wait longer for Firebase Auth to be ready
     AppLogger.log('Waiting for Firebase Auth to be ready...');
     await Future.delayed(const Duration(milliseconds: 2000));
@@ -110,10 +129,110 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  bool _isAccountDisabledDialogShowing = false; // Flag to track if account disabled dialog is showing
+  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+  
+  void _setupAccountDisabledCallback(WidgetRef ref) {
+    final notificationService = ref.read(notificationServiceProvider);
+    AppLogger.log('🔒 Main: Setting up account permanently disabled callback');
+    notificationService.onAccountPermanentlyDisabled = () {
+      AppLogger.log('🔒 ===== Main: Account permanently disabled callback triggered from WebSocket =====');
+      _showAccountDisabledDialogWithRetry(ref);
+      AppLogger.log('🔒 ============================================================');
+    };
+    AppLogger.log('🔒 Main: Account permanently disabled callback set up successfully');
+    
+    // Set up account deleted callback
+    AppLogger.log('🗑️ Main: Setting up account deleted callback');
+    notificationService.onAccountDeleted = () {
+      AppLogger.log('🗑️ ===== Main: Account deleted callback triggered from WebSocket =====');
+      _showAccountDeletedDialogWithRetry(ref);
+      AppLogger.log('🗑️ ============================================================');
+    };
+    AppLogger.log('🗑️ Main: Account deleted callback set up successfully');
+  }
+  
+  void _showAccountDisabledDialogWithRetry(WidgetRef ref, {int retryCount = 0}) {
+    const maxRetries = 10;
+    final context = MyApp.navigatorKey.currentContext;
+    
+    if (context != null) {
+      AppLogger.log('🔒 Main: Context available, showing account disabled dialog NOW (attempt ${retryCount + 1})');
+      try {
+        _showAccountDisabledDialog(context, ref);
+        AppLogger.log('🔒 Main: Dialog shown successfully');
+      } catch (e) {
+        AppLogger.log('❌ Error showing dialog: $e');
+        if (retryCount < maxRetries) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _showAccountDisabledDialogWithRetry(ref, retryCount: retryCount + 1);
+          });
+        }
+      }
+    } else {
+      AppLogger.log('⚠️ Main: Context not available (attempt ${retryCount + 1}/${maxRetries})');
+      if (retryCount < maxRetries) {
+        // Retry with exponential backoff
+        final delay = Duration(milliseconds: 200 * (retryCount + 1));
+        Future.delayed(delay, () {
+          _showAccountDisabledDialogWithRetry(ref, retryCount: retryCount + 1);
+        });
+      } else {
+        AppLogger.log('❌ Main: Failed to show dialog after $maxRetries attempts - context never became available');
+        // Last resort: try to get context from build context
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final fallbackContext = MyApp.navigatorKey.currentContext;
+          if (fallbackContext != null) {
+            AppLogger.log('🔒 Main: Got context on postFrameCallback, showing dialog');
+            _showAccountDisabledDialog(fallbackContext, ref);
+          }
+        });
+      }
+    }
+  }
+  
+  void _showAccountDeletedDialogWithRetry(WidgetRef ref, {int retryCount = 0}) {
+    const maxRetries = 10;
+    final context = MyApp.navigatorKey.currentContext;
+    
+    if (context != null) {
+      AppLogger.log('🗑️ Main: Context available, showing account deleted dialog NOW (attempt ${retryCount + 1})');
+      try {
+        _showAccountDeletedDialog(context, ref);
+        AppLogger.log('🗑️ Main: Dialog shown successfully');
+      } catch (e) {
+        AppLogger.log('❌ Error showing dialog: $e');
+        if (retryCount < maxRetries) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _showAccountDeletedDialogWithRetry(ref, retryCount: retryCount + 1);
+          });
+        }
+      }
+    } else {
+      AppLogger.log('⚠️ Main: Context not available (attempt ${retryCount + 1}/${maxRetries})');
+      if (retryCount < maxRetries) {
+        // Retry with exponential backoff
+        final delay = Duration(milliseconds: 200 * (retryCount + 1));
+        Future.delayed(delay, () {
+          _showAccountDeletedDialogWithRetry(ref, retryCount: retryCount + 1);
+        });
+      } else {
+        AppLogger.log('❌ Main: Failed to show dialog after $maxRetries attempts - context never became available');
+        // Last resort: try to get context from build context
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final fallbackContext = MyApp.navigatorKey.currentContext;
+          if (fallbackContext != null) {
+            AppLogger.log('🗑️ Main: Got context on postFrameCallback, showing dialog');
+            _showAccountDeletedDialog(fallbackContext, ref);
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -129,6 +248,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       // Sync badge count with actual unread count when app comes to foreground
       AppLogger.log('🔔 App resumed - syncing badge count...');
       _syncBadgeCount();
+      
+      // Reconnect WebSocket notifications when app comes to foreground
+      AppLogger.log('🔌 App resumed - reconnecting WebSocket notifications...');
+      _reconnectWebSocketNotifications();
     }
   }
 
@@ -146,14 +269,63 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _reconnectWebSocketNotifications() async {
+    try {
+      // Get auth token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        AppLogger.log('🔌 App resumed - No auth token, skipping WebSocket reconnection');
+        return;
+      }
+      
+      // Get notification service from provider and check if connected
+      final notificationService = ref.read(notificationServiceProvider);
+      AppLogger.log('🔌 App resumed - WebSocket connected: ${notificationService.isConnected}');
+      
+      // Reconnect if not connected
+      if (!notificationService.isConnected) {
+        AppLogger.log('🔌 App resumed - WebSocket not connected, reconnecting...');
+        await notificationService.connect(token);
+        AppLogger.log('🔌 App resumed - WebSocket reconnection attempted');
+      } else {
+        AppLogger.log('🔌 App resumed - WebSocket already connected');
+      }
+    } catch (e) {
+      AppLogger.log('🔌 Error reconnecting WebSocket on app resume: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Set up permanent account disabled callback (to show dialog when WebSocket notification received)
+    // Use addPostFrameCallback to ensure ref is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupAccountDisabledCallback(ref);
+    });
+    
     // Listen for 401 errors globally
     ref.listen(authNotifierProvider, (previous, next) {
       AppLogger.log('🚪 Main: Auth state changed - Previous: ${previous?.value?.id}, Next: ${next.value?.id}');
 
       Future.delayed(const Duration(milliseconds: 100), () {
         if (!context.mounted) return;
+
+        // Check if user is permanently disabled (logged in but account is permanently locked)
+        final currentUser = next.value;
+        if (currentUser != null && 
+            currentUser.isAccountLocked && 
+            currentUser.accountLockedUntil == null) {
+          // User is permanently disabled - show account disabled dialog
+          // Use a longer delay to ensure context is fully mounted
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (context.mounted) {
+              _showAccountDisabledDialog(context, ref);
+            }
+          });
+          return;
+        }
 
         final pendingReason = LocalNotificationService().getPendingForceLogoutReason();
         if (pendingReason != null) {
@@ -171,28 +343,42 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       if (next.hasError) {
         final error = next.error;
         if (error != null && error.toString().contains('401')) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Session Expired'),
-                content: const Text('Your session has expired. Please login again to continue.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/login',
-                        (route) => false,
-                      );
-                    },
-                    child: const Text('Login'),
-                  ),
-                ],
-              );
-            },
-          );
+          // Check if user is permanently disabled before showing session expired
+          // Try to get current user from auth state
+          final currentUser = ref.read(authNotifierProvider).value;
+          if (currentUser != null && 
+              currentUser.isAccountLocked && 
+              currentUser.accountLockedUntil == null) {
+            // User is permanently disabled - show account disabled dialog instead
+            _showAccountDisabledDialog(context, ref);
+            return;
+          }
+          
+          // TEMPORARILY DISABLED FOR TESTING - Session expired dialog
+          // showDialog(
+          //   context: context,
+          //   barrierDismissible: false,
+          //   builder: (BuildContext context) {
+          //     final l10n = AppLocalizations.of(context);
+          //     return AlertDialog(
+          //       title: Text(l10n.sessionExpired),
+          //       content: Text(l10n.sessionExpiredMessage),
+          //       actions: [
+          //         TextButton(
+          //           onPressed: () {
+          //             Navigator.of(context).pop();
+          //             Navigator.of(context).pushNamedAndRemoveUntil(
+          //               '/login',
+          //               (route) => false,
+          //             );
+          //           },
+          //           child: Text(l10n.login),
+          //         ),
+          //       ],
+          //     );
+          //   },
+          // );
+          print('⚠️ Session expired detected but dialog disabled for testing');
         }
       }
     });
@@ -220,6 +406,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
     // Removed splash-on-resume behavior per request
 
+    final currentLocale = ref.watch(localizationControllerProvider);
+    
     return MaterialApp(
       title: 'Bottleji',
       theme: AppTheme.lightTheme,
@@ -227,6 +415,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       themeMode: ref.watch(themeControllerProvider),
       debugShowCheckedModeBanner: false,
       navigatorKey: MyApp.navigatorKey,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: LocalizationController.supportedLocales,
+      locale: currentLocale,
       initialRoute: '/splash',
       home: const SplashScreen(),
       routes: {
@@ -234,7 +430,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         '/onboarding': (context) => const OnboardingScreen(),
         '/permissions': (context) => const PermissionsScreen(),
         '/main': (context) => const MainAppScreen(),
-        '/login': (context) => const LoginScreen(),
+        '/login': (context) => LoginScreen(key: UniqueKey()), // Use UniqueKey to ensure fresh instance
         '/home': (context) => const HomeScreen(),
         '/profile-setup': (context) => ProfileSetupScreen(
           email: (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?)?['email'] ?? '',
@@ -244,6 +440,250 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     );
   }
 
+
+  void _showAccountDeletedDialog(BuildContext context, WidgetRef ref) {
+    // Prevent showing multiple dialogs
+    if (_isAccountDisabledDialogShowing) {
+      AppLogger.log('🗑️ Account deleted dialog already showing, skipping');
+      return;
+    }
+    
+    // Double-check context is still valid
+    if (!context.mounted) {
+      AppLogger.log('⚠️ Context is not mounted, cannot show dialog');
+      return;
+    }
+    
+    _isAccountDisabledDialogShowing = true;
+    AppLogger.log('🗑️ Showing account deleted dialog...');
+    
+    try {
+      final l10n = AppLocalizations.of(context);
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Make it non-dismissible to ensure user sees it
+        useRootNavigator: true,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            icon: const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            title: Text(l10n.accountDeleted),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.accountDeletedMessage,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.email_outlined, size: 16, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.supportEmail,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  _isAccountDisabledDialogShowing = false;
+                  
+                  // After user acknowledges, invalidate session on backend, then show session expired and logout
+                  AppLogger.log('🗑️ User acknowledged account deleted dialog, invalidating session and logging out');
+                  
+                  // Invalidate session on backend first
+                  try {
+                    final authNotifier = ref.read(authNotifierProvider.notifier);
+                    await authNotifier.invalidateSession();
+                    AppLogger.log('🗑️ Session invalidated on backend');
+                  } catch (e) {
+                    AppLogger.log('⚠️ Error invalidating session: $e');
+                    // Continue with logout even if invalidation fails
+                  }
+                  
+                  // Show session expired dialog
+                  if (context.mounted) {
+                    final l10n = AppLocalizations.of(context);
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      useRootNavigator: true,
+                      builder: (BuildContext sessionDialogContext) {
+                        return AlertDialog(
+                          title: Text(l10n.sessionExpired),
+                          content: Text(l10n.sessionExpiredMessage),
+                          actions: [
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.of(sessionDialogContext).pop();
+                                // Force logout
+                                await ref.read(authNotifierProvider.notifier).logout(ref);
+                                if (context.mounted) {
+                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                    '/login',
+                                    (route) => false,
+                                  );
+                                }
+                              },
+                              child: Text(l10n.login),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                child: Text(l10n.ok),
+              ),
+            ],
+          );
+        },
+      ).then((_) {
+        AppLogger.log('🗑️ Account deleted dialog closed');
+      }).catchError((error) {
+        AppLogger.log('❌ Error showing account deleted dialog: $error');
+        _isAccountDisabledDialogShowing = false;
+      });
+    } catch (e) {
+      AppLogger.log('❌ Exception showing account deleted dialog: $e');
+      _isAccountDisabledDialogShowing = false;
+      rethrow;
+    }
+  }
+
+  void _showAccountDisabledDialog(BuildContext context, WidgetRef ref) {
+    // Prevent showing multiple dialogs
+    if (_isAccountDisabledDialogShowing) {
+      AppLogger.log('🔒 Account disabled dialog already showing, skipping');
+      return;
+    }
+    
+    // Double-check context is still valid
+    if (!context.mounted) {
+      AppLogger.log('⚠️ Context is not mounted, cannot show dialog');
+      return;
+    }
+    
+    _isAccountDisabledDialogShowing = true;
+    AppLogger.log('🔒 Showing account disabled dialog...');
+    
+    try {
+      final l10n = AppLocalizations.of(context);
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Make it non-dismissible to ensure user sees it
+        useRootNavigator: true,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+          icon: const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          title: Text(l10n.accountDisabled),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.accountDisabledMessage,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.email_outlined, size: 16, color: Colors.red),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.supportEmail,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                _isAccountDisabledDialogShowing = false;
+                
+                // After user acknowledges, invalidate session on backend, then show session expired and logout
+                AppLogger.log('🔒 User acknowledged account disabled dialog, invalidating session and logging out');
+                
+                // Invalidate session on backend first
+                try {
+                  final authNotifier = ref.read(authNotifierProvider.notifier);
+                  await authNotifier.invalidateSession();
+                  AppLogger.log('🔒 Session invalidated on backend');
+                } catch (e) {
+                  AppLogger.log('⚠️ Error invalidating session: $e');
+                  // Continue with logout even if invalidation fails
+                }
+                
+                // Show session expired dialog
+                if (context.mounted) {
+                  final l10n = AppLocalizations.of(context);
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    useRootNavigator: true,
+                    builder: (BuildContext sessionDialogContext) {
+                      return AlertDialog(
+                        title: Text(l10n.sessionExpired),
+                        content: Text(l10n.sessionExpiredMessage),
+                        actions: [
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.of(sessionDialogContext).pop();
+                              // Force logout
+                              await ref.read(authNotifierProvider.notifier).logout(ref);
+                              if (context.mounted) {
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/login',
+                                  (route) => false,
+                                );
+                              }
+                            },
+                            child: Text(l10n.login),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                }
+              },
+              child: Text(l10n.ok),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      AppLogger.log('🔒 Account disabled dialog closed');
+    }).catchError((error) {
+      AppLogger.log('❌ Error showing account disabled dialog: $error');
+      _isAccountDisabledDialogShowing = false;
+    });
+    } catch (e) {
+      AppLogger.log('❌ Exception showing account disabled dialog: $e');
+      _isAccountDisabledDialogShowing = false;
+      rethrow;
+    }
+  }
 
   void _showForceLogoutDialog(BuildContext context, String reason) {
     if (MyApp.navigatorKey.currentContext != null) {
@@ -265,15 +705,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         barrierDismissible: false,
         useRootNavigator: true,
         builder: (BuildContext dialogContext) {
+          final l10n = AppLocalizations.of(context);
           return AlertDialog(
             icon: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 48),
-            title: const Text('Account Deleted'),
+            title: Text(l10n.accountDeleted),
             content: Text(
-              'Your account has been deleted by an administrator.\n\nReason: $reason\n\n'
-              'If you believe this is a mistake, please contact our support team:\n\n'
-              '📧 Email: support@bottleji.com\n'
-              '📱 Support Hours: 9 AM - 6 PM (GMT+1)\n\n'
-              'You will be redirected to the login screen.',
+              '${l10n.accountDeletedMessage}\n\n${l10n.reason}: $reason\n\n${l10n.youWillBeRedirectedToLoginScreen}',
             ),
             actions: [
               TextButton(
@@ -287,7 +724,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                     (route) => false,
                   );
                 },
-                child: const Text('OK'),
+                child: Text(l10n.ok),
               ),
               FilledButton(
                 onPressed: () {
@@ -296,9 +733,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                   final authNotifier = container.read(authNotifierProvider.notifier);
                   authNotifier.executeForceLogout();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please email support@bottleji.com for assistance'),
-                      duration: Duration(seconds: 5),
+                    SnackBar(
+                      content: Text(l10n.pleaseEmailSupport),
+                      duration: const Duration(seconds: 5),
                     ),
                   );
                   Navigator.of(context).pushNamedAndRemoveUntil(
@@ -306,7 +743,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                     (route) => false,
                   );
                 },
-                child: const Text('Contact Support'),
+                child: Text(l10n.contactSupport),
               ),
             ],
           );
@@ -383,7 +820,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/images/logo.png',
+                'assets/images/logo_v2.png',
                 height: 120,
               ),
               const SizedBox(height: 32),
@@ -408,7 +845,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
     return authState.when(
       data: (user) {
         if (user == null) {
-          return const LoginScreen();
+          return LoginScreen(key: UniqueKey()); // Use UniqueKey to ensure fresh instance
         }
 
         if (!user.isProfileComplete) {
@@ -469,7 +906,7 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/logo_v2.png',
                   height: 120,
                 ),
                 const SizedBox(height: 32),

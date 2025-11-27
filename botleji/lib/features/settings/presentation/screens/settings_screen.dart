@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/core/localization/localization_controller.dart';
 import 'theme_screen.dart';
 import 'location_settings_screen.dart';
 import 'notification_settings_screen.dart';
+import 'language_selection_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -11,11 +14,14 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final currentLocale = ref.watch(localizationControllerProvider);
+    final currentLanguageName = LocalizationController.getLocaleDisplayName(currentLocale, context);
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l10n.settings),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -28,8 +34,8 @@ class SettingsScreen extends ConsumerWidget {
             context: context,
             isDarkMode: isDarkMode,
             icon: Icons.location_on_rounded,
-            title: 'Location',
-            subtitle: 'Manage location preferences',
+            title: l10n.location,
+            subtitle: l10n.manageLocationPreferences,
             onTap: () {
               Navigator.push(
                 context,
@@ -44,8 +50,8 @@ class SettingsScreen extends ConsumerWidget {
             context: context,
             isDarkMode: isDarkMode,
             icon: Icons.notifications_rounded,
-            title: 'Notifications',
-            subtitle: 'Manage notification preferences',
+            title: l10n.notifications,
+            subtitle: l10n.manageNotificationPreferences,
             onTap: () {
               Navigator.push(
                 context,
@@ -60,8 +66,8 @@ class SettingsScreen extends ConsumerWidget {
             context: context,
             isDarkMode: isDarkMode,
             icon: Icons.palette_rounded,
-            title: 'Display Theme',
-            subtitle: 'Change app appearance',
+            title: l10n.displayTheme,
+            subtitle: l10n.changeAppAppearance,
             onTap: () {
               Navigator.push(
                 context,
@@ -76,26 +82,29 @@ class SettingsScreen extends ConsumerWidget {
             context: context,
             isDarkMode: isDarkMode,
             icon: Icons.language_rounded,
-            title: 'Language',
-            subtitle: 'Change app language',
+            title: l10n.language,
+            subtitle: l10n.changeLanguage,
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: const Color(0xFF00695C).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF00695C).withOpacity(0.3)),
               ),
-              child: const Text(
-                'Coming Soon',
-                style: TextStyle(
-                  color: Colors.orange,
+              child: Text(
+                currentLanguageName,
+                style: const TextStyle(
+                  color: Color(0xFF00695C),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             onTap: () {
-              _showComingSoonDialog(context, 'Language Settings');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
+              );
             },
           ),
         ],
@@ -164,39 +173,5 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showComingSoonDialog(BuildContext context, String feature) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              color: Colors.orange,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            const Text('Coming Soon'),
-          ],
-        ),
-        content: Text(
-          '$feature will be available in a future update. Stay tuned!',
-          style: const TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                color: Color(0xFF00695C),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 

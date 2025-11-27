@@ -5,6 +5,7 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'dart:ui'; // For ImageFilter.blur
 import 'package:intl/intl.dart';
 import 'report_drop_dialog.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class DropCard extends StatelessWidget {
   final Drop drop;
@@ -30,18 +31,25 @@ class DropCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if this is an accepted drop (in active collection)
+    final isAcceptedDrop = drop.status == DropStatus.accepted;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: isAcceptedDrop 
+                ? const Color(0xFF00695C).withOpacity(0.15)
+                : Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: isAcceptedDrop
+                ? const Color(0xFF00695C).withOpacity(0.1)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -52,8 +60,10 @@ class DropCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: Colors.grey.withOpacity(0.1),
-            width: 1,
+            color: isAcceptedDrop
+                ? const Color(0xFF00695C).withOpacity(0.3)
+                : Colors.grey.withOpacity(0.1),
+            width: isAcceptedDrop ? 2 : 1,
           ),
         ),
         child: ClipRRect(
@@ -63,10 +73,15 @@ class DropCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
+                colors: drop.status == DropStatus.accepted
+                    ? [
+                        Colors.white,
+                        const Color(0xFF00695C).withOpacity(0.03),
+                      ]
+                    : [
+                        Colors.white,
+                        Colors.grey.shade50,
+                      ],
               ),
             ),
             child: Padding(
@@ -74,6 +89,47 @@ class DropCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+            // Accepted drop badge (in active collection)
+            if (drop.status == DropStatus.accepted && isHousehold) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  border: Border.all(color: const Color(0xFF00695C).withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00695C),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.directions_walk,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context).inActiveCollection,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF00695C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (drop.isCensored) ...[
               Container(
                 width: double.infinity,
@@ -288,7 +344,7 @@ class DropCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      _formatDistance(drop.location),
+                                      _formatDistance(drop.location, context),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
@@ -441,7 +497,7 @@ class DropCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Outside',
+                                AppLocalizations.of(context).outside,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF00695C),
@@ -472,7 +528,7 @@ class DropCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _getStatusDisplayText(drop),
+                                _getStatusDisplayText(context, drop),
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: _getStatusColor(drop),
@@ -522,7 +578,7 @@ class DropCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Note',
+                            AppLocalizations.of(context).note,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF00695C),
                               fontWeight: FontWeight.w600,
@@ -546,9 +602,14 @@ class DropCard extends StatelessWidget {
             ],
             
             // Timeline section for drop progression (household only)
-            if (isHousehold && (drop.status == DropStatus.pending || drop.status == DropStatus.accepted)) ...[
+            // Only show timeline for active drops (pending or accepted) that are not censored, flagged, or stale
+            if (isHousehold && 
+                (drop.status == DropStatus.pending || drop.status == DropStatus.accepted) &&
+                !drop.isCensored &&
+                !drop.isSuspicious &&
+                drop.status != DropStatus.stale) ...[
               const SizedBox(height: 16),
-              _buildTimelineSection(),
+              _buildTimelineSection(context),
             ],
             
             // Collection issues alert for drops with issues (household only)
@@ -584,7 +645,7 @@ class DropCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Collection issues',
+                            AppLocalizations.of(context).collectionIssues,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.red[700],
@@ -593,7 +654,7 @@ class DropCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Cancelled ${drop.cancellationCount} times',
+                            AppLocalizations.of(context).cancelledTimes(drop.cancellationCount),
                             style: TextStyle(
                               color: Colors.red[600],
                               fontSize: 12,
@@ -629,7 +690,7 @@ class DropCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(drop.createdAt),
+                          _formatDate(drop.createdAt, context),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -663,8 +724,8 @@ class DropCard extends StatelessWidget {
                       ),
                       label: Text(
                         hasActiveCollection
-                            ? 'Complete Current Drop First'
-                            : 'Accept Drop',
+                            ? AppLocalizations.of(context).completeCurrentDropFirst
+                            : AppLocalizations.of(context).acceptDrop,
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: hasActiveCollection
@@ -745,7 +806,7 @@ class DropCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Drop accepted by collector',
+                      AppLocalizations.of(context).dropAcceptedByCollector,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.green,
@@ -777,7 +838,7 @@ class DropCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Drop cancelled',
+                      AppLocalizations.of(context).dropCancelled,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.red,
@@ -837,12 +898,12 @@ class DropCard extends StatelessWidget {
     );
   }
 
-  String _getStatusDisplayText(Drop drop) {
+  String _getStatusDisplayText(BuildContext context, Drop drop) {
     // If drop is suspicious (flagged), show "FLAGGED" regardless of actual status
     if (drop.isSuspicious) {
-      return 'FLAGGED';
+      return AppLocalizations.of(context).flagged;
     }
-    return drop.status.name.toUpperCase();
+    return drop.status.localizedDisplayName(context);
   }
 
   Color _getStatusColor(Drop drop) {
@@ -889,8 +950,9 @@ class DropCard extends StatelessWidget {
     }
   }
 
-  String _formatDistance(LatLng dropLocation) {
-    if (currentLocation == null) return 'Distance unavailable';
+  String _formatDistance(LatLng dropLocation, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (currentLocation == null) return l10n.distanceUnavailable;
     
     final distance = Geolocator.distanceBetween(
       currentLocation!.latitude,
@@ -900,13 +962,14 @@ class DropCard extends StatelessWidget {
     );
     
     if (distance < 1000) {
-      return '${distance.round()}m away';
+      return '${distance.round()}${l10n.meters} ${l10n.away}';
     } else {
-      return '${(distance / 1000).toStringAsFixed(1)}km away';
+      return '${(distance / 1000).toStringAsFixed(1)}${l10n.kilometers} ${l10n.away}';
     }
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime date, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -917,13 +980,13 @@ class DropCard extends StatelessWidget {
     final timeStr = DateFormat('h:mm a').format(date);
     
     if (dateOnly == today) {
-      return 'Today at $timeStr';
+      return l10n.todayAt(timeStr);
     } else if (dateOnly == yesterday) {
-      return 'Yesterday at $timeStr';
+      return l10n.yesterdayAt(timeStr);
     } else if (dateOnly == twoDaysAgo) {
-      return '2 days ago';
+      return l10n.daysAgo(2);
     } else if (dateOnly == threeDaysAgo) {
-      return '3 days ago';
+      return l10n.daysAgo(3);
     } else {
       // More than 3 days ago - show exact date
       return DateFormat('MMM dd, yyyy').format(date);
@@ -983,7 +1046,7 @@ class DropCard extends StatelessWidget {
     }
   }
 
-  Widget _buildTimelineSection() {
+  Widget _buildTimelineSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1013,7 +1076,7 @@ class DropCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Drop Progress',
+                AppLocalizations.of(context).dropProgress,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF00695C),
@@ -1029,48 +1092,53 @@ class DropCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Timeline steps - compact horizontal layout
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Created step
-              _buildTimelineStep(
-                icon: Icons.add_circle,
-                iconColor: const Color(0xFF00695C),
-                title: 'Created',
-                subtitle: _formatDate(drop.createdAt),
-                isCompleted: true,
-              ),
-              // Arrow
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.grey[400],
-                size: 12,
-              ),
-              // Accepted step (shows as "On the way" for household)
-              _buildTimelineStep(
-                icon: drop.status == DropStatus.accepted ? Icons.directions_walk : Icons.assignment_turned_in,
-                iconColor: drop.status == DropStatus.accepted ? const Color(0xFF00695C) : Colors.grey,
-                title: drop.status == DropStatus.accepted ? 'On the way' : 'Accepted',
-                subtitle: drop.status == DropStatus.accepted 
-                    ? 'Collector on his way to pick up your drop'
-                    : 'Waiting...',
-                isCompleted: drop.status == DropStatus.accepted,
-              ),
-              // Arrow
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.grey[400],
-                size: 12,
-              ),
-              // Collected step
-              _buildTimelineStep(
-                icon: Icons.recycling,
-                iconColor: Colors.grey,
-                title: 'Collected',
-                subtitle: 'Not yet collected',
-                isCompleted: false,
-              ),
-            ],
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Created step
+                  _buildTimelineStep(
+                    icon: Icons.add_circle,
+                    iconColor: const Color(0xFF00695C),
+                    title: l10n.created,
+                    subtitle: _formatDate(drop.createdAt, context),
+                    isCompleted: true,
+                  ),
+                  // Arrow
+                  Icon(
+                    Icons.arrow_forward,
+                    color: Colors.grey[400],
+                    size: 12,
+                  ),
+                  // Accepted step (shows as "On the way" for household)
+                  _buildTimelineStep(
+                    icon: drop.status == DropStatus.accepted ? Icons.directions_walk : Icons.assignment_turned_in,
+                    iconColor: drop.status == DropStatus.accepted ? const Color(0xFF00695C) : Colors.grey,
+                    title: drop.status == DropStatus.accepted ? l10n.onTheWay : l10n.acceptedStatus,
+                    subtitle: drop.status == DropStatus.accepted 
+                        ? l10n.collectorOnHisWay
+                        : l10n.waiting,
+                    isCompleted: drop.status == DropStatus.accepted,
+                  ),
+                  // Arrow
+                  Icon(
+                    Icons.arrow_forward,
+                    color: Colors.grey[400],
+                    size: 12,
+                  ),
+                  // Collected step
+                  _buildTimelineStep(
+                    icon: Icons.recycling,
+                    iconColor: Colors.grey,
+                    title: l10n.collectedStatus,
+                    subtitle: l10n.notYetCollected,
+                    isCompleted: false,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

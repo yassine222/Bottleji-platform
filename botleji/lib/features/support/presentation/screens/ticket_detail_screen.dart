@@ -9,6 +9,7 @@ import 'dart:async';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../../../../core/api/api_client.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class TicketDetailScreen extends ConsumerStatefulWidget {
   final SupportTicket ticket;
@@ -30,6 +31,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final Set<String> _seenMessageKeys = <String>{};
   bool _showHeader = true;
+  BitmapDescriptor? _customDropMarker;
 
   // Auto-scroll to bottom function
   void _scrollToBottom() {
@@ -43,9 +45,11 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   }
 
   String _messageKey(String message, String senderType, DateTime sentAt) {
-    // Use second precision to avoid millisecond jitter dupes
-    final ts = sentAt.toIso8601String().split('.').first;
-    return '$senderType|$ts|$message';
+    // Use millisecond precision with message hash to ensure uniqueness
+    // This prevents collisions when multiple messages are sent in the same second
+    final ts = sentAt.millisecondsSinceEpoch;
+    final messageHash = message.hashCode;
+    return '$senderType|$ts|$messageHash|${message.substring(0, message.length > 50 ? 50 : message.length)}';
   }
 
   Widget _buildCompactHeader() {
@@ -111,8 +115,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   children: [
                     _miniInfoChipWithAsset('assets/icons/water-bottle.png', '${snapshot.data!['numberOfBottles'] ?? 0} bottles'),
                     _miniInfoChipWithAsset('assets/icons/can.png', '${snapshot.data!['numberOfCans'] ?? 0} cans'),
-                    if (snapshot.data!['bottleType'] != null)
-                      _miniInfoChip(Icons.category, snapshot.data!['bottleType'].toString()),
                     if (snapshot.data!['leaveOutside'] == true)
                       _miniInfoChip(Icons.door_front_door, 'Leave outside'),
                   ],
@@ -148,8 +150,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     return Row(
       children: [
         _buildStatusChip(_currentTicket.status),
-        const SizedBox(width: 8),
-        _buildPriorityChip(_currentTicket.priority),
       ],
     );
   }
@@ -194,64 +194,123 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     );
   }
 
-  // Compact static map with pin using Google Static Maps
+  // Load custom marker icon from assets
+  Future<void> _loadCustomMarker() async {
+    if (!mounted) return;
+    
+    try {
+      final BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration.empty,
+        'assets/icons/drop-pin.png',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _customDropMarker = customIcon;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading custom marker: $e');
+      if (mounted) {
+        setState(() {
+          _customDropMarker = BitmapDescriptor.defaultMarker;
+        });
+      }
+    }
+  }
+
+  // Compact map preview with custom green and white pin
   // Expects location as { lat: number, lng: number }
   // If unavailable, renders a placeholder
-  // Note: this is a small preview, not interactive
   Widget _buildCompactMapPreview(Map<String, dynamic>? location) {
-    String _staticMapUrl(double lat, double lng) {
-      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
-      final baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
-      final params = {
-        'center': '$lat,$lng',
-        'zoom': '16',
-        'size': '300x200',
-        'maptype': 'roadmap',
-        'markers': 'color:0x00695C|size:mid|$lat,$lng',
-        'key': apiKey,
-      };
-      return Uri.parse(baseUrl).replace(queryParameters: params).toString();
-    }
-
     if (location == null || location['lat'] == null || location['lng'] == null) {
-      print('🚫 No location data available for map');
       return Container(
         height: 120,
-        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: const Icon(Icons.map, color: Colors.grey, size: 40),
       );
     }
 
     final lat = (location['lat'] as num).toDouble();
     final lng = (location['lng'] as num).toDouble();
-    print('📍 Map location: lat=$lat, lng=$lng');
+    final position = LatLng(lat, lng);
+
+    // Show loading state if marker hasn't loaded yet
+    if (_customDropMarker == null) {
+      return Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(_staticMapUrl(lat, lng), height: 120, fit: BoxFit.cover),
+      child: SizedBox(
+        height: 120,
+        child: GoogleMap(
+          key: ValueKey(_customDropMarker?.hashCode), // Force rebuild when marker changes
+          initialCameraPosition: CameraPosition(
+            target: position,
+            zoom: 16,
+          ),
+          markers: {
+            Marker(
+              markerId: const MarkerId('drop_location'),
+              position: position,
+              icon: _customDropMarker!,
+            ),
+          },
+          zoomControlsEnabled: false,
+          zoomGesturesEnabled: false,
+          scrollGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
+          mapToolbarEnabled: false,
+          myLocationButtonEnabled: false,
+          myLocationEnabled: false,
+        ),
+      ),
     );
   }
   @override
   void initState() {
     super.initState();
     _currentTicket = widget.ticket;
+    _loadCustomMarker();
     // Seed seen set from initial messages
     for (final msg in _currentTicket.messages) {
       _seenMessageKeys.add(_messageKey(msg.message, msg.senderType, msg.sentAt));
     }
-    _refreshTicket();
-    _setupRealtimeMessaging();
-    // Ensure connection happens immediately when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _ensureChatConnectedAndJoin();
-      // Add listener to ChatService to update UI when connection status changes
-      final chatService = ref.read(chatServiceProvider);
-      chatService.addListener(_onChatServiceChanged);
+    
+    // First refresh ticket to get latest messages, THEN setup WebSocket
+    _refreshTicket().then((_) {
+      // After ticket is refreshed, setup real-time messaging and connect
+      _setupRealtimeMessaging();
+      // Ensure connection happens immediately when screen opens
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _ensureChatConnectedAndJoin();
+        // Add listener to ChatService to update UI when connection status changes
+        final chatService = ref.read(chatServiceProvider);
+        chatService.addListener(_onChatServiceChanged);
+      });
     });
+    
     // Removed scroll listener - header visibility now only controlled by typing
     
-    // Auto-scroll to bottom on load
+    // Auto-scroll to bottom on load (after refresh completes)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _scrollToBottom();
+      });
     });
   }
 
@@ -536,6 +595,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             message: messageText,
           );
 
+      // Refresh ticket to get the actual message from backend (with correct ID and timestamp)
+      await _refreshTicket();
+
       // Stop typing indicator
       _isTyping = false;
       _typingTimer?.cancel();
@@ -619,7 +681,18 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           .getTicketById(widget.ticket.id);
       if (mounted) {
         setState(() {
+          // Update seen message keys with new messages from refreshed ticket
+          for (final msg in ticket.messages) {
+            final key = _messageKey(msg.message, msg.senderType, msg.sentAt);
+            if (!_seenMessageKeys.contains(key)) {
+              _seenMessageKeys.add(key);
+            }
+          }
           _currentTicket = ticket;
+        });
+        // Auto-scroll to bottom after refresh
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
         });
       }
     } catch (e) {
@@ -976,46 +1049,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     );
   }
 
-  Widget _buildPriorityChip(TicketPriority priority) {
-    Color color;
-    String text;
-
-    switch (priority) {
-      case TicketPriority.low:
-        color = Colors.green;
-        text = 'Low';
-        break;
-      case TicketPriority.medium:
-        color = Colors.orange;
-        text = 'Medium';
-        break;
-      case TicketPriority.high:
-        color = Colors.red;
-        text = 'High';
-        break;
-      case TicketPriority.urgent:
-        color = Colors.purple;
-        text = 'Urgent';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
 
   Widget _buildRelatedDropCard(String dropId) {
     return FutureBuilder<Map<String, dynamic>>(

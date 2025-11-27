@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/support/presentation/screens/support_categories_screen.dart';
 import 'package:botleji/features/support/presentation/screens/my_tickets_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -18,9 +19,9 @@ class SupportScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Support & Help',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context).supportAndHelp,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
@@ -30,7 +31,7 @@ class SupportScreen extends ConsumerWidget {
       body: userAsync.when(
         data: (user) {
           if (user == null) {
-            return const Center(child: Text('User not found'));
+            return Center(child: Text(AppLocalizations.of(context).userNotFound));
           }
 
           return SingleChildScrollView(
@@ -76,9 +77,9 @@ class SupportScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'How can we help you?',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context).howCanWeHelpYou,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: appGreenColor,
@@ -86,7 +87,7 @@ class SupportScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Select a category to get started',
+                              AppLocalizations.of(context).selectCategoryToGetStarted,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -102,7 +103,7 @@ class SupportScreen extends ConsumerWidget {
 
                 // Quick Actions
                 Text(
-                  'Quick Actions',
+                  AppLocalizations.of(context).quickActions,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -115,9 +116,9 @@ class SupportScreen extends ConsumerWidget {
                 _buildActionCard(
                   context: context,
                   icon: Icons.help_outline,
-                  title: 'Get Help',
+                  title: AppLocalizations.of(context).getHelp,
                   description:
-                      'Select a category and get support for your issue',
+                      AppLocalizations.of(context).selectCategoryAndGetSupport,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -134,9 +135,9 @@ class SupportScreen extends ConsumerWidget {
                 _buildActionCard(
                   context: context,
                   icon: Icons.assignment,
-                  title: 'My Support Tickets',
+                  title: AppLocalizations.of(context).mySupportTickets,
                   description:
-                      'View and manage your existing support tickets',
+                      AppLocalizations.of(context).viewAndManageTickets,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -150,7 +151,7 @@ class SupportScreen extends ConsumerWidget {
 
                 // Contact Information
                 Text(
-                  'Contact Information',
+                  AppLocalizations.of(context).contactInformation,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -163,7 +164,7 @@ class SupportScreen extends ConsumerWidget {
                 _buildContactCard(
                   context: context,
                   icon: Icons.email,
-                  title: 'Email Support',
+                  title: AppLocalizations.of(context).emailSupport,
                   subtitle: 'support@botleji.com',
                   onTap: () => _launchEmail('support@botleji.com'),
                 ),
@@ -173,7 +174,7 @@ class SupportScreen extends ConsumerWidget {
                 _buildContactCard(
                   context: context,
                   icon: Icons.phone,
-                  title: 'Phone Support',
+                  title: AppLocalizations.of(context).phoneSupport,
                   subtitle: '+1 (555) 123-4567',
                   onTap: () => _launchPhone('+15551234567'),
                 ),
@@ -183,8 +184,8 @@ class SupportScreen extends ConsumerWidget {
                 _buildContactCard(
                   context: context,
                   icon: Icons.quiz,
-                  title: 'Frequently Asked Questions',
-                  subtitle: 'Find answers to common questions',
+                  title: AppLocalizations.of(context).frequentlyAskedQuestions,
+                  subtitle: AppLocalizations.of(context).findAnswersToCommonQuestions,
                   onTap: () => _launchFAQ(),
                 ),
                 const SizedBox(height: 24),
@@ -205,16 +206,16 @@ class SupportScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.info_outline,
                             color: Colors.blue,
                             size: 20,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'Need More Help?',
-                            style: TextStyle(
+                            AppLocalizations.of(context).needMoreHelp,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue,
                             ),
@@ -223,7 +224,7 @@ class SupportScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'If you can\'t find what you\'re looking for, our support team is here to help 24/7.',
+                        AppLocalizations.of(context).supportTeamAvailable247,
                         style: TextStyle(
                           color: Colors.grey[700],
                           fontSize: 14,
@@ -239,7 +240,7 @@ class SupportScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error: $error'),
+          child: Text('${AppLocalizations.of(context).errorColon(error.toString())}'),
         ),
       ),
     );

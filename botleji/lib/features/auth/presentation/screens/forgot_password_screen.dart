@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import 'reset_password_otp_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -44,7 +45,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
           );
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message ?? 'Reset code sent to your email')),
+            SnackBar(content: Text(message ?? AppLocalizations.of(context).resetCodeSentToEmail)),
           );
         },
         error: (message, _) {
@@ -71,52 +72,53 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: const Color(0xFF00695C),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Back button
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                  onPressed: () => Navigator.pop(context),
+          child: Column(
+            children: [
+              // Back button
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: appGreenColor, size: 28),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
-            ),
-            // Main content
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Icon(
-                          Icons.lock_reset,
-                          size: 100,
-                          color: Colors.white,
+              // Main content
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                        // Logo
+                        Image.asset(
+                          'assets/images/logo_v2.png',
+                          height:200,
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          'Reset Password',
+                          AppLocalizations.of(context).resetPassword,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: appGreenColor,
                               ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Enter your email to receive a reset code',
+                          AppLocalizations.of(context).enterEmailToReceiveResetCode,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.white70,
+                                color: appGreenColor.withOpacity(0.7),
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -124,34 +126,35 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black87),
                           decoration: InputDecoration(
-                            labelText: 'Email',
-                            labelStyle: const TextStyle(color: Colors.white70),
-                            hintText: 'Enter your email',
-                            hintStyle: const TextStyle(color: Colors.white54),
-                            prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
+                            labelText: AppLocalizations.of(context).email,
+                            labelStyle: const TextStyle(color: appGreenColor),
+                            hintText: AppLocalizations.of(context).enterYourEmail,
+                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: const Icon(Icons.email_outlined, color: appGreenColor),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: const BorderSide(color: appGreenColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white, width: 2),
+                              borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.1),
+                            fillColor: Colors.grey[50],
                           ),
                           validator: (value) {
+                            final l10n = AppLocalizations.of(context);
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
+                              return l10n.pleaseEnterEmail;
                             }
                             if (!value.contains('@') || !value.contains('.')) {
-                              return 'Please enter a valid email';
+                              return l10n.pleaseEnterValidEmail;
                             }
                             return null;
                           },
@@ -161,11 +164,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           onPressed: _isLoading ? null : _handleRequestReset,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF00695C),
+                            backgroundColor: appGreenColor,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -173,12 +177,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00695C)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Text(
-                                  'Send Reset Code',
-                                  style: TextStyle(
+                              : Text(
+                                  AppLocalizations.of(context).sendResetCode,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),

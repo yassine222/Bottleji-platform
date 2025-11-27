@@ -10,6 +10,9 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math' as math;
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/features/earnings/presentation/providers/earnings_provider.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -23,10 +26,19 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? selectedTimeRange;
   String? selectedItemType;
   String? selectedBottleType;
+  String selectedViewType = 'Collections'; // Default to 'Collections', can be 'Earnings'
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  
+  // Stable params for earnings history provider to prevent recreation
+  static const earningsHistoryParams = {'page': 1, 'limit': 20};
 
   // Filter options
+  final List<String> viewTypeOptions = [
+    'Collections',
+    'Earnings',
+  ];
+
   final List<String> statusOptions = [
     'All',
     'collected',
@@ -58,6 +70,62 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     'aluminum',
     'mixed',
   ];
+
+  String _getLocalizedTimeRangeOption(String option) {
+    final l10n = AppLocalizations.of(context);
+    switch (option) {
+      case 'All Time':
+        return l10n.allTime;
+      case 'Today':
+        return l10n.today;
+      case 'Last 7 Days':
+        return l10n.last7Days;
+      case 'Last 30 Days':
+        return l10n.last30Days;
+      case 'Last 3 Months':
+        return l10n.last3Months;
+      case 'Last 6 Months':
+        return l10n.last6Months;
+      case 'This Year':
+        return l10n.thisYear;
+      default:
+        return option;
+    }
+  }
+
+  String _getLocalizedItemTypeOption(String option) {
+    final l10n = AppLocalizations.of(context);
+    switch (option) {
+      case 'All Items':
+        return l10n.allItems;
+      case 'Bottles Only':
+        return l10n.bottlesOnly;
+      case 'Cans Only':
+        return l10n.cansOnly;
+      case 'Mixed':
+        return l10n.mixed;
+      default:
+        return option;
+    }
+  }
+
+  String _getLocalizedBottleTypeOption(String option) {
+    final l10n = AppLocalizations.of(context);
+    switch (option) {
+      case 'All Types':
+        return l10n.allTypes;
+      case 'plastic':
+        return l10n.plastic;
+      case 'glass':
+        return l10n.glass;
+      case 'aluminum':
+        return l10n.aluminum;
+      case 'mixed':
+        return l10n.mixed;
+      default:
+        return option;
+    }
+  }
 
   @override
   void initState() {
@@ -155,8 +223,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 backgroundColor: const Color(0xFF00695C),
                 foregroundColor: Colors.white,
               ),
-              body: const Center(
-                child: Text('Please login to view your drops'),
+              body: Center(
+                child: Text(AppLocalizations.of(context).pleaseLoginToViewYourDrops),
               ),
             );
           }
@@ -214,7 +282,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (error, stack) => Scaffold(
-          body: Center(child: Text('Error loading user data: $error')),
+          body: Center(child: Text(AppLocalizations.of(context).errorLoadingUserData(error.toString()))),
         ),
       );
     },
@@ -287,7 +355,7 @@ Widget _buildCollectorHistory(BuildContext context) {
     },
     child: Scaffold(
       appBar: AppBar(
-        title: const Text('Collection History'),
+        title: Text(AppLocalizations.of(context).history),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
         leading: IconButton(
@@ -297,51 +365,37 @@ Widget _buildCollectorHistory(BuildContext context) {
             Navigator.of(context).pop();
           },
         ),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showFilterDialog,
-              ),
-              if (_hasActiveFilters())
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _showSearchDialog,
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          final controller = ref.read(historyControllerProvider.notifier);
-          await controller.refresh();
+          if (selectedViewType == 'Earnings') {
+            // Refresh earnings - use stable params
+            ref.invalidate(earningsHistoryProvider(earningsHistoryParams));
+          } else {
+            final controller = ref.read(historyControllerProvider.notifier);
+            await controller.refresh();
+          }
         },
-        child: historyAsync.when(
-          data: (history) {
-            if (history.interactions.isEmpty) {
-              return _buildEmptyState();
-            }
+        child: Column(
+          children: [
+            // Filter chips and action buttons
+            _buildFilterChipsAndActions(),
+            // Content
+            Expanded(
+              child: selectedViewType == 'Earnings'
+                  ? _buildEarningsView()
+                  : historyAsync.when(
+                data: (history) {
+                  if (history.interactions.isEmpty) {
+                    return _buildEmptyState();
+                  }
 
-            // Apply filters
-            final filteredInteractions = _applyFilters(history.interactions);
+                  // Apply filters
+                  final filteredInteractions = _applyFilters(history.interactions);
 
-            if (filteredInteractions.isEmpty) {
-              return _buildNoResultsState();
-            }
+                  if (filteredInteractions.isEmpty) {
+                    return _buildNoResultsState();
+                  }
 
             return ListView.builder(
               controller: _scrollController,
@@ -385,6 +439,370 @@ Widget _buildCollectorHistory(BuildContext context) {
               const Center(child: CircularProgressIndicator()),
           error: (error, stack) => _buildErrorState(error),
         ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildFilterChipsAndActions() {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        // View type filter chips
+        Row(
+          children: [
+            Expanded(
+              child: _buildViewTypeChip('Collections', Icons.inventory_2, AppLocalizations.of(context).collections),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildViewTypeChip('Earnings', Icons.account_balance_wallet, AppLocalizations.of(context).earnings),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Filter and search buttons
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _showFilterDialog,
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.filter_list, size: 20),
+                    if (_hasActiveFilters())
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                label: Text(AppLocalizations.of(context).filter),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00695C),
+                  side: const BorderSide(color: Color(0xFF00695C)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _showSearchDialog,
+                icon: const Icon(Icons.search, size: 20),
+                label: Text(AppLocalizations.of(context).search),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00695C),
+                  side: const BorderSide(color: Color(0xFF00695C)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildViewTypeChip(String label, IconData icon, String displayText) {
+  final isSelected = selectedViewType == label;
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        selectedViewType = label;
+      });
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF00695C)
+            : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFF00695C)
+              : Colors.grey[300]!,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.grey[700],
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            displayText,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildEarningsView() {
+  // Get earnings history from user data (like reward history)
+  final userDataAsync = ref.watch(authNotifierProvider);
+  
+  return userDataAsync.when(
+    data: (userData) {
+      final earningsHistory = userData?.earningsHistory ?? [];
+      print('📊 Earnings history from user data: ${earningsHistory.length} items');
+      print('📊 Earnings history raw data: $earningsHistory');
+      if (earningsHistory.isNotEmpty) {
+        print('📊 First earnings item: ${earningsHistory.first}');
+        print('📊 First earnings item keys: ${earningsHistory.first.keys}');
+        print('📊 First earnings item date: ${earningsHistory.first['date']} (type: ${earningsHistory.first['date'].runtimeType})');
+        print('📊 First earnings item earnings: ${earningsHistory.first['earnings']} (type: ${earningsHistory.first['earnings'].runtimeType})');
+        print('📊 First earnings item collectionCount: ${earningsHistory.first['collectionCount']} (type: ${earningsHistory.first['collectionCount'].runtimeType})');
+      }
+      
+      // Sort by date (newest first)
+      final sortedHistory = List<Map<String, dynamic>>.from(earningsHistory);
+  sortedHistory.sort((a, b) {
+    final dateA = a['date'] != null 
+        ? (a['date'] is String 
+            ? DateTime.parse(a['date']) 
+            : a['date'] is DateTime
+                ? a['date'] as DateTime
+                : DateTime.now())
+        : DateTime(1970);
+    final dateB = b['date'] != null
+        ? (b['date'] is String
+            ? DateTime.parse(b['date'])
+            : b['date'] is DateTime
+                ? b['date'] as DateTime
+                : DateTime.now())
+        : DateTime(1970);
+    return dateB.compareTo(dateA);
+  });
+  
+      if (sortedHistory.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).noEarningsHistoryYet,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppLocalizations.of(context).earningsWillAppearHere,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[500],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+
+      return ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: sortedHistory.length,
+        itemBuilder: (context, index) {
+          if (index >= sortedHistory.length) {
+            return const SizedBox.shrink();
+          }
+
+          final item = sortedHistory[index];
+          return _buildEarningsHistoryItem(context, item);
+        },
+      );
+    },
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (error, stack) {
+      print('❌ Error loading user data for earnings: $error');
+      return Center(
+        child: Text(AppLocalizations.of(context).errorLoadingEarnings(error.toString())),
+      );
+    },
+  );
+}
+
+Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item) {
+  final locale = Localizations.localeOf(context);
+  // Use locale-aware date formatting but force Western numerals
+  final dateFormat = locale.languageCode == 'ar'
+      ? DateFormat('dd MMM yyyy', 'en') // Use 'en' locale to force Western numerals: "22 Nov 2025"
+      : DateFormat('MMM dd, yyyy', locale.toString()); // English format: "Nov 22, 2025"
+  // Use locale-aware time formatting but force Western numerals
+  final timeFormat = locale.languageCode == 'ar'
+      ? DateFormat('HH:mm', 'en') // Use 'en' locale to force Western numerals: 24-hour format
+      : DateFormat('h:mm a', locale.toString()); // English: 12-hour with AM/PM
+  
+  final earnings = (item['earnings'] ?? 0).toDouble();
+  final collectionCount = item['collectionCount'] ?? 0;
+  final date = item['date'] != null
+      ? (item['date'] is String
+          ? DateTime.parse(item['date'])
+          : item['date'] as DateTime)
+      : DateTime.now();
+  final startTime = item['startTime'] != null
+      ? (item['startTime'] is String
+          ? DateTime.parse(item['startTime'])
+          : item['startTime'] as DateTime)
+      : date;
+  final lastCollectionTime = item['lastCollectionTime'] != null
+      ? (item['lastCollectionTime'] is String
+          ? DateTime.parse(item['lastCollectionTime'])
+          : item['lastCollectionTime'] as DateTime)
+      : date;
+  final isActive = item['isActive'] ?? false;
+
+  return Card(
+    margin: const EdgeInsets.only(bottom: 16),
+    elevation: 2,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00695C).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet,
+                      color: Color(0xFF00695C),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateFormat.format(date),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$collectionCount ${collectionCount == 1 ? AppLocalizations.of(context).collection : AppLocalizations.of(context).collections}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  isActive ? AppLocalizations.of(context).active : AppLocalizations.of(context).completed,
+                  style: TextStyle(
+                    color: isActive ? Colors.green : Colors.grey[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).totalEarnings,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DropValueCalculator.formatEstimatedValue(earnings),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: const Color(0xFF00695C),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).sessionTime,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${timeFormat.format(startTime)} - ${timeFormat.format(lastCollectionTime)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     ),
   );
@@ -674,7 +1092,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                                       );
                                     },
                                   ),
-                                  // Custom pin overlay (always visible)
+                                  // Custom pin overlay (always visible) - using same green/white pin as drop cards
                                   Positioned(
                                     left: 0,
                                     top: 0,
@@ -685,7 +1103,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                                         width: 24,
                                         height: 24,
                                         decoration: BoxDecoration(
-                                          color: Colors.red,
+                                          color: const Color(0xFF00695C), // Green color to match drop cards
                                           shape: BoxShape.circle,
                                           border: Border.all(color: Colors.white, width: 2),
                                           boxShadow: [
@@ -760,15 +1178,15 @@ Widget _buildCollectorHistory(BuildContext context) {
                             ),
                           ],
                         ),
-                      // Total amount
+                      // Item count
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Total ${_formatLargeNumber((dropoff?.numberOfBottles ?? 0) + (dropoff?.numberOfCans ?? 0))}',
+                            _formatItemCount(dropoff?.numberOfBottles ?? 0, dropoff?.numberOfCans ?? 0),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.green[600],
+                              color: Color(0xFF00695C),
                             ),
                           ),
                         ],
@@ -852,7 +1270,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                           if (interaction.notes?.isNotEmpty == true) ...[
                             const SizedBox(height: 4),
                             Text(
-                              interaction.notes!,
+                              _translateInteractionNote(interaction.notes!),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontSize: 10,
                                 color: Colors.grey[600],
@@ -996,7 +1414,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                                   );
                                 },
                               ),
-                              // Custom pin overlay (always visible)
+                              // Custom pin overlay (always visible) - using same green/white pin as drop cards
                               Positioned(
                                 left: 0,
                                 top: 0,
@@ -1007,7 +1425,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                                     width: 20,
                                     height: 20,
                                     decoration: BoxDecoration(
-                                      color: Colors.red,
+                                      color: const Color(0xFF00695C), // Green color to match drop cards
                                       shape: BoxShape.circle,
                                       border: Border.all(color: Colors.white, width: 2),
                                       boxShadow: [
@@ -1084,10 +1502,10 @@ Widget _buildCollectorHistory(BuildContext context) {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Total ${_formatLargeNumber(drop.numberOfBottles + drop.numberOfCans)}',
+                        _formatItemCount(drop.numberOfBottles, drop.numberOfCans),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.green[600],
+                              color: Color(0xFF00695C),
                             ),
                       ),
                     ],
@@ -1202,7 +1620,7 @@ Widget _buildCollectorHistory(BuildContext context) {
           Expanded(
             child: _buildLiveTimelineStep(
               icon: Icons.add_location,
-              title: 'Created',
+              title: AppLocalizations.of(context).created,
               subtitle: _formatDate(drop.createdAt),
               isCompleted: true,
               isActive: false,
@@ -1217,10 +1635,10 @@ Widget _buildCollectorHistory(BuildContext context) {
                   ? Icons.handshake
                   : Icons.directions_walk,
               title: drop.status == DropStatus.accepted 
-                  ? 'On the way'
+                  ? AppLocalizations.of(context).onTheWay
                   : drop.status == DropStatus.collected
-                      ? 'Was on the way'
-                      : 'Accepted',
+                      ? AppLocalizations.of(context).wasOnTheWay
+                      : AppLocalizations.of(context).accepted,
               subtitle: _getAcceptedSubtitle(drop),
               isCompleted: drop.status == DropStatus.accepted ||
                   drop.status == DropStatus.collected,
@@ -1233,7 +1651,7 @@ Widget _buildCollectorHistory(BuildContext context) {
           Expanded(
             child: _buildLiveTimelineStep(
               icon: Icons.recycling,
-              title: 'Collected',
+              title: AppLocalizations.of(context).collected,
               subtitle: _getCollectedSubtitle(drop),
               isCompleted: drop.status == DropStatus.collected,
               isActive: false,
@@ -1267,7 +1685,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Collector is on the way',
+                      AppLocalizations.of(context).collectorOnHisWay,
                       style: TextStyle(
                         color: Colors.green[600],
                         fontWeight: FontWeight.w600,
@@ -1275,7 +1693,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                       ),
                     ),
                     Text(
-                      'Estimated arrival: ${_getEstimatedTime()}',
+                      '${AppLocalizations.of(context).estimatedTime}: ${_getEstimatedTime()}',
                       style: TextStyle(
                         color: Colors.green[600],
                         fontSize: 12,
@@ -1463,19 +1881,20 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   String _getLiveStatusText(DropStatus status) {
+    final l10n = AppLocalizations.of(context);
     switch (status) {
       case DropStatus.pending:
-        return 'Waiting for collector';
+        return l10n.waitingForCollector;
       case DropStatus.accepted:
-        return '🟢 Live - Collector on the way';
+        return l10n.liveCollectorOnTheWay;
       case DropStatus.collected:
-        return 'Collected';
+        return l10n.collected;
       case DropStatus.cancelled:
-        return '❌ Cancelled';
+        return '❌ ${l10n.cancelled}';
       case DropStatus.expired:
-        return '⏰ Expired';
+        return '⏰ ${l10n.expired}';
       case DropStatus.stale:
-        return '🟤 Stale';
+        return '🟤 ${l10n.stale}';
     }
   }
 
@@ -1487,35 +1906,38 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   String _getLastUpdateText(Drop drop) {
+    final l10n = AppLocalizations.of(context);
     final now = TimezoneService.now();
     final diff = now.difference(TimezoneService.toGermanTime(drop.modifiedAt));
     
     if (diff.inMinutes < 1) {
-      return 'Just now';
+      return l10n.justNow;
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m ago';
+      return l10n.minutesAgo(diff.inMinutes);
     } else if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
+      return l10n.hoursAgo(diff.inHours);
     } else {
-      return '${diff.inDays}d ago';
+      return l10n.daysAgo(diff.inDays);
     }
   }
 
   String _getAcceptedSubtitle(Drop drop) {
+    final l10n = AppLocalizations.of(context);
     if (drop.status == DropStatus.accepted) {
-      return 'Collector on his way to pick up your drop';
+      return l10n.collectorOnHisWay;
     } else if (drop.status == DropStatus.collected) {
-      return 'Collector was on the way';
+      return l10n.collectorWasOnTheWay;
     } else {
-      return 'Waiting...';
+      return l10n.waiting;
     }
   }
 
   String _getCollectedSubtitle(Drop drop) {
+    final l10n = AppLocalizations.of(context);
     if (drop.status == DropStatus.collected) {
-      return 'Collected';
+      return l10n.collected;
     } else {
-      return 'Not yet collected';
+      return l10n.notYetCollected;
     }
   }
 
@@ -1587,7 +2009,7 @@ Widget _buildCollectorHistory(BuildContext context) {
           children: [
             const Icon(Icons.filter_list),
             const SizedBox(width: 8),
-            const Text('Filter History'),
+            Text(AppLocalizations.of(context).filterHistory),
             if (_hasActiveFilters())
               Container(
                 margin: const EdgeInsets.only(left: 8),
@@ -1596,9 +2018,9 @@ Widget _buildCollectorHistory(BuildContext context) {
                   color: Colors.blue,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'ACTIVE',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).activeFilters,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1611,19 +2033,29 @@ Widget _buildCollectorHistory(BuildContext context) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Status filter
+              // View type filter (Collections vs Earnings)
               _buildFilterDropdown(
-                'Status',
-                selectedStatus ?? 'All',
-                statusOptions,
-                (value) => setState(() => selectedStatus = value == 'All' ? null : value),
-                isActive: selectedStatus != null,
+                AppLocalizations.of(context).viewType,
+                selectedViewType,
+                viewTypeOptions,
+                (value) => setState(() => selectedViewType = value),
+                isActive: selectedViewType != 'Collections',
               ),
               const SizedBox(height: 16),
+              // Status filter (only show for Collections view)
+              if (selectedViewType != 'Earnings')
+                _buildFilterDropdown(
+                  AppLocalizations.of(context).status,
+                  selectedStatus ?? 'All',
+                  statusOptions,
+                  (value) => setState(() => selectedStatus = value == 'All' ? null : value),
+                  isActive: selectedStatus != null,
+                ),
+              if (selectedViewType != 'Earnings') const SizedBox(height: 16),
 
               // Time range filter
               _buildFilterDropdown(
-                'Time Range',
+                AppLocalizations.of(context).timeRange,
                 selectedTimeRange ?? 'All Time',
                 timeRangeOptions,
                 (value) => setState(() => selectedTimeRange = value == 'All Time' ? null : value),
@@ -1631,24 +2063,26 @@ Widget _buildCollectorHistory(BuildContext context) {
               ),
               const SizedBox(height: 16),
 
-              // Item type filter
-              _buildFilterDropdown(
-                'Item Type',
-                selectedItemType ?? 'All Items',
-                itemTypeOptions,
-                (value) => setState(() => selectedItemType = value == 'All Items' ? null : value),
-                isActive: selectedItemType != null,
-              ),
-              const SizedBox(height: 16),
+              // Item type filter (only show for Collections view)
+              if (selectedViewType != 'Earnings')
+                _buildFilterDropdown(
+                  AppLocalizations.of(context).itemType,
+                  selectedItemType ?? 'All Items',
+                  itemTypeOptions,
+                  (value) => setState(() => selectedItemType = value == 'All Items' ? null : value),
+                  isActive: selectedItemType != null,
+                ),
+              if (selectedViewType != 'Earnings') const SizedBox(height: 16),
 
-              // Bottle type filter
-              _buildFilterDropdown(
-                'Bottle Type',
-                selectedBottleType ?? 'All Types',
-                bottleTypeOptions,
-                (value) => setState(() => selectedBottleType = value == 'All Types' ? null : value),
-                isActive: selectedBottleType != null,
-              ),
+              // Bottle type filter (only show for Collections view)
+              if (selectedViewType != 'Earnings')
+                _buildFilterDropdown(
+                  AppLocalizations.of(context).bottleType,
+                  selectedBottleType ?? 'All Types',
+                  bottleTypeOptions,
+                  (value) => setState(() => selectedBottleType = value == 'All Types' ? null : value),
+                  isActive: selectedBottleType != null,
+                ),
             ],
           ),
         ),
@@ -1660,13 +2094,14 @@ Widget _buildCollectorHistory(BuildContext context) {
                 selectedTimeRange = null;
                 selectedItemType = null;
                 selectedBottleType = null;
+                selectedViewType = 'Collections';
                 _searchController.clear();
               });
               // No need to reload data since we're using client-side filtering
             },
-            child: const Text(
-              'Clear All',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context).clearAll,
+              style: const TextStyle(
                 color: Colors.red,
                 fontWeight: FontWeight.w600,
               ),
@@ -1674,14 +2109,14 @@ Widget _buildCollectorHistory(BuildContext context) {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               // No need to reload data since we're using client-side filtering
             },
-            child: const Text('Apply'),
+            child: Text(AppLocalizations.of(context).apply),
           ),
         ],
       ),
@@ -1693,6 +2128,7 @@ Widget _buildCollectorHistory(BuildContext context) {
            selectedTimeRange != null ||
            selectedItemType != null ||
            selectedBottleType != null ||
+           selectedViewType != 'Collections' ||
            _searchController.text.isNotEmpty;
   }
 
@@ -1730,9 +2166,33 @@ Widget _buildCollectorHistory(BuildContext context) {
             suffixIcon: isActive ? const Icon(Icons.check_circle, color: Colors.blue) : null,
           ),
           items: options.map((option) {
+            String displayText = option;
+            if (label == AppLocalizations.of(context).timeRange) {
+              displayText = _getLocalizedTimeRangeOption(option);
+            } else if (label == AppLocalizations.of(context).itemType) {
+              displayText = _getLocalizedItemTypeOption(option);
+            } else if (label == AppLocalizations.of(context).bottleType) {
+              displayText = _getLocalizedBottleTypeOption(option);
+            } else if (label == AppLocalizations.of(context).status) {
+              displayText = option == 'All' 
+                  ? AppLocalizations.of(context).all
+                  : option == 'collected'
+                      ? AppLocalizations.of(context).collected
+                      : option == 'cancelled'
+                          ? AppLocalizations.of(context).cancelled
+                          : option == 'pending'
+                              ? AppLocalizations.of(context).pending
+                              : option;
+            } else if (label == AppLocalizations.of(context).viewType) {
+              displayText = option == 'Collections'
+                  ? AppLocalizations.of(context).collections
+                  : option == 'Earnings'
+                      ? AppLocalizations.of(context).earnings
+                      : option;
+            }
             return DropdownMenuItem(
               value: option,
-              child: Text(option),
+              child: Text(displayText),
             );
           }).toList(),
           onChanged: (value) {
@@ -1749,12 +2209,12 @@ Widget _buildCollectorHistory(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Search History'),
+        title: Text(AppLocalizations.of(context).searchHistory),
         content: TextField(
           controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Search by notes, bottle type, or cancellation reason...',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context).searchByNotesBottleTypeOrCancellationReason,
+            border: const OutlineInputBorder(),
           ),
           onChanged: (value) {
             setState(() {}); // Trigger rebuild to apply search filter
@@ -1767,11 +2227,11 @@ Widget _buildCollectorHistory(BuildContext context) {
               setState(() {});
               Navigator.of(context).pop();
             },
-            child: const Text('Clear'),
+            child: Text(AppLocalizations.of(context).clear),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Search'),
+            child: Text(AppLocalizations.of(context).search),
           ),
         ],
       ),
@@ -1841,9 +2301,9 @@ Widget _buildCollectorHistory(BuildContext context) {
                         _buildDetailRow('Time', _formatDate(interaction.interactionTime)),
                         _buildDetailRow('Type', interaction.interactionType),
                         if (interaction.notes?.isNotEmpty == true)
-                          _buildDetailRow('Notes', interaction.notes!),
+                          _buildDetailRow(AppLocalizations.of(context).notes, _translateInteractionNote(interaction.notes!)),
                         if (interaction.cancellationReason?.isNotEmpty == true)
-                          _buildDetailRow('Cancellation Reason', interaction.cancellationReason!),
+                          _buildDetailRow(AppLocalizations.of(context).cancellationReason, _formatCancellationReason(interaction.cancellationReason!)),
                       ]),
 
                       if (interaction.dropoff != null) ...[
@@ -2009,7 +2469,7 @@ Widget _buildCollectorHistory(BuildContext context) {
                           _buildEnhancedDetailRow('Drop ID', drop.id, Icons.qr_code),
                           _buildEnhancedDetailRow('Created', _formatDate(drop.createdAt), Icons.schedule),
                           _buildEnhancedDetailRow('Last Updated', _formatDate(drop.modifiedAt), Icons.update),
-                          _buildEnhancedDetailRow('Bottle Type', drop.bottleType.name.toUpperCase(), Icons.category),
+                          _buildEnhancedDetailRow('Bottle Type', drop.bottleType.localizedDisplayName(context), Icons.category),
                           _buildEnhancedDetailRow('Leave Outside', drop.leaveOutside ? 'Yes' : 'No', Icons.home),
                         ]),
 
@@ -2311,19 +2771,67 @@ Widget _buildCollectorHistory(BuildContext context) {
   }
 
   String _getStatusText(String status) {
+    final l10n = AppLocalizations.of(context);
     switch (status.toLowerCase()) {
       case 'collected':
-        return 'Collected';
+        return l10n.collected;
       case 'cancelled':
-        return 'Cancelled';
+        return l10n.cancelled;
       case 'pending':
-        return 'Pending';
+        return l10n.pending;
+      case 'accepted':
+        return l10n.accepted;
+      case 'expired':
+        return l10n.expired;
       default:
         return status;
     }
   }
 
+  String _translateInteractionNote(String note) {
+    final l10n = AppLocalizations.of(context);
+    final noteLower = note.toLowerCase();
+    
+    // Translate common backend note patterns
+    if (noteLower.contains('accepted drop for collection')) {
+      return l10n.acceptedDropForCollection;
+    }
+    if (noteLower.contains('collection completed successfully')) {
+      return l10n.collectionCompletedSuccessfully;
+    }
+    if (noteLower.contains('collection expired')) {
+      return l10n.dropExpired;
+    }
+    if (noteLower.contains('collection cancelled')) {
+      return l10n.dropCancelled;
+    }
+    
+    // Return original note if no translation found
+    return note;
+  }
+
+  String _formatCancellationReason(String reason) {
+    final l10n = AppLocalizations.of(context);
+    switch (reason) {
+      case 'noAccess':
+        return l10n.noAccess;
+      case 'notFound':
+        return l10n.notFound;
+      case 'alreadyCollected':
+        return l10n.alreadyCollected;
+      case 'wrongLocation':
+        return l10n.wrongLocation;
+      case 'unsafe':
+        return l10n.unsafeLocation;
+      case 'other':
+        return l10n.other;
+      default:
+        return reason;
+    }
+  }
+
   String _formatDate(DateTime date) {
+    final l10n = AppLocalizations.of(context);
     print('🕐 HistoryScreen._formatDate: Input date: $date');
     final germanDate = TimezoneService.toGermanTime(date);
     print('🕐 HistoryScreen._formatDate: German date: $germanDate');
@@ -2333,31 +2841,54 @@ Widget _buildCollectorHistory(BuildContext context) {
     final yesterday = today.subtract(const Duration(days: 1));
     final dateOnly = DateTime(germanDate.year, germanDate.month, germanDate.day);
     
-    // Format time as HH:mm
+    // Format time as HH:mm (use Western numerals)
     final timeString = '${germanDate.hour.toString().padLeft(2, '0')}:${germanDate.minute.toString().padLeft(2, '0')}';
     print('🕐 HistoryScreen._formatDate: Time string: $timeString');
     
     if (dateOnly == today) {
-      return 'Today at $timeString';
+      return l10n.todayAt(timeString);
     } else if (dateOnly == yesterday) {
-      return 'Yesterday at $timeString';
+      return l10n.yesterdayAt(timeString);
     } else {
       final difference = today.difference(dateOnly).inDays;
       
       if (difference < 7) {
-        // Show day name for recent dates
-        final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        final dayName = dayNames[germanDate.weekday - 1];
-        return '$dayName at $timeString';
+        // Show day name for recent dates (use localized day names)
+        String dayName;
+        switch (germanDate.weekday) {
+          case 1: dayName = l10n.mon; break;
+          case 2: dayName = l10n.tue; break;
+          case 3: dayName = l10n.wed; break;
+          case 4: dayName = l10n.thu; break;
+          case 5: dayName = l10n.fri; break;
+          case 6: dayName = l10n.sat; break;
+          case 7: dayName = l10n.sun; break;
+          default: dayName = '';
+        }
+        return '$dayName ${l10n.at} $timeString';
       } else if (difference < 30) {
         // Show "X days ago" for older dates
-        return '${difference}d ago at $timeString';
+        return '${l10n.daysAgoShort(difference)} ${l10n.at} $timeString';
       } else {
-        // Show full date for very old dates
-        final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        final monthName = monthNames[germanDate.month - 1];
-        return '$monthName ${germanDate.day} at $timeString';
+        // Show full date for very old dates (use localized month names with Western numerals)
+        String monthName;
+        switch (germanDate.month) {
+          case 1: monthName = l10n.jan; break;
+          case 2: monthName = l10n.feb; break;
+          case 3: monthName = l10n.mar; break;
+          case 4: monthName = l10n.apr; break;
+          case 5: monthName = l10n.may; break;
+          case 6: monthName = l10n.jun; break;
+          case 7: monthName = l10n.jul; break;
+          case 8: monthName = l10n.aug; break;
+          case 9: monthName = l10n.sep; break;
+          case 10: monthName = l10n.oct; break;
+          case 11: monthName = l10n.nov; break;
+          case 12: monthName = l10n.dec; break;
+          default: monthName = '';
+        }
+        // Use Western numerals for day
+        return '$monthName ${germanDate.day} ${l10n.at} $timeString';
       }
     }
   }
@@ -2370,6 +2901,24 @@ Widget _buildCollectorHistory(BuildContext context) {
     } else {
       return number.toString();
     }
+  }
+
+  String _formatItemCount(int bottles, int cans) {
+    final l10n = AppLocalizations.of(context);
+    final parts = <String>[];
+    
+    if (bottles > 0) {
+      parts.add('$bottles ${l10n.bottles}');
+    }
+    if (cans > 0) {
+      parts.add('$cans ${l10n.cans}');
+    }
+    
+    if (parts.isEmpty) {
+      return '0 ${l10n.items}';
+    }
+    
+    return parts.join(', ');
   }
 
   Widget _buildActiveFiltersSummary() {
@@ -2643,14 +3192,14 @@ Widget _buildCollectorHistory(BuildContext context) {
                                   );
                                 },
                               ),
-                              // Custom pin overlay
+                              // Custom pin overlay - using same green/white pin as drop cards
                               Positioned.fill(
                                 child: Center(
                                   child: Container(
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: Colors.red,
+                                      color: const Color(0xFF00695C), // Green color to match drop cards
                                       shape: BoxShape.circle,
                                       border: Border.all(color: Colors.white, width: 2),
                                       boxShadow: [
@@ -2726,12 +3275,12 @@ Widget _buildCollectorHistory(BuildContext context) {
                         ),
                       ],
                     ),
-                  // Total amount
+                  // Item count
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Total ${_formatLargeNumber((firstInteraction.dropoff?.numberOfBottles ?? 0) + (firstInteraction.dropoff?.numberOfCans ?? 0))}',
+                        _formatItemCount(firstInteraction.dropoff?.numberOfBottles ?? 0, firstInteraction.dropoff?.numberOfCans ?? 0),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: Colors.green[600],
@@ -2848,10 +3397,32 @@ Widget _buildCollectorHistory(BuildContext context) {
                                                   : Colors.grey,
                                 ),
                           ),
+                          // Show earnings if collected
+                          if (isCollected && interaction.earnings != null && interaction.earnings! > 0) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.monetization_on,
+                                  size: 14,
+                                  color: const Color(0xFF00695C),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  DropValueCalculator.formatEstimatedValue(interaction.earnings!),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF00695C),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
                           if (interaction.notes?.isNotEmpty == true) ...[
                             const SizedBox(height: 4),
                             Text(
-                              interaction.notes!,
+                              _translateInteractionNote(interaction.notes!),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     fontSize: 10,
                                     color: Colors.grey[600],

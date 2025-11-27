@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:convert';
+import 'package:botleji/features/collection/data/datasources/collection_attempt_api_client.dart';
+import 'package:botleji/features/collection/data/models/collection_attempt.dart';
+import 'package:botleji/core/api/api_client.dart' as api;
+import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 
 class ActiveCollection {
   final String dropId;
@@ -41,6 +44,7 @@ class ActiveCollection {
       'destination': {
         'latitude': destination.latitude,
         'longitude': destination.longitude,
+      },
       'acceptedAt': acceptedAt.toIso8601String(),
       'dropoffId': dropoffId,
       'imageUrl': imageUrl,
@@ -52,7 +56,6 @@ class ActiveCollection {
       'routeDuration': routeDuration,
       'routeDistance': routeDistance,
       'collectorId': collectorId, // Add collector ID
-    }
     };
   }
 
@@ -110,13 +113,15 @@ class ActiveCollection {
 class NavigationController extends StateNotifier<ActiveCollection?> {
   static const String _activeCollectionKey = 'active_collection';
   bool _isLoading = true;
+  final Ref? _ref;
   
-  NavigationController() : super(null) {
+  NavigationController([this._ref]) : super(null) {
     _loadActiveCollection();
   }
 
   Future<void> _loadActiveCollection() async {
     try {
+      // First, try to load from local storage
       final prefs = await SharedPreferences.getInstance();
       final activeCollectionJson = prefs.getString(_activeCollectionKey);
       
@@ -125,15 +130,125 @@ class NavigationController extends StateNotifier<ActiveCollection?> {
           jsonDecode(activeCollectionJson) as Map,
         );
         state = ActiveCollection.fromJson(json);
-        print('✅ Loaded active collection: ${state?.dropId}');
+        print('✅ Loaded active collection from local storage: ${state?.dropId}');
+        _isLoading = false;
+        return;
+      }
+      
+      // If not found locally, wait for auth to be ready, then check backend
+      print('ℹ️ No active collection in local storage, waiting for auth then checking backend...');
+      
+      // Wait for auth to be ready (with timeout)
+      if (_ref != null) {
+        int attempts = 0;
+        while (attempts < 10) { // Try for up to 5 seconds (10 * 500ms)
+          final authState = _ref.read(authNotifierProvider);
+          if (authState.hasValue && authState.value?.id != null) {
+            print('✅ Auth is ready, checking backend for active collection...');
+            await _restoreFromBackend();
+            break;
+          }
+          await Future.delayed(const Duration(milliseconds: 500));
+          attempts++;
+        }
+        
+        if (attempts >= 10) {
+          print('⚠️ Auth not ready after timeout, will retry when auth is available');
+          // Schedule a retry when auth becomes available
+          _scheduleRetryWhenAuthReady();
+        }
       } else {
-        print('ℹ️ No active collection found in storage');
+        print('⚠️ No ref available, cannot restore from backend');
       }
     } catch (e) {
       print('❌ Error loading active collection: $e');
       state = null;
     } finally {
       _isLoading = false;
+    }
+  }
+
+  /// Schedule a retry to restore from backend when auth becomes available
+  void _scheduleRetryWhenAuthReady() {
+    if (_ref == null) return;
+    
+    // Listen to auth state changes
+    _ref.listen(authNotifierProvider, (previous, next) {
+      if (next.hasValue && next.value?.id != null && state == null) {
+        print('✅ Auth is now ready, retrying backend restore...');
+        _restoreFromBackend();
+      }
+    });
+  }
+
+  /// Restore active collection from backend
+  Future<void> _restoreFromBackend() async {
+    try {
+      // Get current user ID
+      String? collectorId;
+      if (_ref != null) {
+        final authState = _ref.read(authNotifierProvider);
+        collectorId = authState.value?.id;
+      }
+      
+      if (collectorId == null || collectorId.isEmpty) {
+        print('ℹ️ No user logged in, cannot restore from backend');
+        return;
+      }
+
+      print('🔍 Checking backend for active collection attempts for collector: $collectorId');
+      
+      // Get collection attempts from backend
+      final dio = api.ApiClientConfig.createDio();
+      final apiClient = CollectionAttemptApiClient(dio);
+      final response = await apiClient.getCollectorAttempts(
+        collectorId: collectorId,
+        page: 1,
+        limit: 10, // Only need the first few to find active ones
+      );
+
+      // Find the first active attempt
+      final activeAttempt = response.attempts.firstWhere(
+        (attempt) => attempt.status == 'active' && attempt.outcome == null,
+        orElse: () => throw StateError('No active attempt found'),
+      );
+
+      print('✅ Found active collection attempt in backend: ${activeAttempt.id}');
+      
+      // Convert CollectionAttempt to ActiveCollection
+      final dropSnapshot = activeAttempt.dropSnapshot;
+      final activeCollection = ActiveCollection(
+        dropId: activeAttempt.dropoffId,
+        dropoffId: activeAttempt.dropoffId,
+        destination: LatLng(
+          dropSnapshot.location['latitude'] ?? 0.0,
+          dropSnapshot.location['longitude'] ?? 0.0,
+        ),
+        acceptedAt: activeAttempt.acceptedAt,
+        imageUrl: dropSnapshot.imageUrl,
+        numberOfBottles: dropSnapshot.numberOfBottles,
+        numberOfCans: dropSnapshot.numberOfCans,
+        bottleType: dropSnapshot.bottleType,
+        notes: dropSnapshot.notes,
+        leaveOutside: false, // Default, can be updated if needed
+        routeDuration: null,
+        routeDistance: null,
+        collectorId: activeAttempt.collectorId,
+      );
+
+      // Save to local storage
+      final prefs = await SharedPreferences.getInstance();
+      final jsonData = jsonEncode(activeCollection.toJson());
+      await prefs.setString(_activeCollectionKey, jsonData);
+      
+      state = activeCollection;
+      print('✅ Restored active collection from backend: ${activeCollection.dropId}');
+    } catch (e) {
+      if (e is StateError) {
+        print('ℹ️ No active collection attempts found in backend');
+      } else {
+        print('❌ Error restoring from backend: $e');
+      }
     }
   }
 
@@ -251,7 +366,7 @@ class NavigationController extends StateNotifier<ActiveCollection?> {
 }
 
 final navigationControllerProvider = StateNotifierProvider<NavigationController, ActiveCollection?>((ref) {
-  return NavigationController();
+  return NavigationController(ref);
 });
 
 // Separate provider for tab navigation

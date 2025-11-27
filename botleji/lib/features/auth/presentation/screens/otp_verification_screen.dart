@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import '../providers/auth_provider.dart';
-import '../screens/login_screen.dart';
-import 'package:botleji/features/profile/presentation/screens/profile_setup_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class OTPVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -76,7 +75,7 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
           print('OTP verification success - User: $user, Token: $token, Message: $message');
           if (token != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message ?? 'OTP verified successfully')),
+              SnackBar(content: Text(message ?? AppLocalizations.of(context).otpVerifiedSuccessfully)),
             );
             // Add a small delay to ensure auth state is updated before navigation
             print('OTP verified successfully - user is now logged in');
@@ -84,8 +83,8 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
             Navigator.pushReplacementNamed(context, '/');
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Error: Invalid verification response'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).invalidVerificationResponse),
                 backgroundColor: Colors.red,
               ),
             );
@@ -125,7 +124,7 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
 
       _startTimer();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP resent successfully!')),
+        SnackBar(content: Text(AppLocalizations.of(context).otpResentSuccessfully)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -139,8 +138,9 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: const Color(0xFF00695C),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -150,7 +150,7 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                  icon: const Icon(Icons.arrow_back, color: appGreenColor, size: 28),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -168,63 +168,68 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                       children: [
                         // Logo
                         Image.asset(
-                          'assets/images/logo.png',
-                          height: 120,
+                          'assets/images/logo_v2.png',
+                          height: 200,
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          'Verify Your Email',
+                          AppLocalizations.of(context).verifyYourEmail,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: appGreenColor,
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Please enter the OTP sent to your email',
+                          AppLocalizations.of(context).pleaseEnterOtpSentToEmail,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.white70,
+                                color: appGreenColor.withOpacity(0.7),
                               ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 32),
-                        PinCodeTextField(
-                          appContext: context,
-                          length: 6,
-                          controller: _otpController,
-                          keyboardType: TextInputType.number,
-                          cursorColor: Colors.transparent,
-                          textStyle: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        Directionality(
+                          textDirection: TextDirection.ltr, // Force LTR for OTP codes
+                          child: PinCodeTextField(
+                            appContext: context,
+                            length: 6,
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            cursorColor: appGreenColor,
+                            textStyle: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            pinTheme: PinTheme(
+                              shape: PinCodeFieldShape.box,
+                              borderRadius: BorderRadius.circular(12),
+                              fieldHeight: 50,
+                              fieldWidth: 40,
+                              activeFillColor: Colors.grey[50]!,
+                              selectedFillColor: appGreenColor.withOpacity(0.1),
+                              inactiveFillColor: Colors.grey[50]!,
+                              activeColor: appGreenColor,
+                              selectedColor: appGreenColor,
+                              inactiveColor: appGreenColor.withOpacity(0.5),
+                              borderWidth: 1,
+                            ),
+                            enableActiveFill: true,
+                            onChanged: (value) {},
                           ),
-                          pinTheme: PinTheme(
-                            shape: PinCodeFieldShape.box,
-                            borderRadius: BorderRadius.circular(12),
-                            fieldHeight: 50,
-                            fieldWidth: 40,
-                            activeFillColor: Colors.white.withOpacity(0.1),
-                            selectedFillColor: Colors.white.withOpacity(0.2),
-                            inactiveFillColor: Colors.white.withOpacity(0.1),
-                            activeColor: Colors.white,
-                            selectedColor: Colors.white,
-                            inactiveColor: Colors.white70,
-                          ),
-                          enableActiveFill: true,
-                          onChanged: (value) {},
                         ),
                         const SizedBox(height: 24),
-                        FilledButton(
+                        ElevatedButton(
                           onPressed: _isLoading ? null : _verifyOtp,
-                          style: FilledButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF00695C),
+                            backgroundColor: appGreenColor,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -232,12 +237,12 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00695C)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Text(
-                                  'Verify OTP',
-                                  style: TextStyle(
+                              : Text(
+                                  AppLocalizations.of(context).verifyOtp,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -248,11 +253,12 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                           onPressed: _canResend ? _resendOtp : null,
                           child: Text(
                             _canResend
-                              ? 'Resend OTP'
-                              : 'Resend OTP in $_timeLeft seconds',
-                          style: TextStyle(
-                            color: _canResend ? Theme.of(context).primaryColor : Colors.grey,
-                          ),
+                              ? AppLocalizations.of(context).resendOtp
+                              : AppLocalizations.of(context).resendOtpIn(_timeLeft),
+                            style: TextStyle(
+                              color: _canResend ? appGreenColor : Colors.grey,
+                              fontWeight: _canResend ? FontWeight.bold : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ],

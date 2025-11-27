@@ -13,6 +13,7 @@ class CollectionAttempt {
   final List<TimelineEvent> timeline;
   final int attemptNumber;
   final int cancellationCount;
+  final double? earnings; // Earnings for this collection (only when outcome === 'collected')
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +30,7 @@ class CollectionAttempt {
     required this.timeline,
     required this.attemptNumber,
     required this.cancellationCount,
+    this.earnings,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -51,6 +53,7 @@ class CollectionAttempt {
           .toList(),
       attemptNumber: json['attemptNumber'],
       cancellationCount: json['cancellationCount'],
+      earnings: json['earnings'] != null ? (json['earnings'] as num).toDouble() : null,
       createdAt: TimezoneService.parseToGermanTime(json['createdAt']),
       updatedAt: TimezoneService.parseToGermanTime(json['updatedAt']),
     );
@@ -70,6 +73,7 @@ class CollectionAttempt {
       'timeline': timeline.map((e) => e.toJson()).toList(),
       'attemptNumber': attemptNumber,
       'cancellationCount': cancellationCount,
+      'earnings': earnings,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };

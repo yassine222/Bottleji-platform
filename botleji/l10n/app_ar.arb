@@ -1,0 +1,1402 @@
+{
+  "@@locale": "ar",
+  "appTitle": "Bottleji",
+  "settings": "الإعدادات",
+  "language": "اللغة",
+  "changeLanguage": "تغيير لغة التطبيق",
+  "selectLanguage": "اختر اللغة",
+  "english": "الإنجليزية",
+  "french": "الفرنسية",
+  "german": "الألمانية",
+  "arabic": "العربية",
+  "location": "الموقع",
+  "manageLocationPreferences": "إدارة تفضيلات الموقع",
+  "notifications": "الإشعارات",
+  "manageNotificationPreferences": "إدارة تفضيلات الإشعارات",
+  "displayTheme": "مظهر العرض",
+  "changeAppAppearance": "تغيير مظهر التطبيق",
+  "comingSoon": "قريباً",
+  "ok": "موافق",
+  "cancel": "إلغاء",
+  "save": "حفظ",
+  "loading": "جاري التحميل...",
+  "login": "تسجيل الدخول",
+  "register": "التسجيل",
+  "email": "البريد الإلكتروني",
+  "password": "كلمة المرور",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "welcomeBack": "مرحباً بعودتك!",
+  "signInToContinue": "قم بتسجيل الدخول للمتابعة",
+  "dontHaveAccount": "ليس لديك حساب؟",
+  "enterYourEmail": "أدخل بريدك الإلكتروني",
+  "enterYourPassword": "أدخل كلمة المرور",
+  "pleaseEnterEmail": "يرجى إدخال بريدك الإلكتروني",
+  "pleaseEnterValidEmail": "يرجى إدخال بريد إلكتروني صحيح",
+  "pleaseEnterPassword": "يرجى إدخال كلمة المرور",
+  "passwordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+  "invalidEmailOrPassword": "بريد إلكتروني أو كلمة مرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+  "loginFailed": "فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد والمحاولة مرة أخرى.",
+  "connectionTimeout": "انتهت مهلة الاتصال. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.",
+  "networkError": "خطأ في الشبكة. يرجى التحقق من اتصال الإنترنت.",
+  "requestTimeout": "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.",
+  "serverError": "خطأ في الخادم. يرجى المحاولة لاحقاً.",
+  "accountDeleted": "تم حذف الحساب",
+  "accountDeletedMessage": "تم حذف حسابك من قبل أحد المسؤولين.\n\nإذا كنت تعتقد أن هذا خطأ، يرجى الاتصال بفريق الدعم:\n\n📧 البريد الإلكتروني: support@bottleji.com\n📱 ساعات الدعم: 9 صباحاً - 6 مساءً (GMT+1)\n\nنعتذر عن الإزعاج.",
+  "reason": "السبب",
+  "youWillBeRedirectedToLoginScreen": "سيتم إعادة توجيهك إلى شاشة تسجيل الدخول.",
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "enterEmailToReceiveResetCode": "أدخل بريدك الإلكتروني لتلقي رمز إعادة التعيين",
+  "sendResetCode": "إرسال رمز إعادة التعيين",
+  "resetCodeSentToEmail": "تم إرسال رمز إعادة التعيين إلى بريدك الإلكتروني",
+  "enterResetCode": "أدخل رمز إعادة التعيين",
+  "weHaveSentResetCodeTo": "لقد أرسلنا رمز إعادة التعيين إلى\n{email}",
+  "@weHaveSentResetCodeTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verify": "تحقق",
+  "didntReceiveCode": "لم تستلم الرمز؟",
+  "resend": "إعادة الإرسال",
+  "resendIn": "إعادة الإرسال خلال {seconds} ثانية",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resetCodeResentSuccessfully": "تم إعادة إرسال رمز إعادة التعيين بنجاح!",
+  "createNewPassword": "إنشاء كلمة مرور جديدة",
+  "pleaseEnterNewPassword": "يرجى إدخال كلمة المرور الجديدة",
+  "newPassword": "كلمة المرور الجديدة",
+  "enterNewPassword": "أدخل كلمة المرور الجديدة",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "confirmNewPassword": "أكد كلمة المرور الجديدة",
+  "pleaseEnterPassword": "يرجى إدخال كلمة المرور",
+  "passwordMustBeAtLeast6Characters": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+  "pleaseConfirmPassword": "يرجى تأكيد كلمة المرور",
+  "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+  "passwordResetSuccessful": "تم إعادة تعيين كلمة المرور بنجاح! يرجى تسجيل الدخول بكلمة المرور الجديدة.",
+  "verifyYourEmail": "تحقق من بريدك الإلكتروني",
+  "pleaseEnterOtpSentToEmail": "يرجى إدخال رمز OTP المرسل إلى بريدك الإلكتروني",
+  "verifyOtp": "تحقق من OTP",
+  "resendOtp": "إعادة إرسال OTP",
+  "resendOtpIn": "إعادة إرسال OTP خلال {seconds} ثانية",
+  "@resendOtpIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "otpVerifiedSuccessfully": "تم التحقق من OTP بنجاح",
+  "invalidVerificationResponse": "خطأ: استجابة التحقق غير صالحة",
+  "otpResentSuccessfully": "تم إعادة إرسال OTP بنجاح!",
+  "startYourBottlejiJourney": "ابدأ رحلتك مع Bottleji",
+  "createAccountToGetStarted": "أنشئ حسابًا للبدء",
+  "createAPassword": "إنشاء كلمة مرور",
+  "confirmYourPassword": "أكد كلمة المرور",
+  "createAccount": "إنشاء حساب",
+  "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+  "registrationSuccessful": "تم التسجيل بنجاح",
+  "skip": "تخطي",
+  "next": "التالي",
+  "getStarted": "ابدأ",
+  "welcomeToBottleji": "مرحبًا بك في Bottleji",
+  "yourSustainableWasteManagementSolution": "حل إدارة النفايات المستدام الخاص بك",
+  "joinThousandsOfUsersMakingDifference": "انضم إلى آلاف المستخدمين الذين يحدثون فرقًا من خلال إعادة تدوير الزجاجات والعلب مع كسب المكافآت.",
+  "createAndTrackDrops": "إنشاء وتتبع النقاط",
+  "forHouseholdUsers": "للمستخدمين المنزليين",
+  "easilyCreateDropRequests": "أنشئ بسهولة طلبات النقاط للزجاجات والعلب القابلة لإعادة التدوير. تتبع حالة التجميع واحصل على إشعارات عند قيام الجامعين بجمعها.",
+  "collectAndEarn": "اجمع واكسب",
+  "forCollectors": "للجامعين",
+  "findNearbyDropsCollectRecyclables": "ابحث عن النقاط القريبة، اجمع المواد القابلة لإعادة التدوير، واكسب المكافآت. ساعد في بناء مجتمع مستدام مع كسب المال.",
+  "realTimeUpdates": "التحديثات في الوقت الفعلي",
+  "stayConnected": "ابق متصلاً",
+  "getInstantNotificationsAboutDrops": "احصل على إشعارات فورية حول نقاطك وجمعك والتحديثات المهمة. لا تفوت فرصة أبدًا.",
+  "appPermissions": "أذونات التطبيق",
+  "bottlejiRequiresAdditionalPermissions": "يتطلب Bottleji أذونات إضافية للعمل بشكل صحيح",
+  "permissionsHelpProvideBestExperience": "تساعدنا هذه الأذونات في توفير أفضل تجربة لك.",
+  "locationServices": "خدمات الموقع",
+  "accessLocationToShowNearbyDrops": "الوصول إلى موقعك لإظهار النقاط القريبة وتمكين التنقل للجامعين.",
+  "localNetworkAccess": "الوصول إلى الشبكة المحلية",
+  "allowAppToDiscoverServicesOnWifi": "السماح للتطبيق باكتشاف الخدمات على شبكة Wi‑Fi الخاصة بك للميزات في الوقت الفعلي.",
+  "receiveRealTimeUpdatesAboutDrops": "احصل على تحديثات فورية حول نقاطك وجمعك والإعلانات المهمة.",
+  "photoStorage": "تخزين الصور",
+  "saveAndAccessPhotosOfRecyclableItems": "حفظ الصور والوصول إلى صور العناصر القابلة لإعادة التدوير.",
+  "enable": "تفعيل",
+  "continueToApp": "المتابعة إلى التطبيق",
+  "enableRequiredPermissions": "تفعيل الأذونات المطلوبة",
+  "accountDisabled": "تم تعطيل الحساب",
+  "accountDisabledMessage": "تم تعطيل حسابك بشكل دائم بسبب انتهاكات متكررة لإرشادات مجتمع Bottleji.\n\nلم يعد بإمكانك الوصول إلى هذا الحساب أو استخدامه.\n\nإذا كنت تعتقد أن هذا القرار تم اتخاذه عن طريق الخطأ، يرجى الاتصال بالدعم:",
+  "supportEmail": "support@bottleji.com",
+  "contactSupport": "اتصل بالدعم",
+  "pleaseEmailSupport": "يرجى إرسال بريد إلكتروني إلى support@bottleji.com للحصول على المساعدة",
+  "sessionExpired": "انتهت الجلسة",
+  "sessionExpiredMessage": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى للمتابعة.",
+  "home": "الرئيسية",
+  "drops": "النقاط",
+  "rewards": "المكافآت",
+  "stats": "الإحصائيات",
+  "history": "السجل",
+  "profile": "الملف الشخصي",
+  "account": "الحساب",
+  "support": "الدعم",
+  "termsAndConditions": "الشروط والأحكام",
+  "logout": "تسجيل الخروج",
+  "areYouSureLogout": "هل أنت متأكد من أنك تريد تسجيل الخروج؟",
+  "errorDuringLogout": "حدث خطأ أثناء تسجيل الخروج: {error}",
+  "close": "إغلاق",
+  "edit": "تعديل",
+  "delete": "حذف",
+  "retry": "إعادة المحاولة",
+  "confirm": "تأكيد",
+  "yes": "نعم",
+  "no": "لا",
+  "stay": "البقاء",
+  "leave": "مغادرة",
+  "back": "رجوع",
+  "next": "التالي",
+  "previous": "السابق",
+  "done": "تم",
+  "gotIt": "فهمت",
+  "clearAll": "مسح الكل",
+  "clearFilters": "مسح المرشحات",
+  "apply": "تطبيق",
+  "filterDrops": "تصفية النقاط",
+  "status": "الحالة",
+  "all": "الكل",
+  "date": "التاريخ",
+  "distance": "المسافة",
+  "deleteDrop": "حذف النقطة",
+  "areYouSureDelete": "هل أنت متأكد من أنك تريد حذف هذه النقطة؟",
+  "createDrop": "إنشاء نقطة",
+  "editDrop": "تعديل النقطة",
+  "startCollection": "بدء الجمع",
+  "resumeNavigation": "استئناف التنقل",
+  "cancelCollection": "إلغاء الجمع",
+  "areYouSureCancelCollection": "هل أنت متأكد من أنك تريد إلغاء هذا الجمع؟",
+  "yesCancel": "نعم، إلغاء",
+  "leaveCollection": "مغادرة الجمع؟",
+  "areYouSureLeaveCollection": "هل أنت متأكد من أنك تريد المغادرة؟ سيبقى جمعك نشطاً.",
+  "exitNavigation": "خروج من التنقل",
+  "areYouSureExitNavigation": "هل أنت متأكد من أنك تريد الخروج من التنقل؟ سيبقى جمعك نشطاً.",
+  "reportDrop": "الإبلاغ عن النقطة",
+  "useCurrentLocation": "استخدام الموقع الحالي",
+  "setCollectionRadius": "تعيين نصف قطر الجمع",
+  "setCollectionRadiusDescription": "قم بتعيين نصف القطر (بالكيلومترات) الذي تريد جمع الزجاجات ضمنه.",
+  "kilometers": "كم",
+  "collectionRadiusUpdated": "تم تحديث نصف قطر الجمع!",
+  "saveRadius": "حفظ نصف القطر",
+  "takePhoto": "التقاط صورة",
+  "chooseFromGallery": "اختر من المعرض",
+  "galleryIOSSimulatorIssue": "المعرض (مشكلة محاكي iOS)",
+  "useCameraOrRealDevice": "استخدم الكاميرا أو جهاز حقيقي",
+  "leaveOutsideDoor": "اتركه خارج الباب",
+  "pleaseTakePhoto": "يرجى التقاط صورة للزجاجات",
+  "pleaseWaitLoading": "يرجى الانتظار أثناء تحميل معلومات حسابك",
+  "mustBeLoggedIn": "يجب أن تكون مسجلاً الدخول لإنشاء نقطة",
+  "authenticationIssue": "تم اكتشاف مشكلة في المصادقة. يرجى تسجيل الخروج وتسجيل الدخول مرة أخرى.",
+  "dropCreatedSuccessfully": "تم إنشاء النقطة بنجاح!",
+  "openSettings": "فتح الإعدادات",
+  "tryAgain": "حاول مرة أخرى",
+  "reloadMap": "إعادة تحميل الخريطة",
+  "thisHelpsUsShowNearby": "يساعدنا هذا في عرض النقاط القريبة وتوفير خدمات جمع دقيقة.",
+  "errorLoadingUserMode": "خطأ في تحميل وضع المستخدم: {error}",
+  "tryAdjustingFilters": "حاول تعديل المرشحات",
+  "checkBackLater": "ارجع لاحقاً للحصول على نقاط جديدة",
+  "createFirstDrop": "أنشئ نقطتك الأولى للبدء",
+  "collectionInProgress": "الجمع قيد التنفيذ",
+  "resumeCollection": "استئناف الجمع",
+  "collectionTimeout": "⚠️ انتهت مهلة الجمع",
+  "warningSystem": "نظام التحذير",
+  "warningAddedToAccount": "تمت إضافة تحذير إلى حسابك لهذه النقطة. يرجى التأكد من أن الصور المستقبلية تتبع إرشادات المجتمع.",
+  "timerExpired": "⏰ انتهى المؤقت!",
+  "timerExpiredMessage": "انتهت مهلة مؤقت الجمع. سيتم إغلاق شاشة التنقل الآن.",
+  "applicationRejected": "تم رفض الطلب",
+  "applicationRejectedMessage": "تم رفض طلبك للأسباب التالية:",
+  "noSpecificReason": "لم يتم تقديم سبب محدد",
+  "canEditApplication": "يمكنك تعديل طلبك وإرساله مرة أخرى.",
+  "editApplication": "تعديل الطلب",
+  "pleaseLogInCollector": "يرجى تسجيل الدخول للوصول إلى وضع المجمع",
+  "tierSystem": "نظام المستويات",
+  "bySubscribingAgree": "من خلال الاشتراك، أنت توافق على شروط الخدمة\nوسياسة الخصوصية الخاصة بنا",
+  "startProSubscription": "بدء اشتراك PRO",
+  "termsOfService": "شروط الخدمة",
+  "lastUpdated": "آخر تحديث: 15 مارس 2024",
+  "acceptanceOfTerms": "1. قبول الشروط",
+  "acceptanceOfTermsContent": "من خلال الوصول إلى تطبيق Bottleji واستخدامه، أنت توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء من هذه الشروط، قد لا تتمكن من الوصول إلى التطبيق.",
+  "userResponsibilities": "2. مسؤوليات المستخدم",
+  "userResponsibilitiesContent": "كمستخدم لتطبيق Bottleji، أنت توافق على:\n• تقديم معلومات دقيقة وكاملة\n• الحفاظ على أمان حسابك\n• اتباع إرشادات فصل النفايات\n• جدولة عمليات الجمع بمسؤولية\n• استخدام الخدمة وفقاً للقوانين المحلية",
+  "household": "المنزل",
+  "collector": "المجمع",
+  "activeMode": "الوضع النشط",
+  "myAccount": "حسابي",
+  "trainings": "التدريبات",
+  "referAndEarn": "أحال واكسب",
+  "upgrade": "ترقية",
+  "review": "قيد المراجعة",
+  "rejected": "مرفوض",
+  "apply": "تطبيق",
+  "becomeACollector": "كن مجمعاً",
+  "applicationUnderReview": "طلبك قيد المراجعة حالياً. هل تريد عرض حالة طلبك؟",
+  "viewStatus": "عرض الحالة",
+  "applicationRejectedReason": "تم رفض طلبك للأسباب التالية:\n\n\"{rejectionReason}\"\n\nهل تريد تعديل طلبك وإرساله مرة أخرى؟",
+  "applicationApprovedSuspended": "تمت الموافقة على طلبك ولكن تم تعليق وصول المجمع مؤقتاً. يرجى الاتصال بالدعم أو إعادة التقديم.",
+  "reapply": "إعادة التقديم",
+  "needToApplyCollector": "تحتاج إلى التقديم والحصول على الموافقة للوصول إلى وضع المجمع. هل تريد التقديم الآن؟",
+  "applyNow": "قدّم مطلب",
+  "householdMode": "وضع المنزل",
+  "collectorMode": "وضع المجمع",
+  "householdModeDescription": "إنشاء النقاط وتتبع إعادة التدوير",
+  "collectorModeDescription": "جمع الزجاجات وكسب المكافآت",
+  "sustainableWasteManagement": "إدارة النفايات المستدامة",
+  "ecoFriendlyBottleCollection": "جمع الزجاجات الصديق للبيئة",
+  "bottleType": "نوع الزجاجة",
+  "numberOfPlasticBottles": "عدد زجاجات البلاستيك",
+  "numberOfCans": "عدد العلب",
+  "notesOptional": "ملاحظات (اختياري)",
+  "notes": "ملاحظات",
+  "failedToCreateDrop": "فشل إنشاء النقطة. يرجى المحاولة مرة أخرى.",
+  "imageSelectedSuccessfully": "تم اختيار الصورة بنجاح!",
+  "errorSelectingImage": "خطأ في اختيار الصورة",
+  "permissionDeniedPhoto": "تم رفض الإذن. يرجى السماح بالوصول إلى الصور في الإعدادات.",
+  "galleryNotAvailableSimulator": "المعرض غير متاح على المحاكي. جرب الكاميرا أو استخدم جهازاً حقيقياً.",
+  "profileInformation": "معلومات الملف الشخصي",
+  "fullName": "الاسم الكامل",
+  "notSet": "غير محدد",
+  "phone": "الهاتف",
+  "address": "العنوان",
+  "collectorStatus": "حالة المجمع",
+  "approvedCollector": "أنت مجمع معتمد",
+  "applicationStatus": "حالة الطلب",
+  "applicationUnderReviewStatus": "طلبك قيد المراجعة",
+  "viewDetails": "عرض التفاصيل",
+  "applicationRejectedTitle": "تم رفض الطلب",
+  "pleaseLoginToViewProfile": "يرجى تسجيل الدخول لعرض ملفك الشخصي",
+  "startYourBottlejiJourney": "ابدأ رحلتك مع Bottleji",
+  "bottlejiRequiresPermissions": "يتطلب Bottleji أذونات إضافية للعمل بشكل صحيح",
+  "galleryError": "خطأ في المعرض: {error}",
+  "galleryNotAvailableIOS": "المعرض غير متاح على محاكي iOS: {error}",
+  "editProfile": "تعديل الملف الشخصي",
+  "completeYourProfile": "أكمل ملفك الشخصي",
+  "profilePhoto": "صورة الملف الشخصي",
+  "personalInformation": "المعلومات الشخصية",
+  "tapToChangePhoto": "انقر لتغيير الصورة",
+  "saving": "جاري الحفظ...",
+  "completeSetup": "إكمال الإعداد",
+  "saveProfile": "حفظ الملف الشخصي",
+  "phoneNumberRequired": "رقم الهاتف مطلوب",
+  "phoneNumberMustBe8Digits": "يجب أن يكون رقم الهاتف 8 أرقام",
+  "phoneNumberMustContainOnlyDigits": "يجب أن يحتوي رقم الهاتف على أرقام فقط",
+  "pleaseEnterYourFullName": "يرجى إدخال اسمك الكامل",
+  "pleaseEnterYourPhoneNumber": "يرجى إدخال رقم هاتفك",
+  "pleaseEnterYourAddress": "يرجى إدخال عنوانك",
+  "pleaseVerifyYourPhoneNumber": "يرجى التحقق من رقم هاتفك قبل الحفظ",
+  "noChangesDetected": "لم يتم اكتشاف أي تغييرات. يبقى الملف الشخصي دون تغيير.",
+  "profileSetupCompletedSuccessfully": "اكتمل إعداد الملف الشخصي بنجاح! مرحباً بك في Bottleji!",
+  "profileUpdatedSuccessfully": "تم تحديث الملف الشخصي بنجاح!",
+  "failedToUploadImage": "فشل تحميل الصورة. يرجى المحاولة مرة أخرى.",
+  "smsCode": "رمز SMS",
+  "enter6DigitCode": "أدخل الرمز المكون من 6 أرقام",
+  "sendCode": "إرسال الرمز",
+  "sending": "جاري الإرسال...",
+  "resend": "إعادة الإرسال",
+  "verifyCode": "التحقق من الرمز",
+  "verifying": "جاري التحقق...",
+  "phoneNumberVerified": "تم التحقق من رقم الهاتف",
+  "phoneNumberNotVerified": "لم يتم التحقق من رقم الهاتف",
+  "phoneNumberNeedsVerification": "رقم الهاتف يحتاج إلى التحقق",
+  "phoneNumberVerifiedSuccessfully": "تم التحقق من رقم الهاتف بنجاح!",
+  "phoneNumber": "رقم الهاتف",
+  "fullNameRequired": "الاسم الكامل مطلوب",
+  "addressRequired": "العنوان مطلوب",
+  "searchAddress": "البحث عن العنوان",
+  "tapToSearchAddress": "اضغط للبحث عن عنوانك",
+  "typeToSearch": "اكتب للبحث...",
+  "noResultsFound": "لم يتم العثور على نتائج",
+  "errorFetchingSuggestions": "خطأ في جلب الاقتراحات: {error}",
+  "@errorFetchingSuggestions": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterPhoneNumberFirst": "يرجى إدخال رقم الهاتف أولاً",
+  "pleaseEnterValidPhoneNumber": "يرجى إدخال رقم هاتف صحيح مع رمز البلد (مثل +49 123456789)",
+  "locationPermissionRequired": "إذن الموقع مطلوب لميزات العنوان",
+  "notificationsTitle": "الإشعارات",
+  "markAllRead": "تحديد الكل كمقروء",
+  "noNotificationsYet": "لا توجد إشعارات حتى الآن",
+  "failedToLoadNotifications": "فشل تحميل الإشعارات",
+  "createNewDrop": "إنشاء نقطة جديدة",
+  "photo": "الصورة",
+  "takePhotoOrChooseFromGallery": "التقاط صورة أو اختيار من المعرض - أظهر زجاجاتك بوضوح لمساعدة المجمعين",
+  "addPhoto": "إضافة صورة",
+  "cameraOrGallery": "الكاميرا أو المعرض",
+  "allDrops": "جميع النقاط",
+  "myDrops": "نقاطي",
+  "active": "نشط",
+  "collected": "تم الجمع",
+  "flagged": "مُعلّم",
+  "censored": "مُحذف",
+  "stale": "منتهي الصلاحية",
+  "dropsInThisFilterCollected": "تم جمع النقاط في هذا المرشح بنجاح من قبل مجمع. تُظهر هذه النقاط تأثير إعادة التدوير الخاص بك ولا يمكن تعديلها.",
+  "dropsInThisFilterFlagged": "تم تعليم النقاط في هذا المرشح بسبب إلغاءات متعددة أو نشاط مشبوه. النقاط المُعلّمة مخفية عن الخريطة ولا يمكن تعديلها.",
+  "dropsInThisFilterCensored": "تم حذف النقاط في هذا المرشح بسبب محتوى غير مناسب. النقاط المحذوفة مخفية عن الخريطة ولا يمكن تعديلها.",
+  "dropsInThisFilterStale": "تم تعليم النقاط في هذا المرشح على أنها منتهية الصلاحية لأنها كانت أقدم من 3 أيام وتم جمعها على الأرجح من قبل مجمعين خارجيين. النقاط المنتهية الصلاحية مخفية عن الخريطة ولا يمكن تعديلها.",
+  "inActiveCollection": "في جمع نشط - المجمع في الطريق",
+  "censoredInappropriateImage": "محذوف: {reason}",
+  "@censoredInappropriateImage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onTheWay": "في الطريق",
+  "collectorOnHisWay": "المجمع في طريقه لالتقاط نقطتك",
+  "waiting": "في الانتظار...",
+  "notYetCollected": "لم يتم الجمع بعد",
+  "yourPoints": "نقاطك",
+  "pointsToGo": "{points} نقاط متبقية",
+  "@pointsToGo": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "progressToNextTier": "التقدم إلى المستوى التالي",
+  "bronzeCollector": "مجمع برونزي",
+  "silverCollector": "مجمع فضي",
+  "goldCollector": "مجمع ذهبي",
+  "platinumCollector": "مجمع بلاتيني",
+  "diamondCollector": "مجمع ماسي",
+  "earnPointsPerDropCollected": "اكسب {points} نقاط لكل نقطة مجمعة",
+  "@earnPointsPerDropCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "earnPointsWhenDropsCollected": "اكسب {points} نقاط عندما يتم جمع نقاطك",
+  "@earnPointsWhenDropsCollected": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardShop": "متجر المكافآت",
+  "orderHistory": "سجل الطلبات",
+  "noOrdersYet": "لا توجد طلبات حتى الآن",
+  "yourOrderHistoryWillAppearHere": "سيظهر سجل طلباتك هنا",
+  "notEnoughPoints": "نقاط غير كافية",
+  "pts": "نقطة",
+  "myStats": "إحصائياتي",
+  "timeRange": "الفترة الزمنية",
+  "thisWeek": "هذا الأسبوع",
+  "thisMonth": "هذا الشهر",
+  "thisYear": "هذا العام",
+  "allTime": "كل الوقت",
+  "overview": "نظرة عامة",
+  "dropStatus": "حالة النقاط",
+  "pending": "قيد الانتظار",
+  "collectionRate": "معدل الجمع",
+  "avgCollectionTime": "متوسط وقت الجمع",
+  "recentCollections": "عمليات الجمع الأخيرة",
+  "supportAndHelp": "الدعم والمساعدة",
+  "howCanWeHelpYou": "كيف يمكننا مساعدتك؟",
+  "selectCategoryToGetStarted": "اختر فئة للبدء",
+  "supportCategories": "فئات الدعم",
+  "whatDoYouNeedHelpWith": "بماذا تحتاج المساعدة؟",
+  "selectCategoryToContinue": "اختر فئة للمتابعة",
+  "trainingCenter": "مركز التدريب",
+  "all": "الكل",
+  "todayAt": "اليوم في {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "yesterdayAt": "أمس في {time}",
+  "@yesterdayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "daysAgo": "منذ {days} أيام",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "leaveOutside": "اتركه في الخارج",
+  "noImageAvailable": "لا توجد صورة متاحة",
+  "distance": "المسافة",
+  "estTime": "الوقت المقدر",
+  "estimatedTime": "وقت الوصول المقدر",
+  "yourLocation": "موقعك",
+  "dropLocation": "موقع النقطة",
+  "routePreview": "معاينة المسار",
+  "dropInformation": "معلومات النقطة",
+  "plasticBottles": "زجاجات بلاستيكية",
+  "cans": "علب",
+  "plastic": "بلاستيك",
+  "can": "علبة",
+  "mixed": "مختلط",
+  "totalItems": "إجمالي العناصر",
+  "estimatedValue": "القيمة المقدرة",
+  "created": "تم الإنشاء",
+  "flagged": "مُعلّم",
+  "completeCurrentCollectionFirst": "أكمل جمعك الحالي قبل البدء بجمع جديد.",
+  "youAreOffline": "أنت غير متصل. يرجى التحقق من اتصال الإنترنت.",
+  "errorColon": "خطأ: {error}",
+  "@errorColon": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "yourInformation": "معلوماتك",
+  "createdBy": "تم الإنشاء بواسطة",
+  "youWillSeeNotificationsHere": "سترى إشعاراتك هنا",
+  "pendingStatus": "قيد الانتظار",
+  "acceptedStatus": "مقبول",
+  "collectedStatus": "تم الجمع",
+  "cancelledStatus": "ملغي",
+  "expiredStatus": "منتهي الصلاحية",
+  "staleStatus": "قديم",
+  "howRewardsWork": "كيف تعمل المكافآت",
+  "howRewardsWorkCollector": "• اجمع النقاط لكسب النقاط\n• المستويات الأعلى = المزيد من النقاط لكل نقطة\n• استخدم النقاط في متجر المكافآت\n• تتبع تقدمك وإنجازاتك",
+  "howRewardsWorkHousehold": "• أنشئ النقاط للمساهمة في إعادة التدوير\n• اربح النقاط عندما يلتقط جامعو النقاط نقاطك\n• المستويات الأعلى = المزيد من النقاط لكل نقطة مجمعة\n• استخدم النقاط في متجر المكافآت",
+  "today": "اليوم",
+  "yesterday": "أمس",
+  "retry": "إعادة المحاولة",
+  "itemNotAvailable": "العنصر غير متاح",
+  "outOfStock": "نفد المخزون",
+  "orderNow": "اطلب الآن",
+  "pleaseLogInToViewOrderHistory": "يرجى تسجيل الدخول لعرض سجل الطلبات",
+  "failedToLoadOrderHistory": "فشل تحميل سجل الطلبات",
+  "refresh": "تحديث",
+  "pointsSpent": "النقاط المستخدمة",
+  "size": "الحجم",
+  "orderDate": "تاريخ الطلب",
+  "tracking": "التتبع",
+  "estimatedDelivery": "التسليم المقدر",
+  "deliveryAddress": "عنوان التسليم",
+  "adminNote": "ملاحظة المسؤول",
+  "pending": "قيد الانتظار",
+  "approved": "موافق عليه",
+  "processing": "قيد المعالجة",
+  "shipped": "تم الشحن",
+  "delivered": "تم التسليم",
+  "cancelled": "ملغي",
+  "rejected": "مرفوض",
+  "available": "{count} متاح",
+  "@available": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "تم الإنشاء",
+  "onTheWay": "في الطريق",
+  "waiting": "في الانتظار...",
+  "collectorOnHisWay": "الجامع في طريقه لالتقاط نقطتك",
+  "notYetCollected": "لم يتم الجمع بعد",
+  "updateDrop": "تحديث النقطة",
+  "updating": "جاري التحديث...",
+  "recyclingImpact": "تأثير إعادة التدوير",
+  "recentDrops": "النقاط الأخيرة",
+  "viewAll": "عرض الكل",
+  "dropStatusDistribution": "حالة النقطة",
+  "co2VolumeSaved": "حجم CO₂ المحفوظ",
+  "totalCo2Saved": "إجمالي CO₂ المحفوظ: {amount} كجم",
+  "@totalCo2Saved": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dropActivity": "نشاط النقاط",
+  "dropsCreated": "النقاط المُنشأة ({timeRange}): {count}",
+  "@dropsCreated": {
+    "placeholders": {
+      "timeRange": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPickingImage": "خطأ في اختيار الصورة: {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToUploadImage": "فشل تحميل الصورة: {error}",
+  "@failedToUploadImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropUpdatedSuccessfully": "تم تحديث النقطة بنجاح!",
+  "errorUpdatingDrop": "خطأ في تحديث النقطة: {error}",
+  "@errorUpdatingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDrop": "حذف النقطة",
+  "areYouSureDeleteDrop": "هل أنت متأكد من أنك تريد حذف هذه النقطة؟ لا يمكن التراجع عن هذا الإجراء.",
+  "cancel": "إلغاء",
+  "delete": "حذف",
+  "dropDeletedSuccessfully": "تم حذف النقطة بنجاح!",
+  "errorDeletingDrop": "خطأ في حذف النقطة: {error}",
+  "@errorDeletingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnterNumberOfBottles": "يرجى إدخال عدد الزجاجات",
+  "pleaseEnterValidNumber": "يرجى إدخال رقم صحيح",
+  "pleaseEnterNumberOfCans": "يرجى إدخال عدد العلب",
+  "anyAdditionalInstructions": "أي تعليمات إضافية للجامع...",
+  "collectorCanLeaveOutside": "يمكن للجامع ترك العناصر في الخارج إذا لم يكن أحد في المنزل",
+  "location": "الموقع",
+  "loadingAddress": "جاري تحميل العنوان...",
+  "locationFormat": "الموقع: {lat}, {lng}",
+  "@locationFormat": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSelected": "تم اختيار الموقع",
+  "currentDropLocation": "موقع النقطة الحالي",
+  "tapConfirmToSetLocation": "اضغط على \"تأكيد\" لتعيين هذا الموقع",
+  "confirm": "تأكيد",
+  "quickActions": "إجراءات سريعة",
+  "getHelp": "احصل على المساعدة",
+  "selectCategoryAndGetSupport": "اختر فئة واحصل على الدعم لمشكلتك",
+  "mySupportTickets": "تذاكر الدعم الخاصة بي",
+  "viewAndManageTickets": "عرض وإدارة تذاكر الدعم الموجودة",
+  "contactInformation": "معلومات الاتصال",
+  "emailSupport": "دعم البريد الإلكتروني",
+  "phoneSupport": "دعم الهاتف",
+  "frequentlyAskedQuestions": "الأسئلة الشائعة",
+  "findAnswersToCommonQuestions": "ابحث عن إجابات للأسئلة الشائعة",
+  "needMoreHelp": "تحتاج إلى مزيد من المساعدة؟",
+  "supportTeamAvailable247": "إذا لم تجد ما تبحث عنه، فريق الدعم لدينا هنا لمساعدتك على مدار الساعة طوال أيام الأسبوع.",
+  "supportCategories": "فئات الدعم",
+  "whatDoYouNeedHelpWith": "بماذا تحتاج المساعدة؟",
+  "selectCategoryToContinue": "اختر فئة للمتابعة",
+  "dropIssues": "مشاكل النقاط",
+  "getHelpWithDropProblems": "احصل على المساعدة في المشاكل المتعلقة بالنقاط",
+  "dropIssuesSubtitle": "النقاط المنتهية، المجموعات الملغاة، المجموعات النشطة",
+  "applicationIssues": "مشاكل الطلب",
+  "getHelpWithApplications": "احصل على المساعدة في طلبات المجمع",
+  "applicationIssuesSubtitle": "الطلبات المرفوضة، المراجعات المعلقة",
+  "accountIssues": "مشاكل الحساب",
+  "getHelpWithAccount": "احصل على المساعدة في حسابك",
+  "accountIssuesSubtitle": "تحديثات الملف الشخصي، مشاكل تسجيل الدخول، إعدادات الحساب",
+  "technicalIssues": "المشاكل التقنية",
+  "getHelpWithAppProblems": "احصل على المساعدة في مشاكل التطبيق",
+  "technicalIssuesSubtitle": "تعطل التطبيق، الأخطاء، مشاكل الأداء",
+  "paymentIssues": "مشاكل الدفع",
+  "getHelpWithPayments": "احصل على المساعدة في المدفوعات",
+  "paymentIssuesSubtitle": "تأخيرات الدفع، المدفوعات المفقودة، طرق الدفع",
+  "generalSupport": "الدعم العام",
+  "getHelpWithAnythingElse": "احصل على المساعدة في أي شيء آخر",
+  "generalSupportSubtitle": "الأسئلة، الاقتراحات، القضايا الأخرى",
+  "selectItemToGetHelp": "اختر عنصرًا للحصول على المساعدة",
+  "selectDropFromLast3Days": "اختر نقطة من آخر 3 أيام للحصول على المساعدة",
+  "selectApplicationToGetHelp": "اختر طلب المجمع الخاص بك للحصول على المساعدة",
+  "getHelpWithAccountIssues": "احصل على المساعدة في مشاكل حسابك",
+  "getHelpWithTechnicalProblems": "احصل على المساعدة في المشاكل التقنية",
+  "getHelpWithPaymentIssues": "احصل على المساعدة في مشاكل الدفع",
+  "getHelpWithAnyOtherIssue": "احصل على المساعدة في أي قضية أخرى",
+  "authenticationError": "خطأ في المصادقة",
+  "pleaseLogInAgain": "يرجى تسجيل الدخول مرة أخرى لعرض العناصر الخاصة بك.",
+  "errorLoadingCollections": "خطأ في تحميل المجموعات: {error}",
+  "@errorLoadingCollections": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noCollectionsFound": "لم يتم العثور على مجموعات",
+  "noCollectionsToReport": "ليس لديك أي مجموعات للإبلاغ عن مشاكل لها.",
+  "yourCollectionsLast3Days": "مجموعاتك (آخر 3 أيام)",
+  "errorLoadingDrops": "خطأ في تحميل النقاط: {error}",
+  "@errorLoadingDrops": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noDropsFound": "لم يتم العثور على نقاط",
+  "noDropsToReport": "ليس لديك أي نقاط للإبلاغ عن مشاكل لها.",
+  "yourDropsLast3Days": "نقاطك (آخر 3 أيام)",
+  "noApplications": "لا توجد طلبات",
+  "noCollectorApplications": "ليس لديك أي طلبات مجمع.",
+  "noIssuesFound": "لم يتم العثور على مشاكل",
+  "applicationBeingProcessed": "يتم معالجة طلبك بشكل طبيعي.",
+  "noPaymentsYet": "لا توجد مدفوعات بعد",
+  "paymentFeatureNotAvailable": "ميزة الدفع غير متاحة بعد. اختر دفعة للحصول على المساعدة في المشاكل المتعلقة بالدفع.",
+  "paymentSupport": "دعم الدفع",
+  "getHelpWithPaymentRelatedIssues": "احصل على المساعدة في المشاكل المتعلقة بالدفع",
+  "supportOptions": "خيارات الدعم",
+  "collectorApplication": "طلب المجمع",
+  "status": "الحالة",
+  "applied": "تم التقديم",
+  "drop": "نقطة",
+  "unknown": "غير معروف",
+  "collection": "مجموعة",
+  "items": "عناصر",
+  "@items": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "allTickets": "جميع التذاكر",
+  "open": "مفتوح",
+  "inProgress": "قيد التنفيذ",
+  "onHold": "في الانتظار",
+  "resolved": "تم الحل",
+  "closed": "مغلق",
+  "noSupportTicketsYet": "لا توجد تذاكر دعم بعد",
+  "createFirstSupportTicket": "أنشئ تذكرة الدعم الأولى إذا كنت بحاجة إلى مساعدة",
+  "errorLoadingTickets": "خطأ في تحميل التذاكر",
+  "retry": "إعادة المحاولة",
+  "created": "تم الإنشاء",
+  "lowPriority": "أولوية منخفضة",
+  "mediumPriority": "أولوية متوسطة",
+  "highPriority": "أولوية عالية",
+  "urgent": "عاجل",
+  "dropIssue": "مشكلة نقطة",
+  "collectionIssue": "مشكلة مجموعة",
+  "issueWithDropCreatedOn": "مشكلة في النقطة التي تم إنشاؤها في {date}",
+  "@issueWithDropCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "bottles": "زجاجات",
+  "issueWithCollection": "مشكلة في المجموعة {status} في {date}",
+  "@issueWithCollection": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "authenticationAccount": "🔐 المصادقة والحساب",
+  "appTechnicalIssues": "📱 المشاكل التقنية للتطبيق",
+  "dropCreationManagement": "🏠 إنشاء وإدارة النقاط",
+  "collectionNavigation": "🚚 المجموعة والتنقل",
+  "collectorApplicationCategory": "👤 طلب المجمع",
+  "paymentRewards": "💰 الدفع والمكافآت",
+  "statisticsHistory": "📊 الإحصائيات والتاريخ",
+  "roleSwitching": "🔄 تبديل الدور",
+  "communication": "📞 التواصل",
+  "generalSupportCategory": "🛠️ الدعم العام",
+  "supportTicket": "تذكرة الدعم",
+  "cannotSendMessageTicketClosed": "لا يمكن إرسال الرسالة. هذه التذكرة مغلقة.",
+  "failedToSendMessage": "فشل إرسال الرسالة: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminIsOnline": "المسؤول متصل",
+  "adminIsTyping": "المسؤول يكتب...",
+  "helpUsMaintainQuality": "ساعدنا في الحفاظ على الجودة",
+  "selectReason": "اختر السبب",
+  "inappropriateImage": "🚫 صورة غير مناسبة",
+  "fakeDrop": "❌ نقطة مزيفة",
+  "amountMismatch": "📊 عدد الزجاجات لا يتطابق مع النقطة الحقيقية",
+  "additionalDetailsOptional": "تفاصيل إضافية (اختياري)",
+  "provideMoreInformation": "قدم المزيد من المعلومات...",
+  "pleaseSelectReason": "يرجى اختيار سبب",
+  "dropReportedSuccessfully": "تم الإبلاغ عن النقطة بنجاح. شكرًا لمساعدتك في الحفاظ على سلامة مجتمعنا!",
+  "errorReportingDrop": "خطأ في الإبلاغ عن النقطة: {error}",
+  "@errorReportingDrop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "submitReport": "إرسال التقرير",
+  "timerExpired": "⏰ انتهى المؤقت!",
+  "timerExpiredMessage": "انتهى مؤقت الجمع. سيتم إغلاق شاشة التنقل الآن.",
+  "dropCollection": "جمع النقطة",
+  "walkStraightToDestination": "امشِ مباشرة إلى الوجهة",
+  "directRoute": "طريق مباشر",
+  "unknownDistance": "مسافة غير معروفة",
+  "unknownDuration": "مدة غير معروفة",
+  "routeToDrop": "طريق إلى النقطة",
+  "remaining": "متبقي",
+  "completeCollectionIn": "أكمل الجمع في:",
+  "youHaveArrivedAtDestination": "لقد وصلت إلى الوجهة!",
+  "calculatingRoute": "جاري حساب المسار...",
+  "leaveCollection": "مغادرة الجمع؟",
+  "leaveCollectionMessage": "لديك جمع نشط. هل أنت متأكد أنك تريد المغادرة؟ يجب عليك إكمال أو إلغاء الجمع للمتابعة.",
+  "stay": "البقاء",
+  "leave": "مغادرة",
+  "dropLocation": "موقع النقطة",
+  "slideToCollect": "اسحب للجمع",
+  "releaseToCollect": "أفلت للجمع",
+  "collectionConfirmed": "تم تأكيد الجمع!",
+  "collectionCancelled": "تم إلغاء الجمع: {reason}",
+  "@collectionCancelled": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUserNotAuthenticated": "خطأ: المستخدم غير مصادق عليه",
+  "errorCancellingCollection": "خطأ في إلغاء الجمع: {error}",
+  "@errorCancellingCollection": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "collectionCompletedSuccessfully": "تم إكمال الجمع بنجاح!",
+  "errorNoCollectorIdFound": "خطأ: لم يتم العثور على معرف المجمع",
+  "errorConfirmingCollection": "خطأ في تأكيد الجمع: {error}",
+  "@errorConfirmingCollection": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dropCollected": "تم جمع النقطة!",
+  "pointsEarned": "+{points} نقطة مكتسبة!",
+  "@pointsEarned": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "currentTier": "المستوى الحالي",
+  "totalPoints": "إجمالي النقاط",
+  "awesome": "رائع!",
+  "exitNavigation": "مغادرة التنقل",
+  "exitNavigationMessage": "هل أنت متأكد أنك تريد مغادرة التنقل؟ سيبقى جمعك نشطًا.",
+  "exit": "مغادرة",
+  "collectionTimerRunningLow": "مؤقت الجمع منخفض: متبقي {time}",
+  "@collectionTimerRunningLow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "view": "عرض",
+  "collectionTimerWarning": "تحذير مؤقت الجمع",
+  "yourCollectionTimerRunningLow": "مؤقت الجمع الخاص بك منخفض: متبقي {time}",
+  "@yourCollectionTimerRunningLow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelCollection": "إلغاء الجمع",
+  "cancelCollectionMessage": "هل أنت متأكد أنك تريد إلغاء هذا الجمع؟ يرجى اختيار سبب:",
+  "back": "رجوع",
+  "noAccess": "لا يوجد وصول",
+  "notFound": "غير موجود",
+  "alreadyCollected": "تم الجمع بالفعل",
+  "cancellationReasons": "أسباب الإلغاء",
+  "cancellationReason": "سبب الإلغاء",
+  "cancelled": "ملغى",
+  "wrongLocation": "موقع خاطئ",
+  "unsafeLocation": "موقع غير آمن",
+  "other": "أخرى",
+  "accountTemporarilyLocked": "الحساب مؤقتًا مقفل",
+  "accountLockedReason": "تم قفل حسابك لمدة 24 ساعة بسبب 5 تحذيرات من انتهاء وقت الجمع.",
+  "unlocksIn": "يفتح خلال {time}",
+  "@unlocksIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "lockExpired": "انتهى القفل",
+  "hour": "ساعة",
+  "hours": "ساعات",
+  "minute": "دقيقة",
+  "minutes": "دقائق",
+  "second": "ثانية",
+  "seconds": "ثواني",
+  "availableAgainAt": "متاح مرة أخرى في {time}",
+  "@availableAgainAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "accountLockedInfo": "لا يزال بإمكانك تصفح النقاط واستخدام الميزات الأخرى، لكن لا يمكنك قبول نقاط جديدة حتى يتم فتح القفل.",
+  "iUnderstand": "فهمت",
+  "orderApproved": "تم الموافقة على الطلب",
+  "orderApprovedMessage": "تمت الموافقة على طلبك {orderId} وهو قيد المعالجة.",
+  "@orderApprovedMessage": {
+    "placeholders": {
+      "orderId": {
+        "type": "String"
+      }
+    }
+  },
+  "orderRejected": "تم رفض الطلب",
+  "orderRejectedMessage": "تم رفض طلبك. السبب: {reason}",
+  "@orderRejectedMessage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "orderShipped": "تم شحن الطلب",
+  "orderShippedMessage": "تم شحن طلبك. رقم التتبع: {tracking}",
+  "@orderShippedMessage": {
+    "placeholders": {
+      "tracking": {
+        "type": "String"
+      }
+    }
+  },
+  "orderDelivered": "تم تسليم الطلب",
+  "orderDeliveredMessage": "تم تسليم طلبك بنجاح.",
+  "pointsEarnedTitle": "نقاط مكتسبة",
+  "pointsEarnedMessage": "لقد ربحت {points} نقطة!",
+  "@pointsEarnedMessage": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "applicationApproved": "تمت الموافقة على الطلب",
+  "applicationApprovedMessage": "تهانينا! تمت الموافقة على طلب المجمع الخاص بك.",
+  "applicationRejected": "تم رفض الطلب",
+  "applicationRejectedMessage": "تم رفض طلب المجمع الخاص بك. السبب: {reason}",
+  "@applicationRejectedMessage": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationReversed": "تم عكس الطلب",
+  "applicationReversedMessage": "تم عكس حالة طلب المجمع الخاص بك.",
+  "dropAccepted": "تم قبول النقطة",
+  "dropAcceptedMessage": "قبل مجمع نقطتك.",
+  "dropCollected": "تم جمع النقطة",
+  "dropCollectedMessage": "تم جمع نقطتك بنجاح.",
+  "dropCollectedWithRewards": "تم جمع النقطة",
+  "dropCollectedWithRewardsMessage": "تم جمع نقطتك! لقد ربحت {points} نقطة.",
+  "@dropCollectedWithRewardsMessage": {
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "dropCollectedWithTierUpgrade": "تم جمع النقطة",
+  "dropCollectedWithTierUpgradeMessage": "تهانينا! تم جمع نقطتك وتم ترقيتك إلى مستوى أعلى!",
+  "dropCancelled": "تم إلغاء النقطة",
+  "dropCancelledMessage": "تم إلغاء نقطتك.",
+  "dropExpired": "انتهت صلاحية النقطة",
+  "dropExpiredMessage": "انتهت صلاحية نقطتك ولم تعد متاحة.",
+  "dropNearExpiring": "النقطة على وشك الانتهاء",
+  "dropNearExpiringMessage": "نقطتك على وشك الانتهاء قريبًا.",
+  "dropCensored": "تم حذف النقطة",
+  "dropCensoredMessage": "تم حذف نقطتك بسبب محتوى غير مناسب.",
+  "ticketMessage": "رسالة تذكرة جديدة",
+  "ticketMessageNotification": "لديك رسالة جديدة في تذكرة الدعم الخاصة بك.",
+  "accountUnlocked": "تم فتح الحساب",
+  "accountUnlockedMessage": "تم فتح حسابك. يمكنك الآن البدء في جمع النقاط مرة أخرى!",
+  "userDeleted": "تم حذف الحساب",
+  "userDeletedMessage": "تم حذف حسابك.",
+  "highPriority": "عالي",
+  "trackOrder": "تتبع الطلب",
+  "viewOrder": "عرض الطلب",
+  "shopAgain": "تسوق مرة أخرى",
+  "viewRewards": "عرض المكافآت",
+  "tapToViewRejectionReason": "اضغط لعرض سبب الرفض",
+  "gettingStarted": "البدء",
+  "advancedFeatures": "الميزات المتقدمة",
+  "troubleshooting": "استكشاف الأخطاء وإصلاحها",
+  "bestPractices": "أفضل الممارسات",
+  "collectorApplication": "طلب جامع",
+  "payments": "المدفوعات",
+  "notifications": "الإشعارات",
+  "all": "الكل",
+  "help": "مساعدة",
+  "collector": "جامع",
+  "advanced": "متقدم",
+  "description": "الوصف",
+  "story": "القصة",
+  "totalDrops": "إجمالي القطرات",
+  "aluminumCans": "علب الألمنيوم",
+  "recycled": "معاد تدويره",
+  "recycledBottles": "تم إعادة تدوير {count} زجاجة",
+  "@recycledBottles": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recycledCans": "تم إعادة تدوير {count} علبة",
+  "@recycledCans": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "totalItemsRecycled": "إجمالي العناصر المعاد تدويرها",
+  "dropsCollected": "القطرات المجمعة",
+  "monday": "الاثنين",
+  "tuesday": "الثلاثاء",
+  "wednesday": "الأربعاء",
+  "thursday": "الخميس",
+  "friday": "الجمعة",
+  "saturday": "السبت",
+  "sunday": "الأحد",
+  "january": "يناير",
+  "february": "فبراير",
+  "march": "مارس",
+  "april": "أبريل",
+  "may": "مايو",
+  "june": "يونيو",
+  "july": "يوليو",
+  "august": "أغسطس",
+  "september": "سبتمبر",
+  "october": "أكتوبر",
+  "november": "نوفمبر",
+  "december": "ديسمبر",
+  "todaysTotal": "إجمالي اليوم",
+  "earnings": "الأرباح",
+  "collections": "المجموعات",
+  "noEarningsHistoryYet": "لا يوجد سجل أرباح بعد",
+  "earningsWillAppearHere": "ستظهر أرباحك هنا بمجرد إكمال عمليات الجمع",
+  "totalEarnings": "إجمالي الأرباح",
+  "errorLoadingEarnings": "خطأ في تحميل الأرباح: {error}",
+  "@errorLoadingEarnings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noCompletedCollectionsYet": "لا توجد مجموعات مكتملة بعد",
+  "performanceMetrics": "مقاييس الأداء",
+  "collected": "تم الجمع",
+  "expired": "منتهي الصلاحية",
+  "cancelled": "ملغي",
+  "collectionsOverTime": "المجموعات مع مرور الوقت",
+  "expiredOverTime": "منتهي الصلاحية مع مرور الوقت",
+  "cancelledOverTime": "ملغي مع مرور الوقت",
+  "totalThisWeek": "إجمالي هذا الأسبوع",
+  "totalThisMonth": "إجمالي هذا الشهر",
+  "totalThisYear": "إجمالي هذه السنة",
+  "mon": "الاثنين",
+  "tue": "الثلاثاء",
+  "wed": "الأربعاء",
+  "thu": "الخميس",
+  "fri": "الجمعة",
+  "sat": "السبت",
+  "sun": "الأحد",
+  "jan": "يناير",
+  "feb": "فبراير",
+  "mar": "مارس",
+  "apr": "أبريل",
+  "may": "مايو",
+  "jun": "يونيو",
+  "jul": "يوليو",
+  "aug": "أغسطس",
+  "sep": "سبتمبر",
+  "oct": "أكتوبر",
+  "nov": "نوفمبر",
+  "dec": "ديسمبر",
+  "daysAgoShort": "منذ {days} يوم",
+  "@daysAgoShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "at": "في",
+  "total": "الإجمالي",
+  "noDropsCreatedYet": "لم يتم إنشاء أي قطرات بعد",
+  "createYourFirstDropToGetStarted": "أنشئ أول قطرة للبدء",
+  "noActiveDrops": "لا توجد قطرات نشطة",
+  "noCollectedDrops": "لا توجد قطرات مجمعة بعد",
+  "noStaleDrops": "لا توجد قطرات قديمة",
+  "noCensoredDrops": "لا توجد قطرات محذوفة",
+  "noFlaggedDrops": "لا توجد قطرات معلقة",
+  "noDropsMatchYourFilters": "لا توجد قطرات تطابق المرشحات الخاصة بك",
+  "tryAdjustingYourFilters": "حاول تعديل المرشحات الخاصة بك",
+  "clearFilters": "مسح المرشحات",
+  "noDropsAvailable": "لا توجد قطرات متاحة",
+  "checkBackLaterForNewDrops": "تحقق لاحقًا للحصول على قطرات جديدة",
+  "note": "ملاحظة",
+  "outside": "خارج",
+  "filterDrops": "تصفية القطرات",
+  "status": "الحالة",
+  "date": "التاريخ",
+  "distance": "المسافة",
+  "apply": "تطبيق",
+  "cancel": "إلغاء",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوم",
+  "thisMonth": "هذا الشهر",
+  "lastMonth": "الشهر الماضي",
+  "within1Km": "ضمن 1 كم",
+  "within3Km": "ضمن 3 كم",
+  "within5Km": "ضمن 5 كم",
+  "within10Km": "ضمن 10 كم",
+  "rewardHistory": "سجل المكافآت",
+  "noRewardHistoryYet": "لا يوجد سجل مكافآت بعد",
+  "points": "النقاط",
+  "tier": "المستوى",
+  "tierUp": "ترقية المستوى!",
+  "acceptDrop": "قبول القطرة",
+  "completeCurrentDropFirst": "أكمل القطرة الحالية أولاً",
+  "distanceUnavailable": "المسافة غير متاحة",
+  "away": "بعيد",
+  "meters": "م",
+  "kilometers": "كم",
+  "minutesShort": "د",
+  "hoursShort": "س",
+  "tierSystem": "نظام المستويات",
+  "current": "الحالي",
+  "earnPointsPerDrop": "اكسب {points} نقطة لكل قطرة",
+  "@earnPointsPerDrop": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "dropsRequired": "مطلوب {count} قطرة",
+  "@dropsRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "start": "ابدأ",
+  "close": "إغلاق",
+  "filterHistory": "تصفية السجل",
+  "searchHistory": "البحث في السجل",
+  "searchByNotesBottleTypeOrCancellationReason": "البحث حسب الملاحظات أو نوع الزجاجة أو سبب الإلغاء...",
+  "viewType": "نوع العرض",
+  "status": "الحالة",
+  "timeRange": "النطاق الزمني",
+  "itemType": "نوع العنصر",
+  "bottleType": "نوع الزجاجة",
+  "allTime": "كل الوقت",
+  "last3Months": "آخر 3 أشهر",
+  "last6Months": "آخر 6 أشهر",
+  "thisYear": "هذا العام",
+  "allItems": "جميع العناصر",
+  "bottlesOnly": "زجاجات فقط",
+  "cansOnly": "علب فقط",
+  "mixed": "مختلط",
+  "allTypes": "جميع الأنواع",
+  "clearAll": "مسح الكل",
+  "activeFilters": "نشط",
+  "waitingForCollector": "في انتظار المجمع",
+  "liveCollectorOnTheWay": "🟢 مباشر - المجمع في الطريق",
+  "collectorOnHisWay": "المجمع في طريقه لالتقاط إسقاطك",
+  "collectorWasOnTheWay": "كان المجمع في الطريق",
+  "waiting": "في الانتظار...",
+  "notYetCollected": "لم يتم الجمع بعد",
+  "justNow": "الآن",
+  "minutesAgo": "منذ {minutes} دقيقة",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "منذ {hours} ساعة",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "منذ {days} يوم",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "created": "تم الإنشاء",
+  "onTheWay": "في الطريق",
+  "wasOnTheWay": "كان في الطريق",
+  "accepted": "تم القبول",
+  "sessionTime": "وقت الجلسة",
+  "completed": "مكتمل",
+  "myDrops": "إسقاطاتي",
+  "pleaseLoginToViewYourDrops": "يرجى تسجيل الدخول لعرض إسقاطاتك",
+  "errorLoadingUserData": "خطأ في تحميل بيانات المستخدم: {error}",
+  "@errorLoadingUserData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingUserMode": "خطأ في تحميل وضع المستخدم: {error}",
+  "@errorLoadingUserMode": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "earn500Points": "اكسب 500 نقطة",
+  "forEachFriendWhoJoins": "لكل صديق ينضم",
+  "yourReferralCode": "رمز الإحالة الخاص بك",
+  "referralCodeCopiedToClipboard": "تم نسخ رمز الإحالة إلى الحافظة",
+  "shareVia": "مشاركة عبر",
+  "whatsapp": "واتساب",
+  "sms": "رسالة نصية",
+  "more": "المزيد",
+  "howItWorks": "كيف يعمل",
+  "shareYourCode": "شارك رمزك",
+  "shareYourUniqueReferralCodeWithFriends": "شارك رمز الإحالة الفريد الخاص بك مع الأصدقاء",
+  "friendSignsUp": "يسجل الصديق",
+  "yourFriendCreatesAnAccountUsingYourCode": "ينشئ صديقك حسابًا باستخدام رمزك",
+  "earnRewards": "اكسب المكافآت",
+  "get500PointsWhenTheyCompleteFirstActivity": "احصل على 500 نقطة عند إكمالهم النشاط الأول",
+  "trainingCenterInfo": "مركز التدريب",
+  "trainingCenterInfoHousehold": "الوصول إلى محتوى التدريب المخصص لمستخدمي الأسر. تعلم كيفية استخدام Botleji بفعالية!",
+  "trainingCenterInfoCollector": "الوصول إلى محتوى التدريب للمجمعين. أتقن تقنيات الجمع وأفضل الممارسات!",
+  "gotIt": "فهمت",
+  "filter": "تصفية",
+  "search": "بحث",
+  "clear": "مسح",
+  "plastic": "بلاستيك",
+  "glass": "زجاج",
+  "aluminum": "ألومنيوم",
+  "dropProgress": "تقدم الإسقاط",
+  "collectionIssues": "مشاكل الجمع",
+  "cancelledTimes": "تم الإلغاء {count} مرات",
+  "@cancelledTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dropAcceptedByCollector": "تم قبول الإسقاط من قبل المجمع",
+  "acceptedDropForCollection": "تم قبول الإسقاط للجمع",
+  "collectionCompletedSuccessfullyNoExclamation": "اكتمل الجمع بنجاح",
+  "applicationIssue": "مشكلة في الطلب",
+  "paymentIssue": "مشكلة في الدفع",
+  "accountIssue": "مشكلة في الحساب",
+  "technicalIssue": "مشكلة تقنية",
+  "generalSupportRequest": "طلب دعم عام",
+  "supportRequest": "طلب دعم",
+  "noDescriptionProvided": "لم يتم تقديم وصف",
+  "becomeACollector": "كن جامعًا",
+  "userNotFound": "المستخدم غير موجود",
+  "welcome": "مرحبًا",
+  "idVerification": "التحقق من الهوية",
+  "selfieWithId": "سيلفي مع الهوية",
+  "reviewAndSubmit": "المراجعة والإرسال",
+  "welcomeToCollectorProgram": "مرحبًا بك في برنامج الجامعين!",
+  "joinOurCommunityOfEcoConsciousCollectors": "انضم إلى مجتمعنا من الجامعين الواعيين بيئيًا وساعد في إحداث فرق في إعادة التدوير.",
+  "earnMoney": "اكسب المال",
+  "getPaidForEveryBottleAndCan": "احصل على أجر مقابل كل زجاجة وعلبة تجمعها",
+  "flexibleHours": "ساعات مرنة",
+  "collectWheneverAndWherever": "اجمع متى وأينما تريد",
+  "helpTheEnvironment": "ساعد البيئة",
+  "contributeToCleanerGreenerWorld": "ساهم في عالم أنظف وأكثر خضرة",
+  "requirements": "المتطلبات",
+  "mustBe18YearsOrOlder": "• يجب أن يكون عمرك 18 عامًا أو أكثر",
+  "validNationalIdCard": "• بطاقة هوية وطنية صالحة",
+  "clearPhotosOfIdAndSelfie": "• صور واضحة للهوية والسيلفي",
+  "goodStandingInCommunity": "• سمعة جيدة في المجتمع",
+  "getStarted": "ابدأ",
+  "idCardVerification": "التحقق من بطاقة الهوية",
+  "pleaseProvideYourIdCardInformation": "يرجى تقديم معلومات {idType} الخاصة بك والتقاط صور واضحة",
+  "@pleaseProvideYourIdCardInformation": {
+    "placeholders": {
+      "idType": {
+        "type": "String"
+      }
+    }
+  },
+  "idCardDetails": "تفاصيل بطاقة الهوية",
+  "passportDetails": "تفاصيل جواز السفر",
+  "idCardType": "نوع بطاقة الهوية",
+  "selectYourIdCardType": "اختر نوع بطاقة الهوية الخاصة بك",
+  "nationalId": "الهوية الوطنية",
+  "passport": "جواز السفر",
+  "pleaseSelectAnIdCardType": "يرجى اختيار نوع بطاقة الهوية",
+  "passportNumber": "رقم جواز السفر",
+  "enterYourPassportNumber": "أدخل رقم جواز السفر الخاص بك",
+  "selectIssueDate": "اختر تاريخ الإصدار",
+  "issueDateLabel": "تاريخ الإصدار",
+  "issueDate": "تاريخ الإصدار: {date}",
+  "@issueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExpiryDate": "اختر تاريخ الانتهاء",
+  "expiryDateLabel": "تاريخ الانتهاء",
+  "expiryDate": "تاريخ الانتهاء: {date}",
+  "@expiryDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "issuingAuthority": "السلطة المصدرة",
+  "egMinistryOfForeignAffairs": "مثال: وزارة الشؤون الخارجية",
+  "idCardNumber": "رقم بطاقة الهوية",
+  "idCardNumberPlaceholder": "12345678",
+  "idCardNumberIsRequired": "رقم بطاقة الهوية مطلوب",
+  "idCardNumberMustBe8Digits": "يجب أن يكون رقم بطاقة الهوية 8 أرقام",
+  "idCardNumberMustContainOnlyDigits": "يجب أن يحتوي رقم بطاقة الهوية على أرقام فقط",
+  "idCardPhotos": "صور بطاقة الهوية",
+  "passportPhotos": "صور جواز السفر",
+  "noPassportMainPagePhoto": "لا توجد صورة للصفحة الرئيسية لجواز السفر",
+  "takePhotoOfMainPageWithDetails": "التقط صورة للصفحة الرئيسية مع تفاصيلك",
+  "retakePhoto": "إعادة التقاط الصورة",
+  "takePassportMainPagePhoto": "التقط صورة للصفحة الرئيسية لجواز السفر",
+  "noIdCardFrontPhoto": "لا توجد صورة لوجه بطاقة الهوية",
+  "takePhotoOfFrontOfIdCard": "التقط صورة لوجه بطاقة الهوية",
+  "retakeFrontPhoto": "إعادة التقاط صورة الوجه",
+  "takeIdCardFrontPhoto": "التقط صورة لوجه بطاقة الهوية",
+  "noIdCardBackPhoto": "لا توجد صورة لظهر بطاقة الهوية",
+  "takePhotoOfBackOfIdCard": "التقط صورة لظهر بطاقة الهوية",
+  "retakeBackPhoto": "إعادة التقاط صورة الظهر",
+  "takeIdCardBackPhoto": "التقط صورة لظهر بطاقة الهوية",
+  "continueButton": "متابعة",
+  "selfieWithIdCard": "سيلفي مع بطاقة الهوية",
+  "pleaseTakeSelfieWhileHoldingId": "يرجى التقاط سيلفي أثناء حمل بطاقة الهوية بجانب وجهك",
+  "noSelfiePhoto": "لا توجد صورة سيلفي",
+  "takeSelfie": "التقط سيلفي",
+  "reviewAndSubmitTitle": "المراجعة والإرسال",
+  "pleaseReviewYourApplication": "يرجى مراجعة طلبك قبل الإرسال",
+  "idCardInformation": "معلومات بطاقة الهوية",
+  "idType": "نوع الهوية",
+  "idNumber": "رقم الهوية",
+  "notProvided": "غير مقدم",
+  "idCard": "بطاقة الهوية",
+  "selfie": "سيلفي",
+  "whatHappensNext": "ماذا يحدث بعد ذلك؟",
+  "applicationReviewProcess": "• سيتم مراجعة طلبك من قبل فريقنا\n• تستغرق المراجعة عادة من 1 إلى 3 أيام عمل\n• ستصلك إشعار بمجرد المراجعة\n• في حالة الموافقة، يمكنك البدء في الجمع فورًا",
+  "submitting": "جاري الإرسال...",
+  "submitApplication": "إرسال الطلب",
+  "pleaseTakeBothPhotosBeforeSubmitting": "يرجى التقاط كلتا الصورتين قبل الإرسال",
+  "pleaseFillInAllRequiredPassportInformation": "يرجى ملء جميع معلومات جواز السفر المطلوبة",
+  "pleaseFillInAllRequiredIdCardInformation": "يرجى ملء جميع معلومات بطاقة الهوية المطلوبة (رقم الهوية والنوع)",
+  "applicationUpdatedSuccessfully": "تم تحديث الطلب بنجاح!",
+  "applicationSubmittedSuccessfully": "تم إرسال الطلب بنجاح!",
+  "errorSubmittingApplication": "خطأ في إرسال الطلب: {error}",
+  "@errorSubmittingApplication": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationStatus": "حالة الطلب",
+  "errorLoadingApplication": "خطأ في تحميل الطلب",
+  "noApplicationFound": "لم يتم العثور على طلب",
+  "youHaventSubmittedApplicationYet": "لم تقم بتقديم طلب جامع بعد.",
+  "pendingReview": "قيد المراجعة",
+  "yourApplicationIsBeingReviewed": "يتم مراجعة طلبك من قبل فريقنا.",
+  "approved": "موافق عليه",
+  "congratulationsApplicationApproved": "تهانينا! تمت الموافقة على طلبك.",
+  "rejected": "مرفوض",
+  "applicationNotApprovedCanApplyAgain": "لم تتم الموافقة على طلبك. يمكنك التقديم مرة أخرى.",
+  "unknown": "غير معروف",
+  "applicationStatusUnknown": "حالة الطلب غير معروفة.",
+  "applicationDetails": "تفاصيل الطلب",
+  "applicationId": "معرف الطلب",
+  "notSpecified": "غير محدد",
+  "appliedOn": "تم التقديم في",
+  "reviewedOn": "تمت المراجعة في",
+  "rejectionReason": "سبب الرفض",
+  "reviewNotes": "ملاحظات المراجعة",
+  "applyAgain": "تقديم مرة أخرى",
+  "applicationInReview": "الطلب قيد المراجعة",
+  "applicationInReviewDialogContent": "يتم حاليًا مراجعة طلبك من قبل فريقنا. تستغرق هذه العملية عادة من 1 إلى 3 أيام عمل. سيتم إشعارك بمجرد اتخاذ القرار.",
+  "reviewProcess": "عملية المراجعة",
+  "back": "رجوع"
+}

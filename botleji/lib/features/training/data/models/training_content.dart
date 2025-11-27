@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+
 class TrainingContent {
   final String id;
   final String title;
@@ -133,6 +136,27 @@ extension TrainingCategoryExtension on TrainingCategory {
         return 'Payments';
       case TrainingCategory.notifications:
         return 'Notifications';
+    }
+  }
+  
+  // Localized display name - requires BuildContext
+  String localizedDisplayName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case TrainingCategory.gettingStarted:
+        return l10n.gettingStarted;
+      case TrainingCategory.advancedFeatures:
+        return l10n.advancedFeatures;
+      case TrainingCategory.troubleshooting:
+        return l10n.troubleshooting;
+      case TrainingCategory.bestPractices:
+        return l10n.bestPractices;
+      case TrainingCategory.collectorApplication:
+        return l10n.collectorApplication;
+      case TrainingCategory.payments:
+        return l10n.payments;
+      case TrainingCategory.notifications:
+        return l10n.notifications;
     }
   }
 

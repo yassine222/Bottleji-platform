@@ -50,7 +50,7 @@ class RewardHistoryItem {
   final int pointsAwarded;
   final int tier;
   final bool tierUpgraded;
-  final String type;
+  final String? type; // Optional - null for collector rewards
   final DateTime collectedAt;
 
   RewardHistoryItem({
@@ -58,18 +58,32 @@ class RewardHistoryItem {
     required this.pointsAwarded,
     required this.tier,
     required this.tierUpgraded,
-    required this.type,
+    this.type, // Optional - null for collector rewards
     required this.collectedAt,
   });
 
   factory RewardHistoryItem.fromJson(Map<String, dynamic> json) {
+    // Handle collectedAt - can be a string or Date object
+    DateTime collectedAt;
+    if (json['collectedAt'] != null) {
+      if (json['collectedAt'] is String) {
+        collectedAt = DateTime.parse(json['collectedAt']);
+      } else if (json['collectedAt'] is DateTime) {
+        collectedAt = json['collectedAt'] as DateTime;
+      } else {
+        collectedAt = DateTime.now();
+      }
+    } else {
+      collectedAt = DateTime.now();
+    }
+    
     return RewardHistoryItem(
       dropId: json['dropId'],
       pointsAwarded: json['pointsAwarded'] ?? 0,
       tier: json['tier'] ?? 1,
       tierUpgraded: json['tierUpgraded'] ?? false,
-      type: json['type'] ?? 'unknown',
-      collectedAt: DateTime.parse(json['collectedAt'] ?? DateTime.now().toIso8601String()),
+      type: json['type'], // Can be null for collector rewards
+      collectedAt: collectedAt,
     );
   }
 }

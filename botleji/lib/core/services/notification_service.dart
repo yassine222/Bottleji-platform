@@ -98,8 +98,11 @@ class NotificationService extends ChangeNotifier {
   Function(String ticketId, bool isTyping, String senderType)? onTypingIndicator;
   Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
   Function(bool isLocked, DateTime? lockedUntil, int warningCount)? onAccountLockStatusUpdate;
+  Function()? onAccountPermanentlyDisabled;
+  Function()? onAccountDeleted; // Callback for permanent account disable (to show dialog)
   Function(String dropId, String reason)? onDropCensored;
   Function(String dropId, String status, Map<String, dynamic> data)? onDropStatusUpdate;
+  Function(NotificationPayload)? onDropCollectedForHousehold; // Callback for drop collected popup (household only)
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -183,54 +186,216 @@ class NotificationService extends ChangeNotifier {
         debugPrint('🔔 ========================================');
 
         // De-dup: ignore if same type+timestamp+id seen in last 10s
-        try {
-          final type = (data['type'] ?? '').toString();
-          final ts = (data['timestamp'] ?? '').toString();
-          final idHint = (data['data']?['ticketId'] ?? data['data']?['dropId'] ?? data['userId'] ?? '').toString();
-          final key = '$type|$ts|$idHint';
-          // Clean old entries
-          _recentNotificationKeys.removeWhere((_, t) => DateTime.now().difference(t) > const Duration(seconds: 20));
-          if (_recentNotificationKeys.containsKey(key)) {
-            debugPrint('🔁 Duplicate notification suppressed: $key');
-            debugPrint('🔁 This notification was already shown in the last 20 seconds');
-            return;
+        // For ticket messages and account lock/unlock, bypass de-duplication entirely to ensure all messages are shown
+        final type = (data['type'] ?? '').toString();
+        
+        // Skip de-duplication for ticket messages and account lock/unlock - they should always be shown
+        if (type != 'ticket_message' && type != 'account_locked' && type != 'account_unlocked') {
+          try {
+            final ts = (data['timestamp'] ?? '').toString();
+            final idHint = (data['data']?['ticketId'] ?? data['data']?['dropId'] ?? data['userId'] ?? '').toString();
+            final key = '$type|$ts|$idHint';
+            
+            // Clean old entries
+            _recentNotificationKeys.removeWhere((_, t) => DateTime.now().difference(t) > const Duration(seconds: 20));
+            
+            if (_recentNotificationKeys.containsKey(key)) {
+              debugPrint('🔁 Duplicate notification suppressed: $key');
+              debugPrint('🔁 This notification was already shown in the last 20 seconds');
+              return;
+            }
+            _recentNotificationKeys[key] = DateTime.now();
+            debugPrint('🔔 Notification key: $key (not a duplicate, proceeding)');
+          } catch (e) {
+            debugPrint('⚠️ Error in de-duplication logic: $e');
           }
-          _recentNotificationKeys[key] = DateTime.now();
-          debugPrint('🔔 Notification key: $key (not a duplicate, proceeding)');
-        } catch (e) {
-          debugPrint('⚠️ Error in de-duplication logic: $e');
+        } else {
+          if (type == 'ticket_message') {
+            debugPrint('🔔 Ticket message notification - bypassing de-duplication to ensure delivery');
+          } else if (type == 'account_locked' || type == 'account_unlocked') {
+            debugPrint('🔔 Account lock/unlock notification - bypassing de-duplication to ensure delivery');
+          }
         }
         
         // Handle account lock/unlock notifications
         if (data['type'] == 'account_locked' || data['type'] == 'account_unlocked') {
-          debugPrint('🔒 Account lock status update received!');
+          debugPrint('🔒 ===== ACCOUNT LOCK/UNLOCK NOTIFICATION RECEIVED =====');
+          debugPrint('🔒 Notification type: ${data['type']}');
+          debugPrint('🔒 Title: ${data['title']}');
+          debugPrint('🔒 Message: ${data['message']}');
+          debugPrint('🔒 Full data: $data');
+          
           final isLocked = data['data']?['isAccountLocked'] ?? false;
-          final lockedUntilStr = data['data']?['accountLockedUntil'];
+          final lockedUntilValue = data['data']?['accountLockedUntil'];
           final warningCount = data['data']?['warningCount'] ?? 0;
           
+          debugPrint('🔒 Raw lockedUntil value: $lockedUntilValue (type: ${lockedUntilValue.runtimeType})');
+          
           DateTime? lockedUntil;
-          if (lockedUntilStr != null) {
+          // Handle null, empty string, or "null" string
+          if (lockedUntilValue != null && 
+              lockedUntilValue.toString().isNotEmpty && 
+              lockedUntilValue.toString().toLowerCase() != 'null') {
             try {
-              lockedUntil = DateTime.parse(lockedUntilStr);
+              lockedUntil = DateTime.parse(lockedUntilValue.toString());
             } catch (e) {
               debugPrint('❌ Error parsing lockedUntil date: $e');
+              debugPrint('❌ Value was: $lockedUntilValue');
             }
+          } else {
+            debugPrint('🔒 lockedUntil is null/empty - this is a PERMANENT lock');
+            lockedUntil = null;
           }
           
           debugPrint('🔒 Lock status: $isLocked, Until: $lockedUntil, Warnings: $warningCount');
           
+          // Check if this is a permanent disable (isLocked = true and lockedUntil = null)
+          final isPermanentlyDisabled = isLocked && lockedUntil == null;
+          debugPrint('🔒 Is permanently disabled: $isPermanentlyDisabled');
+          
           // Show push notification
+          debugPrint('🔒 Attempting to show local notification...');
           _localNotificationService.showNotification(
             title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
             body: data['message'] ?? '',
             id: 9000, // Unique ID for lock notifications
             payload: 'account_lock:$isLocked',
           );
+          debugPrint('🔒 Local notification service called');
           
           // Call the callback to update user state
-          onAccountLockStatusUpdate?.call(isLocked, lockedUntil, warningCount);
+          if (onAccountLockStatusUpdate != null) {
+            debugPrint('🔒 Calling account lock status update callback');
+            onAccountLockStatusUpdate!.call(isLocked, lockedUntil, warningCount);
+          } else {
+            debugPrint('⚠️ onAccountLockStatusUpdate callback is null');
+          }
+          
+          // If permanently disabled, trigger the permanent disable callback to show dialog
+          if (isPermanentlyDisabled) {
+            debugPrint('🔒 ===== ACCOUNT PERMANENTLY DISABLED DETECTED =====');
+            debugPrint('🔒 Account permanently disabled - triggering permanent disable callback');
+            debugPrint('🔒 Callback is null: ${onAccountPermanentlyDisabled == null}');
+            if (onAccountPermanentlyDisabled != null) {
+              debugPrint('🔒 Calling onAccountPermanentlyDisabled callback NOW');
+              try {
+                // Call immediately
+                onAccountPermanentlyDisabled!.call();
+                debugPrint('🔒 Callback executed successfully');
+                
+                // Also schedule a delayed call as backup (in case first one fails)
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  debugPrint('🔒 Backup: Calling onAccountPermanentlyDisabled callback again');
+                  try {
+                    onAccountPermanentlyDisabled!.call();
+                  } catch (e) {
+                    debugPrint('❌ Backup callback also failed: $e');
+                  }
+                });
+              } catch (e) {
+                debugPrint('❌ Error executing callback: $e');
+                // Retry after a delay
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  debugPrint('🔒 Retrying callback after error');
+                  try {
+                    onAccountPermanentlyDisabled!.call();
+                  } catch (e2) {
+                    debugPrint('❌ Retry also failed: $e2');
+                  }
+                });
+              }
+            } else {
+              debugPrint('⚠️ onAccountPermanentlyDisabled callback is null - popup will not show!');
+              debugPrint('⚠️ This means the callback was not set up in main.dart');
+            }
+            debugPrint('🔒 ====================================================');
+          }
 
+          debugPrint('🔒 ====================================================');
           // We've already shown a notification for lock/unlock; skip generic handler
+          return;
+        }
+        
+        // Handle account restored notification
+        if (data['type'] == 'account_restored') {
+          debugPrint('✅ ===== ACCOUNT RESTORED NOTIFICATION RECEIVED =====');
+          debugPrint('✅ Notification type: ${data['type']}');
+          debugPrint('✅ Title: ${data['title']}');
+          debugPrint('✅ Message: ${data['message']}');
+          debugPrint('✅ Full data: $data');
+          
+          // Show push notification
+          debugPrint('✅ Attempting to show local notification...');
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'Account Restored',
+            body: data['message'] ?? 'Your account has been restored. You can now log in again!',
+            id: 9500, // Unique ID for account restored notifications
+            payload: 'account_restored',
+          );
+          debugPrint('✅ Local notification service called');
+          
+          debugPrint('✅ ====================================================');
+          // Skip generic handler to avoid duplicate toast
+          return;
+        }
+        
+        // Handle user deleted notification (soft delete by admin)
+        if (data['type'] == 'user_deleted') {
+          debugPrint('🗑️ ===== USER DELETED NOTIFICATION RECEIVED =====');
+          debugPrint('🗑️ Notification type: ${data['type']}');
+          debugPrint('🗑️ Title: ${data['title']}');
+          debugPrint('🗑️ Message: ${data['message']}');
+          debugPrint('🗑️ Full data: $data');
+          
+          // Show push notification
+          debugPrint('🗑️ Attempting to show local notification...');
+          _localNotificationService.showNotification(
+            title: data['title'] ?? 'Account Deleted',
+            body: data['message'] ?? 'Your account has been deleted by an administrator.',
+            id: 9200, // Unique ID for user deleted notifications
+            payload: 'user_deleted',
+          );
+          debugPrint('🗑️ Local notification service called');
+          
+          // Trigger the account deleted callback to show dialog
+          debugPrint('🗑️ ===== ACCOUNT DELETED DETECTED =====');
+          debugPrint('🗑️ Account deleted - triggering account deleted callback');
+          debugPrint('🗑️ Callback is null: ${onAccountDeleted == null}');
+          if (onAccountDeleted != null) {
+            debugPrint('🗑️ Calling onAccountDeleted callback NOW');
+            try {
+              // Call immediately
+              onAccountDeleted!.call();
+              debugPrint('🗑️ Callback executed successfully');
+              
+              // Also schedule a delayed call as backup (in case first one fails)
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                debugPrint('🗑️ Backup: Calling onAccountDeleted callback again');
+                try {
+                  onAccountDeleted!.call();
+                } catch (e) {
+                  debugPrint('❌ Backup callback also failed: $e');
+                }
+              });
+            } catch (e) {
+              debugPrint('❌ Error executing callback: $e');
+              // Retry after a delay
+              Future.delayed(const Duration(milliseconds: 500), () {
+                debugPrint('🗑️ Retrying callback after error');
+                try {
+                  onAccountDeleted!.call();
+                } catch (e2) {
+                  debugPrint('❌ Retry also failed: $e2');
+                }
+              });
+            }
+          } else {
+            debugPrint('⚠️ onAccountDeleted callback is null - popup will not show!');
+            debugPrint('⚠️ This means the callback was not set up in main.dart');
+          }
+          debugPrint('🗑️ ====================================================');
+          
+          // Skip generic handler to avoid duplicate toast
           return;
         }
         
@@ -264,15 +429,21 @@ class NotificationService extends ChangeNotifier {
           debugPrint('📨 NotificationService: Full data: ${data['data']}');
           debugPrint('📨 NotificationService: Message data: ${data['data']?['message']}');
           
-          // Show push notification
+          // Show push notification with unique ID for each message
+          // Use timestamp + message hash to ensure each message gets a unique notification ID
+          final messageData = data['data']?['message'];
+          final sentAt = messageData?['sentAt']?.toString() ?? DateTime.now().toIso8601String();
+          final messageHash = message.hashCode;
+          final uniqueNotificationId = 5000 + (ticketId.hashCode + messageHash + sentAt.hashCode) % 100000;
+          
           _localNotificationService.showNotification(
             title: data['title'] ?? 'New Support Message',
             body: message,
-            id: 5000 + ticketId.hashCode % 1000, // Unique ID for each ticket
+            id: uniqueNotificationId, // Unique ID for each message
             payload: 'ticket:$ticketId',
           );
           
-          // Call the ticket message callback for real-time updates
+          // Call the ticket message callback for real-time updates (if user is viewing the ticket)
           debugPrint('📨 NotificationService: Checking callback - onTicketMessageReceived: ${onTicketMessageReceived != null}');
           debugPrint('📨 NotificationService: Data available: ${data['data'] != null}');
           if (onTicketMessageReceived != null && data['data'] != null) {
@@ -535,6 +706,15 @@ class NotificationService extends ChangeNotifier {
     // Keep only last 50 notifications
     if (_notifications.length > 50) {
       _notifications.removeRange(50, _notifications.length);
+    }
+    
+    // Check if this is a drop collected notification for household users
+    // This should trigger a popup in addition to the regular notification
+    if (notification.type == 'drop_collected' || 
+        notification.type == 'drop_collected_with_rewards' || 
+        notification.type == 'drop_collected_with_tier_upgrade') {
+      debugPrint('🎉 Drop collected notification detected - triggering household popup callback');
+      onDropCollectedForHousehold?.call(notification);
     }
     
     // Show local notification

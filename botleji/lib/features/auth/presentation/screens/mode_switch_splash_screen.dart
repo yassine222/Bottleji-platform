@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 import 'dart:async'; // Added for Timer
 
 
@@ -125,30 +126,32 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
     super.dispose();
   }
 
-  String _getModeTitle() {
+  String _getModeTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (widget.targetMode) {
       case UserMode.household:
-        return 'Household Mode';
+        return l10n.householdMode;
       case UserMode.collector:
-        return 'Collector Mode';
+        return l10n.collectorMode;
     }
   }
 
-  String _getModeDescription() {
+  String _getModeDescription(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (widget.targetMode) {
       case UserMode.household:
-        return 'Create drops and track your recycling';
+        return l10n.householdModeDescription;
       case UserMode.collector:
-        return 'Collect bottles and earn rewards';
+        return l10n.collectorModeDescription;
     }
   }
 
-  IconData _getModeIcon() {
+  String _getModeImagePath() {
     switch (widget.targetMode) {
       case UserMode.household:
-        return Icons.home;
+        return 'assets/images/household_mode.png';
       case UserMode.collector:
-        return Icons.recycling;
+        return 'assets/images/collector_mode.png';
     }
   }
 
@@ -203,10 +206,10 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // App logo/icon
+                  // Mode-specific image
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 200,
+                    height: 200,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
@@ -218,10 +221,24 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.recycling,
-                      size: 60,
-                      color: _getModeColor(),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Image.asset(
+                        _getModeImagePath(),
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to icon if image fails to load
+                          return Icon(
+                            widget.targetMode == UserMode.household
+                                ? Icons.home
+                                : Icons.recycling,
+                            size: 80,
+                            color: _getModeColor(),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   
@@ -229,7 +246,7 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
                   
                   // Mode title
                   Text(
-                    _getModeTitle(),
+                    _getModeTitle(context),
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -241,27 +258,11 @@ class _ModeSwitchSplashScreenState extends ConsumerState<ModeSwitchSplashScreen>
                   
                   // Mode description
                   Text(
-                    _getModeDescription(),
+                    _getModeDescription(context),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white.withOpacity(0.9),
                     ),
                     textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 60),
-                  
-                  // Mode icon
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.recycling,
-                      size: 40,
-                      color: Colors.white,
-                    ),
                   ),
                   
                   const SizedBox(height: 40),

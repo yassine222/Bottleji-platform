@@ -1,6 +1,8 @@
 import { Injectable, UnauthorizedException, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -10,6 +12,7 @@ import { SetupProfileDto } from './dto/setup-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateCollectorSubscriptionDto } from './dto/update-collector-subscription.dto';
 import { UserRole } from '../users/schemas/user.schema';
+import { TemporarySignup, TemporarySignupDocument } from './schemas/temporary-signup.schema';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -19,6 +22,7 @@ export class AuthService {
     private emailService: EmailService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @InjectModel(TemporarySignup.name) private temporarySignupModel: Model<TemporarySignupDocument>,
   ) {}
 
   private generateOTP(): string {
@@ -26,66 +30,96 @@ export class AuthService {
   }
 
   async signup(createUserDto: CreateUserDto) {
+    // Check if user already exists and is verified
     const existingUser = await this.usersService.findByEmail(createUserDto.email);
     if (existingUser) {
-      throw new BadRequestException('Email already exists');
+      // Explicitly check if account is verified
+      if (existingUser.isVerified) {
+        throw new BadRequestException('Email already exists and is verified');
+      } else {
+        // This shouldn't happen with new flow, but handle legacy unverified accounts
+        throw new BadRequestException('An account with this email exists but is not verified. Please verify your email or contact support.');
+      }
     }
 
+    // Check if there's already a temporary signup for this email
+    const existingTempSignup = await this.temporarySignupModel.findOne({ email: createUserDto.email }).exec();
+    
     const otp = this.generateOTP();
     const otpExpiresAt = new Date();
     otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
 
-    const user = await this.usersService.create({
-      ...createUserDto,
-      verificationOTP: otp,
-      otpExpiresAt,
-      isVerified: false,
-      otpAttempts: 0,
-    });
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    if (existingTempSignup) {
+      // Update existing temporary signup with new OTP
+      existingTempSignup.verificationOTP = otp;
+      existingTempSignup.otpExpiresAt = otpExpiresAt;
+      existingTempSignup.password = hashedPassword;
+      existingTempSignup.otpAttempts = 0;
+      await existingTempSignup.save();
+    } else {
+      // Create new temporary signup (account not created yet)
+      await this.temporarySignupModel.create({
+        email: createUserDto.email,
+        password: hashedPassword,
+        verificationOTP: otp,
+        otpExpiresAt,
+        otpAttempts: 0,
+      });
+    }
 
     // Send OTP via email
-    await this.emailService.sendOTPEmail(user.email, otp);
+    await this.emailService.sendOTPEmail(createUserDto.email, otp);
 
     return {
       message: 'Please verify your email with the OTP sent',
-      email: user.email,
+      email: createUserDto.email,
       otp, // Remove this in production
     };
   }
 
   async verifyOTP(verifyOtpDto: VerifyOtpDto) {
-    const user = await this.usersService.findByEmail(verifyOtpDto.email);
-    if (!user) {
-      throw new BadRequestException('User not found');
+    // First check if user already exists and is verified (shouldn't happen, but safety check)
+    const existingUser = await this.usersService.findByEmail(verifyOtpDto.email);
+    if (existingUser && existingUser.isVerified) {
+      throw new BadRequestException('This email is already verified. Please login instead.');
     }
 
-    if (user.isVerified) {
-      throw new BadRequestException('User is already verified');
+    // Find temporary signup (account not created yet)
+    const tempSignup = await this.temporarySignupModel.findOne({ email: verifyOtpDto.email }).exec();
+    if (!tempSignup) {
+      throw new BadRequestException('No signup found for this email. Please sign up first.');
     }
 
-    if (user.otpAttempts >= 3) {
-      throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
-    }
-
-    if (user.otpExpiresAt && new Date() > user.otpExpiresAt) {
+    // Check if OTP has expired
+    if (new Date() > tempSignup.otpExpiresAt) {
       throw new BadRequestException('OTP has expired. Please request a new OTP.');
     }
 
-    if (user.verificationOTP !== verifyOtpDto.otp) {
+    // Check OTP attempts
+    if (tempSignup.otpAttempts >= 3) {
+      throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
+    }
+
+    // Verify OTP
+    if (tempSignup.verificationOTP !== verifyOtpDto.otp) {
       // Increment OTP attempts
-      await this.usersService.update(user.id, {
-        otpAttempts: user.otpAttempts + 1,
-      });
+      tempSignup.otpAttempts += 1;
+      await tempSignup.save();
       throw new BadRequestException('Invalid OTP');
     }
 
-    // Mark user as verified and clear OTP
-    await this.usersService.update(user.id, {
-      isVerified: true,
-      verificationOTP: undefined,
-      otpExpiresAt: undefined,
-      otpAttempts: 0,
+    // OTP is valid - NOW create the actual user account
+    const user = await this.usersService.create({
+      email: tempSignup.email,
+      password: tempSignup.password, // Already hashed
+      isVerified: true, // Account is verified since OTP was correct
     });
+
+    // Delete temporary signup after successful account creation
+    await this.temporarySignupModel.findByIdAndDelete(tempSignup._id).exec();
 
     // Generate JWT token
     const token = this.jwtService.sign({
@@ -95,7 +129,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Email verified successfully',
+      message: 'Email verified successfully. Account created.',
       token,
       user: {
         id: user.id,
@@ -115,47 +149,70 @@ export class AuthService {
   }
 
   async resendOTP(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new BadRequestException('User not found');
+    // Check if user already exists and is verified
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser && existingUser.isVerified) {
+      throw new BadRequestException('User already exists and is verified. Please login instead.');
     }
 
-    if (user.isVerified) {
-      throw new BadRequestException('User is already verified');
+    // Find temporary signup
+    const tempSignup = await this.temporarySignupModel.findOne({ email }).exec();
+    if (!tempSignup) {
+      throw new BadRequestException('No signup found for this email. Please sign up first.');
     }
 
     const otp = this.generateOTP();
     const otpExpiresAt = new Date();
     otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 15);
 
-    await this.usersService.update(user.id, {
-      verificationOTP: otp,
-      otpExpiresAt,
-      otpAttempts: 0,
-    });
+    // Update temporary signup with new OTP
+    tempSignup.verificationOTP = otp;
+    tempSignup.otpExpiresAt = otpExpiresAt;
+    tempSignup.otpAttempts = 0;
+    await tempSignup.save();
 
-    await this.emailService.sendOTPEmail(user.email, otp);
+    await this.emailService.sendOTPEmail(email, otp);
 
     return {
       message: 'OTP resent successfully',
-      email: user.email,
+      email: email,
+      otp, // Remove this in production
     };
   }
 
   async login(loginDto: LoginDto) {
+    console.log(`🔐 Login attempt for email: ${loginDto.email}`);
     const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {
+      console.log(`❌ Login failed: User not found for email: ${loginDto.email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    console.log(`✅ User found: ${user.id}, verified: ${user.isVerified}, deleted: ${user.isDeleted}`);
+
+    // Check if account is soft-deleted
+    if (user.isDeleted) {
+      console.log(`❌ Login failed: Account is soft-deleted for user: ${user.id}`);
+      throw new UnauthorizedException('Your account has been deleted by an administrator. Please contact support: support@bottleji.com');
+    }
+
     if (!user.isVerified) {
+      console.log(`❌ Login failed: Account not verified for user: ${user.id}`);
       throw new UnauthorizedException('Please verify your email first');
     }
 
     // Compare password using bcrypt
+    console.log(`🔐 Comparing password for user: ${user.id}`);
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
+      console.log(`❌ Login failed: Invalid password for user: ${user.id}`);
       throw new UnauthorizedException('Invalid credentials');
+    }
+    console.log(`✅ Password valid for user: ${user.id}`);
+
+    // Check if account is permanently disabled (isAccountLocked = true and accountLockedUntil = null)
+    if (user.isAccountLocked && user.accountLockedUntil === null) {
+      throw new UnauthorizedException('Your account has been permanently disabled due to repeated violations of Bottleji\'s community guidelines. Please contact support: support@bottleji.com');
     }
 
     // Check if account lock has expired and auto-unlock
@@ -171,6 +228,9 @@ export class AuthService {
         if (unlockedUser) {
           Object.assign(user, unlockedUser);
         }
+      } else {
+        // Account is still locked (temporary lock)
+        // Allow login but user will see lock card in app
       }
     }
 
@@ -348,7 +408,14 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    return {
+    // Debug: Log reward history from database
+    console.log('📊 getProfile - User ID:', userId);
+    console.log('📊 getProfile - Reward history from DB:', JSON.stringify(user.rewardHistory, null, 2));
+    console.log('📊 getProfile - Reward history type:', typeof user.rewardHistory);
+    console.log('📊 getProfile - Reward history is array:', Array.isArray(user.rewardHistory));
+    console.log('📊 getProfile - Reward history length:', user.rewardHistory?.length || 0);
+
+    const profileData = {
       user: {
         id: user.id,
         email: user.email,
@@ -365,8 +432,24 @@ export class AuthService {
         isAccountLocked: user.isAccountLocked,
         accountLockedUntil: user.accountLockedUntil,
         warningCount: user.warningCount,
+        rewardHistory: user.rewardHistory || [],
+        totalEarnings: user.totalEarnings || 0,
+        earningsHistory: user.earningsHistory || [],
       },
     };
+
+    // Debug: Log what we're sending
+    console.log('📊 getProfile - Sending reward history:', JSON.stringify(profileData.user.rewardHistory, null, 2));
+    console.log('📊 getProfile - Reward history in response type:', typeof profileData.user.rewardHistory);
+    console.log('📊 getProfile - Reward history in response is array:', Array.isArray(profileData.user.rewardHistory));
+    console.log('📊 getProfile - Reward history in response length:', profileData.user.rewardHistory?.length || 0);
+    
+    // Debug earnings data
+    console.log('📊 getProfile - Total earnings:', profileData.user.totalEarnings);
+    console.log('📊 getProfile - Earnings history:', JSON.stringify(profileData.user.earningsHistory, null, 2));
+    console.log('📊 getProfile - Earnings history length:', profileData.user.earningsHistory?.length || 0);
+
+    return profileData;
   }
 
   async getUserById(userId: string) {
@@ -518,6 +601,23 @@ export class AuthService {
 
     return {
       message: 'Password changed successfully',
+    };
+  }
+
+  async saveFCMToken(userId: string, fcmToken: string) {
+    await this.usersService.update(userId, {
+      fcmToken: fcmToken,
+    });
+
+    return {
+      message: 'FCM token saved successfully',
+    };
+  }
+
+  async invalidateSession(userId: string) {
+    await this.usersService.invalidateSession(userId);
+    return {
+      message: 'Session invalidated successfully',
     };
   }
 

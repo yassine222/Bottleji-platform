@@ -5,9 +5,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
+import 'package:botleji/core/utils/map_styles.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 import 'package:flutter/foundation.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class EditDropScreen extends ConsumerStatefulWidget {
   final Drop drop;
@@ -70,7 +72,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
     _notes = widget.drop.notes ?? '';
     _leaveOutside = widget.drop.leaveOutside;
     _selectedDropLocation = widget.drop.location;
-    _selectedLocationAddress = 'Loading address...';
+    _selectedLocationAddress = 'Loading address...'; // Will be localized in build
     _useCurrentLocation = false;
     _isLocationLocked = false;
 
@@ -116,16 +118,32 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
     super.dispose();
   }
 
-  Future<void> _loadAddressForLocation(LatLng location) async {
+  Future<void> _loadAddressForLocation(LatLng location, {BuildContext? context}) async {
     try {
       // For now, just set a simple address since geocoding is not available
-      setState(() {
-        _selectedLocationAddress = 'Location: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
-      });
+      if (context != null && mounted) {
+        setState(() {
+          _selectedLocationAddress = AppLocalizations.of(context).locationFormat(
+            location.latitude.toStringAsFixed(6),
+            location.longitude.toStringAsFixed(6),
+          );
+        });
+      } else {
+        // Fallback for initState call
+        setState(() {
+          _selectedLocationAddress = 'Location: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
+        });
+      }
     } catch (e) {
-      setState(() {
-        _selectedLocationAddress = 'Location selected';
-      });
+      if (context != null && mounted) {
+        setState(() {
+          _selectedLocationAddress = AppLocalizations.of(context).locationSelected;
+        });
+      } else {
+        setState(() {
+          _selectedLocationAddress = 'Location selected';
+        });
+      }
     }
   }
 
@@ -146,7 +164,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text(AppLocalizations.of(context).errorPickingImage(e.toString())),
             backgroundColor: Colors.red,
           ),);
       }
@@ -196,7 +214,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
       final url = await fileRef.getDownloadURL();
       return url;
     } catch (e) {
-      throw Exception('Failed to upload image: $e');
+      throw Exception(AppLocalizations.of(context).failedToUploadImage(e.toString()));
     }
   }
 
@@ -280,8 +298,8 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Drop updated successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dropUpdatedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -291,7 +309,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating drop: $e'),
+            content: Text(AppLocalizations.of(context).errorUpdatingDrop(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -309,14 +327,14 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Drop'),
-        content: const Text(
-          'Are you sure you want to delete this drop? This action cannot be undone.',
+        title: Text(AppLocalizations.of(context).deleteDrop),
+        content: Text(
+          AppLocalizations.of(context).areYouSureDeleteDrop,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -327,7 +345,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Delete'),
+            child: Text(AppLocalizations.of(context).delete),
           ),
         ],
       ),
@@ -345,8 +363,8 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Drop deleted successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dropDeletedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -356,7 +374,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting drop: $e'),
+            content: Text(AppLocalizations.of(context).errorDeletingDrop(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -372,16 +390,27 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize localized address if still showing default
+    if (_selectedLocationAddress == 'Loading address...' || 
+        _selectedLocationAddress.startsWith('Location: ')) {
+      // Reload address with localization
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadAddressForLocation(_selectedDropLocation, context: context);
+        }
+      });
+    }
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Drop'),
+        title: Text(AppLocalizations.of(context).editDrop),
         actions: [
           // Delete button for pending drops
           if (widget.drop.status == DropStatus.pending)
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _isLoading ? null : _showDeleteConfirmation,
-              tooltip: 'Delete Drop',
+              tooltip: AppLocalizations.of(context).deleteDrop,
             ),
           if (_isLoading)
             const Padding(
@@ -464,7 +493,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                   children: [
                     // Bottle type selection
                     Text(
-                      'Bottle Type',
+                      AppLocalizations.of(context).bottleType,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -478,7 +507,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                       ),
                       items: BottleType.values.map((type) => DropdownMenuItem(
                         value: type,
-                        child: Text(type.name.toUpperCase()),
+                        child: Text(type.localizedDisplayName(context)),
                       )).toList(),
                       onChanged: (value) {
                         setState(() {
@@ -512,18 +541,18 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                           child: TextFormField(
                             controller: _bottlesController,
                             focusNode: _bottlesFocusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Number of Bottles',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).numberOfPlasticBottles,
+                              border: const OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter number of bottles';
+                                return AppLocalizations.of(context).pleaseEnterNumberOfBottles;
                               }
                               final number = int.tryParse(value);
                               if (number == null || number < 0) {
-                                return 'Please enter a valid number';
+                                return AppLocalizations.of(context).pleaseEnterValidNumber;
                               }
                               return null;
                             },
@@ -534,18 +563,18 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                           child: TextFormField(
                             controller: _cansController,
                             focusNode: _cansFocusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Number of Cans',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context).numberOfCans,
+                              border: const OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter number of cans';
+                                return AppLocalizations.of(context).pleaseEnterNumberOfCans;
                               }
                               final number = int.tryParse(value);
                               if (number == null || number < 0) {
-                                return 'Please enter a valid number';
+                                return AppLocalizations.of(context).pleaseEnterValidNumber;
                               }
                               return null;
                             },
@@ -559,10 +588,10 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                     TextFormField(
                       controller: _notesController,
                       focusNode: _notesFocusNode,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes (Optional)',
-                        border: OutlineInputBorder(),
-                        hintText: 'Any additional instructions for the collector...',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).notesOptional,
+                        border: const OutlineInputBorder(),
+                        hintText: AppLocalizations.of(context).anyAdditionalInstructions,
                       ),
                       maxLines: 3,
                     ),
@@ -570,8 +599,8 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
                     // Leave outside option
                     SwitchListTile(
-                      title: const Text('Leave Outside'),
-                      subtitle: const Text('Collector can leave items outside if no one is home'),
+                      title: Text(AppLocalizations.of(context).leaveOutside),
+                      subtitle: Text(AppLocalizations.of(context).collectorCanLeaveOutside),
                       value: _leaveOutside,
                       onChanged: (value) {
                         setState(() {
@@ -583,7 +612,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
 
                     // Location section
                     Text(
-                      'Location',
+                      AppLocalizations.of(context).location,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -610,7 +639,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Current Drop Location',
+                                AppLocalizations.of(context).currentDropLocation,
                                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -642,15 +671,19 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                             target: _selectedDropLocation,
                             zoom: 15,
                           ),
-                          onMapCreated: (GoogleMapController controller) {
+                          onMapCreated: (GoogleMapController controller) async {
                             _mapController = controller;
+                            // Apply map style based on theme
+                            final brightness = Theme.of(context).brightness;
+                            final style = brightness == Brightness.dark ? MapStyles.dark : MapStyles.light;
+                            await controller.setMapStyle(style);
                           },
                           markers: {
                             Marker(
                               markerId: const MarkerId('drop_location'),
                               position: _selectedDropLocation,
                               icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                              infoWindow: const InfoWindow(title: 'Drop Location'),
+                              infoWindow: InfoWindow(title: AppLocalizations.of(context).dropLocation),
                             ),
                           },
                           onTap: (LatLng position) {
@@ -658,7 +691,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                               _selectedDropLocation = position;
                               _isLocationLocked = true;
                             });
-                            _loadAddressForLocation(position);
+                            _loadAddressForLocation(position, context: context);
                           },
                           onCameraMove: (CameraPosition position) {
                             if (!_isLocationLocked && !_useCurrentLocation) {
@@ -691,7 +724,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Tap "Confirm" to set this location',
+                                AppLocalizations.of(context).tapConfirmToSetLocation,
                                 style: TextStyle(
                                   color: Colors.orange.shade800,
                                   fontWeight: FontWeight.w500,
@@ -704,7 +737,7 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                                   _isLocationLocked = false;
                                 });
                               },
-                              child: const Text('Confirm'),
+                              child: Text(AppLocalizations.of(context).confirm),
                             ),
                           ],
                         ),
@@ -723,10 +756,10 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                 child: FilledButton(
                   onPressed: _isLoading ? null : _submitEdit,
                   child: _isLoading
-                      ? const Row(
+                      ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
@@ -734,11 +767,11 @@ class _EditDropScreenState extends ConsumerState<EditDropScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
-                            SizedBox(width: 12),
-                            Text('Updating...'),
+                            const SizedBox(width: 12),
+                            Text(AppLocalizations.of(context).updating),
                           ],
                         )
-                      : const Text('Update Drop'),
+                      : Text(AppLocalizations.of(context).updateDrop),
                 ),
               ),
             ),

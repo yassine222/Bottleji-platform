@@ -237,7 +237,7 @@ export class SupportTicketsService {
     };
   }
 
-  async getTicketById(ticketId: string, userId?: string): Promise<SupportTicket> {
+  async getTicketById(ticketId: string, userId?: string): Promise<any> {
     const query: any = { _id: new Types.ObjectId(ticketId), isDeleted: false };
     
     // If userId is provided, ensure the user can only see their own tickets
@@ -247,13 +247,56 @@ export class SupportTicketsService {
 
     const ticket = await this.supportTicketModel
       .findOne(query)
+      .populate('userId', '_id name email phoneNumber profilePhoto roles isVerified isPhoneVerified collectorApplicationStatus')
+      .populate('assignedTo', 'name email')
+      .populate('relatedDropId', 'numberOfBottles numberOfCans bottleType notes location status createdAt imageUrl leaveOutside address')
+      .populate('relatedCollectionId') // Populate CollectionAttempt with all fields including earnings and timeline
+      .populate('relatedApplicationId', 'status appliedAt reviewedAt rejectionReason idCardPhoto selfieWithIdPhoto')
       .exec();
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
 
-    return ticket;
+    // Convert to plain object for proper JSON serialization (similar to getAllTickets)
+    const plainTicket = ticket.toObject ? ticket.toObject() : ticket;
+
+    // Process relatedCollectionId to ensure timeline and all fields are included
+    if (plainTicket.relatedCollectionId && typeof plainTicket.relatedCollectionId === 'object') {
+      const collectionAttempt = plainTicket.relatedCollectionId as any;
+      
+      // Ensure outcome and other fields are properly included
+      (plainTicket as any).relatedCollectionId = {
+        _id: collectionAttempt._id?.toString() || collectionAttempt.toString(),
+        status: collectionAttempt.status,
+        outcome: collectionAttempt.outcome || null, // Explicitly include outcome
+        acceptedAt: collectionAttempt.acceptedAt,
+        completedAt: collectionAttempt.completedAt,
+        durationMinutes: collectionAttempt.durationMinutes,
+        earnings: collectionAttempt.earnings || 0, // Include earnings field
+        dropSnapshot: collectionAttempt.dropSnapshot,
+        timeline: collectionAttempt.timeline || [], // Include timeline if available
+        dropId: collectionAttempt.dropId,
+        collectorId: collectionAttempt.collectorId,
+        createdAt: collectionAttempt.createdAt,
+        updatedAt: collectionAttempt.updatedAt,
+      };
+    }
+
+    // Process relatedDropId to ensure interactions timeline is included (if needed)
+    if (plainTicket.relatedDropId && typeof plainTicket.relatedDropId === 'object') {
+      try {
+        const dropoffId = (plainTicket.relatedDropId as any)._id?.toString() || (plainTicket.relatedDropId as any).toString();
+        const timeline = await this.dropoffsService.getDropInteractionTimeline(dropoffId);
+        if (timeline && timeline.length > 0) {
+          (plainTicket.relatedDropId as any).interactions = timeline;
+        }
+      } catch (error) {
+        console.error(`❌ Support Tickets: Error fetching timeline for drop ${plainTicket.relatedDropId}:`, error);
+      }
+    }
+
+    return plainTicket;
   }
 
   async updateTicketStatus(
@@ -376,7 +419,7 @@ export class SupportTicketsService {
       throw new NotFoundException('Ticket not found');
     }
 
-    // Create the message object
+    // Create the message object (already saved via $push above, no need to save again)
     const newMessage = {
       message,
       senderId: new Types.ObjectId(senderId),
@@ -385,12 +428,8 @@ export class SupportTicketsService {
       isInternal,
     };
 
-    // Add message to ticket in database
-    ticket.messages.push(newMessage);
-    ticket.markModified('updatedAt');
-    ticket.set('updatedAt', new Date());
-    await ticket.save();
-
+    // Message is already saved via $push in findByIdAndUpdate above
+    // No need to push again and save - this was causing potential duplicates
     console.log(`📨 Message saved to database: ${message} from ${senderType} ${senderId} to ticket ${ticketId}`);
 
     // Send real-time message via chat gateway
@@ -410,7 +449,8 @@ export class SupportTicketsService {
     // Send message through chat gateway for real-time delivery
     await this.chatGateway.sendMessageToTicket(ticketId, chatMessage);
 
-    // Send push notification if agent sent message
+    // Send push notification if agent sent message (only for notifications, not for chat)
+    // This ensures users receive notifications even if they're not connected to /chat namespace
     if (senderType === 'agent') {
       console.log('🔔 ===== SENDING PUSH NOTIFICATION =====');
       console.log('🔔 User ID:', ticket.userId.toString());
@@ -418,19 +458,24 @@ export class SupportTicketsService {
       console.log('🔔 Message:', message);
       console.log('🔔 Sender Type:', senderType);
       
-      this.notificationsGateway.sendTicketMessageUpdate(
-        ticket.userId.toString(),
-        ticketId,
-        {
-          message,
-          senderId,
-          senderType,
-          sentAt: newMessage.sentAt,
-          isInternal,
-        },
-      );
+      try {
+        await this.notificationsGateway.sendTicketMessageUpdate(
+          ticket.userId.toString(),
+          ticketId,
+          {
+            message,
+            senderId,
+            senderType,
+            sentAt: newMessage.sentAt,
+            isInternal,
+          },
+        );
+        console.log('🔔 Push notification sent via gateway successfully');
+      } catch (error) {
+        console.error('❌ Error sending push notification:', error);
+        // Don't fail the message send if notification fails
+      }
       
-      console.log('🔔 Push notification sent via gateway');
       console.log('🔔 ====================================');
     } else {
       console.log('ℹ️ Not sending push notification - sender is user, not agent');

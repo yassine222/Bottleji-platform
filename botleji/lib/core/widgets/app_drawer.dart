@@ -16,6 +16,7 @@ import 'package:botleji/features/rewards/presentation/screens/refer_earn_screen.
 import 'package:botleji/features/support/presentation/screens/support_screen.dart';
 import 'package:botleji/features/support/presentation/screens/terms_screen.dart';
 import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -31,25 +32,26 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   }
 
   void _showRejectionReason(BuildContext context, UserData user) {
-    final rejectionReason = user.collectorApplicationRejectionReason ?? 'No specific reason provided';
+    final l10n = AppLocalizations.of(context);
+    final rejectionReason = user.collectorApplicationRejectionReason ?? l10n.noSpecificReason;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Application Rejected'),
+            const Icon(Icons.info_outline, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(l10n.applicationRejectedTitle),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Your application was rejected for the following reason:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Text(
+              l10n.applicationRejectedMessage(rejectionReason),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Container(
@@ -65,16 +67,16 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'You can edit your application and submit it again.',
-              style: TextStyle(fontSize: 14),
+            Text(
+              l10n.canEditApplication,
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(l10n.close),
           ),
           FilledButton(
             onPressed: () {
@@ -87,7 +89,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 ),
               );
             },
-            child: const Text('Edit Application'),
+            child: Text(l10n.editApplication),
           ),
         ],
       ),
@@ -96,28 +98,29 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
   void _handleLogout(BuildContext context) async {
     AppLogger.log('Logout button pressed');
+    final l10n = AppLocalizations.of(context);
     
     // Show confirmation dialog first
     final shouldLogout = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(l10n.logout),
+        content: Text(l10n.areYouSureLogout),
         actions: [
           TextButton(
             onPressed: () {
               AppLogger.log('Logout cancelled');
               Navigator.pop(dialogContext, false);
             },
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               AppLogger.log('Logout confirmed');
               Navigator.pop(dialogContext, true);
             },
-            child: const Text('Logout'),
+            child: Text(l10n.logout),
           ),
         ],
       ),
@@ -153,9 +156,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         AppLogger.log('Error during logout: $e');
         AppLogger.log('Stack trace: $stack');
         if (context.mounted) {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error during logout: $e'),
+              content: Text(l10n.errorDuringLogout(e.toString())),
               backgroundColor: Colors.red,
             ),
           );
@@ -185,9 +189,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         final user = authState.value;
         
         if (user == null) {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please log in to access collector mode'),
+            SnackBar(
+              content: Text(l10n.pleaseLogInCollector),
               backgroundColor: Colors.red,
             ),
           );
@@ -212,32 +217,33 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           bool shouldNavigateToStatus = false;
           bool shouldNavigateToEdit = false;
           
+          final l10n = AppLocalizations.of(context);
           if (applicationStatus != null) {
             switch (applicationStatus) {
               case CollectorApplicationStatus.pending:
-                dialogMessage = 'Your application is currently under review. Would you like to view your application status?';
-                buttonText = 'View Status';
+                dialogMessage = l10n.applicationUnderReview;
+                buttonText = l10n.viewStatus;
                 shouldNavigateToStatus = true;
                 shouldNavigateToEdit = false;
                 break;
               case CollectorApplicationStatus.rejected:
-                final rejectionReason = user.collectorApplicationRejectionReason ?? 'No specific reason provided';
-                dialogMessage = 'Your application was rejected for the following reason:\n\n"$rejectionReason"\n\nWould you like to edit your application and submit it again?';
-                buttonText = 'Edit Application';
+                final rejectionReason = user.collectorApplicationRejectionReason ?? l10n.noSpecificReason;
+                dialogMessage = l10n.applicationRejectedReason(rejectionReason);
+                buttonText = l10n.editApplication;
                 shouldNavigateToStatus = false;
                 shouldNavigateToEdit = true;
                 break;
               case CollectorApplicationStatus.approved:
                 // Application approved but no collector role (might be reversed)
-                dialogMessage = 'Your application was approved but your collector access has been temporarily suspended. Please contact support or reapply.';
-                buttonText = 'Reapply';
+                dialogMessage = l10n.applicationApprovedSuspended;
+                buttonText = l10n.reapply;
                 shouldNavigateToStatus = false;
                 shouldNavigateToEdit = false;
                 break;
             }
           } else {
-            dialogMessage = 'You need to apply and be approved to access collector mode. Would you like to apply now?';
-            buttonText = 'Apply Now';
+            dialogMessage = l10n.needToApplyCollector;
+            buttonText = l10n.applyNow;
             shouldNavigateToStatus = false;
             shouldNavigateToEdit = false;
           }
@@ -246,12 +252,12 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           final shouldApply = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Become a Collector'),
+              title: Text(l10n.becomeACollector),
               content: Text(dialogMessage),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(context, true),
@@ -413,55 +419,6 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            // Roles Badges (full width, left-aligned)
-                            Wrap(
-                              alignment: WrapAlignment.start,
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                if (user.roles.contains('household'))
-                Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 1,
-                                      ),
-                  ),
-                  child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                    children: [
-                                        Icon(Icons.home_rounded, color: Colors.white, size: 16),
-                                        const SizedBox(width: 6),
-                                        Text('Household', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                                      ],
-                                    ),
-                                  ),
-                                if (user.roles.contains('collector'))
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.work_rounded, color: Colors.white, size: 16),
-                                        const SizedBox(width: 6),
-                                        Text('Collector', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
                             // Subscription Badge (full width, left-aligned)
                             if (user.roles.contains('collector') && user.collectorSubscriptionType != null) ...[
                               const SizedBox(height: 10),
@@ -509,7 +466,12 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                         const SizedBox(width: 8),
                                         Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 14),
                                         const SizedBox(width: 4),
-                                        const Text('Upgrade', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                                        Builder(
+                                          builder: (context) {
+                                            final l10n = AppLocalizations.of(context);
+                                            return Text(l10n.upgrade, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600));
+                                          },
+                                        ),
                                       ],
                                     ],
                                   ),
@@ -534,16 +496,21 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 6),
-                              child: Text(
-                    'Active Mode',
-                                style: TextStyle(
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                      fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n.activeMode,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 Container(
                   decoration: BoxDecoration(
                     color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
@@ -612,29 +579,91 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             ),
                             child: Column(
                               children: [
-                                Icon(
-                                  Icons.home_rounded,
-                                  color: currentUserMode.when(
-                                    data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[600],
-                                    loading: () => Colors.white,
-                                    error: (_, __) => Colors.white,
+                                currentUserMode.when(
+                                  data: (mode) => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: mode == UserMode.household
+                                            ? Colors.white
+                                            : (isDarkMode ? Colors.grey[600]! : Colors.grey[400]!),
+                                        width: 2,
+                                      ),
+                                      color: mode == UserMode.household
+                                          ? Colors.white.withOpacity(0.1)
+                                          : (isDarkMode ? Colors.grey[850]! : Colors.grey[200]!),
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/household_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
-                                  size: 18,
+                                  loading: () => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/household_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  error: (_, __) => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/household_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Household',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[700],
-                                      loading: () => Colors.white,
-                                      error: (_, __) => Colors.white,
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final l10n = AppLocalizations.of(context);
+                                    return Text(
+                                      l10n.household,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: currentUserMode.when(
+                                          data: (mode) => mode == UserMode.household ? Colors.white : Colors.grey[700],
+                                          loading: () => Colors.white,
+                                          error: (_, __) => Colors.white,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -681,182 +710,244 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             ),
                             child: Column(
                               children: [
-                                Icon(
-                                  Icons.work_rounded,
-                                  color: currentUserMode.when(
-                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[600],
-                                    loading: () => Colors.grey[600],
-                                    error: (_, __) => Colors.grey[600],
+                                currentUserMode.when(
+                                  data: (mode) => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: mode == UserMode.collector
+                                            ? Colors.white
+                                            : (isDarkMode ? Colors.grey[600]! : Colors.grey[400]!),
+                                        width: 2,
+                                      ),
+                                      color: mode == UserMode.collector
+                                          ? Colors.white.withOpacity(0.1)
+                                          : (isDarkMode ? Colors.grey[850]! : Colors.grey[200]!),
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/collector_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
-                                  size: 18,
+                                  loading: () => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
+                                        width: 2,
+                                      ),
+                                      color: isDarkMode ? Colors.grey[850]! : Colors.grey[200]!,
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/collector_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  error: (_, __) => Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
+                                        width: 2,
+                                      ),
+                                      color: isDarkMode ? Colors.grey[850]! : Colors.grey[200]!,
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/collector_mode.png',
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                userAsync.when(
-                                data: (user) {
-                                  if (user == null) {
-                                return Text(
-                                  'Collector',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                    color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                      loading: () => Colors.grey[600],
-                                      error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    letterSpacing: 0.3,
-                                      ),
-                                    );
-                                  }
+                                Builder(
+                                  builder: (context) {
+                                    final l10n = AppLocalizations.of(context);
+                                    return userAsync.when(
+                                      data: (user) {
+                                        if (user == null) {
+                                          return Text(
+                                            l10n.collector,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: currentUserMode.when(
+                                                data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                loading: () => Colors.grey[600],
+                                                error: (_, __) => Colors.grey[600],
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          );
+                                        }
 
-                                  final applicationStatus = user.collectorApplicationStatus;
-                              
-                              if (user.isCollector && user.roles.contains('collector')) {
-                                return Text(
-                                  'Collector',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                    color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                      loading: () => Colors.grey[600],
-                                      error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    letterSpacing: 0.3,
-                                      ),
-                                    );
-                                  }
-                                  
-                                  if (applicationStatus != null) {
-                                    switch (applicationStatus) {
-                                      case CollectorApplicationStatus.pending:
-                                    return Text(
-                                      'Review',
+                                        final applicationStatus = user.collectorApplicationStatus;
+                                    
+                                        if (user.isCollector && user.roles.contains('collector')) {
+                                          return Text(
+                                            l10n.collector,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: currentUserMode.when(
+                                                data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                loading: () => Colors.grey[600],
+                                                error: (_, __) => Colors.grey[600],
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          );
+                                        }
+                                        
+                                        if (applicationStatus != null) {
+                                          switch (applicationStatus) {
+                                            case CollectorApplicationStatus.pending:
+                                              return Text(
+                                                l10n.review,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: currentUserMode.when(
+                                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                    loading: () => Colors.grey[600],
+                                                    error: (_, __) => Colors.grey[600],
+                                                  ),
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 11,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              );
+                                            case CollectorApplicationStatus.rejected:
+                                              return Text(
+                                                l10n.rejected,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: currentUserMode.when(
+                                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                    loading: () => Colors.grey[600],
+                                                    error: (_, __) => Colors.grey[600],
+                                                  ),
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 11,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              );
+                                            case CollectorApplicationStatus.approved:
+                                              if (user.roles.contains('collector')) {
+                                                return Text(
+                                                  l10n.collector,
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: currentUserMode.when(
+                                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                      loading: () => Colors.grey[600],
+                                                      error: (_, __) => Colors.grey[600],
+                                                    ),
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 11,
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                                );
+                                              } else {
+                                                return Text(
+                                                  l10n.review,
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: currentUserMode.when(
+                                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                      loading: () => Colors.grey[600],
+                                                      error: (_, __) => Colors.grey[600],
+                                                    ),
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 11,
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                                );
+                                              }
+                                          }
+                                        }
+                                        
+                                        if (user.roles.contains('collector')) {
+                                          return Text(
+                                            l10n.collector,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: currentUserMode.when(
+                                                data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                                loading: () => Colors.grey[600],
+                                                error: (_, __) => Colors.grey[600],
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          );
+                                        }
+                                        
+                                        return Text(
+                                          l10n.apply,
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                        color: currentUserMode.when(
-                                          data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                          loading: () => Colors.grey[600],
-                                          error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
+                                            color: currentUserMode.when(
+                                              data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                              loading: () => Colors.grey[600],
+                                              error: (_, __) => Colors.grey[600],
+                                            ),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                            letterSpacing: 0.3,
                                           ),
                                         );
-                                      case CollectorApplicationStatus.rejected:
-                                    return Text(
-                                      'Rejected',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                        color: currentUserMode.when(
-                                          data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                          loading: () => Colors.grey[600],
-                                          error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                                          ),
-                                        );
-                                      case CollectorApplicationStatus.approved:
-                                    if (user.roles.contains('collector')) {
-                                      return Text(
-                                        'Collector',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                          color: currentUserMode.when(
-                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                            loading: () => Colors.grey[600],
-                                            error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                                        ),
-                                      );
-                                    } else {
-                                      return Text(
-                                        'Review',
+                                      },
+                                      loading: () => Text(
+                                        l10n.loading,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: currentUserMode.when(
                                             data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
                                             loading: () => Colors.grey[600],
                                             error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
+                                          ),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                          letterSpacing: 0.3,
                                         ),
-                                      );
-                                    }
-                                }
-                              }
-                              
-                              if (user.roles.contains('collector')) {
-                                return Text(
-                                  'Collector',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                    color: currentUserMode.when(
-                                      data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                      loading: () => Colors.grey[600],
-                                      error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    letterSpacing: 0.3,
-                                  ),
-                                );
-                              }
-                              
-                              return Text(
-                                'Apply',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: currentUserMode.when(
-                                    data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                    loading: () => Colors.grey[600],
-                                    error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                                    ),
-                                  );
-                                },
-                            loading: () => Text(
-                                  'Loading...',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                color: currentUserMode.when(
-                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                  loading: () => Colors.grey[600],
-                                  error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                              ),
-                            ),
-                            error: (error, stack) => Text(
-                              'Apply',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                color: currentUserMode.when(
-                                  data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
-                                  loading: () => Colors.grey[600],
-                                  error: (_, __) => Colors.grey[600],
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    letterSpacing: 0.3,
-                              ),
-                            ),
-                          ),
+                                      ),
+                                      error: (error, stack) => Text(
+                                        l10n.apply,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: currentUserMode.when(
+                                            data: (mode) => mode == UserMode.collector ? Colors.white : Colors.grey[700],
+                                            loading: () => Colors.grey[600],
+                                            error: (_, __) => Colors.grey[600],
+                                          ),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),
@@ -879,7 +970,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.person_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('My Account'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).myAccount),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -895,7 +988,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 Icons.history_rounded,
                 color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('History'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).history),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -912,7 +1007,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.notifications_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Notifications'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).notifications),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -926,7 +1023,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.school_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Trainings'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).trainings),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -940,7 +1039,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.card_giftcard_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Refer and Earn'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).referAndEarn),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -954,7 +1055,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.settings_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Settings'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).settings),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -968,7 +1071,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.support_agent_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Support'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).support),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -982,7 +1087,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.description_rounded,
               color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
             ),
-            title: const Text('Terms and Conditions'),
+            title: Builder(
+              builder: (context) => Text(AppLocalizations.of(context).termsAndConditions),
+            ),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -997,9 +1104,11 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               Icons.logout_rounded,
               color: Colors.red,
             ),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
+            title: Builder(
+              builder: (context) => Text(
+                AppLocalizations.of(context).logout,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
             onTap: () => _handleLogout(context),
           ),
@@ -1010,4 +1119,4 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
       ),
     );
   }
-} 
+}

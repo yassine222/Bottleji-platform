@@ -1,0 +1,23 @@
+# Fix Xcode Configuration for Flutter
+# Run these commands one by one in your terminal
+
+# 1. Switch xcode-select to point to your Xcode installation
+sudo xcode-select --switch /Users/yassineromdhane/Downloads/Xcode.app/Contents/Developer
+
+# 2. Run Xcode first launch setup (this may take a few minutes)
+sudo xcodebuild -runFirstLaunch
+
+# 3. Accept Xcode license (if prompted)
+sudo xcodebuild -license accept
+
+# 4. Verify the setup
+xcodebuild -version
+
+# 5. Check Flutter devices (plug in your iOS device first)
+cd /Users/yassineromdhane/FlutterProjects/PFE/botleji
+flutter devices
+
+# Optional: Move Xcode to Applications folder for better organization
+# sudo mv /Users/yassineromdhane/Downloads/Xcode.app /Applications/Xcode.app
+# Then run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+

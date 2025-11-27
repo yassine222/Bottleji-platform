@@ -73,9 +73,11 @@ class AuthRepository {
         );
         }
     } on DioException catch (e) {
-        print('DioException: ${e.message}');
-        print('DioException type: ${e.type}');
-        print('DioException response: ${e.response?.data}');
+        print('🔍 DioException: ${e.message}');
+        print('🔍 DioException type: ${e.type}');
+        print('🔍 DioException status code: ${e.response?.statusCode}');
+        print('🔍 DioException response data: ${e.response?.data}');
+        print('🔍 DioException response data type: ${e.response?.data.runtimeType}');
         
         if (e.response?.statusCode == 404) {
           return AuthResponse.error(
@@ -84,15 +86,42 @@ class AuthRepository {
         );
         }
         
-        // Handle error message that could be a string or list
-        dynamic errorMessage = e.response?.data['message'];
-        String message;
-        if (errorMessage is List) {
-          message = errorMessage.join(', ');
-        } else {
-          message = errorMessage?.toString() ?? 'An error occurred';
+        // Handle network/tunnel errors (530, 502, 503, etc.)
+        if (e.response?.statusCode != null && 
+            (e.response!.statusCode! >= 500 || e.response!.statusCode == 530)) {
+          return AuthResponse.error(
+            message: 'Server is temporarily unavailable. Please check your connection or try again later.',
+            statusCode: e.response!.statusCode!,
+          );
         }
-        print('Error message: $message');
+        
+        // Handle error message that could be a string, list, or Map
+        String message;
+        final responseData = e.response?.data;
+        
+        if (responseData is Map<String, dynamic>) {
+          // Response is JSON
+          dynamic errorMessage = responseData['message'];
+          if (errorMessage is List) {
+            message = errorMessage.join(', ');
+          } else if (errorMessage != null) {
+            message = errorMessage.toString();
+          } else {
+            // Try to get message from error field or use default
+            message = responseData['error']?.toString() ?? 
+                     e.message ?? 
+                     'An error occurred';
+          }
+        } else if (responseData is String) {
+          // Response is HTML or plain text (like Cloudflare error pages)
+          message = 'Server error. Please try again later.';
+        } else {
+          // Fallback
+          message = e.message ?? 'An error occurred';
+        }
+        
+        print('🔍 Extracted error message: $message');
+        print('🔍 Final status code: ${e.response?.statusCode ?? 500}');
         return AuthResponse.error(
           message: message,
           statusCode: e.response?.statusCode ?? 500,
@@ -345,19 +374,60 @@ class AuthRepository {
       }
 
       print('getProfile: Fetching profile with token: $token');
-      final response = await _apiClient.getProfile('Bearer $token');
-
-      print('getProfile: Response data: $response');
       
-      // Check if response contains application status
-      if (response.isSuccess && response.user != null) {
-        print('getProfile: User data contains application status: ${response.user!.collectorApplicationStatus}');
-        print('getProfile: User data contains application ID: ${response.user!.collectorApplicationId}');
-        print('getProfile: User data contains application applied at: ${response.user!.collectorApplicationAppliedAt}');
+      // Use Dio directly to get raw response for debugging
+      final dio = Dio(BaseOptions(
+        baseUrl: ServerConfig.apiBaseUrlSync,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 3),
+        contentType: 'application/json',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      ));
+      
+      final response = await dio.get('/auth/profile');
+      
+      print('📊 getProfile - Raw profile response: ${response.data}');
+      print('📊 getProfile - Response status: ${response.statusCode}');
+      
+      if (response.data['user'] != null) {
+        print('📊 getProfile - User data exists in response');
+        print('📊 getProfile - Earnings history in response: ${response.data['user']['earningsHistory']}');
+        print('📊 getProfile - Earnings history type: ${response.data['user']['earningsHistory']?.runtimeType}');
+        if (response.data['user']['earningsHistory'] != null) {
+          print('📊 getProfile - Earnings history is array: ${response.data['user']['earningsHistory'] is List}');
+          print('📊 getProfile - Earnings history length: ${(response.data['user']['earningsHistory'] as List?)?.length ?? 0}');
+          if (response.data['user']['earningsHistory'] is List && (response.data['user']['earningsHistory'] as List).isNotEmpty) {
+            print('📊 getProfile - First earnings history item: ${(response.data['user']['earningsHistory'] as List).first}');
+          }
+        }
+        print('📊 getProfile - Total earnings: ${response.data['user']['totalEarnings']}');
+      }
+      
+      final authResponse = AuthResponse.fromJson(response.data);
+      
+      // Debug parsed earnings history
+      if (authResponse.isSuccess && authResponse.user != null) {
+        print('📊 getProfile - Parsed user data earnings history: ${authResponse.user!.earningsHistory}');
+        print('📊 getProfile - Parsed earnings history type: ${authResponse.user!.earningsHistory.runtimeType}');
+        if (authResponse.user!.earningsHistory != null) {
+          print('📊 getProfile - Parsed earnings history length: ${authResponse.user!.earningsHistory!.length}');
+          if (authResponse.user!.earningsHistory!.isNotEmpty) {
+            print('📊 getProfile - First earnings history item: ${authResponse.user!.earningsHistory!.first}');
+            print('📊 getProfile - First earnings history item keys: ${authResponse.user!.earningsHistory!.first.keys}');
+          }
+        }
+        print('📊 getProfile - Parsed total earnings: ${authResponse.user!.totalEarnings}');
+        
+        print('getProfile: User data contains application status: ${authResponse.user!.collectorApplicationStatus}');
+        print('getProfile: User data contains application ID: ${authResponse.user!.collectorApplicationId}');
+        print('getProfile: User data contains application applied at: ${authResponse.user!.collectorApplicationAppliedAt}');
       }
 
-      // For now, return the response directly to avoid when() issues
-      return response;
+      return authResponse;
     } catch (e) {
       print('getProfile: Exception: $e');
       if (e is DioException) {
@@ -618,11 +688,55 @@ class AuthRepository {
       try {
         final response = await dio.get('/auth/profile');
         
-        print('Raw profile response: ${response.data}');
+        print('📊 refreshUserData - Raw profile response: ${response.data}');
+        print('📊 refreshUserData - Response status: ${response.statusCode}');
+        
+        if (response.data['user'] != null) {
+          print('📊 refreshUserData - User data exists in response');
+          print('📊 refreshUserData - Reward history in response: ${response.data['user']['rewardHistory']}');
+          print('📊 refreshUserData - Reward history type: ${response.data['user']['rewardHistory'].runtimeType}');
+          if (response.data['user']['rewardHistory'] != null) {
+            print('📊 refreshUserData - Reward history is array: ${response.data['user']['rewardHistory'] is List}');
+            print('📊 refreshUserData - Reward history length: ${(response.data['user']['rewardHistory'] as List?)?.length ?? 0}');
+            if (response.data['user']['rewardHistory'] is List && (response.data['user']['rewardHistory'] as List).isNotEmpty) {
+              print('📊 refreshUserData - First reward history item: ${(response.data['user']['rewardHistory'] as List).first}');
+            }
+          }
+          // Debug earnings history
+          print('📊 refreshUserData - Earnings history in response: ${response.data['user']['earningsHistory']}');
+          print('📊 refreshUserData - Earnings history type: ${response.data['user']['earningsHistory']?.runtimeType}');
+          if (response.data['user']['earningsHistory'] != null) {
+            print('📊 refreshUserData - Earnings history is array: ${response.data['user']['earningsHistory'] is List}');
+            print('📊 refreshUserData - Earnings history length: ${(response.data['user']['earningsHistory'] as List?)?.length ?? 0}');
+            if (response.data['user']['earningsHistory'] is List && (response.data['user']['earningsHistory'] as List).isNotEmpty) {
+              print('📊 refreshUserData - First earnings history item: ${(response.data['user']['earningsHistory'] as List).first}');
+            }
+          }
+          print('📊 refreshUserData - Total earnings: ${response.data['user']['totalEarnings']}');
+        }
         
         if (response.statusCode == 200) {
+          final userData = UserData.fromJson(response.data['user']);
+          print('📊 refreshUserData - Parsed user data reward history: ${userData.rewardHistory}');
+          print('📊 refreshUserData - Parsed reward history type: ${userData.rewardHistory.runtimeType}');
+          if (userData.rewardHistory != null) {
+            print('📊 refreshUserData - Parsed reward history length: ${userData.rewardHistory!.length}');
+          }
+          
+          // Debug parsed earnings history
+          print('📊 refreshUserData - Parsed user data earnings history: ${userData.earningsHistory}');
+          print('📊 refreshUserData - Parsed earnings history type: ${userData.earningsHistory.runtimeType}');
+          if (userData.earningsHistory != null) {
+            print('📊 refreshUserData - Parsed earnings history length: ${userData.earningsHistory!.length}');
+            if (userData.earningsHistory!.isNotEmpty) {
+              print('📊 refreshUserData - First earnings history item: ${userData.earningsHistory!.first}');
+              print('📊 refreshUserData - First earnings history item keys: ${userData.earningsHistory!.first.keys}');
+            }
+          }
+          print('📊 refreshUserData - Parsed total earnings: ${userData.totalEarnings}');
+          
           return AuthResponse.success(
-            user: UserData.fromJson(response.data['user']),
+            user: userData,
             token: token,
             message: 'Profile refreshed successfully',
         );
@@ -659,6 +773,41 @@ class AuthRepository {
         message: 'An unexpected error occurred',
         statusCode: 500,
         );
+    }
+  }
+
+  Future<void> invalidateSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null) {
+        print('⚠️ No token found, cannot invalidate session');
+        return;
+      }
+      
+      final dio = Dio(BaseOptions(
+        baseUrl: ServerConfig.apiBaseUrlSync,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 3),
+        contentType: 'application/json',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      ));
+      
+      try {
+        await dio.post('/auth/invalidate-session');
+        print('✅ Session invalidated successfully');
+      } on DioException catch (e) {
+        print('❌ Error invalidating session: ${e.message}');
+        // Don't throw, just log the error
+      }
+    } catch (e) {
+      print('❌ Error invalidating session: $e');
+      // Don't throw, just log the error
     }
   }
 } 

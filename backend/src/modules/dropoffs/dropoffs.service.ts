@@ -12,6 +12,7 @@ import { User } from '../users/schemas/user.schema';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RewardsService } from '../rewards/rewards.service';
+import { EarningsSessionService } from '../earnings/earnings-session.service';
 
 @Injectable()
 export class DropoffsService {
@@ -25,6 +26,8 @@ export class DropoffsService {
     private notificationsGateway: NotificationsGateway,
     private readonly notificationsService: NotificationsService,
     private readonly rewardsService: RewardsService,
+    @Inject(forwardRef(() => EarningsSessionService))
+    private readonly earningsSessionService: EarningsSessionService,
   ) {
     this.startCleanupTask();
     this.migrateOldCancellationFields();
@@ -466,7 +469,12 @@ export class DropoffsService {
 
     // Send notification to drop creator
     try {
-      await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+      // Normalize userId to ensure it matches the format stored in connectedUsers
+      // Handle both ObjectId and string formats
+      const userId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+      console.log(`📱 Preparing to send drop accepted notification to user: ${userId} (original: ${dropoff.userId}, type: ${typeof dropoff.userId})`);
+      
+      await this.notificationsGateway.sendNotificationToUser(userId, {
         type: 'drop_accepted',
         title: 'Drop Accepted',
         message: 'A collector has accepted your drop and is on their way',
@@ -477,9 +485,10 @@ export class DropoffsService {
         },
         timestamp: new Date(),
       });
-      console.log(`📱 Drop accepted notification sent to user ${dropoff.userId}`);
+      console.log(`📱 Drop accepted notification sent to user ${userId}`);
     } catch (error) {
       console.error(`❌ Error sending drop accepted notification: ${error}`);
+      console.error(`❌ Error details:`, error);
     }
 
     return updatedDropoff;
@@ -551,7 +560,8 @@ export class DropoffsService {
 
            // Send tier upgrade notification if applicable
            if (rewardResult.tierUpgraded) {
-             this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+             const collectorUserId = String(acceptedInteraction.collectorId);
+             this.notificationsGateway.sendNotificationToUser(collectorUserId, {
                type: 'tier_upgrade',
                title: '🎉 Tier Upgraded!',
                message: `Congratulations! You've reached ${rewardResult.newTier.name}! You now earn ${rewardResult.newTier.pointsPerDrop} points per drop.`,
@@ -564,7 +574,8 @@ export class DropoffsService {
              });
            } else {
              // Send points earned notification
-             this.notificationsGateway.sendNotificationToUser(acceptedInteraction.collectorId.toString(), {
+             const collectorUserId = String(acceptedInteraction.collectorId);
+             this.notificationsGateway.sendNotificationToUser(collectorUserId, {
                type: 'points_earned',
                title: 'Points Earned!',
                message: `You earned ${rewardResult.pointsAwarded} points for collecting this drop!`,
@@ -599,7 +610,8 @@ export class DropoffsService {
 
          // Send combined notification for drop collected + rewards
          if (householdRewardResult.tierUpgraded) {
-           this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+           const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+           this.notificationsGateway.sendNotificationToUser(householdUserId, {
              type: 'drop_collected_with_tier_upgrade',
              title: '🏠 Drop Collected & Tier Upgraded!',
              message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points and reached ${householdRewardResult.newTier.name}!`,
@@ -613,7 +625,8 @@ export class DropoffsService {
              timestamp: new Date(),
            });
          } else {
-           this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+           const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+           this.notificationsGateway.sendNotificationToUser(householdUserId, {
              type: 'drop_collected_with_rewards',
              title: '🏠 Drop Collected!',
              message: `Your drop was collected! You earned ${householdRewardResult.pointsAwarded} points for contributing to recycling.`,
@@ -776,7 +789,8 @@ export class DropoffsService {
         ? 'Your drop was cancelled and flagged as suspicious due to multiple cancellations'
         : 'A collector cancelled your drop. It\'s now available for others.';
       
-      this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+      const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+      this.notificationsGateway.sendNotificationToUser(householdUserId, {
         type: 'drop_cancelled',
         title: 'Drop Cancelled',
         message: notificationMessage,
@@ -808,7 +822,8 @@ export class DropoffsService {
           );
         } else {
           // Fallback: send via gateway directly without enum coupling
-          this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+          const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+          this.notificationsGateway.sendNotificationToUser(householdUserId, {
             type: 'drop_flagged',
             title: 'Drop Flagged',
             message: 'Your drop was flagged due to multiple cancellations. It will be hidden from the map.',
@@ -896,25 +911,39 @@ export class DropoffsService {
       const nearExpiringThreshold = totalTimeoutMinutes * 0.7; // 70% of total time
       
       if (timeElapsedMinutes >= nearExpiringThreshold && timeRemainingMinutes > 0) {
-        // Check if near-expiring notification was already sent for this drop
-        const existingNearExpiringNotification = await this.notificationsService.getUserNotifications(
+        // Check if near-expiring notification was already sent for this drop (for household user)
+        const existingNearExpiringNotificationHousehold = await this.notificationsService.getUserNotifications(
           dropoff.userId.toString(),
           { type: 'drop_near_expiring' as any, limit: 1 }
         );
         
-        // Check if there's a recent near-expiring notification for this drop (within last hour)
-        const recentNearExpiring = existingNearExpiringNotification.notifications.find((n: any) => {
+        // Check if near-expiring notification was already sent for this drop (for collector)
+        const existingNearExpiringNotificationCollector = await this.notificationsService.getUserNotifications(
+          interaction.collectorId.toString(),
+          { type: 'drop_near_expiring' as any, limit: 1 }
+        );
+        
+        // Check if there's a recent near-expiring notification for this drop (within last hour) for household user
+        const recentNearExpiringHousehold = existingNearExpiringNotificationHousehold.notifications.find((n: any) => {
           const notificationData = n.data || {};
           return notificationData.dropId === (dropoff._id as any).toString() &&
                  new Date(n.createdAt).getTime() > (now.getTime() - 60 * 60 * 1000); // Within last hour
         });
         
-        if (!recentNearExpiring) {
+        // Check if there's a recent near-expiring notification for this drop (within last hour) for collector
+        const recentNearExpiringCollector = existingNearExpiringNotificationCollector.notifications.find((n: any) => {
+          const notificationData = n.data || {};
+          return notificationData.dropId === (dropoff._id as any).toString() &&
+                 new Date(n.createdAt).getTime() > (now.getTime() - 60 * 60 * 1000); // Within last hour
+        });
+        
+        if (!recentNearExpiringHousehold) {
           console.log(`⚠️ Drop ${dropoff._id} is near expiring (${timeElapsedPercent.toFixed(1)}% elapsed, ${timeRemainingMinutes}min remaining)`);
           
           // Send near-expiring notification to household user
           try {
-            await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+            const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+            await this.notificationsGateway.sendNotificationToUser(householdUserId, {
               type: 'drop_near_expiring',
               title: 'Drop Collection Running Low on Time',
               message: `The collector has ${timeRemainingMinutes} minute${timeRemainingMinutes !== 1 ? 's' : ''} remaining to collect your drop.`,
@@ -926,12 +955,36 @@ export class DropoffsService {
               },
               timestamp: new Date(),
             });
-            console.log(`📱 Near-expiring notification sent to user ${dropoff.userId}`);
+            console.log(`📱 Near-expiring notification sent to household user ${dropoff.userId}`);
           } catch (error) {
-            console.error(`❌ Error sending near-expiring notification: ${error}`);
+            console.error(`❌ Error sending near-expiring notification to household user: ${error}`);
           }
         } else {
-          console.log(`ℹ️ Near-expiring notification already sent for drop ${dropoff._id} recently, skipping`);
+          console.log(`ℹ️ Near-expiring notification already sent to household user for drop ${dropoff._id} recently, skipping`);
+        }
+        
+        if (!recentNearExpiringCollector) {
+          // Send near-expiring notification to collector
+          try {
+            const collectorUserId = String(interaction.collectorId);
+            await this.notificationsGateway.sendNotificationToUser(collectorUserId, {
+              type: 'drop_near_expiring',
+              title: 'Collection Time Running Low',
+              message: `You have ${timeRemainingMinutes} minute${timeRemainingMinutes !== 1 ? 's' : ''} remaining to collect this drop.`,
+              data: { 
+                dropId: (dropoff._id as any).toString(),
+                collectorId: interaction.collectorId,
+                dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`,
+                timeRemainingMinutes: timeRemainingMinutes,
+              },
+              timestamp: new Date(),
+            });
+            console.log(`📱 Near-expiring notification sent to collector ${interaction.collectorId}`);
+          } catch (error) {
+            console.error(`❌ Error sending near-expiring notification to collector: ${error}`);
+          }
+        } else {
+          console.log(`ℹ️ Near-expiring notification already sent to collector for drop ${dropoff._id} recently, skipping`);
         }
       }
       
@@ -983,9 +1036,10 @@ export class DropoffsService {
 
           console.log(`✅ EXPIRED interaction created for drop ${dropoff._id} (penalty added automatically)`);
           
-          // Send notification to drop creator
+          // Send notification to drop creator (household user)
           try {
-            await this.notificationsGateway.sendNotificationToUser(dropoff.userId.toString(), {
+            const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+            await this.notificationsGateway.sendNotificationToUser(householdUserId, {
               type: 'drop_expired',
               title: 'Drop Expired',
               message: 'A collector\'s time expired on your drop. It\'s now available for others.',
@@ -996,9 +1050,28 @@ export class DropoffsService {
               },
               timestamp: new Date(),
             });
-            console.log(`📱 Drop expired notification sent to user ${dropoff.userId}`);
+            console.log(`📱 Drop expired notification sent to household user ${dropoff.userId}`);
           } catch (error) {
-            console.error(`❌ Error sending drop expired notification: ${error}`);
+            console.error(`❌ Error sending drop expired notification to household user: ${error}`);
+          }
+          
+          // Send notification to collector
+          try {
+            const collectorUserId = String(interaction.collectorId);
+            await this.notificationsGateway.sendNotificationToUser(collectorUserId, {
+              type: 'drop_expired',
+              title: 'Collection Time Expired',
+              message: `Your time to collect this drop has expired. The drop is now available for other collectors.`,
+              data: { 
+                dropId: (dropoff._id as any).toString(),
+                collectorId: interaction.collectorId,
+                dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+              },
+              timestamp: new Date(),
+            });
+            console.log(`📱 Drop expired notification sent to collector ${interaction.collectorId}`);
+          } catch (error) {
+            console.error(`❌ Error sending drop expired notification to collector: ${error}`);
           }
           
           cleanedCount++;
@@ -1180,13 +1253,20 @@ export class DropoffsService {
           }
           
           // Emit WebSocket event for real-time lock notification
+          // Ensure accountLockedUntil is properly serialized (null for permanent locks, ISO string for temporary)
+          const accountLockedUntilValue = updatedUser.accountLockedUntil 
+            ? updatedUser.accountLockedUntil.toISOString() 
+            : null;
+          
+          console.log(`📤 Sending account_locked notification - isPermanent: ${accountLockedUntilValue === null}, accountLockedUntil: ${accountLockedUntilValue}`);
+          
           this.notificationsGateway.sendNotificationToUser(collectorId, {
             type: 'account_locked',
             title: 'Account Locked',
             message: lockMessage,
             data: {
               isAccountLocked: true,
-              accountLockedUntil: updatedUser.accountLockedUntil,
+              accountLockedUntil: accountLockedUntilValue, // null for permanent, ISO string for temporary
               warningCount: updatedUser.warningCount,
             },
             timestamp: new Date(),
@@ -2012,6 +2092,17 @@ export class DropoffsService {
 
       console.log(`📝 Creating outcome event: ${JSON.stringify(outcomeEvent)}`);
 
+      // Calculate earnings if collected
+      let earnings = 0;
+      if (outcome === 'collected') {
+        // Formula: (numberOfBottles * 0.025) + (numberOfCans * 0.06)
+        const bottles = attempt.dropSnapshot.numberOfBottles || 0;
+        const cans = attempt.dropSnapshot.numberOfCans || 0;
+        earnings = (bottles * 0.025) + (cans * 0.06);
+        earnings = Math.round(earnings * 100) / 100; // Round to 2 decimal places
+        console.log(`💰 Calculated earnings: ${earnings} TND (${bottles} bottles, ${cans} cans)`);
+      }
+
       // Update attempt
       const updatedAttempt = await this.collectionAttemptModel.findByIdAndUpdate(
         attemptId,
@@ -2020,6 +2111,7 @@ export class DropoffsService {
           outcome,
           completedAt: now,
           durationMinutes,
+          earnings,
           $push: { timeline: outcomeEvent }  // Use $push instead of spreading array
         },
         { new: true }
@@ -2043,11 +2135,135 @@ export class DropoffsService {
         }
       }
 
+      // Update user's total earnings and session if collected
+      if (outcome === 'collected' && earnings > 0) {
+        console.log(`💰 Starting earnings update for collector ${attempt.collectorId}, earnings: ${earnings} TND`);
+        try {
+          // Add to earnings session (this creates/updates the daily session)
+          const session = await this.earningsSessionService.addCollectionToSession(
+            attempt.collectorId.toString(),
+            attemptId,
+            earnings,
+            now,
+          );
+          console.log(`💰 Earnings session updated: sessionEarnings=${session.sessionEarnings}, collectionCount=${session.collectionCount}`);
+
+          // Update user's total earnings
+          await this.userModel.findByIdAndUpdate(
+            attempt.collectorId,
+            { $inc: { totalEarnings: earnings } },
+            { new: true }
+          ).exec();
+          console.log(`✅ Updated total earnings for collector ${attempt.collectorId}: +${earnings} TND`);
+
+          // Update or create earnings history entry for today (similar to rewardHistory)
+          // Use UTC to ensure consistent date comparison regardless of server timezone
+          const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+          console.log(`💰 Today's date for earnings history (UTC): ${today.toISOString()}`);
+          console.log(`💰 Current time (UTC): ${now.toISOString()}`);
+          console.log(`💰 Current time (local): ${now.toString()}`);
+          
+          // Ensure earningsHistory array exists and find/update today's entry
+          const user = await this.userModel.findById(attempt.collectorId).exec();
+          if (user) {
+            console.log(`💰 User found, current earningsHistory: ${JSON.stringify(user.earningsHistory)}`);
+            console.log(`💰 earningsHistory is array: ${Array.isArray(user.earningsHistory)}`);
+            
+            // Initialize earningsHistory if it doesn't exist
+            if (!user.earningsHistory || !Array.isArray(user.earningsHistory)) {
+              console.log(`💰 Initializing earningsHistory array for user ${attempt.collectorId}`);
+              await this.userModel.findByIdAndUpdate(
+                attempt.collectorId,
+                { $set: { earningsHistory: [] } }
+              ).exec();
+              // Re-fetch user after initialization
+              const updatedUser = await this.userModel.findById(attempt.collectorId).exec();
+              console.log(`💰 After initialization, earningsHistory: ${JSON.stringify(updatedUser?.earningsHistory)}`);
+            }
+            
+            // Re-fetch user to get latest earningsHistory
+            const latestUser = await this.userModel.findById(attempt.collectorId).exec();
+            const earningsHistory = latestUser?.earningsHistory || [];
+            console.log(`💰 Current earningsHistory length: ${earningsHistory.length}`);
+            
+            const existingEntryIndex = earningsHistory.findIndex((entry: any) => {
+              if (!entry || !entry.date) {
+                console.log(`💰 Entry has no date: ${JSON.stringify(entry)}`);
+                return false;
+              }
+              // Parse entry date and normalize to UTC start of day
+              const entryDate = new Date(entry.date);
+              const entryDateUTC = new Date(Date.UTC(
+                entryDate.getUTCFullYear(),
+                entryDate.getUTCMonth(),
+                entryDate.getUTCDate(),
+                0, 0, 0, 0
+              ));
+              const matches = entryDateUTC.getTime() === today.getTime();
+              console.log(`💰 Comparing entry date ${entryDateUTC.toISOString()} (from ${entryDate.toISOString()}) with today ${today.toISOString()}: ${matches}`);
+              return matches;
+            });
+
+            if (existingEntryIndex >= 0) {
+              console.log(`💰 Found existing entry at index ${existingEntryIndex}, updating...`);
+              // Update existing entry
+              await this.userModel.findByIdAndUpdate(
+                attempt.collectorId,
+                {
+                  $set: {
+                    [`earningsHistory.${existingEntryIndex}.earnings`]: session.sessionEarnings,
+                    [`earningsHistory.${existingEntryIndex}.collectionCount`]: session.collectionCount,
+                    [`earningsHistory.${existingEntryIndex}.lastCollectionTime`]: session.lastCollectionTime,
+                    [`earningsHistory.${existingEntryIndex}.isActive`]: session.isActive,
+                  }
+                }
+              ).exec();
+              console.log(`✅ Updated existing earnings history entry for collector ${attempt.collectorId}`);
+            } else {
+              console.log(`💰 No existing entry found, creating new one...`);
+              // Create new entry for today
+              const newEntry = {
+                date: today,
+                earnings: session.sessionEarnings,
+                collectionCount: session.collectionCount,
+                startTime: session.startTime,
+                lastCollectionTime: session.lastCollectionTime,
+                isActive: session.isActive,
+              };
+              console.log(`💰 New entry to push: ${JSON.stringify(newEntry)}`);
+              
+              await this.userModel.findByIdAndUpdate(
+                attempt.collectorId,
+                {
+                  $push: {
+                    earningsHistory: newEntry
+                  }
+                }
+              ).exec();
+              console.log(`✅ Created new earnings history entry for collector ${attempt.collectorId}`);
+            }
+            
+            // Verify the update
+            const verifyUser = await this.userModel.findById(attempt.collectorId).exec();
+            console.log(`💰 After update, earningsHistory: ${JSON.stringify(verifyUser?.earningsHistory)}`);
+            console.log(`✅ Updated earnings history for collector ${attempt.collectorId}`);
+          } else {
+            console.error(`❌ User ${attempt.collectorId} not found when updating earnings history`);
+          }
+        } catch (earningsError) {
+          console.error(`❌ Error updating earnings:`, earningsError);
+          console.error(`❌ Error stack:`, earningsError.stack);
+        }
+      } else {
+        console.log(`💰 Skipping earnings update: outcome=${outcome}, earnings=${earnings}`);
+      }
+
       console.log('✅ Collection attempt completed:', {
         id: updatedAttempt._id,
         outcome: updatedAttempt.outcome,
         durationMinutes: updatedAttempt.durationMinutes,
-        timelineLength: updatedAttempt.timeline.length
+        timelineLength: updatedAttempt.timeline.length,
+        earnings: updatedAttempt.earnings || 0
       });
 
       return updatedAttempt;
@@ -2172,7 +2388,8 @@ export class DropoffsService {
         console.log(`✅ Auto-unlocked account: ${user._id} (${user.email})`);
         
         // Emit WebSocket event for real-time unlock notification
-        this.notificationsGateway.sendNotificationToUser((user as any)._id.toString(), {
+        const userId = String((user as any)._id);
+        this.notificationsGateway.sendNotificationToUser(userId, {
           type: 'account_unlocked',
           title: 'Account Unlocked',
           message: 'Your account has been unlocked. You can start collecting again!',

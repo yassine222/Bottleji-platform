@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class NewPasswordScreen extends ConsumerStatefulWidget {
   final String email;
@@ -33,11 +34,12 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
   }
 
   Future<void> _handleResetPassword() async {
+    final l10n = AppLocalizations.of(context);
     // Manual validation instead of form validation
     if (_passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a password'),
+        SnackBar(
+          content: Text(l10n.pleaseEnterPassword),
           backgroundColor: Colors.red,
         ),
       );
@@ -46,8 +48,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     
     if (_passwordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
+        SnackBar(
+          content: Text(l10n.passwordMustBeAtLeast6Characters),
           backgroundColor: Colors.red,
         ),
       );
@@ -56,8 +58,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     
     if (_confirmPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please confirm your password'),
+        SnackBar(
+          content: Text(l10n.pleaseConfirmPassword),
           backgroundColor: Colors.red,
         ),
       );
@@ -66,8 +68,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
+        SnackBar(
+          content: Text(l10n.passwordsDoNotMatch),
           backgroundColor: Colors.red,
         ),
       );
@@ -89,13 +91,13 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
         success: (user, token, message) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
+              builder: (context) => LoginScreen(key: UniqueKey()), // Use UniqueKey to ensure fresh instance
             ),
             (route) => false,
           );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(message ?? 'Password reset successful! Please login with your new password.'),
+              content: Text(message ?? AppLocalizations.of(context).passwordResetSuccessful),
               backgroundColor: Colors.green,
             ),
           );
@@ -124,8 +126,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: const Color(0xFF00695C),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -135,7 +138,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                  icon: const Icon(Icons.arrow_back, color: appGreenColor, size: 28),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -153,23 +156,23 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                       children: [
                         // Logo
                         Image.asset(
-                          'assets/images/logo.png',
-                          height: 120,
+                          'assets/images/logo_v2.png',
+                          height: 200,
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          'Create New Password',
+                          AppLocalizations.of(context).createNewPassword,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: appGreenColor,
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Please enter your new password',
+                          AppLocalizations.of(context).pleaseEnterNewPassword,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.white70,
+                            color: appGreenColor.withOpacity(0.7),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -177,17 +180,17 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black87),
                           decoration: InputDecoration(
-                            labelText: 'New Password',
-                            labelStyle: const TextStyle(color: Colors.white70),
-                            hintText: 'Enter your new password',
-                            hintStyle: const TextStyle(color: Colors.white54),
-                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                            labelText: AppLocalizations.of(context).newPassword,
+                            labelStyle: const TextStyle(color: appGreenColor),
+                            hintText: AppLocalizations.of(context).enterNewPassword,
+                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.white70,
+                                color: appGreenColor,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -197,35 +200,35 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: const BorderSide(color: appGreenColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white, width: 2),
+                              borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.1),
+                            fillColor: Colors.grey[50],
                           ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black87),
                           decoration: InputDecoration(
-                            labelText: 'Confirm Password',
-                            labelStyle: const TextStyle(color: Colors.white70),
-                            hintText: 'Confirm your new password',
-                            hintStyle: const TextStyle(color: Colors.white54),
-                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
+                            labelText: AppLocalizations.of(context).confirmPassword,
+                            labelStyle: const TextStyle(color: appGreenColor),
+                            hintText: AppLocalizations.of(context).confirmNewPassword,
+                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.white70,
+                                color: appGreenColor,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -235,30 +238,31 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: const BorderSide(color: appGreenColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white70),
+                              borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white, width: 2),
+                              borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.1),
+                            fillColor: Colors.grey[50],
                           ),
                         ),
                         const SizedBox(height: 24),
-                        FilledButton(
+                        ElevatedButton(
                           onPressed: _isLoading ? null : _handleResetPassword,
-                          style: FilledButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF00695C),
+                            backgroundColor: appGreenColor,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -266,12 +270,12 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00695C)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                               )
-                              : const Text(
-                                  'Reset Password',
-                                  style: TextStyle(
+                              : Text(
+                                  AppLocalizations.of(context).resetPassword,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),

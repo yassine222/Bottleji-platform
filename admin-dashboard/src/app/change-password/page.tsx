@@ -52,24 +52,24 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto w-20 h-20 mb-6">
+          <div className="mx-auto w-48 h-48 mb-6">
             <Image
-              src="/logo.png"
+              src="/logo_v2.png"
               alt="Bottleji Logo"
-              width={80}
-              height={80}
+              width={200}
+              height={200}
               className="w-full h-full object-contain"
               priority
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-[#00695C] mb-2">
             Change Password
           </h1>
-          <p className="text-gray-600 text-sm">
+          <p className="text-[#00695C] text-sm opacity-70">
             You must change your temporary password before accessing the dashboard
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function ChangePasswordPage() {
 
           {/* Current Password Field */}
           <div>
-            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="currentPassword" className="block text-sm font-medium text-[#00695C] mb-2">
               Current Password
             </label>
             <input
@@ -109,14 +109,14 @@ export default function ChangePasswordPage() {
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 text-sm transition-colors"
+              className="appearance-none relative block w-full px-3 py-3 border border-[#00695C] placeholder-gray-400 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] focus:z-10 text-sm transition-colors bg-gray-50"
               placeholder="Enter your current password"
             />
           </div>
 
           {/* New Password Field */}
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="newPassword" className="block text-sm font-medium text-[#00695C] mb-2">
               New Password
             </label>
             <input
@@ -127,14 +127,14 @@ export default function ChangePasswordPage() {
               required
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 text-sm transition-colors"
+              className="appearance-none relative block w-full px-3 py-3 border border-[#00695C] placeholder-gray-400 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] focus:z-10 text-sm transition-colors bg-gray-50"
               placeholder="Enter your new password"
             />
           </div>
 
           {/* Confirm Password Field */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#00695C] mb-2">
               Confirm New Password
             </label>
             <input
@@ -145,7 +145,7 @@ export default function ChangePasswordPage() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 text-sm transition-colors"
+              className="appearance-none relative block w-full px-3 py-3 border border-[#00695C] placeholder-gray-400 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] focus:z-10 text-sm transition-colors bg-gray-50"
               placeholder="Confirm your new password"
             />
           </div>
@@ -155,7 +155,7 @@ export default function ChangePasswordPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-[#00695C] hover:bg-[#004D40] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00695C] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isLoading ? (
                 <>
@@ -179,7 +179,7 @@ export default function ChangePasswordPage() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[#00695C] opacity-60">
             This is a one-time password change for security purposes
           </p>
         </div>

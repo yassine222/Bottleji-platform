@@ -15,6 +15,9 @@ import 'package:botleji/features/navigation/presentation/screens/navigation_scre
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart'; // Added import for navigationControllerProvider
 import 'package:intl/intl.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:botleji/core/utils/map_styles.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 class DropsMapScreen extends ConsumerStatefulWidget {
   const DropsMapScreen({super.key});
@@ -238,6 +241,11 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
       // Clear drops first to prevent showing cached drops from other modes
       ref.read(dropsControllerProvider.notifier).clearDrops();
       
+      // Clear old drop markers from _markers set to prevent stale markers
+      setState(() {
+        _markers.removeWhere((m) => m.markerId.value.startsWith('drop_'));
+      });
+      
       final userMode = ref.read(userModeControllerProvider);
       final authState = ref.read(authNotifierProvider);
       
@@ -262,13 +270,21 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
     } catch (e) {
       // Clear drops on error
       ref.read(dropsControllerProvider.notifier).clearDrops();
+      // Also clear drop markers on error
+      setState(() {
+        _markers.removeWhere((m) => m.markerId.value.startsWith('drop_'));
+      });
     }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
+  void _onMapCreated(GoogleMapController controller) async {
     setState(() {
       _mapController = controller;
     });
+    // Apply map style based on theme
+    final brightness = Theme.of(context).brightness;
+    final style = brightness == Brightness.dark ? MapStyles.dark : MapStyles.light;
+    await controller.setMapStyle(style);
   }
 
   @override
@@ -323,45 +339,110 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                   
                   return dropsState.when(
                     data: (drops) {
-                      // Create markers from drops (exclude censored and suspicious / 3+ cancellations for household)
-                      Set<Marker> dropMarkers = {};
+                      final userMode = ref.read(userModeControllerProvider);
+                      
+                      // For household mode, apply the same filtering as the "Active" tab
+                      List<Drop> filteredForMap = [];
+                      
                       if (drops.isNotEmpty) {
-                        final filteredForMap = drops.where((d) {
-                          // Basic filters
-                          if (d.isCensored || d.isSuspicious || (d.cancellationCount) >= 3 || d.status == DropStatus.stale) {
-                            return false;
-                          }
+                        if (userMode.value == UserMode.household) {
+                          // Use the exact same filter as drops_list_screen.dart for "goodDrops"
+                          filteredForMap = drops.where((d) {
+                            // CRITICAL: Only show pending or accepted drops
+                            final isPendingOrAccepted = d.status == DropStatus.pending || d.status == DropStatus.accepted;
+                            
+                            if (!isPendingOrAccepted) {
+                              debugPrint('🗺️ Map: EXCLUDING drop ${d.id.substring(0, 8)}... - status: ${d.status.name} (NOT pending/accepted)');
+                              return false;
+                            }
+                            
+                            // Additional checks: not suspicious, not censored, <3 cancellations, and not stale
+                            final isValid = !d.isSuspicious && 
+                                          !d.isCensored && 
+                                          (d.cancellationCount) < 3 &&
+                                          d.status != DropStatus.stale;
+                            
+                            if (!isValid) {
+                              debugPrint('🗺️ Map: EXCLUDING drop ${d.id.substring(0, 8)}... - status: ${d.status.name}, suspicious: ${d.isSuspicious}, censored: ${d.isCensored}, cancellations: ${d.cancellationCount}');
+                            } else {
+                              debugPrint('🗺️ Map: INCLUDING drop ${d.id.substring(0, 8)}... - status: ${d.status.name}');
+                            }
+                            
+                            return isValid;
+                          }).toList();
                           
-                          // Hide very close drops (< 100m) for collectors to prevent navigation crashes
-                          final userMode = ref.read(userModeControllerProvider);
-                          if (userMode.value == UserMode.collector && _currentLocation != null) {
-                            final distance = _calculateDistance(d.location);
-                            if (distance < 100.0) return false; // Hide drops less than 100m
-                          }
-                          
-                          return true;
-                        }).toList();
-                        dropMarkers = filteredForMap.map((drop) {
-                          return Marker(
-                            markerId: MarkerId('drop_${drop.id}'),
-                            position: drop.location,
-                            icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                            infoWindow: InfoWindow(
-                              title: '${drop.numberOfBottles + drop.numberOfCans} items',
-                              snippet: '${drop.bottleType.name} - ${drop.status.name}',
-                            ),
-                            onTap: () => _showDropDetails(drop),
-                          );
-                        }).toSet();
+                          debugPrint('🗺️ Map: Household mode - Filtered ${filteredForMap.length} active drops from ${drops.length} total');
+                          debugPrint('🗺️ Map: Status breakdown - Pending: ${drops.where((d) => d.status == DropStatus.pending).length}, Accepted: ${drops.where((d) => d.status == DropStatus.accepted).length}, Collected: ${drops.where((d) => d.status == DropStatus.collected).length}');
+                        } else {
+                          // Collector mode filters
+                          filteredForMap = drops.where((d) {
+                            // Exclude: censored, suspicious, 3+ cancellations, stale, collected, cancelled, expired
+                            if (d.isCensored || 
+                                d.isSuspicious || 
+                                (d.cancellationCount) >= 3 || 
+                                d.status == DropStatus.stale ||
+                                d.status == DropStatus.collected ||
+                                d.status == DropStatus.cancelled ||
+                                d.status == DropStatus.expired) {
+                              return false;
+                            }
+                            
+                            // Hide very close drops (< 100m) for collectors to prevent navigation crashes
+                            if (_currentLocation != null) {
+                              final distance = _calculateDistance(d.location);
+                              if (distance < 100.0) return false; // Hide drops less than 100m
+                            }
+                            
+                            return true;
+                          }).toList();
+                        }
                       }
                       
-                      // Combine drop markers with existing markers
-                      final allMarkers = {..._markers, ...dropMarkers};
+                      // Create markers ONLY from filtered drops
+                      final dropMarkers = filteredForMap.map((drop) {
+                        // Use custom marker for all drops
+                        final markerIcon = _customDropMarker ?? BitmapDescriptor.defaultMarker;
+                        
+                        return Marker(
+                          markerId: MarkerId('drop_${drop.id}'),
+                          position: drop.location,
+                          icon: markerIcon,
+                          onTap: () => _showDropDetails(drop),
+                        );
+                      }).toSet();
+                      
+                      debugPrint('🗺️ Map: Creating ${dropMarkers.length} markers from ${filteredForMap.length} filtered drops');
+                      
+                      // IMPORTANT: Only use non-drop markers from _markers (like current location, etc.)
+                      // Completely ignore any drop markers in _markers to prevent stale markers
+                      final nonDropMarkers = _markers.where((m) => !m.markerId.value.startsWith('drop_')).toSet();
+                      final allMarkers = {...nonDropMarkers, ...dropMarkers};
+                      
+                      debugPrint('🗺️ Map: Total markers on map: ${allMarkers.length} (${dropMarkers.length} drop markers + ${nonDropMarkers.length} other markers)');
+                      
+                      // Verify no collected drops in markers
+                      if (userMode.value == UserMode.household) {
+                        final collectedMarkers = dropMarkers.where((m) {
+                          final dropId = m.markerId.value.replaceFirst('drop_', '');
+                          final drop = filteredForMap.firstWhere(
+                            (d) => d.id == dropId,
+                            orElse: () => Drop.empty(),
+                          );
+                          return drop.id.isNotEmpty && drop.status == DropStatus.collected;
+                        }).toList();
+                        
+                        if (collectedMarkers.isNotEmpty) {
+                          debugPrint('❌ ERROR: Found ${collectedMarkers.length} collected drop markers in map!');
+                          for (final marker in collectedMarkers) {
+                            debugPrint('❌ ERROR: Collected marker ID: ${marker.markerId.value}');
+                          }
+                        }
+                      }
                       
                       return Stack(
                         children: [
                           GoogleMap(
-                            key: ValueKey(_mapKey), // Add map key for forced rebuilding
+                            key: ValueKey('map_${_mapKey}_${dropMarkers.length}'), // Force rebuild when markers change
                             initialCameraPosition: CameraPosition(
                               target: _currentLocation!,
                               zoom: 15,
@@ -815,7 +896,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                               items: BottleType.values.map((type) {
                                 return DropdownMenuItem(
                                   value: type,
-                                  child: Text(type.name.toUpperCase()),
+                                  child: Text(type.localizedDisplayName(context)),
                                 );
                               }).toList(),
                               onChanged: (value) {
@@ -963,19 +1044,9 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
         modifiedAt: DateTime.now(),
       );
 
-      // Add marker to map
-      setState(() {
-        _markers.add(
-          Marker(
-            markerId: MarkerId(newDrop.id),
-            position: newDrop.location,
-            infoWindow: InfoWindow(
-              title: '${newDrop.numberOfBottles} bottles',
-              snippet: newDrop.bottleType.name,
-            ),
-          ),
-        );
-      });
+      // Note: Don't add marker to _markers here - it will be added automatically
+      // when the drops state updates and the Consumer rebuilds with the new drop
+      // This ensures the marker goes through the same filtering logic
 
       Navigator.pop(context); // Close bottom sheet
       _resetForm(); // Reset form state
@@ -1008,7 +1079,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
             
             // Only show default data if there's an error, otherwise use the fetched data
             final userData = snapshot.data ?? {
-              'name': 'Unknown User',
+              'name': AppLocalizations.of(context).notSet,
               'phoneNumber': 'N/A',
               'profilePhoto': null,
             };
@@ -1027,7 +1098,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Drop Details',
+                        AppLocalizations.of(context).dropInformation,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       IconButton(
@@ -1079,7 +1150,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
-                              drop.status.name.toUpperCase(),
+                              drop.status.localizedDisplayName(context),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -1111,7 +1182,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      isOwnDrop ? 'Your Information' : 'Created by',
+                                      isOwnDrop ? AppLocalizations.of(context).yourInformation : AppLocalizations.of(context).createdBy,
                                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).colorScheme.primary,
@@ -1142,7 +1213,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            userData['name'] ?? 'Unknown User',
+                                            userData['name'] ?? AppLocalizations.of(context).notSet,
                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -1175,10 +1246,10 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
                           const SizedBox(height: 16),
                           
                           // Drop information
-                          _buildInfoRow('Bottle Type', drop.bottleType.name.toUpperCase()),
+                          _buildInfoRow('Bottle Type', drop.bottleType.localizedDisplayName(context)),
                           _buildInfoRow('Plastic Bottles', '${drop.numberOfBottles}'),
                           _buildInfoRow('Cans', '${drop.numberOfCans}'),
-                          _buildInfoRow('Total Items', '${drop.numberOfBottles + drop.numberOfCans}'),
+                          _buildInfoRow(AppLocalizations.of(context).estimatedValue, DropValueCalculator.formatEstimatedValue(drop.estimatedValue)),
                           _buildInfoRow('Leave Outside', drop.leaveOutside ? 'Yes' : 'No'),
                           _buildInfoRow('Created', _formatDate(drop.createdAt)),
 

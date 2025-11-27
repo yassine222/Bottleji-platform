@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:botleji/core/utils/logger.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
@@ -282,7 +283,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(24),
                               child: Image.asset(
-                                'assets/images/logo.png',
+                                'assets/images/logo_v2.png',
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -290,25 +291,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           const SizedBox(height: 32),
                           
                           // App Name
-                          const Text(
-                            'Bottleji',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 2,
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final l10n = AppLocalizations.of(context);
+                              return Text(
+                                l10n.appTitle,
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 8),
                           
                           // Tagline
-                          const Text(
-                            'Sustainable Waste Management',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w300,
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final l10n = AppLocalizations.of(context);
+                              return Text(
+                                l10n.sustainableWasteManagement,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

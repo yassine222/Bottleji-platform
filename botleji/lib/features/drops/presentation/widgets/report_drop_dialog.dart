@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/drops_controller.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class ReportDropDialog extends ConsumerStatefulWidget {
   final String dropId;
@@ -19,11 +20,14 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
   final TextEditingController _detailsController = TextEditingController();
   bool _isSubmitting = false;
 
-  final Map<String, String> _reportReasons = {
-    'inappropriate_image': '🚫 Inappropriate Image',
-    'fake_drop': '❌ Fake Drop',
-    'amount_mismatch': '📊 Amount of bottles not matching the real drop',
-  };
+  Map<String, String> _getReportReasons(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return {
+      'inappropriate_image': l10n.inappropriateImage,
+      'fake_drop': l10n.fakeDrop,
+      'amount_mismatch': l10n.amountMismatch,
+    };
+  }
 
   @override
   void dispose() {
@@ -34,8 +38,8 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
   Future<void> _submitReport() async {
     if (_selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a reason'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseSelectReason),
           backgroundColor: Colors.red,
         ),
       );
@@ -56,10 +60,10 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Drop reported successfully. Thank you for helping keep our community safe!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dropReportedSuccessfully),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -67,7 +71,7 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error reporting drop: $e'),
+            content: Text(AppLocalizations.of(context).errorReportingDrop(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,20 +114,20 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Report Drop',
-                        style: TextStyle(
+                        AppLocalizations.of(context).reportDrop,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'Help us maintain quality',
-                        style: TextStyle(
+                        AppLocalizations.of(context).helpUsMaintainQuality,
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
                         ),
@@ -146,15 +150,15 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Reason Selection
-                    const Text(
-                      'Select Reason',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).selectReason,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ..._reportReasons.entries.map((entry) => 
+                    ..._getReportReasons(context).entries.map((entry) => 
                       RadioListTile<String>(
                         title: Text(entry.value),
                         value: entry.key,
@@ -172,9 +176,9 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                     const SizedBox(height: 16),
 
                     // Additional Details
-                    const Text(
-                      'Additional Details (Optional)',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).additionalDetailsOptional,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -184,7 +188,7 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                       controller: _detailsController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: 'Provide more information...',
+                        hintText: AppLocalizations.of(context).provideMoreInformation,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -213,7 +217,7 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -237,7 +241,7 @@ class _ReportDropDialogState extends ConsumerState<ReportDropDialog> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Submit Report'),
+                        : Text(AppLocalizations.of(context).submitReport),
                   ),
                 ),
               ],

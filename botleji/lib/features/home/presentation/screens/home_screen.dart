@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:botleji/core/utils/logger.dart';
+import 'package:botleji/core/utils/map_styles.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:botleji/core/widgets/app_drawer.dart';
@@ -39,6 +41,9 @@ import 'package:botleji/core/theme/app_typography.dart';
 import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:botleji/core/widgets/active_collection_indicator.dart';
 import 'package:botleji/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
+import 'package:botleji/features/stats/presentation/widgets/session_value_card.dart';
 
 
 // Navigation step model
@@ -241,25 +246,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Compress and upload image to Firebase Storage
   Future<String> _uploadImageToFirebase(File imageFile) async {
     try {
-      // Compress the image first
+      debugPrint('🖼️ Starting image compression and upload...');
+      
+      // Compress the image in an isolate to avoid blocking the UI
       final originalBytes = await imageFile.readAsBytes();
+      debugPrint('🖼️ Image file size: ${(originalBytes.length / 1024).toStringAsFixed(2)} KB');
       
-      // Try to compress the image
-      Uint8List? compressedBytes;
-      String? compressionError;
-      
-      try {
-        final image = img.decodeImage(originalBytes);
-        if (image != null) {
-          final resized = img.copyResize(image, width: 800); // Resize to max 800px width
-          compressedBytes = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
-        }
-      } catch (e) {
-        compressionError = e.toString();
-      }
-
-      // Use compressed image if available, otherwise use original
-      final bytesToUpload = compressedBytes ?? originalBytes;
+      // Compress the image in an isolate (background thread) to avoid blocking UI
+      final compressedBytes = await compute(_compressImageInIsolate, originalBytes);
+      debugPrint('🖼️ Compressed image size: ${(compressedBytes.length / 1024).toStringAsFixed(2)} KB');
       
       // Create a unique filename
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -273,14 +268,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         contentType: 'image/jpeg',
         customMetadata: {'picked-file-path': imageFile.path},
       );
+      
+      debugPrint('🖼️ Uploading to Firebase Storage...');
       // Upload the file
-      final uploadTask = await fileRef.putData(bytesToUpload, metadata);
+      final uploadTask = await fileRef.putData(compressedBytes, metadata);
+      debugPrint('🖼️ Upload complete, getting download URL...');
       
       // Get the download URL
       final url = await fileRef.getDownloadURL();
+      debugPrint('🖼️ Image uploaded successfully: $url');
       return url;
     } catch (e) {
+      debugPrint('❌ Error uploading image: $e');
       throw Exception('Failed to upload image: $e');
+    }
+  }
+
+  // Static method for image compression (runs in isolate)
+  static Uint8List _compressImageInIsolate(Uint8List originalBytes) {
+    try {
+      final image = img.decodeImage(originalBytes);
+      if (image != null) {
+        // Resize to max 800px width (maintains aspect ratio)
+        final resized = img.copyResize(image, width: 800);
+        // Compress with quality 80 (good balance between size and quality)
+        final compressed = img.encodeJpg(resized, quality: 80);
+        return Uint8List.fromList(compressed);
+      }
+      // If decoding fails, return original bytes
+      return originalBytes;
+    } catch (e) {
+      // If compression fails, return original bytes
+      return originalBytes;
     }
   }
 
@@ -912,18 +931,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final authState = ref.read(authNotifierProvider);
       if (authState.value != null) {
+        // Check if user is permanently disabled first
+        final currentUser = authState.value;
+        if (currentUser != null && 
+            currentUser.isAccountLocked && 
+            currentUser.accountLockedUntil == null) {
+          // User is permanently disabled - show account disabled dialog
+          _showAccountDisabledDialog();
+          return;
+        }
+        
         // Try to get profile to check if token is still valid
         final response = await ref.read(authNotifierProvider.notifier).checkSessionValidity();
         
         response.when(
           success: (user, token, message) {
+            // Check if user is permanently disabled after refresh
+            if (user != null && 
+                user.isAccountLocked && 
+                user.accountLockedUntil == null) {
+              // User is permanently disabled - show account disabled dialog
+              _showAccountDisabledDialog();
+              return;
+            }
             // Session is still valid
             AppLogger.log('Session check: Valid');
           },
           error: (message, statusCode) {
             if (statusCode == 401) {
               AppLogger.log('Session expired detected');
-              _showSessionExpiredDialog();
+              // TEMPORARILY DISABLED FOR TESTING
+              // _showSessionExpiredDialog();
+              print('⚠️ Session expired detected in _checkSessionValidity but dialog disabled for testing');
             }
           },
         );
@@ -932,9 +971,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       AppLogger.log('Error checking session validity: $e');
       if (e.toString().contains('401')) {
         AppLogger.log('Session expired detected');
-        _showSessionExpiredDialog();
+        // TEMPORARILY DISABLED FOR TESTING
+        // _showSessionExpiredDialog();
+        print('⚠️ Session expired detected in catch block but dialog disabled for testing');
       }
     }
+  }
+
+  void _showAccountDisabledDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          icon: const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          title: Text(l10n.accountDisabled),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.accountDisabledMessage,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.email_outlined, size: 16, color: Colors.red),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.supportEmail,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                // Force logout
+                await ref.read(authNotifierProvider.notifier).logout(ref);
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login',
+                    (route) => false,
+                  );
+                }
+              },
+              child: Text(l10n.ok),
+            ),
+          ],
+        );
+      },
+    );
   }
 
  void _showSessionExpiredDialog() {
@@ -942,11 +1040,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
+      final l10n = AppLocalizations.of(context);
       return AlertDialog(
-        title: const Text('Session Expired'),
-        content: const Text(
-          'Your session has expired. Please login again to continue.',
-        ),
+        title: Text(l10n.sessionExpired),
+        content: Text(l10n.sessionExpiredMessage),
         actions: [
           TextButton(
             onPressed: () {
@@ -958,7 +1055,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 (route) => false,
               );
             },
-            child: const Text('Login'),
+            child: Text(l10n.login),
           ),
         ],
       );
@@ -1156,6 +1253,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       });
       
+      // Apply map style based on current theme
+      _applyMapStyle(controller);
+      
       // If we have a current location, animate to it
       if (_currentLocation != null) {
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -1176,6 +1276,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _isMapLoading = false;
       });
       // Continue without map controller if there's an error
+    }
+  }
+
+  Future<void> _applyMapStyle(GoogleMapController controller) async {
+    try {
+      final brightness = Theme.of(context).brightness;
+      final style = brightness == Brightness.dark ? MapStyles.dark : MapStyles.light;
+      await controller.setMapStyle(style);
+    } catch (e) {
+      debugPrint('Error applying map style: $e');
     }
   }
 
@@ -1532,6 +1642,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ? _buildHouseholdHomeContent()
               : _buildCollectorHomeContent();
         case 1:
+          // Check if we need to set initial filter (from stats page "View All" button)
+          final initialFilter = ref.read(dropsInitialFilterProvider);
+          if (initialFilter != null) {
+            // Clear the filter provider after using it
+            ref.read(dropsInitialFilterProvider.notifier).state = null;
+            return DropsListScreen(initialFilter: initialFilter);
+          }
           return const DropsListScreen();
         case 2:
           return const RewardsScreen();
@@ -1711,13 +1828,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
                     if (mode == UserMode.collector) return drops;
-                    // Household: show only own drops and hide suspicious or 3+ cancellations
+                    // Household: show only active drops (pending or accepted) - same as "Active" tab
                     final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops
                         .where((drop) =>
                             drop.userId == currentUserId &&
-                            drop.isSuspicious != true &&
+                            !drop.isSuspicious &&
+                            !drop.isCensored &&
                             (drop.cancellationCount) < 3 &&
+                            (drop.status == DropStatus.pending || drop.status == DropStatus.accepted) &&
                             drop.status != DropStatus.stale)
                         .toList();
                   },
@@ -1729,10 +1848,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           markerId: MarkerId('drop_${drop.id}'),
                           position: drop.location,
                           icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                          infoWindow: InfoWindow(
-                            title: '${drop.numberOfBottles + drop.numberOfCans} items',
-                            snippet: '${drop.bottleType.name} - ${drop.status.name}',
-                          ),
                           onTap: () => _showDropDetails(drop),
                         ))
                     .toSet();
@@ -1865,13 +1980,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
                     if (mode == UserMode.collector) return drops;
-                    // Household: show only own drops and hide suspicious or 3+ cancellations
+                    // Household: show only active drops (pending or accepted) - same as "Active" tab
                     final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops
                         .where((drop) =>
                             drop.userId == currentUserId &&
-                            drop.isSuspicious != true &&
+                            !drop.isSuspicious &&
+                            !drop.isCensored &&
                             (drop.cancellationCount) < 3 &&
+                            (drop.status == DropStatus.pending || drop.status == DropStatus.accepted) &&
                             drop.status != DropStatus.stale)
                         .toList();
                   },
@@ -1883,11 +2000,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           markerId: MarkerId('drop_${drop.id}'),
                           position: drop.location,
                           icon: _customDropMarker ?? BitmapDescriptor.defaultMarker,
-                          infoWindow: InfoWindow(
-                            title:
-                                '${drop.numberOfBottles + drop.numberOfCans} items',
-                            snippet: '${drop.bottleType.name} - ${drop.status.name}',
-                          ),
                           onTap: () => _showDropDetails(drop),
                         ))
                     .toSet();
@@ -1922,6 +2034,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   )
                 else
                   const Center(child: CircularProgressIndicator()),
+                // Session value card overlay (top-left)
+                const SessionValueCard(),
               ],
             );
           },
@@ -2083,10 +2197,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                _buildInfoRow('Bottle Type', drop.bottleType.name.toUpperCase()),
+                                _buildInfoRow('Bottle Type', drop.bottleType.localizedDisplayName(context)),
                                 _buildInfoRow('Plastic Bottles', '${drop.numberOfBottles}'),
                                 _buildInfoRow('Cans', '${drop.numberOfCans}'),
-                                _buildInfoRow('Total Items', '${drop.numberOfBottles + drop.numberOfCans}'),
+                                _buildInfoRow(AppLocalizations.of(context).estimatedValue, DropValueCalculator.formatEstimatedValue(drop.estimatedValue)),
                                 _buildInfoRow('Leave Outside', drop.leaveOutside ? 'Yes' : 'No'),
                                 _buildInfoRow('Created', _formatDate(drop.createdAt)),
                                 
@@ -2495,22 +2609,101 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Bottleji',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final l10n = AppLocalizations.of(context);
+                            final userMode = ref.watch(userModeControllerProvider);
+                            return userMode.when(
+                              data: (mode) {
+                                // Get the appropriate icon based on mode
+                                final iconPath = mode == UserMode.collector
+                                    ? 'assets/images/collector_mode.png'
+                                    : 'assets/images/household_mode.png';
+                                
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      l10n.appTitle,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                        height: 1.0, // Ensure consistent line height
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          iconPath,
+                                          width: 28,
+                                          height: 28,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            // Fallback to icon if image fails to load
+                                            return Icon(
+                                              mode == UserMode.collector
+                                                  ? Icons.work_outline
+                                                  : Icons.home_outlined,
+                                              color: Colors.white,
+                                              size: 20,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                              loading: () {
+                                return Text(
+                                  l10n.appTitle,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                );
+                              },
+                              error: (error, stack) {
+                                return Text(
+                                  l10n.appTitle,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
-                        Text(
-                          'Eco-friendly bottle collection',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.8),
-                            fontWeight: FontWeight.w400,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return Text(
+                              l10n.ecoFriendlyBottleCollection,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -2694,7 +2887,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: FloatingActionButton.extended(
                               heroTag: 'create_drop_fab',
                               onPressed: () => _showCreateDropSheet(context),
-                              label: const Text('Create Drop'),
+                              label: Builder(
+                                builder: (context) => Text(AppLocalizations.of(context).createDrop),
+                              ),
                               icon: const Icon(Icons.add_location),
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -2708,7 +2903,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Center(
                             child: FloatingActionButton.extended(
                               onPressed: () => _showSetRadiusSheet(context),
-                              label: const Text('Set Collection Radius'),
+                              label: Builder(
+                                builder: (context) => Text(AppLocalizations.of(context).setCollectionRadius),
+                              ),
                               icon: const Icon(Icons.radar),
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -2877,7 +3074,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Create New Drop',
+                AppLocalizations.of(context).createNewDrop,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               IconButton(
@@ -2897,7 +3094,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Location control
         SwitchListTile(
           dense: true,
-          title: const Text('Use Current Location'),
+          title: Text(AppLocalizations.of(context).useCurrentLocation),
           value: _useCurrentLocation,
           onChanged: (value) {
             setModalState(() {
@@ -3204,7 +3401,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Row(
           children: [
             Text(
-              'Photo',
+              AppLocalizations.of(context).photo,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(width: 4),
@@ -3219,7 +3416,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Take a photo or choose from gallery - show your bottles clearly to help collectors',
+          AppLocalizations.of(context).takePhotoOrChooseFromGallery,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -3258,14 +3455,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Add Photo',
+                          AppLocalizations.of(context).addPhoto,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Camera or Gallery',
+                          AppLocalizations.of(context).cameraOrGallery,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                             fontSize: 12,
@@ -3323,7 +3520,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('Take Photo'),
+                title: Builder(
+                  builder: (context) => Text(AppLocalizations.of(context).takePhoto),
+                ),
                 onTap: () async {
                   Navigator.of(context).pop();
                   await _pickImageFromSource(ImageSource.camera, setModalState);
@@ -3333,7 +3532,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (Platform.isAndroid || !kDebugMode)
                 ListTile(
                   leading: const Icon(Icons.photo_library),
-                  title: const Text('Choose from Gallery'),
+                  title: Builder(
+                    builder: (context) => Text(AppLocalizations.of(context).chooseFromGallery),
+                  ),
                   onTap: () async {
                     Navigator.of(context).pop();
                     try {
@@ -3355,8 +3556,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (Platform.isIOS && kDebugMode)
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: const Text('Gallery (iOS Simulator Issue)'),
-                  subtitle: const Text('Use camera or real device'),
+                  title: Builder(
+                    builder: (context) => Text(AppLocalizations.of(context).galleryIOSSimulatorIssue),
+                  ),
+                  subtitle: Builder(
+                    builder: (context) => Text(AppLocalizations.of(context).useCameraOrRealDevice),
+                  ),
                   onTap: () async {
                     Navigator.of(context).pop();
                     try {
@@ -3376,7 +3581,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ListTile(
                 leading: const Icon(Icons.cancel),
-                title: const Text('Cancel'),
+                title: Builder(
+                  builder: (context) => Text(AppLocalizations.of(context).cancel),
+                ),
                 onTap: () => Navigator.of(context).pop(),
               ),
             ],
@@ -3464,10 +3671,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: DropdownButtonFormField<BottleType>(
         value: _bottleType,
-        decoration: const InputDecoration(
-          labelText: 'Bottle Type',
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context).bottleType,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
         items: BottleType.values.map((type) {
           return DropdownMenuItem(
@@ -3507,7 +3714,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                 ),
                 Text(
-                  type.name.toUpperCase(),
+                  type.localizedDisplayName(context),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -3564,7 +3771,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return TextFormField(
       controller: _bottlesController,
       decoration: InputDecoration(
-        labelText: 'Number of Plastic Bottles',
+        labelText: AppLocalizations.of(context).numberOfPlasticBottles,
         border: const OutlineInputBorder(),
         prefixIcon: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -3602,7 +3809,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return TextFormField(
       controller: _cansController,
       decoration: InputDecoration(
-        labelText: 'Number of Cans',
+        labelText: AppLocalizations.of(context).numberOfCans,
         border: const OutlineInputBorder(),
         prefixIcon: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -3638,9 +3845,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildNotesField() {
     return TextFormField(
-      decoration: const InputDecoration(
-        labelText: 'Notes (Optional)',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context).notesOptional,
+        border: const OutlineInputBorder(),
       ),
       maxLines: 3,
       textInputAction: TextInputAction.done,
@@ -3654,7 +3861,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildLeaveOutsideCheckbox(StateSetter setModalState) {
     return CheckboxListTile(
-      title: const Text('Leave outside the door'),
+      title: Text(AppLocalizations.of(context).leaveOutsideDoor),
       value: _leaveOutside,
       onChanged: (value) {
         if (value != null) {
@@ -3782,7 +3989,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 12),
                 // Subtitle
                 Text(
-                  'Compressing and uploading image...',
+                  'Getting your bottles ready for collectors…',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -3971,12 +4178,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Set Collection Radius',
+                AppLocalizations.of(context).setCollectionRadius,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
               Text(
-                'Set the radius (in kilometers) within which you want to collect bottles.',
+                AppLocalizations.of(context).setCollectionRadiusDescription,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
@@ -3984,7 +4191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${_collectionRadius.toStringAsFixed(1)} km',
+                    '${_collectionRadius.toStringAsFixed(1)} ${AppLocalizations.of(context).kilometers}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ],
@@ -3994,7 +4201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 min: 1.0,
                 max: 20.0,
                 divisions: 19,
-                label: '${_collectionRadius.toStringAsFixed(1)} km',
+                label: '${_collectionRadius.toStringAsFixed(1)} ${AppLocalizations.of(context).kilometers}',
                 onChanged: (value) {
                   setState(() {
                     _collectionRadius = value;
@@ -4007,12 +4214,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Collection radius updated!')),
+                    SnackBar(content: Text(AppLocalizations.of(context).collectionRadiusUpdated)),
                   );
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Save Radius'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(AppLocalizations.of(context).saveRadius),
                 ),
               ),
               const SizedBox(height: 16),

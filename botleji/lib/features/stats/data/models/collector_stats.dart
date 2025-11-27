@@ -22,14 +22,29 @@ class CollectorStats {
   });
 
   factory CollectorStats.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert to int
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    // Helper function to safely convert map values to int
+    Map<String, int> toIntMap(Map<String, dynamic>? map) {
+      if (map == null) return {};
+      return map.map((key, value) => MapEntry(key, toInt(value)));
+    }
+
     return CollectorStats(
-      accepted: json['accepted'] ?? 0,
-      collected: json['collected'] ?? 0,
-      cancelled: json['cancelled'] ?? 0,
-      expired: json['expired'] ?? 0,
+      accepted: toInt(json['accepted']),
+      collected: toInt(json['collected']),
+      cancelled: toInt(json['cancelled']),
+      expired: toInt(json['expired']),
       collectionRate: (json['collectionRate'] ?? 0).toDouble(),
-      averageCollectionTime: json['averageCollectionTime'] ?? 0,
-      cancellationReasons: Map<String, int>.from(json['cancellationReasons'] ?? {}),
+      averageCollectionTime: toInt(json['averageCollectionTime']),
+      cancellationReasons: toIntMap(json['cancellationReasons'] as Map<String, dynamic>?),
       timeRange: json['timeRange'] ?? '',);
   }
 
@@ -85,6 +100,7 @@ class CollectorInteraction {
   final DateTime? cancelledAt;
   final DateTime? collectedAt;
   final DateTime? expiredAt;
+  final double? earnings; // Earnings for this collection (only when interactionType === 'collected')
 
   const CollectorInteraction({
     required this.id,
@@ -99,6 +115,7 @@ class CollectorInteraction {
     this.cancelledAt,
     this.collectedAt,
     this.expiredAt,
+    this.earnings,
   });
 
   factory CollectorInteraction.fromJson(Map<String, dynamic> json) {
@@ -128,6 +145,15 @@ class CollectorInteraction {
         }
       }
 
+      // Helper to safely convert to double
+      double? toDoubleOrNull(dynamic value) {
+        if (value == null) return null;
+        if (value is double) return value;
+        if (value is int) return value.toDouble();
+        if (value is String) return double.tryParse(value);
+        return null;
+      }
+
       return CollectorInteraction(
         id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
         collectorId: json['collectorId']?.toString() ?? '',
@@ -140,7 +166,8 @@ class CollectorInteraction {
         acceptedAt: json['acceptedAt'] != null ? TimezoneService.parseToGermanTime(json['acceptedAt'].toString()) : null,
         cancelledAt: json['cancelledAt'] != null ? TimezoneService.parseToGermanTime(json['cancelledAt'].toString()) : null,
         collectedAt: json['collectedAt'] != null ? TimezoneService.parseToGermanTime(json['collectedAt'].toString()) : null,
-        expiredAt: json['expiredAt'] != null ? TimezoneService.parseToGermanTime(json['expiredAt'].toString()) : null,);
+        expiredAt: json['expiredAt'] != null ? TimezoneService.parseToGermanTime(json['expiredAt'].toString()) : null,
+        earnings: toDoubleOrNull(json['earnings']),);
     } catch (e) {
       print('❌ Error parsing CollectorInteraction: $e');
       print('❌ JSON data: $json');
@@ -162,6 +189,7 @@ class CollectorInteraction {
       'cancelledAt': cancelledAt?.toIso8601String(),
       'collectedAt': collectedAt?.toIso8601String(),
       'expiredAt': expiredAt?.toIso8601String(),
+      'earnings': earnings,
     };
   }
 }
@@ -205,19 +233,28 @@ class DropoffInfo {
 
   factory DropoffInfo.fromJson(Map<String, dynamic> json) {
     try {
+      // Helper function to safely convert to int
+      int toInt(dynamic value) {
+        if (value == null) return 0;
+        if (value is int) return value;
+        if (value is double) return value.toInt();
+        if (value is String) return int.tryParse(value) ?? 0;
+        return 0;
+      }
+
       return DropoffInfo(
         id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
         userId: json['userId']?.toString() ?? '',
         imageUrl: json['imageUrl']?.toString() ?? '',
-        numberOfBottles: json['numberOfBottles'] ?? 0,
-        numberOfCans: json['numberOfCans'] ?? 0,
+        numberOfBottles: toInt(json['numberOfBottles']),
+        numberOfCans: toInt(json['numberOfCans']),
         bottleType: json['bottleType']?.toString() ?? '',
         notes: json['notes']?.toString(),
         leaveOutside: json['leaveOutside'] ?? false,
         location: LocationInfo.fromJson(json['location'] ?? {}),
         status: json['status']?.toString() ?? '',
         collectorId: json['collectorId']?.toString(),
-        cancellationCount: json['cancellationCount'] ?? 0,
+        cancellationCount: toInt(json['cancellationCount']),
         acceptedAt: json['acceptedAt'] != null ? TimezoneService.parseToGermanTime(json['acceptedAt'].toString()) : null,
         isSuspicious: json['isSuspicious'] ?? false,
         cancelledByCollectorIds: _parseStringList(json['cancelledByCollectorIds']),
@@ -297,11 +334,20 @@ class PaginationInfo {
   });
 
   factory PaginationInfo.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert to int
+    int toInt(dynamic value, int defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? defaultValue;
+      return defaultValue;
+    }
+
     return PaginationInfo(
-      page: json['page'] ?? 1,
-      limit: json['limit'] ?? 20,
-      total: json['total'] ?? 0,
-      pages: json['pages'] ?? 0,);
+      page: toInt(json['page'], 1),
+      limit: toInt(json['limit'], 20),
+      total: toInt(json['total'], 0),
+      pages: toInt(json['pages'], 0),);
   }
 
   Map<String, dynamic> toJson() {

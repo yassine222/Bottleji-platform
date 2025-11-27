@@ -380,7 +380,16 @@ export class AdminService {
 
   async getAllUsers(page = 1, limit = 20, includeDeleted = false) {
     const skip = (page - 1) * limit;
-    const filter = includeDeleted ? {} : { isDeleted: { $ne: true } };
+    
+    // Build filter explicitly:
+    // - When includeDeleted is false: exclude deleted users (isDeleted !== true)
+    // - When includeDeleted is true: show ONLY deleted users (isDeleted === true)
+    const filter: any = includeDeleted 
+      ? { isDeleted: true } // Show ONLY deleted users
+      : { isDeleted: { $ne: true } }; // Exclude deleted users
+    
+    console.log(`📋 Admin: Getting users - page: ${page}, limit: ${limit}, includeDeleted: ${includeDeleted}`);
+    console.log(`📋 Admin: Filter:`, JSON.stringify(filter));
     
     const [users, total] = await Promise.all([
       this.userModel.find(filter)
@@ -391,6 +400,23 @@ export class AdminService {
         .exec(),
       this.userModel.countDocuments(filter),
     ]);
+
+    console.log(`📋 Admin: Found ${users.length} users (total: ${total})`);
+    const deletedCount = users.filter((u: any) => u.isDeleted === true).length;
+    console.log(`📋 Admin: Deleted users in result: ${deletedCount}`);
+    
+    // Debug: Log a sample of user IDs and their isDeleted status
+    if (users.length > 0) {
+      console.log(`📋 Admin: Sample users (first 3):`, users.slice(0, 3).map((u: any) => ({
+        id: u.id || u._id,
+        email: u.email,
+        isDeleted: u.isDeleted
+      })));
+    }
+    
+    if (includeDeleted && deletedCount !== users.length) {
+      console.warn(`⚠️ Admin: includeDeleted=true but not all users in result are deleted! Expected all deleted, got ${deletedCount}/${users.length}`);
+    }
 
     return {
       users,
@@ -507,19 +533,32 @@ export class AdminService {
     
     if (user) {
       console.log(`🔓 Admin manually unlocked account: ${userId}`);
+      console.log(`🔓 User object ID: ${(user as any)._id}`);
+      console.log(`🔓 User ID type: ${typeof userId}, User _id type: ${typeof (user as any)._id}`);
+      
+      // Normalize userId to ensure consistent format
+      const normalizedUserId = String((user as any)._id || userId);
+      
+      console.log(`🔓 Normalized userId: ${normalizedUserId} (original: ${userId})`);
       
       // Emit WebSocket event for real-time unlock notification
-      this.notificationsGateway.sendNotificationToUser(userId, {
-        type: 'account_unlocked',
-        title: 'Account Unlocked',
-        message: 'Your account has been unlocked by an administrator. You can start collecting again!',
-        data: {
-          isAccountLocked: false,
-          accountLockedUntil: null,
-          warningCount: user.warningCount,
-        },
-        timestamp: new Date(),
-      });
+      try {
+        await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
+          type: 'account_unlocked',
+          title: 'Account Unlocked',
+          message: 'Your account has been unlocked by an administrator. You can start collecting again!',
+          data: {
+            isAccountLocked: false,
+            accountLockedUntil: null,
+            warningCount: user.warningCount,
+          },
+          timestamp: new Date(),
+        });
+        console.log(`✅ Unlock notification sent to user ${normalizedUserId}`);
+      } catch (error) {
+        console.error(`❌ Error sending unlock notification: ${error}`);
+        // Don't fail the unlock operation if notification fails
+      }
     }
     
     return user;
@@ -541,7 +580,8 @@ export class AdminService {
       console.log(`🔄 Admin reset all warnings for user: ${userId}`);
       
       // Emit WebSocket event for real-time notification
-      this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String(userId);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'warnings_reset',
         title: 'Warnings Reset',
         message: 'All your warnings have been cleared by an administrator. Your account is now clean!',
@@ -582,12 +622,13 @@ export class AdminService {
       // - All data is preserved for analytics and reporting
       console.log(`✅ User ${userId} soft deleted. Related data preserved for analytics.`);
 
-      // 3. Invalidate user sessions by updating a session invalidation timestamp
-      await this.userModel.findByIdAndUpdate(userId, {
-        sessionInvalidatedAt: new Date(),
-      });
+      // 3. DO NOT invalidate session immediately - let user see the popup first
+      // Session will be invalidated when user acknowledges the account deleted dialog
+      // This allows the popup to show without causing immediate 401 errors
+      console.log(`ℹ️ Session will remain valid until user acknowledges account deletion`);
 
-      // 4. Send real-time notification for immediate logout
+      // 4. Send real-time notification for account deletion
+      // The frontend will show a card/dialog, and only then invalidate the session
       this.notificationsService.notifyUserDeleted(userId, deletedByAdminId);
 
       return deletedUser;
@@ -616,6 +657,31 @@ export class AdminService {
       }
 
       console.log(`✅ User ${userId} restored by admin ${restoredByAdminId}`);
+
+      // 2. Send real-time notification for account restoration
+      try {
+        // Normalize userId to ensure consistent format
+        const normalizedUserId = String((restoredUser as any)._id || userId);
+        
+        console.log(`📤 Sending account restored notification to user ${normalizedUserId} (original: ${userId})`);
+        
+        await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
+          type: 'account_restored',
+          title: 'Account Restored',
+          message: 'Your account has been restored by an administrator. You can now log in and use your account again!',
+          data: {
+            restoredByAdminId,
+            restoredAt: new Date().toISOString(),
+            isDeleted: false,
+          },
+          timestamp: new Date(),
+        });
+        
+        console.log(`✅ Account restored notification sent to user ${normalizedUserId}`);
+      } catch (error) {
+        console.error(`❌ Error sending account restored notification: ${error}`);
+        // Don't fail the restore operation if notification fails
+      }
 
       return restoredUser;
     } catch (error) {

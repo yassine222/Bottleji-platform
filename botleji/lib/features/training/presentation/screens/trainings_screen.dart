@@ -5,6 +5,7 @@ import '../providers/training_provider.dart';
 import '../../data/models/training_content.dart';
 import 'video_player_screen.dart';
 import 'training_detail_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class TrainingsScreen extends ConsumerStatefulWidget {
   const TrainingsScreen({super.key});
@@ -24,7 +25,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Training Center'),
+        title: Text(AppLocalizations.of(context).trainingCenter),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -179,16 +180,17 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
   }
 
   Widget _buildCategoryFilter(BuildContext context, bool isHousehold, bool isCollector) {
+    final l10n = AppLocalizations.of(context);
     final categories = [
-      {'value': 'all', 'label': 'All', 'icon': '📚'},
-      {'value': 'getting_started', 'label': 'Getting Started', 'icon': '🚀'},
-      {'value': 'best_practices', 'label': 'Best Practices', 'icon': '💡'},
-      {'value': 'troubleshooting', 'label': 'Help', 'icon': '🔧'},
+      {'value': 'all', 'label': l10n.all, 'icon': '📚'},
+      {'value': 'getting_started', 'label': l10n.gettingStarted, 'icon': '🚀'},
+      {'value': 'best_practices', 'label': l10n.bestPractices, 'icon': '💡'},
+      {'value': 'troubleshooting', 'label': l10n.help, 'icon': '🔧'},
       if (isCollector) ...[
-        {'value': 'collector_application', 'label': 'Collector', 'icon': '📋'},
-        {'value': 'advanced_features', 'label': 'Advanced', 'icon': '⚡'},
+        {'value': 'collector_application', 'label': l10n.collector, 'icon': '📋'},
+        {'value': 'advanced_features', 'label': l10n.advanced, 'icon': '⚡'},
       ],
-      {'value': 'payments', 'label': 'Payments', 'icon': '💳'},
+      {'value': 'payments', 'label': l10n.payments, 'icon': '💳'},
     ];
 
     return Container(
@@ -294,7 +296,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                         children: [
                     _buildBadge(
                       content.category.icon,
-                      content.category.displayName,
+                      content.category.localizedDisplayName(context),
                       Colors.grey.shade100,
                       Colors.grey.shade700,
                     ),
@@ -639,17 +641,17 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline, color: Color(0xFF00695C)),
-            SizedBox(width: 8),
-            Text('Training Center'),
+            const Icon(Icons.info_outline, color: Color(0xFF00695C)),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).trainingCenterInfo),
           ],
         ),
         content: Text(
           isHousehold
-              ? 'Access training content tailored for household users. Learn how to use Botleji effectively!'
-              : 'Access training content for collectors. Master collection techniques and best practices!',
+              ? AppLocalizations.of(context).trainingCenterInfoHousehold
+              : AppLocalizations.of(context).trainingCenterInfoCollector,
         ),
         actions: [
           TextButton(
@@ -657,7 +659,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF00695C),
             ),
-            child: const Text('Got it'),
+            child: Text(AppLocalizations.of(context).gotIt),
           ),
         ],
       ),

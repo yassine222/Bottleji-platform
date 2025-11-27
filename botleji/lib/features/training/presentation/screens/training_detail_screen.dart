@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/training_content.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class TrainingDetailScreen extends StatelessWidget {
   final TrainingContent content;
@@ -14,9 +15,11 @@ class TrainingDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(content.title),
+        title: const SizedBox.shrink(),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: true,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -81,13 +84,15 @@ class TrainingDetailScreen extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       _buildBadge(
+                        context,
                         content.category.icon,
-                        content.category.displayName,
+                        content.category.localizedDisplayName(context),
                         Colors.grey.shade100,
                         Colors.grey.shade700,
                       ),
                       if (content.isNew)
                         _buildBadge(
+                          context,
                           '🎉',
                           'NEW',
                           const Color(0xFF00695C).withOpacity(0.1),
@@ -102,17 +107,17 @@ class TrainingDetailScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   
                   // Description Header
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.description_outlined,
                         size: 20,
                         color: Color(0xFF00695C),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Description',
-                        style: TextStyle(
+                        AppLocalizations.of(context).description,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF00695C),
@@ -137,17 +142,17 @@ class TrainingDetailScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     Divider(color: Colors.grey.shade200, thickness: 1),
                     const SizedBox(height: 20),
-                    const Row(
+                    Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.menu_book_outlined,
                           size: 20,
                           color: Color(0xFF00695C),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Story',
-                          style: TextStyle(
+                          AppLocalizations.of(context).story,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF00695C),
@@ -176,7 +181,7 @@ class TrainingDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge(String icon, String label, Color bgColor, Color textColor) {
+  Widget _buildBadge(BuildContext context, String icon, String label, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(

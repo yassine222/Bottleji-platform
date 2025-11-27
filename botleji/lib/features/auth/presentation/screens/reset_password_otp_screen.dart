@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import '../providers/auth_provider.dart';
 import 'new_password_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class ResetPasswordOtpScreen extends ConsumerStatefulWidget {
   final String email;
@@ -121,7 +122,7 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
 
       _startTimer();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reset code resent successfully!')),
+        SnackBar(content: Text(AppLocalizations.of(context).resetCodeResentSuccessfully)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -135,8 +136,9 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
 
   @override
   Widget build(BuildContext context) {
+    const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: const Color(0xFF00695C),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -146,7 +148,7 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                  icon: const Icon(Icons.arrow_back, color: appGreenColor, size: 28),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -159,64 +161,68 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(
-                        Icons.lock_reset,
-                        size: 100,
-                        color: Colors.white,
+                      // Logo
+                      Image.asset(
+                        'assets/images/logo_v2.png',
+                        height: 200,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       Text(
-                        'Enter Reset Code',
+                        AppLocalizations.of(context).enterResetCode,
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: appGreenColor,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
-                        'We have sent a reset code to\n${widget.email}',
+                        AppLocalizations.of(context).weHaveSentResetCodeTo(widget.email),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white70,
+                          color: appGreenColor.withOpacity(0.7),
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
-                      PinCodeTextField(
-                        appContext: context,
-                        length: 6,
-                        controller: _otpController,
-                        enabled: !_isLoading,
-                        keyboardType: TextInputType.number,
-                        cursorColor: Colors.transparent,
-                        animationType: AnimationType.fade,
-                        textStyle: const TextStyle(color: Colors.white, fontSize: 18),
-                        pinTheme: PinTheme(
-                          shape: PinCodeFieldShape.box,
-                          borderRadius: BorderRadius.circular(8),
-                          fieldHeight: 50,
-                          fieldWidth: 45,
-                          activeFillColor: Colors.white.withOpacity(0.1),
-                          inactiveFillColor: Colors.white.withOpacity(0.1),
-                          selectedFillColor: Colors.white.withOpacity(0.2),
-                          activeColor: Colors.white,
-                          inactiveColor: Colors.white70,
-                          selectedColor: Colors.white,
+                      Directionality(
+                        textDirection: TextDirection.ltr, // Force LTR for OTP codes
+                        child: PinCodeTextField(
+                          appContext: context,
+                          length: 6,
+                          controller: _otpController,
+                          enabled: !_isLoading,
+                          keyboardType: TextInputType.number,
+                          cursorColor: appGreenColor,
+                          animationType: AnimationType.fade,
+                          textStyle: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
+                          pinTheme: PinTheme(
+                            shape: PinCodeFieldShape.box,
+                            borderRadius: BorderRadius.circular(12),
+                            fieldHeight: 50,
+                            fieldWidth: 40,
+                            activeFillColor: Colors.grey[50]!,
+                            inactiveFillColor: Colors.grey[50]!,
+                            selectedFillColor: appGreenColor.withOpacity(0.1),
+                            activeColor: appGreenColor,
+                            inactiveColor: appGreenColor.withOpacity(0.5),
+                            selectedColor: appGreenColor,
+                            borderWidth: 1,
+                          ),
+                          animationDuration: const Duration(milliseconds: 300),
+                          enableActiveFill: true,
+                          onCompleted: (_) => _verifyOtp(),
+                          beforeTextPaste: (text) {
+                            if (text == null) return false;
+                            return RegExp(r'^[0-9]+$').hasMatch(text);
+                          },
                         ),
-                        animationDuration: const Duration(milliseconds: 300),
-                        enableActiveFill: true,
-                        onCompleted: (_) => _verifyOtp(),
-                        beforeTextPaste: (text) {
-                          if (text == null) return false;
-                          return RegExp(r'^[0-9]+$').hasMatch(text);
-                        },
                       ),
                       const SizedBox(height: 24),
                       ...(_isLoading
                           ? [
                               const Center(
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(appGreenColor),
                                 ),
                               ),
                             ]
@@ -225,15 +231,16 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                                 onPressed: _verifyOtp,
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF00695C),
+                                  backgroundColor: appGreenColor,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
+                                  elevation: 2,
                                 ),
-                                child: const Text(
-                                  'Verify',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context).verify,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -243,21 +250,21 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
-                                    "Didn't receive the code?",
-                                    style: TextStyle(
-                                      color: Colors.white70,
+                                  Text(
+                                    AppLocalizations.of(context).didntReceiveCode,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
                                     ),
                                   ),
                                   TextButton(
                                     onPressed: _canResend ? _resendOtp : null,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                    ),
                                     child: Text(
-                                      _canResend ? 'Resend' : 'Resend in ${_timeLeft}s',
+                                      _canResend 
+                                          ? AppLocalizations.of(context).resend 
+                                          : AppLocalizations.of(context).resendIn(_timeLeft),
                                       style: TextStyle(
-                                        color: _canResend ? Colors.white : Colors.white54,
+                                        color: _canResend ? appGreenColor : Colors.grey,
+                                        fontWeight: _canResend ? FontWeight.bold : FontWeight.normal,
                                       ),
                                     ),
                                   ),

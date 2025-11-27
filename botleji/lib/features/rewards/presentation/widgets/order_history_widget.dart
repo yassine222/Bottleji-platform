@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/reward_models.dart';
 import '../providers/order_history_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class OrderHistoryWidget extends ConsumerWidget {
   const OrderHistoryWidget({super.key});
@@ -14,8 +15,8 @@ class OrderHistoryWidget extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user == null) {
-          return const Center(
-            child: Text('Please log in to view order history'),
+          return Center(
+            child: Text(AppLocalizations.of(context).pleaseLogInToViewOrderHistory),
           );
         }
         
@@ -66,7 +67,7 @@ class _OrderHistoryContentState extends ConsumerState<_OrderHistoryContent> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Order History',
+                AppLocalizations.of(context).orderHistory,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -77,7 +78,7 @@ class _OrderHistoryContentState extends ConsumerState<_OrderHistoryContent> {
                   ref.read(orderHistoryNotifierProvider.notifier).refresh(widget.userId);
                 },
                 icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh',
+                tooltip: AppLocalizations.of(context).refresh,
               ),
             ],
           ),
@@ -88,27 +89,27 @@ class _OrderHistoryContentState extends ConsumerState<_OrderHistoryContent> {
           child: orderHistoryState.when(
             data: (redemptions) {
               if (redemptions.isEmpty) {
-                return const Center(
+                return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.shopping_bag_outlined,
                         size: 64,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
-                        'No orders yet',
-                        style: TextStyle(
+                        AppLocalizations.of(context).noOrdersYet,
+                        style: const TextStyle(
                           fontSize: 18,
                           color: Colors.grey,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
-                        'Your order history will appear here',
-                        style: TextStyle(
+                        AppLocalizations.of(context).yourOrderHistoryWillAppearHere,
+                        style: const TextStyle(
                           color: Colors.grey,
                         ),
                       ),
@@ -138,7 +139,7 @@ class _OrderHistoryContentState extends ConsumerState<_OrderHistoryContent> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Failed to load order history',
+                    AppLocalizations.of(context).failedToLoadOrderHistory,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -152,7 +153,7 @@ class _OrderHistoryContentState extends ConsumerState<_OrderHistoryContent> {
                     onPressed: () {
                       ref.read(orderHistoryNotifierProvider.notifier).refresh(widget.userId);
                     },
-                    child: const Text('Retry'),
+                    child: Text(AppLocalizations.of(context).retry),
                   ),
                 ],
               ),
@@ -199,7 +200,7 @@ class _OrderHistoryCard extends StatelessWidget {
             // Order details
             _OrderDetailRow(
               icon: Icons.stars,
-              label: 'Points Spent',
+              label: AppLocalizations.of(context).pointsSpent,
               value: '${redemption.pointsSpent}',
             ),
             
@@ -207,7 +208,7 @@ class _OrderHistoryCard extends StatelessWidget {
               const SizedBox(height: 8),
               _OrderDetailRow(
                 icon: Icons.straighten,
-                label: 'Size',
+                label: AppLocalizations.of(context).size,
                 value: '${redemption.selectedSize} (${redemption.sizeType})',
               ),
             ],
@@ -215,15 +216,15 @@ class _OrderHistoryCard extends StatelessWidget {
             const SizedBox(height: 8),
             _OrderDetailRow(
               icon: Icons.calendar_today,
-              label: 'Order Date',
-              value: _formatDate(redemption.createdAt),
+              label: AppLocalizations.of(context).orderDate,
+              value: _formatDate(context, redemption.createdAt),
             ),
             
             if (redemption.trackingNumber != null) ...[
               const SizedBox(height: 8),
               _OrderDetailRow(
                 icon: Icons.local_shipping,
-                label: 'Tracking',
+                label: AppLocalizations.of(context).tracking,
                 value: redemption.trackingNumber!,
               ),
             ],
@@ -232,8 +233,8 @@ class _OrderHistoryCard extends StatelessWidget {
               const SizedBox(height: 8),
               _OrderDetailRow(
                 icon: Icons.schedule,
-                label: 'Estimated Delivery',
-                value: _formatDate(redemption.estimatedDelivery!),
+                label: AppLocalizations.of(context).estimatedDelivery,
+                value: _formatDate(context, redemption.estimatedDelivery!),
               ),
             ],
             
@@ -258,7 +259,7 @@ class _OrderHistoryCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Delivery Address',
+                        AppLocalizations.of(context).deliveryAddress,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[600],
@@ -306,7 +307,7 @@ class _OrderHistoryCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Admin Note',
+                          AppLocalizations.of(context).adminNote,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue[600],
@@ -331,8 +332,16 @@ class _OrderHistoryCard extends StatelessWidget {
     );
   }
   
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  String _formatDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context);
+    
+    if (locale.languageCode == 'ar') {
+      // Arabic date format: "15/01/2024"
+      return '${date.day}/${date.month}/${date.year}';
+    } else {
+      // English date format: "01/15/2024" (MM/DD/YYYY)
+      return '${date.month}/${date.day}/${date.year}';
+    }
   }
 }
 
@@ -381,45 +390,45 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     Color backgroundColor;
     Color textColor;
     String statusText;
-    
     switch (status) {
       case RedemptionStatus.pending:
         backgroundColor = Colors.orange[100]!;
         textColor = Colors.orange[800]!;
-        statusText = 'Pending';
+        statusText = l10n.pending;
         break;
       case RedemptionStatus.approved:
         backgroundColor = Colors.blue[100]!;
         textColor = Colors.blue[800]!;
-        statusText = 'Approved';
+        statusText = l10n.approved;
         break;
       case RedemptionStatus.processing:
         backgroundColor = Colors.purple[100]!;
         textColor = Colors.purple[800]!;
-        statusText = 'Processing';
+        statusText = l10n.processing;
         break;
       case RedemptionStatus.shipped:
         backgroundColor = Colors.indigo[100]!;
         textColor = Colors.indigo[800]!;
-        statusText = 'Shipped';
+        statusText = l10n.shipped;
         break;
       case RedemptionStatus.delivered:
         backgroundColor = Colors.green[100]!;
         textColor = Colors.green[800]!;
-        statusText = 'Delivered';
+        statusText = l10n.delivered;
         break;
       case RedemptionStatus.cancelled:
         backgroundColor = Colors.grey[100]!;
         textColor = Colors.grey[800]!;
-        statusText = 'Cancelled';
+        statusText = l10n.cancelled;
         break;
       case RedemptionStatus.rejected:
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
-        statusText = 'Rejected';
+        statusText = l10n.rejected;
         break;
     }
     

@@ -291,7 +291,8 @@ class LocalNotificationService {
       return;
     }
     
-    // For iOS, use the notification plugin's permission check
+    // For iOS, check permissions but don't block notification if check fails
+    // iOS may still show notifications even if the permission check returns false
     if (Platform.isIOS) {
       AppLogger.log('🔔 LocalNotificationService: iOS detected, checking permission via notification plugin');
       try {
@@ -299,24 +300,28 @@ class LocalNotificationService {
             IOSFlutterLocalNotificationsPlugin>();
         
         if (iosPlugin != null) {
+          // Check current permission status first
+          final currentStatus = await iosPlugin.checkPermissions();
+          AppLogger.log('🔔 LocalNotificationService: iOS current permission status: $currentStatus');
+          
+          // Only request if permissions might not be granted
+          // Try to request permissions (this is safe to call even if already granted)
+          AppLogger.log('🔔 LocalNotificationService: Requesting iOS permissions...');
           final granted = await iosPlugin.requestPermissions(
             alert: true,
             badge: true,
             sound: soundEnabled,
           );
-          AppLogger.log('🔔 LocalNotificationService: iOS plugin permission check: $granted');
+          AppLogger.log('🔔 LocalNotificationService: iOS plugin permission request result: $granted');
           
-          if (granted != true) {
-            AppLogger.log('🔔 LocalNotificationService: iOS permission not granted via plugin');
-            return;
-          }
+          // Don't return early - try to show notification anyway
+          // iOS may still show it even if permission check fails
         } else {
-          AppLogger.log('🔔 LocalNotificationService: iOS plugin not available');
-          return;
+          AppLogger.log('🔔 LocalNotificationService: iOS plugin not available, attempting to show notification anyway');
         }
       } catch (e) {
-        AppLogger.log('🔔 LocalNotificationService: iOS permission check error: $e');
-        return;
+        AppLogger.log('🔔 LocalNotificationService: iOS permission check error: $e, attempting to show notification anyway');
+        // Don't return - try to show notification even if permission check fails
       }
     } else {
       // For Android, use permission_handler

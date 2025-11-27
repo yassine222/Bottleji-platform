@@ -164,6 +164,17 @@ export class User extends Document {
   @Prop({ type: [Object], default: [] })
   rewardHistory: any[];
 
+  // FCM token for push notifications
+  @Prop()
+  fcmToken?: string;
+
+  // Earnings fields
+  @Prop({ type: Number, default: 0 })
+  totalEarnings: number; // Lifetime cumulative earnings across all sessions
+
+  @Prop({ type: [Object], default: [] })
+  earningsHistory: any[]; // Array of earnings sessions (similar to rewardHistory)
+
   @Prop({ default: Date.now })
   createdAt: Date;
 

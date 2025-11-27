@@ -33,6 +33,9 @@ final pendingDropsCountProvider = Provider<int>((ref) {
   );
 });
 
+// Provider for initial filter when navigating to Drops tab
+final dropsInitialFilterProvider = StateProvider<String?>((ref) => null);
+
 // Provider for user drops count (for household badge)
 final userDropsCountProvider = Provider<int>((ref) {
   final dropsState = ref.watch(dropsControllerProvider);

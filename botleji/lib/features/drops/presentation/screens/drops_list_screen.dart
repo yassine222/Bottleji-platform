@@ -15,9 +15,12 @@ import 'package:botleji/features/navigation/controllers/navigation_controller.da
 import 'package:botleji/core/widgets/account_lock_card.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class DropsListScreen extends ConsumerStatefulWidget {
-  const DropsListScreen({super.key});
+  final String? initialFilter; // Optional initial filter (e.g., "Active")
+  
+  const DropsListScreen({super.key, this.initialFilter});
 
   @override
   ConsumerState<DropsListScreen> createState() => _DropsListScreenState();
@@ -28,7 +31,8 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   DropStatus? _selectedStatus; // For household users
   
   // Chip filter for household users
-  String _selectedChipFilter = 'Active';
+  String? _selectedChipFilter;
+  bool _filterInitialized = false;
   
   // Account lock card state
   bool _lockCardDismissed = false;
@@ -38,24 +42,99 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   List<Drop> _filteredDrops = [];
   LatLng? _currentLocation;
   
-  // Date filter options
-  final List<String> _dateFilterOptions = [
-    'All',
-    'Today',
-    'Last 7 days',
-    'Last 30 days',
-    'This month',
-    'Last month',
-  ];
+  // Track censored drops that have been shown in this session to prevent duplicate popups
+  final Set<String> _shownCensoredDropIds = {};
   
-  // Distance filter options
-  final List<String> _distanceFilterOptions = [
-    'All',
-    'Within 1 km',
-    'Within 3 km',
-    'Within 5 km',
-    'Within 10 km',
-  ];
+  // Prevent multiple simultaneous loads
+  bool _isLoadingDrops = false;
+  
+  // Date filter options - will be localized in the UI
+  List<String> _getDateFilterOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      l10n.all,
+      l10n.today,
+      l10n.last7Days,
+      l10n.last30Days,
+      l10n.thisMonth,
+      l10n.lastMonth,
+    ];
+  }
+  
+  // Distance filter options - will be localized in the UI
+  List<String> _getDistanceFilterOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      l10n.all,
+      l10n.within1Km,
+      l10n.within3Km,
+      l10n.within5Km,
+      l10n.within10Km,
+    ];
+  }
+  
+  // Helper to get the filter key from localized string
+  String _getDateFilterKey(String localizedValue, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (localizedValue == l10n.all) return 'All';
+    if (localizedValue == l10n.today) return 'Today';
+    if (localizedValue == l10n.last7Days) return 'Last 7 days';
+    if (localizedValue == l10n.last30Days) return 'Last 30 days';
+    if (localizedValue == l10n.thisMonth) return 'This month';
+    if (localizedValue == l10n.lastMonth) return 'Last month';
+    return localizedValue; // Fallback to original if not found
+  }
+  
+  // Helper to get the distance filter key from localized string
+  String _getDistanceFilterKey(String localizedValue, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (localizedValue == l10n.all) return 'All';
+    if (localizedValue == l10n.within1Km) return 'Within 1 km';
+    if (localizedValue == l10n.within3Km) return 'Within 3 km';
+    if (localizedValue == l10n.within5Km) return 'Within 5 km';
+    if (localizedValue == l10n.within10Km) return 'Within 10 km';
+    return localizedValue; // Fallback to original if not found
+  }
+  
+  // Helper to get localized string from filter key
+  String _getLocalizedDateFilter(String key, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (key) {
+      case 'All':
+        return l10n.all;
+      case 'Today':
+        return l10n.today;
+      case 'Last 7 days':
+        return l10n.last7Days;
+      case 'Last 30 days':
+        return l10n.last30Days;
+      case 'This month':
+        return l10n.thisMonth;
+      case 'Last month':
+        return l10n.lastMonth;
+      default:
+        return key;
+    }
+  }
+  
+  // Helper to get localized string from distance filter key
+  String _getLocalizedDistanceFilter(String key, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (key) {
+      case 'All':
+        return l10n.all;
+      case 'Within 1 km':
+        return l10n.within1Km;
+      case 'Within 3 km':
+        return l10n.within3Km;
+      case 'Within 5 km':
+        return l10n.within5Km;
+      case 'Within 10 km':
+        return l10n.within10Km;
+      default:
+        return key;
+    }
+  }
 
   @override
   void initState() {
@@ -72,13 +151,18 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Load drops when dependencies change - delay to avoid build cycle issues
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadDrops();
-        _checkLockStatus();
+    // Initialize filter with localized string only once
+    if (!_filterInitialized) {
+      // Use initialFilter if provided, otherwise default to "Active"
+      if (widget.initialFilter != null) {
+        _selectedChipFilter = widget.initialFilter;
+      } else {
+        _selectedChipFilter = AppLocalizations.of(context).active;
       }
-    });
+      _filterInitialized = true;
+    }
+    // Don't reload drops in didChangeDependencies to prevent infinite loops
+    // Drops are already loaded in initState
   }
   
   void _checkLockStatus() {
@@ -156,29 +240,44 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   }
 
   Future<void> _loadDrops() async {
-    // Clear drops first to prevent showing cached drops from other modes
-    ref.read(dropsControllerProvider.notifier).clearDrops();
+    // Prevent multiple simultaneous loads
+    if (_isLoadingDrops) return;
+    _isLoadingDrops = true;
+    
+    try {
+      // Clear drops first to prevent showing cached drops from other modes
+      ref.read(dropsControllerProvider.notifier).clearDrops();
     
     final userMode = ref.read(userModeControllerProvider);
     final authState = ref.read(authNotifierProvider);
     
-    userMode.whenData((mode) async {
-      if (mode == UserMode.collector) {
-        // Load only available drops for collectors (pending and cancelled, not suspicious)
-        final collectorId = authState.value?.id;
-        await ref.read(dropsControllerProvider.notifier).loadDropsAvailableForCollectors(
-          excludeCollectorId: collectorId,
-        );
-      } else if (mode == UserMode.household) {
-        // Load user's own drops for households
-        if (authState.value?.id != null) {
-          await ref.read(dropsControllerProvider.notifier).loadUserDrops(authState.value!.id);
-        } else {
-          // Clear drops if no user ID
-          ref.read(dropsControllerProvider.notifier).clearDrops();
-        }
+      await userMode.when(
+        data: (mode) async {
+          if (mode == UserMode.collector) {
+            // Load only available drops for collectors (pending and cancelled, not suspicious)
+            final collectorId = authState.value?.id;
+            await ref.read(dropsControllerProvider.notifier).loadDropsAvailableForCollectors(
+              excludeCollectorId: collectorId,
+            );
+          } else if (mode == UserMode.household) {
+            // Load user's own drops for households
+            if (authState.value?.id != null) {
+              await ref.read(dropsControllerProvider.notifier).loadUserDrops(authState.value!.id);
+            } else {
+              // Clear drops if no user ID
+              ref.read(dropsControllerProvider.notifier).clearDrops();
+            }
+          }
+        },
+        loading: () async {},
+        error: (_, __) async {},
+      );
+    } finally {
+      // Always reset loading flag
+      if (mounted) {
+        _isLoadingDrops = false;
       }
-    });
+    }
   }
 
   void _sortDropsByDistance() {
@@ -329,103 +428,111 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
 
   void _showFilterDialog() {
     final userMode = ref.read(userModeControllerProvider);
+    final l10n = AppLocalizations.of(context);
     
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Filter Drops'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Status filter (for household users)
-              if (userMode.value == UserMode.household) ...[
-                const Text('Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text('All'),
-                      selected: _selectedStatus == null,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedStatus = null;
-                        });
-                      },
-                    ),
-                    ...DropStatus.values.map((status) => FilterChip(
-                      label: Text(status.name.toUpperCase()),
-                      selected: _selectedStatus == status,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedStatus = selected ? status : null;
-                        });
-                      },
-                    )),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              
-              // Date filter
-              const Text('Date:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedDateFilter,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: _dateFilterOptions.map((option) => DropdownMenuItem(
-                  value: option,
-                  child: Text(option),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDateFilter = value!;
-                  });
-                },
-              ),
-              
-              // Distance filter (only for collectors)
-              if (userMode.value == UserMode.collector) ...[
-                const SizedBox(height: 16),
-                const Text('Distance:', style: TextStyle(fontWeight: FontWeight.bold)),
+        builder: (context, setState) {
+          final dateOptions = _getDateFilterOptions(context);
+          final distanceOptions = _getDistanceFilterOptions(context);
+          final currentDateFilterLocalized = _getLocalizedDateFilter(_selectedDateFilter, context);
+          final currentDistanceFilterLocalized = _getLocalizedDistanceFilter(_selectedDistanceFilter, context);
+          
+          return AlertDialog(
+            title: Text(l10n.filterDrops),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Status filter (for household users)
+                if (userMode.value == UserMode.household) ...[
+                  Text('${l10n.status}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: Text(l10n.all),
+                        selected: _selectedStatus == null,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedStatus = null;
+                          });
+                        },
+                      ),
+                      ...DropStatus.values.map((status) => FilterChip(
+                        label: Text(status.localizedDisplayName(context)),
+                        selected: _selectedStatus == status,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedStatus = selected ? status : null;
+                          });
+                        },
+                      )),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                // Date filter
+                Text('${l10n.date}:', style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedDistanceFilter,
+                  value: currentDateFilterLocalized,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  items: _distanceFilterOptions.map((option) => DropdownMenuItem(
+                  items: dateOptions.map((option) => DropdownMenuItem(
                     value: option,
                     child: Text(option),
                   )).toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedDistanceFilter = value!;
+                      _selectedDateFilter = _getDateFilterKey(value!, context);
                     });
                   },
                 ),
+                
+                // Distance filter (only for collectors)
+                if (userMode.value == UserMode.collector) ...[
+                  const SizedBox(height: 16),
+                  Text('${l10n.distance}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: currentDistanceFilterLocalized,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: distanceOptions.map((option) => DropdownMenuItem(
+                      value: option,
+                      child: Text(option),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedDistanceFilter = _getDistanceFilterKey(value!, context);
+                      });
+                    },
+                  ),
+                ],
               ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _applyFilters();
+                },
+                child: Text(l10n.apply),
+              ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _applyFilters();
-              },
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -590,13 +697,18 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
         if (mode != UserMode.household) return;
         if (drops.isEmpty) return;
         
-        // Find first censored drop not previously shown
+        // Find first censored drop not previously shown (check both SharedPreferences and session cache)
         final prefs = await SharedPreferences.getInstance();
         final censored = drops.firstWhere(
-          (d) => d.isCensored && (prefs.getBool('censor_notice_${d.id}') != true),
+          (d) => d.isCensored && 
+                 (prefs.getBool('censor_notice_${d.id}') != true) &&
+                 !_shownCensoredDropIds.contains(d.id),
           orElse: () => Drop.empty(),
         );
         if (censored.id.isEmpty) return;
+        
+        // Mark as shown in this session immediately to prevent duplicate popups
+        _shownCensoredDropIds.add(censored.id);
         
         if (!mounted) return;
         await showDialog(
@@ -713,6 +825,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                         onPressed: () async {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('censor_notice_${censored.id}', true);
+                          // Already marked in session cache, just close dialog
                           if (mounted) Navigator.of(context).pop();
                         },
                         child: const Text('Got it'),
@@ -749,7 +862,12 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
           final censored = drops.firstWhere((d) => d.id == dropId, orElse: () => Drop.empty());
           if (censored.id.isNotEmpty && mounted) {
             final prefs = await SharedPreferences.getInstance();
-            if (prefs.getBool('censor_notice_${censored.id}') == true) return;
+            // Check both SharedPreferences and session cache
+            if (prefs.getBool('censor_notice_${censored.id}') == true || _shownCensoredDropIds.contains(censored.id)) {
+              return;
+            }
+            // Mark as shown in this session immediately
+            _shownCensoredDropIds.add(censored.id);
             await showDialog(
               context: context,
               barrierDismissible: true,
@@ -876,7 +994,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                             children: [
                               if (_selectedStatus != null)
                                 Chip(
-                                  label: Text('Status: ${_selectedStatus!.name.toUpperCase()}'),
+                                  label: Text('${AppLocalizations.of(context).status}: ${_selectedStatus!.localizedDisplayName(context)}'),
                                   onDeleted: () {
                                     setState(() {
                                       _selectedStatus = null;
@@ -886,7 +1004,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                                 ),
                               if (_selectedDateFilter != 'All')
                                 Chip(
-                                  label: Text('Date: $_selectedDateFilter'),
+                                  label: Text('${AppLocalizations.of(context).date}: ${_getLocalizedDateFilter(_selectedDateFilter, context)}'),
                                   onDeleted: () {
                                     setState(() {
                                       _selectedDateFilter = 'All';
@@ -896,7 +1014,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                                 ),
                               if (_selectedDistanceFilter != 'All')
                                 Chip(
-                                  label: Text('Distance: $_selectedDistanceFilter'),
+                                  label: Text('${AppLocalizations.of(context).distance}: ${_getLocalizedDistanceFilter(_selectedDistanceFilter, context)}'),
                                   onDeleted: () {
                                     setState(() {
                                       _selectedDistanceFilter = 'All';
@@ -1094,6 +1212,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('censor_notice_${censored.id}', true);
+                  // Already marked in session cache, just close dialog
                   if (mounted) Navigator.of(context).pop();
                 },
                 child: const Text('Got it'),
@@ -1111,6 +1230,56 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
         ref.watch(navigationControllerProvider) != null;
 
     if (drops.isEmpty) {
+      final l10n = AppLocalizations.of(context);
+      String titleText;
+      String subtitleText;
+      
+      if (mode == UserMode.collector) {
+        // Collector mode
+        if (_selectedDateFilter != 'All' || _selectedDistanceFilter != 'All') {
+          titleText = l10n.noDropsMatchYourFilters;
+          subtitleText = l10n.tryAdjustingYourFilters;
+        } else {
+          titleText = l10n.noDropsAvailable;
+          subtitleText = l10n.checkBackLaterForNewDrops;
+        }
+      } else {
+        // Household mode - change message based on selected chip filter
+        if (_selectedDateFilter != 'All') {
+          // Date filter is active
+          titleText = l10n.noDropsMatchYourFilters;
+          subtitleText = l10n.tryAdjustingYourFilters;
+        } else {
+          // No date filter - check chip filter
+          final filterKey = _getFilterKey(_selectedChipFilter ?? l10n.active);
+          switch (filterKey) {
+            case 'Active':
+              titleText = l10n.noActiveDrops;
+              subtitleText = l10n.createYourFirstDropToGetStarted;
+              break;
+            case 'Collected':
+              titleText = l10n.noCollectedDrops;
+              subtitleText = '';
+              break;
+            case 'Stale':
+              titleText = l10n.noStaleDrops;
+              subtitleText = '';
+              break;
+            case 'Censored':
+              titleText = l10n.noCensoredDrops;
+              subtitleText = '';
+              break;
+            case 'Flagged':
+              titleText = l10n.noFlaggedDrops;
+              subtitleText = '';
+              break;
+            default:
+              titleText = l10n.noDropsCreatedYet;
+              subtitleText = l10n.createYourFirstDropToGetStarted;
+          }
+        }
+      }
+      
       return SliverToBoxAdapter(
         child: Center(
           child: Column(
@@ -1125,38 +1294,28 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                mode == UserMode.collector 
-                    ? (_selectedDateFilter != 'All' || _selectedDistanceFilter != 'All')
-                        ? 'No drops match your filters'
-                        : 'No drops available'
-                    : (_selectedStatus != null || _selectedDateFilter != 'All')
-                        ? 'No drops match your filters'
-                        : 'No drops created yet',
+                titleText,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.outline,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                mode == UserMode.collector 
-                    ? (_selectedDateFilter != 'All' || _selectedDistanceFilter != 'All')
-                        ? 'Try adjusting your filters'
-                        : 'Check back later for new drops'
-                    : (_selectedStatus != null || _selectedDateFilter != 'All')
-                        ? 'Try adjusting your filters'
-                        : 'Create your first drop to get started',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
+              if (subtitleText.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitleText,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ],
               if ((mode == UserMode.household && (_selectedStatus != null || _selectedDateFilter != 'All')) ||
                   (mode == UserMode.collector && (_selectedDateFilter != 'All' || _selectedDistanceFilter != 'All')))
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: FilledButton(
                     onPressed: _clearFilters,
-                    child: const Text('Clear Filters'),
+                    child: Text(l10n.clearFilters),
                   ),
                 ),
             ],
@@ -1217,7 +1376,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
       child: Row(
         children: [
           Text(
-            mode == UserMode.collector ? 'All Drops' : 'My Drops',
+            mode == UserMode.collector ? AppLocalizations.of(context).allDrops : AppLocalizations.of(context).myDrops,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF00695C),
@@ -1279,7 +1438,7 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
         ),
         
         // Info message based on selected filter - moved to top for better visibility
-        if (_selectedChipFilter != 'Active')
+        if ((_selectedChipFilter ?? AppLocalizations.of(context).active) != AppLocalizations.of(context).active)
           SliverToBoxAdapter(
             child: _buildInfoMessage(),
           ),
@@ -1297,15 +1456,15 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip('Active', goodDrops.length),
+                      _buildFilterChip(AppLocalizations.of(context).active, goodDrops.length),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Collected', collectedDrops.length),
+                      _buildFilterChip(AppLocalizations.of(context).collected, collectedDrops.length),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Flagged', flaggedDrops.length),
+                      _buildFilterChip(AppLocalizations.of(context).flagged, flaggedDrops.length),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Censored', censoredDrops.length),
+                      _buildFilterChip(AppLocalizations.of(context).censored, censoredDrops.length),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Stale', staleDrops.length),
+                      _buildFilterChip(AppLocalizations.of(context).stale, staleDrops.length),
                     ],
                   ),
                 ),
@@ -1333,13 +1492,13 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   }
 
   Widget _buildFilterChip(String label, int count) {
-    final isSelected = _selectedChipFilter == label;
+    final isSelected = (_selectedChipFilter ?? AppLocalizations.of(context).active) == label;
     return FilterChip(
       label: Text('$label ($count)'),
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
-          _selectedChipFilter = selected ? label : 'Active';
+          _selectedChipFilter = selected ? label : AppLocalizations.of(context).active;
         });
       },
       selectedColor: const Color(0xFF00695C).withOpacity(0.2),
@@ -1358,10 +1517,22 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
     );
   }
 
+  String _getFilterKey(String? localizedLabel) {
+    if (localizedLabel == null) return 'Active';
+    final l10n = AppLocalizations.of(context);
+    if (localizedLabel == l10n.active) return 'Active';
+    if (localizedLabel == l10n.collected) return 'Collected';
+    if (localizedLabel == l10n.flagged) return 'Flagged';
+    if (localizedLabel == l10n.censored) return 'Censored';
+    if (localizedLabel == l10n.stale) return 'Stale';
+    return 'Active'; // default
+  }
+
   Widget _buildFilteredDropsList() {
     List<Drop> filteredDrops = [];
+    final filterKey = _getFilterKey(_selectedChipFilter);
     
-    switch (_selectedChipFilter) {
+    switch (filterKey) {
       case 'All':
         filteredDrops = _allDrops;
         break;
@@ -1370,6 +1541,16 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
           !d.isSuspicious && !d.isCensored && (d.cancellationCount) < 3 &&
           (d.status == DropStatus.pending || d.status == DropStatus.accepted) && d.status != DropStatus.stale
         ).toList();
+        // Sort: accepted drops first, then pending drops
+        filteredDrops.sort((a, b) {
+          if (a.status == DropStatus.accepted && b.status != DropStatus.accepted) {
+            return -1; // a comes first
+          } else if (a.status != DropStatus.accepted && b.status == DropStatus.accepted) {
+            return 1; // b comes first
+          }
+          // If both have same status, maintain original order (by creation date)
+          return 0;
+        });
         break;
       case 'Collected':
         filteredDrops = _allDrops.where((d) => d.status == DropStatus.collected).toList();
@@ -1391,22 +1572,23 @@ class _DropsListScreenState extends ConsumerState<DropsListScreen> {
   Widget _buildInfoMessage() {
     String message = '';
     Color iconColor = Colors.grey;
+    final filterKey = _getFilterKey(_selectedChipFilter ?? AppLocalizations.of(context).active);
     
-    switch (_selectedChipFilter) {
+    switch (filterKey) {
       case 'Collected':
-        message = 'Drops in this filter have been successfully collected by a collector. These drops show your recycling impact and cannot be edited.';
+        message = AppLocalizations.of(context).dropsInThisFilterCollected;
         iconColor = Colors.green;
         break;
       case 'Flagged':
-        message = 'Drops in this filter were flagged due to multiple cancellations or suspicious activity. Flagged drops are hidden from the map and cannot be edited.';
+        message = AppLocalizations.of(context).dropsInThisFilterFlagged;
         iconColor = Colors.red;
         break;
       case 'Censored':
-        message = 'Drops in this filter were censored due to inappropriate content. Censored drops are hidden from the map and cannot be edited.';
+        message = AppLocalizations.of(context).dropsInThisFilterCensored;
         iconColor = Colors.orange;
         break;
       case 'Stale':
-        message = 'Drops in this filter were marked as stale because they were older than 3 days and likely collected by external collectors. Stale drops are hidden from the map and cannot be edited.';
+        message = AppLocalizations.of(context).dropsInThisFilterStale;
         iconColor = Colors.brown;
         break;
     }

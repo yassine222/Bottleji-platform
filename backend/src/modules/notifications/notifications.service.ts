@@ -209,7 +209,7 @@ export class NotificationsService {
    * Notify user deleted (for admin service)
    */
   async notifyUserDeleted(userId: string, deletedByAdminId: string): Promise<Notification> {
-    return this.create({
+    const notification = await this.create({
       userId,
       type: NotificationType.USER_DELETED,
       title: 'Account Deleted',
@@ -220,6 +220,24 @@ export class NotificationsService {
         deletedAt: new Date().toISOString(),
       },
     });
+
+    // Send via WebSocket for real-time notification
+    try {
+      const normalizedUserId = String(userId);
+      await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
+        type: 'user_deleted',
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        timestamp: notification.createdAt,
+      });
+      console.log(`✅ User deleted WebSocket notification sent to user ${userId}`);
+    } catch (error) {
+      console.error(`❌ Error sending user deleted WebSocket notification: ${error}`);
+      // Don't fail the operation if notification fails
+    }
+
+    return notification;
   }
 
   /**
@@ -248,7 +266,8 @@ export class NotificationsService {
 
     // Send via WebSocket
     try {
-      await this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String(userId);
+      await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'application_approved',
         title: notification.title,
         message: notification.message,
@@ -289,7 +308,8 @@ export class NotificationsService {
 
     // Send via WebSocket
     try {
-      await this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String(userId);
+      await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'application_rejected',
         title: notification.title,
         message: notification.message,
@@ -329,7 +349,8 @@ export class NotificationsService {
 
     // Send via WebSocket
     try {
-      await this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String(userId);
+      await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'application_reversed',
         title: notification.title,
         message: notification.message,

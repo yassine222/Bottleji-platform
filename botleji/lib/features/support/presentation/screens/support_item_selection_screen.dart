@@ -12,6 +12,7 @@ import 'package:botleji/features/stats/data/datasources/stats_api_client.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:botleji/core/api/api_client.dart';
 import 'package:botleji/core/utils/json_converters.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -73,7 +74,7 @@ class _SupportItemSelectionScreenState
       body: userAsync.when(
         data: (user) {
           if (user == null) {
-            return const Center(child: Text('User not found'));
+            return Center(child: Text(AppLocalizations.of(context).userNotFound));
           }
 
           return SingleChildScrollView(
@@ -120,7 +121,7 @@ class _SupportItemSelectionScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Select an item to get help',
+                              AppLocalizations.of(context).selectItemToGetHelp,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -156,7 +157,7 @@ class _SupportItemSelectionScreenState
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error: $error'),
+          child: Text(AppLocalizations.of(context).errorColon(error.toString())),
         ),
       ),
     );
@@ -184,8 +185,8 @@ class _SupportItemSelectionScreenState
         if (user?.id == null) {
           return _buildEmptyState(
             icon: Icons.error,
-            title: 'Authentication Error',
-            description: 'Please log in again to view your items.',
+            title: AppLocalizations.of(context).authenticationError,
+            description: AppLocalizations.of(context).pleaseLogInAgain,
           );
         }
 
@@ -200,11 +201,11 @@ class _SupportItemSelectionScreenState
             }
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error: $error')),
+          error: (error, stack) => Center(child: Text(AppLocalizations.of(context).errorColon(error.toString()))),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
+      error: (error, stack) => Center(child: Text(AppLocalizations.of(context).errorColon(error.toString()))),
     );
   }
 
@@ -217,15 +218,15 @@ class _SupportItemSelectionScreenState
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading collections: ${snapshot.error}'));
+          return Center(child: Text(AppLocalizations.of(context).errorLoadingCollections(snapshot.error.toString())));
         }
 
         final history = snapshot.data;
         if (history == null || history.interactions.isEmpty) {
           return _buildEmptyState(
             icon: Icons.inventory_2,
-            title: 'No Collections Found',
-            description: 'You don\'t have any collections to report issues for.',
+            title: AppLocalizations.of(context).noCollectionsFound,
+            description: AppLocalizations.of(context).noCollectionsToReport,
           );
         }
 
@@ -254,7 +255,7 @@ class _SupportItemSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Collections (Last 3 Days)',
+              AppLocalizations.of(context).yourCollectionsLast3Days,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -278,7 +279,7 @@ class _SupportItemSelectionScreenState
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading drops: ${snapshot.error}'));
+          return Center(child: Text(AppLocalizations.of(context).errorLoadingDrops(snapshot.error.toString())));
         }
 
         final drops = snapshot.data ?? [];
@@ -286,8 +287,8 @@ class _SupportItemSelectionScreenState
         if (drops.isEmpty) {
           return _buildEmptyState(
             icon: Icons.local_drink,
-            title: 'No Drops Found',
-            description: 'You don\'t have any drops to report issues for.',
+            title: AppLocalizations.of(context).noDropsFound,
+            description: AppLocalizations.of(context).noDropsToReport,
           );
         }
 
@@ -295,7 +296,7 @@ class _SupportItemSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Drops (Last 3 Days)',
+              AppLocalizations.of(context).yourDropsLast3Days,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -352,8 +353,8 @@ class _SupportItemSelectionScreenState
         if (application == null) {
           return _buildEmptyState(
             icon: Icons.assignment_ind,
-            title: 'No Applications',
-            description: 'You don\'t have any collector applications.',
+            title: AppLocalizations.of(context).noApplications,
+            description: AppLocalizations.of(context).noCollectorApplications,
           );
         }
 
@@ -367,8 +368,8 @@ class _SupportItemSelectionScreenState
         if (!isRejected && !isPendingTooLong) {
           return _buildEmptyState(
             icon: Icons.assignment_ind,
-            title: 'No Issues Found',
-            description: 'Your application is being processed normally.',
+            title: AppLocalizations.of(context).noIssuesFound,
+            description: AppLocalizations.of(context).applicationBeingProcessed,
           );
         }
 
@@ -376,7 +377,7 @@ class _SupportItemSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Application Issues',
+              AppLocalizations.of(context).applicationIssues,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -390,7 +391,7 @@ class _SupportItemSelectionScreenState
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
-          Center(child: Text('Error loading application: $error')),
+          Center(child: Text(AppLocalizations.of(context).errorColon(error.toString()))),
     );
   }
 
@@ -399,7 +400,7 @@ class _SupportItemSelectionScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payment Issues',
+          AppLocalizations.of(context).paymentIssues,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -409,8 +410,8 @@ class _SupportItemSelectionScreenState
         const SizedBox(height: 16),
         _buildEmptyState(
           icon: Icons.payment,
-          title: 'No Payments Yet',
-          description: 'Payment feature is not available yet. Select a payment to get help with payment-related issues.',
+          title: AppLocalizations.of(context).noPaymentsYet,
+          description: AppLocalizations.of(context).paymentFeatureNotAvailable,
         ),
         const SizedBox(height: 16),
         _buildPaymentSupportCard(),
@@ -430,8 +431,8 @@ class _SupportItemSelectionScreenState
           context: context,
           category: widget.category,
           itemId: null,
-          itemTitle: 'Payment Support',
-          itemDescription: 'Get help with payment-related issues',
+          itemTitle: AppLocalizations.of(context).paymentSupport,
+          itemDescription: AppLocalizations.of(context).getHelpWithPaymentRelatedIssues,
           metadata: {
             'ticketType': 'payment_issue',
             'context': 'payment_support',
@@ -458,20 +459,20 @@ class _SupportItemSelectionScreenState
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Payment Support',
-                      style: TextStyle(
+                      AppLocalizations.of(context).paymentSupport,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Get help with payment-related issues',
+                      AppLocalizations.of(context).getHelpWithPaymentRelatedIssues,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
@@ -497,7 +498,7 @@ class _SupportItemSelectionScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Support Options',
+          AppLocalizations.of(context).supportOptions,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -525,8 +526,8 @@ class _SupportItemSelectionScreenState
           context: context,
           category: widget.category,
           itemId: application.id,
-          itemTitle: 'Collector Application',
-          itemDescription: 'Status: $statusText\nApplied: ${_formatDate(application.createdAt.toString())}',
+          itemTitle: AppLocalizations.of(context).collectorApplication,
+          itemDescription: '${AppLocalizations.of(context).status}: $statusText\n${AppLocalizations.of(context).applied}: ${_formatDate(application.createdAt.toString())}',
           metadata: {
             'applicationId': application.id,
             'status': status,
@@ -557,16 +558,16 @@ class _SupportItemSelectionScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Collector Application',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).collectorApplication,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Status: $statusText',
+                      '${AppLocalizations.of(context).status}: $statusText',
                       style: TextStyle(
                         fontSize: 14,
                         color: statusColor,
@@ -575,7 +576,7 @@ class _SupportItemSelectionScreenState
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Applied: ${_formatDate(application.createdAt.toString())}',
+                      '${AppLocalizations.of(context).applied}: ${_formatDate(application.createdAt.toString())}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -660,21 +661,22 @@ class _SupportItemSelectionScreenState
   }
 
   String _getCategoryDescription() {
+    final l10n = AppLocalizations.of(context);
     switch (widget.category) {
       case 'drops':
-        return 'Select a drop from the last 3 days to get help';
+        return l10n.selectDropFromLast3Days;
       case 'applications':
-        return 'Select your collector application to get help';
+        return l10n.selectApplicationToGetHelp;
       case 'account':
-        return 'Get help with your account issues';
+        return l10n.getHelpWithAccountIssues;
       case 'technical':
-        return 'Get help with technical problems';
+        return l10n.getHelpWithTechnicalProblems;
       case 'payments':
-        return 'Get help with payment issues';
+        return l10n.getHelpWithPaymentIssues;
       case 'general':
-        return 'Get help with any other issue';
+        return l10n.getHelpWithAnyOtherIssue;
       default:
-        return 'Select an item to get help';
+        return l10n.selectItemToGetHelp;
     }
   }
 
@@ -716,20 +718,20 @@ Widget _buildGeneralSupportOption() {
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'General Support',
-                      style: TextStyle(
+                      AppLocalizations.of(context).generalSupport,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Get help with any other issue',
+                      AppLocalizations.of(context).getHelpWithAnyOtherIssue,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
@@ -774,22 +776,23 @@ Widget _buildGeneralSupportOption() {
   }
 
   String _formatDate(String dateString) {
+    final l10n = AppLocalizations.of(context);
     try {
       final date = DateTime.parse(dateString);
       final now = DateTime.now();
       final difference = now.difference(date);
       
       if (difference.inDays > 0) {
-        return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+        return l10n.daysAgo(difference.inDays);
       } else if (difference.inHours > 0) {
-        return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+        return l10n.hoursAgo(difference.inHours);
       } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+        return l10n.minutesAgo(difference.inMinutes);
       } else {
-        return 'Just now';
+        return l10n.justNow;
       }
     } catch (e) {
-      return 'Unknown';
+      return l10n.unknown;
     }
   }
   Color _getStatusColor(String status) {
@@ -814,19 +817,22 @@ Widget _buildGeneralSupportOption() {
   }
 
   String _getStatusText(String status) {
+    final l10n = AppLocalizations.of(context);
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Pending';
+        return l10n.pending;
       case 'expired':
-        return 'Expired';
+        return l10n.expiredStatus;
       case 'cancelled':
-        return 'Cancelled';
+        return l10n.cancelledStatus;
       case 'completed':
-        return 'Completed';
+        return l10n.collectedStatus; // Use collectedStatus for completed
+      case 'collected':
+        return l10n.collectedStatus; // Handle "collected" status
       case 'rejected':
-        return 'Rejected';
+        return l10n.rejected;
       case 'approved':
-        return 'Approved';
+        return l10n.approved;
       default:
         return status;
     }
@@ -848,8 +854,8 @@ Widget _buildGeneralSupportOption() {
           context: context,
           category: widget.category,
           itemId: drop.id,
-          itemTitle: 'Drop Issue - #${drop.id.substring(0, 8)}',
-          itemDescription: 'Issue with drop created on ${_formatDate(drop.createdAt.toString())}\nStatus: $statusText\nBottles: ${drop.numberOfBottles}, Cans: ${drop.numberOfCans}',
+          itemTitle: '${AppLocalizations.of(context).dropIssue} - #${drop.id.substring(0, 8)}',
+          itemDescription: '${AppLocalizations.of(context).issueWithDropCreatedOn(_formatDate(drop.createdAt.toString()))}\n${AppLocalizations.of(context).status}: $statusText\n${AppLocalizations.of(context).plasticBottles}: ${drop.numberOfBottles}, ${AppLocalizations.of(context).cans}: ${drop.numberOfCans}',
           metadata: {
             'ticketType': 'drop_issue',
             'dropId': drop.id,
@@ -911,7 +917,7 @@ Widget _buildGeneralSupportOption() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Drop #${drop.id.substring(0, 8)}',
+                      '${AppLocalizations.of(context).drop} #${drop.id.substring(0, 8)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -937,7 +943,7 @@ Widget _buildGeneralSupportOption() {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${drop.numberOfBottles + drop.numberOfCans} items',
+                          '${drop.numberOfBottles + drop.numberOfCans} ${AppLocalizations.of(context).items}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -993,8 +999,8 @@ Widget _buildGeneralSupportOption() {
           context: context,
           category: widget.category,
           itemId: null,
-          itemTitle: 'General ${widget.categoryTitle}',
-          itemDescription: 'Get help with ${widget.categoryTitle.toLowerCase()}',
+          itemTitle: '${AppLocalizations.of(context).generalSupport} ${widget.categoryTitle}',
+          itemDescription: AppLocalizations.of(context).getHelpWithAnyOtherIssue,
           metadata: {
             'ticketType': 'general_support',
             'context': 'general',
@@ -1026,7 +1032,7 @@ Widget _buildGeneralSupportOption() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'General ${widget.categoryTitle}',
+                      '${AppLocalizations.of(context).generalSupport} ${widget.categoryTitle}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1034,7 +1040,7 @@ Widget _buildGeneralSupportOption() {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Get help with ${widget.categoryTitle.toLowerCase()}',
+                      AppLocalizations.of(context).getHelpWithAnyOtherIssue,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -1153,8 +1159,8 @@ Widget _buildGeneralSupportOption() {
           context: context,
           category: widget.category,
           itemId: firstInteraction.id,
-          itemTitle: 'Collection Issue - #${firstInteraction.id.substring(0, 8)}',
-          itemDescription: 'Issue with collection ${statusText.toLowerCase()} on ${_formatDate(lastInteraction.interactionTime.toString())}\nDrop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'}',
+          itemTitle: '${AppLocalizations.of(context).collectionIssue} - #${firstInteraction.id.substring(0, 8)}',
+          itemDescription: '${AppLocalizations.of(context).issueWithCollection(statusText, _formatDate(lastInteraction.interactionTime.toString()))}\n${AppLocalizations.of(context).drop}: ${dropoff?.id.substring(0, 8) ?? AppLocalizations.of(context).unknown}',
           metadata: {
             'ticketType': 'collection_issue',
             'collectionId': firstInteraction.id.split('_')[0], // Extract actual CollectionAttempt ID (remove _accepted suffix)
@@ -1224,7 +1230,7 @@ Widget _buildGeneralSupportOption() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Collection #${firstInteraction.id.substring(0, 8)}',
+                      '${AppLocalizations.of(context).collection} #${firstInteraction.id.substring(0, 8)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1251,7 +1257,7 @@ Widget _buildGeneralSupportOption() {
                         const SizedBox(width: 8),
                         if (dropoff != null)
                           Text(
-                            '${dropoff.numberOfBottles + dropoff.numberOfCans} items',
+                            '${dropoff.numberOfBottles + dropoff.numberOfCans} ${AppLocalizations.of(context).items}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -1261,7 +1267,7 @@ Widget _buildGeneralSupportOption() {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Drop: ${dropoff?.id.substring(0, 8) ?? 'Unknown'} • ${_formatDate(lastInteraction.interactionTime.toString())}',
+                      '${AppLocalizations.of(context).drop}: ${dropoff?.id.substring(0, 8) ?? AppLocalizations.of(context).unknown} • ${_formatDate(lastInteraction.interactionTime.toString())}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],

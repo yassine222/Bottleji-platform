@@ -91,6 +91,11 @@ class UserData {
   final int? currentPoints;
   final int? totalPointsEarned;
   final int? currentTier;
+  final List<Map<String, dynamic>>? rewardHistory;
+  
+  // Earnings system fields
+  final double? totalEarnings;
+  final List<Map<String, dynamic>>? earningsHistory;
 
   const UserData({
     required this.id,
@@ -120,6 +125,9 @@ class UserData {
     this.currentPoints,
     this.totalPointsEarned,
     this.currentTier,
+    this.rewardHistory,
+    this.totalEarnings,
+    this.earningsHistory,
   });
 
   // Helper getters for backward compatibility
@@ -231,7 +239,81 @@ class UserData {
       updatedAt = DateTime.now();
     }
 
-    return _$UserDataFromJson({
+    // Handle rewardHistory - parse it manually since it's not in generated code
+    print('📊 UserData.fromJson - Raw rewardHistory from JSON: ${json['rewardHistory']}');
+    print('📊 UserData.fromJson - Reward history type: ${json['rewardHistory'].runtimeType}');
+    print('📊 UserData.fromJson - Reward history is null: ${json['rewardHistory'] == null}');
+    
+    List<Map<String, dynamic>>? rewardHistory;
+    if (json['rewardHistory'] != null) {
+      print('📊 UserData.fromJson - Reward history is not null, processing...');
+      if (json['rewardHistory'] is List) {
+        print('📊 UserData.fromJson - Reward history is a List');
+        final list = json['rewardHistory'] as List;
+        print('📊 UserData.fromJson - List length: ${list.length}');
+        rewardHistory = list
+            .map((item) {
+              print('📊 UserData.fromJson - Processing item: $item (type: ${item.runtimeType})');
+              return item is Map<String, dynamic> 
+                  ? item 
+                  : Map<String, dynamic>.from(item);
+            })
+            .toList();
+        print('📊 UserData.fromJson - Parsed reward history: $rewardHistory');
+      } else {
+        print('📊 UserData.fromJson - Reward history is NOT a List, it is: ${json['rewardHistory'].runtimeType}');
+      }
+    } else {
+      print('📊 UserData.fromJson - Reward history is null or missing');
+    }
+    
+    print('📊 UserData.fromJson - Final rewardHistory: $rewardHistory');
+    print('📊 UserData.fromJson - Final rewardHistory length: ${rewardHistory?.length ?? 0}');
+    
+    // Handle earningsHistory - similar to rewardHistory
+    print('📊 UserData.fromJson - Raw earningsHistory from JSON: ${json['earningsHistory']}');
+    print('📊 UserData.fromJson - Earnings history type: ${json['earningsHistory']?.runtimeType}');
+    print('📊 UserData.fromJson - Earnings history is null: ${json['earningsHistory'] == null}');
+    
+    List<Map<String, dynamic>>? earningsHistory;
+    if (json['earningsHistory'] != null) {
+      print('📊 UserData.fromJson - Earnings history is not null, processing...');
+      if (json['earningsHistory'] is List) {
+        print('📊 UserData.fromJson - Earnings history is a List');
+        final list = json['earningsHistory'] as List;
+        print('📊 UserData.fromJson - List length: ${list.length}');
+        earningsHistory = list
+            .map((item) {
+              print('📊 UserData.fromJson - Processing earnings item: $item (type: ${item.runtimeType})');
+              return item is Map<String, dynamic> 
+                  ? item 
+                  : Map<String, dynamic>.from(item);
+            })
+            .toList();
+        print('📊 UserData.fromJson - Parsed earnings history: $earningsHistory');
+      } else {
+        print('📊 UserData.fromJson - Earnings history is NOT a List, it is: ${json['earningsHistory'].runtimeType}');
+      }
+    } else {
+      print('📊 UserData.fromJson - Earnings history is null or missing');
+    }
+    
+    print('📊 UserData.fromJson - Final earningsHistory: $earningsHistory');
+    print('📊 UserData.fromJson - Final earningsHistory length: ${earningsHistory?.length ?? 0}');
+    
+    // Handle totalEarnings
+    double? totalEarnings;
+    if (json['totalEarnings'] != null) {
+      if (json['totalEarnings'] is double) {
+        totalEarnings = json['totalEarnings'] as double;
+      } else if (json['totalEarnings'] is int) {
+        totalEarnings = (json['totalEarnings'] as int).toDouble();
+      } else if (json['totalEarnings'] is String) {
+        totalEarnings = double.tryParse(json['totalEarnings']);
+      }
+    }
+
+    final userData = _$UserDataFromJson({
       ...json,
       'roles': roles,
       'phoneNumber': phoneNumber,
@@ -252,6 +334,40 @@ class UserData {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     });
+    
+    // Manually set rewardHistory since it's not in generated code
+    return UserData(
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      phoneNumber: userData.phoneNumber,
+      isPhoneVerified: userData.isPhoneVerified,
+      address: userData.address,
+      profilePhoto: userData.profilePhoto,
+      roles: userData.roles,
+      collectorSubscriptionType: userData.collectorSubscriptionType,
+      createdAt: userData.createdAt,
+      updatedAt: userData.updatedAt,
+      isProfileComplete: userData.isProfileComplete,
+      isDeleted: userData.isDeleted,
+      deletedAt: userData.deletedAt,
+      deletedBy: userData.deletedBy,
+      sessionInvalidatedAt: userData.sessionInvalidatedAt,
+      isAccountLocked: userData.isAccountLocked,
+      accountLockedUntil: userData.accountLockedUntil,
+      warningCount: userData.warningCount,
+      collectorApplicationStatus: userData.collectorApplicationStatus,
+      collectorApplicationId: userData.collectorApplicationId,
+      collectorApplicationAppliedAt: userData.collectorApplicationAppliedAt,
+      collectorApplicationReviewedAt: userData.collectorApplicationReviewedAt,
+      collectorApplicationRejectionReason: userData.collectorApplicationRejectionReason,
+      currentPoints: userData.currentPoints,
+      totalPointsEarned: userData.totalPointsEarned,
+      currentTier: userData.currentTier,
+      rewardHistory: rewardHistory,
+      totalEarnings: totalEarnings,
+      earningsHistory: earningsHistory,
+    );
   }
 
   // Add a custom fromJson method to handle collector application status fields
@@ -433,6 +549,12 @@ class UserData {
         'collectorApplicationAppliedAt': collectorApplicationAppliedAt?.toIso8601String(),
         'collectorApplicationReviewedAt': collectorApplicationReviewedAt?.toIso8601String(),
         'collectorApplicationRejectionReason': collectorApplicationRejectionReason,
+        'currentPoints': currentPoints,
+        'totalPointsEarned': totalPointsEarned,
+        'currentTier': currentTier,
+        'rewardHistory': rewardHistory,
+        'totalEarnings': totalEarnings,
+        'earningsHistory': earningsHistory,
       };
 
   UserData copyWith({

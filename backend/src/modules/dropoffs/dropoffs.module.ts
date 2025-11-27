@@ -9,6 +9,7 @@ import { DropReport, DropReportSchema } from './schemas/drop-report.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RewardsModule } from '../rewards/rewards.module';
+import { EarningsModule } from '../earnings/earnings.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RewardsModule } from '../rewards/rewards.module';
     ]),
     forwardRef(() => NotificationsModule),
     RewardsModule,
+    forwardRef(() => EarningsModule),
   ],
   controllers: [DropoffsController],
   providers: [DropoffsService],

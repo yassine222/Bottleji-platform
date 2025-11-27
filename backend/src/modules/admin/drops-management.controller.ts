@@ -80,7 +80,8 @@ export class DropsManagementController {
 
     // Send notifications to affected users
     for (const userId of result.userIds) {
-      this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String(userId);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'drop_stale',
         title: 'Drop Marked as Stale',
         message: 'Your drop has been marked as stale as it was older than 3 days and likely collected by external collectors.',
@@ -167,7 +168,8 @@ export class DropsManagementController {
     
     // Notify the user
     if (result.user) {
-      this.notificationsGateway.sendNotificationToUser((result.user as any)._id.toString(), {
+      const normalizedUserId = String((result.user as any)._id);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'drop_censored',
         title: 'Drop Image Censored',
         message: `Your drop image has been censored. Reason: ${reason}. You have received a warning.`,
@@ -189,7 +191,8 @@ export class DropsManagementController {
     
     // Notify the user
     if (drop && drop.userId) {
-      this.notificationsGateway.sendNotificationToUser(drop.userId, {
+      const normalizedUserId = drop.userId?.toString ? drop.userId.toString() : String(drop.userId);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'drop_deleted',
         title: 'Drop Deleted',
         message: 'Your drop has been deleted by an administrator.',

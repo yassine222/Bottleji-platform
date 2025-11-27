@@ -18,13 +18,22 @@ class UserDropStats {
   });
 
   factory UserDropStats.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert to int
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return UserDropStats(
-      total: json['total'] ?? 0,
-      pending: json['pending'] ?? 0,
-      collected: json['collected'] ?? 0,
-      flagged: json['flagged'] ?? 0,
-      stale: json['stale'] ?? 0,
-      censored: json['censored'] ?? 0,
+      total: toInt(json['total']),
+      pending: toInt(json['pending']),
+      collected: toInt(json['collected']),
+      flagged: toInt(json['flagged']),
+      stale: toInt(json['stale']),
+      censored: toInt(json['censored']),
       timeRange: json['timeRange'],
     );
 

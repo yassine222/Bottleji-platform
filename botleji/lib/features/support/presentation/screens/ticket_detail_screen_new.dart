@@ -7,6 +7,7 @@ import '../providers/support_ticket_provider.dart';
 import '../providers/chat_provider.dart';
 import '../../data/models/support_ticket.dart';
 import '../../../../core/api/api_client.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class TicketDetailScreenNew extends ConsumerStatefulWidget {
   final SupportTicket ticket;
@@ -265,8 +266,8 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     // Don't allow sending if ticket is closed
     if (_currentTicket.status == TicketStatus.closed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot send message. This ticket is closed.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).cannotSendMessageTicketClosed),
           backgroundColor: Colors.red,
         ),
       );
@@ -301,7 +302,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
       // Show error to user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to send message: $error'),
+          content: Text(AppLocalizations.of(context).failedToSendMessage(error.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -371,7 +372,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Support Ticket'),
+        title: Text(AppLocalizations.of(context).supportTicket),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
       ),
@@ -391,20 +392,20 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
               child: Row(
                 children: [
                   if (_adminPresent)
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.person, size: 16, color: Colors.green),
-                        SizedBox(width: 4),
-                        Text('Admin is online', style: TextStyle(fontSize: 12, color: Colors.green)),
+                        const Icon(Icons.person, size: 16, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(AppLocalizations.of(context).adminIsOnline, style: const TextStyle(fontSize: 12, color: Colors.green)),
                       ],
                     ),
                   if (_adminPresent && _adminTyping) const SizedBox(width: 16),
                   if (_adminTyping)
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.edit, size: 16, color: Colors.orange),
-                        SizedBox(width: 4),
-                        Text('Admin is typing...', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                        const Icon(Icons.edit, size: 16, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text(AppLocalizations.of(context).adminIsTyping, style: const TextStyle(fontSize: 12, color: Colors.orange)),
                       ],
                     ),
                 ],

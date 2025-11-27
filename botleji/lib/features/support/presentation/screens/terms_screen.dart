@@ -8,6 +8,9 @@ class TermsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Terms and Conditions'),
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

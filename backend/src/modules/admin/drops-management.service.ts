@@ -418,8 +418,10 @@ export class DropsManagementService {
     // Enrich attempts with collector info
     const enrichedAttempts = collectionAttempts.map(attempt => {
       const collector = collectors.find(c => (c as any)._id.toString() === attempt.collectorId);
+      const attemptObj = attempt.toObject();
       return {
-        ...attempt.toObject(),
+        ...attemptObj,
+        earnings: attemptObj.earnings ?? 0, // Ensure earnings is always a number
         collector: collector ? { name: collector.name, email: collector.email } : null,
       };
     });

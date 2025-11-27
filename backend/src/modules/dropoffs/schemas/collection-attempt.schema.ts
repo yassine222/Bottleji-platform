@@ -109,6 +109,11 @@ export class CollectionAttempt {
   @Prop({ default: 0 })
   cancellationCount: number; // Track how many times this drop was cancelled
 
+  // Earnings field
+  @Prop({ type: Number, default: 0 })
+  earnings: number; // Earnings for this collection (only when outcome === 'collected')
+  // Formula: (numberOfBottles * 0.025) + (numberOfCans * 0.06)
+
   // Timestamps
   @Prop()
   createdAt: Date;

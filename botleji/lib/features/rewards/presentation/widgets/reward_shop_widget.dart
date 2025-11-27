@@ -7,6 +7,7 @@ import 'package:botleji/features/auth/presentation/providers/auth_provider.dart'
 import 'package:botleji/features/rewards/presentation/pages/reward_item_detail_page.dart';
 import 'package:botleji/features/rewards/presentation/widgets/redemption_confirmation_dialog.dart';
 import 'package:botleji/features/rewards/data/services/reward_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class RewardShopWidget extends ConsumerWidget {
   const RewardShopWidget({super.key});
@@ -86,7 +87,7 @@ class RewardShopWidget extends ConsumerWidget {
         children: [
           _buildFilterChip(
             context,
-            label: 'All',
+            label: AppLocalizations.of(context).all,
             isSelected: shopState.selectedCategory == null,
             onSelected: () => ref.read(rewardShopProvider.notifier).setCategory(null),
           ),
@@ -95,7 +96,7 @@ class RewardShopWidget extends ConsumerWidget {
           if (hasCollectorRole) ...[
             _buildFilterChip(
               context,
-              label: 'Collector',
+              label: AppLocalizations.of(context).collector,
               isSelected: shopState.selectedCategory == 'collector',
               onSelected: () => ref.read(rewardShopProvider.notifier).setCategory('collector'),
             ),
@@ -103,7 +104,7 @@ class RewardShopWidget extends ConsumerWidget {
           ],
           _buildFilterChip(
             context,
-            label: 'Household',
+            label: AppLocalizations.of(context).household,
             isSelected: shopState.selectedCategory == 'household',
             onSelected: () => ref.read(rewardShopProvider.notifier).setCategory('household'),
           ),
@@ -270,7 +271,7 @@ class RewardShopWidget extends ConsumerWidget {
                 )
               else if (!canAfford)
                 Text(
-                  'Not enough points',
+                  AppLocalizations.of(context).notEnoughPoints,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.orange,
                     fontWeight: FontWeight.bold,

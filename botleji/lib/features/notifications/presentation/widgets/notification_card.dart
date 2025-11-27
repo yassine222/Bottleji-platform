@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/notification_models.dart';
 import '../providers/notification_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class NotificationCard extends ConsumerWidget {
   final NotificationModel notification;
@@ -100,7 +101,7 @@ class NotificationCard extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  notification.title,
+                                  _getLocalizedTitle(context, notification),
                                   style: TextStyle(
                                     fontWeight: isUnread 
                                         ? FontWeight.w700 
@@ -114,7 +115,7 @@ class NotificationCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  notification.message,
+                                  _getLocalizedMessage(context, notification),
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: isUnread 
@@ -212,8 +213,8 @@ class NotificationCard extends ConsumerWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     notification.priority == NotificationPriority.urgent
-                                        ? 'URGENT'
-                                        : 'HIGH',
+                                        ? AppLocalizations.of(context).urgent
+                                        : AppLocalizations.of(context).highPriority,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -256,7 +257,7 @@ class NotificationCard extends ConsumerWidget {
                                       vertical: 6,
                                     ),
                                     child: Text(
-                                      action.label,
+                                      _getLocalizedActionLabel(context, action),
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -404,6 +405,125 @@ class NotificationCard extends ConsumerWidget {
       return '${difference.inMinutes}m';
     } else {
       return 'Now';
+    }
+  }
+
+  String _getLocalizedTitle(BuildContext context, NotificationModel notification) {
+    final l10n = AppLocalizations.of(context);
+    
+    switch (notification.type) {
+      case NotificationType.orderApproved:
+        return l10n.orderApproved;
+      case NotificationType.orderRejected:
+        return l10n.orderRejected;
+      case NotificationType.orderShipped:
+        return l10n.orderShipped;
+      case NotificationType.orderDelivered:
+        return l10n.orderDelivered;
+      case NotificationType.pointsEarned:
+        return l10n.pointsEarnedTitle;
+      case NotificationType.applicationApproved:
+        return l10n.applicationApproved;
+      case NotificationType.applicationRejected:
+        return l10n.applicationRejected;
+      case NotificationType.applicationReversed:
+        return l10n.applicationReversed;
+      case NotificationType.dropAccepted:
+        return l10n.dropAccepted;
+      case NotificationType.dropCollected:
+      case NotificationType.dropCollectedWithRewards:
+      case NotificationType.dropCollectedWithTierUpgrade:
+        return l10n.dropCollected;
+      case NotificationType.dropCancelled:
+        return l10n.dropCancelled;
+      case NotificationType.dropExpired:
+        return l10n.dropExpired;
+      case NotificationType.dropNearExpiring:
+        return l10n.dropNearExpiring;
+      case NotificationType.dropCensored:
+        return l10n.dropCensored;
+      case NotificationType.ticketMessage:
+        return l10n.ticketMessage;
+      case NotificationType.accountLocked:
+        return l10n.accountTemporarilyLocked;
+      case NotificationType.accountUnlocked:
+        return l10n.accountUnlocked;
+      case NotificationType.userDeleted:
+        return l10n.userDeleted;
+      case NotificationType.systemAnnouncement:
+      case NotificationType.test:
+        // For system announcements and unknown types, use backend title
+        return notification.title;
+    }
+  }
+
+  String _getLocalizedMessage(BuildContext context, NotificationModel notification) {
+    final l10n = AppLocalizations.of(context);
+    
+    switch (notification.type) {
+      case NotificationType.orderApproved:
+        return l10n.orderApprovedMessage(notification.data.orderId ?? '');
+      case NotificationType.orderRejected:
+        return l10n.orderRejectedMessage(notification.data.rejectionReason ?? l10n.other);
+      case NotificationType.orderShipped:
+        return l10n.orderShippedMessage(notification.data.trackingNumber ?? '');
+      case NotificationType.orderDelivered:
+        return l10n.orderDeliveredMessage;
+      case NotificationType.pointsEarned:
+        return l10n.pointsEarnedMessage(notification.data.pointsAmount ?? 0);
+      case NotificationType.applicationApproved:
+        return l10n.applicationApprovedMessage;
+      case NotificationType.applicationRejected:
+        return l10n.applicationRejectedMessage(notification.data.rejectionReason ?? l10n.other);
+      case NotificationType.applicationReversed:
+        return l10n.applicationReversedMessage;
+      case NotificationType.dropAccepted:
+        return l10n.dropAcceptedMessage;
+      case NotificationType.dropCollected:
+        return l10n.dropCollectedMessage;
+      case NotificationType.dropCollectedWithRewards:
+        return l10n.dropCollectedWithRewardsMessage(notification.data.pointsAmount ?? 0);
+      case NotificationType.dropCollectedWithTierUpgrade:
+        return l10n.dropCollectedWithTierUpgradeMessage;
+      case NotificationType.dropCancelled:
+        return l10n.dropCancelledMessage;
+      case NotificationType.dropExpired:
+        return l10n.dropExpiredMessage;
+      case NotificationType.dropNearExpiring:
+        return l10n.dropNearExpiringMessage;
+      case NotificationType.dropCensored:
+        return l10n.dropCensoredMessage;
+      case NotificationType.ticketMessage:
+        return l10n.ticketMessageNotification;
+      case NotificationType.accountLocked:
+        return l10n.accountLockedReason;
+      case NotificationType.accountUnlocked:
+        return l10n.accountUnlockedMessage;
+      case NotificationType.userDeleted:
+        return l10n.userDeletedMessage;
+      case NotificationType.systemAnnouncement:
+      case NotificationType.test:
+        // For system announcements and unknown types, use backend message
+        return notification.message;
+    }
+  }
+
+  String _getLocalizedActionLabel(BuildContext context, NotificationAction action) {
+    final l10n = AppLocalizations.of(context);
+    
+    // Common action labels
+    switch (action.action) {
+      case 'track_order':
+        return l10n.trackOrder;
+      case 'view_order':
+        return l10n.viewOrder;
+      case 'shop_again':
+        return l10n.shopAgain;
+      case 'view_rewards':
+        return l10n.viewRewards;
+      default:
+        // Use backend label if no translation found
+        return action.label;
     }
   }
 

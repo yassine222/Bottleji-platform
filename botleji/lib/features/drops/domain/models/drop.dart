@@ -1,11 +1,30 @@
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:botleji/core/utils/json_converters.dart';
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 enum BottleType {
   plastic,
   can,
   mixed,
+}
+
+/// Extension to provide localized display names for BottleType
+extension BottleTypeLocalization on BottleType {
+  /// Returns the localized display name for this bottle type
+  String localizedDisplayName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case BottleType.plastic:
+        return l10n.plastic;
+      case BottleType.can:
+        return l10n.can;
+      case BottleType.mixed:
+        return l10n.mixed;
+    }
+  }
 }
 
 enum DropStatus {
@@ -15,6 +34,28 @@ enum DropStatus {
   cancelled,  // Drop was cancelled by the household
   expired,    // Drop expired because it wasn't collected within time limit
   stale,      // Drop is too old and likely collected by external collectors
+}
+
+/// Extension to provide localized display names for DropStatus
+extension DropStatusLocalization on DropStatus {
+  /// Returns the localized display name for this status
+  String localizedDisplayName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case DropStatus.pending:
+        return l10n.pendingStatus;
+      case DropStatus.accepted:
+        return l10n.acceptedStatus;
+      case DropStatus.collected:
+        return l10n.collectedStatus;
+      case DropStatus.cancelled:
+        return l10n.cancelledStatus;
+      case DropStatus.expired:
+        return l10n.expiredStatus;
+      case DropStatus.stale:
+        return l10n.staleStatus;
+    }
+  }
 }
 
 enum CancellationReason {
@@ -82,6 +123,13 @@ class Drop {
   final DateTime? censoredAt;
   final CancellationReason? cancellationReason;
   final List<String> cancelledByCollectorIds;
+
+  /// Calculated estimated value of the drop in TND
+  /// Formula: (numberOfBottles * 0.03) + (numberOfCans * 0.15)
+  double get estimatedValue => DropValueCalculator.calculateEstimatedValue(
+        plasticBottleCount: numberOfBottles,
+        cansCount: numberOfCans,
+      );
 
   const Drop({
     required this.id,

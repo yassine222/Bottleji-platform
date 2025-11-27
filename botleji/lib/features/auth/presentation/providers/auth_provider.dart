@@ -13,6 +13,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/local_notification_service.dart';
 import '../../../../core/services/network_detection_service.dart';
+import '../../../../main.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+// TODO: FCM is not yet implemented
+// import '../../../../core/services/fcm_service.dart';
 import '../../controllers/collector_subscription_controller.dart';
 import '../../../collector/controllers/collector_application_controller.dart';
 import '../../data/models/user_data.dart' as auth_models;
@@ -95,11 +99,39 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           AppLogger.log('   - warningCount: ${userData.warningCount}');
           AppLogger.log('   - isCurrentlyLocked: ${userData.isCurrentlyLocked}');
           
+          // Check if user is permanently disabled
+          if (userData.isAccountLocked && userData.accountLockedUntil == null) {
+            AppLogger.log('🔒 AuthProvider: User is permanently disabled - will show dialog on app start');
+            // Still save the user data so the main.dart listener can detect it
+            await prefs.setString(_authKey, jsonEncode(userData.toJson()));
+            state = AsyncValue.data(userData);
+            // Don't set user mode - user will be logged out
+            // The main.dart listener will detect this and show the dialog
+            return;
+          }
+          
           // Update saved auth data with fresh backend data
           await prefs.setString(_authKey, jsonEncode(userData.toJson()));
           AppLogger.log('💾 Updated cached auth data with fresh backend data');
           
+          // Debug: Verify earningsHistory is in userData before setting state
+          AppLogger.log('💰 _loadSavedAuth - userData.earningsHistory: ${userData.earningsHistory}');
+          AppLogger.log('💰 _loadSavedAuth - earningsHistory is null: ${userData.earningsHistory == null}');
+          AppLogger.log('💰 _loadSavedAuth - earningsHistory length: ${userData.earningsHistory?.length ?? 0}');
+          AppLogger.log('💰 _loadSavedAuth - totalEarnings: ${userData.totalEarnings}');
+          
+          print('💰 _loadSavedAuth - About to set state with userData.earningsHistory: ${userData.earningsHistory}');
+          print('💰 _loadSavedAuth - earningsHistory length: ${userData.earningsHistory?.length ?? 0}');
           state = AsyncValue.data(userData);
+          print('💰 _loadSavedAuth - State set!');
+          
+          // Debug: Verify state was set correctly
+          print('💰 _loadSavedAuth - Checking state value...');
+          state.whenData((user) {
+            print('💰 _loadSavedAuth - State user.earningsHistory: ${user?.earningsHistory}');
+            print('💰 _loadSavedAuth - State earningsHistory length: ${user?.earningsHistory?.length ?? 0}');
+            print('💰 _loadSavedAuth - State totalEarnings: ${user?.totalEarnings}');
+          });
           
           // Set user mode based on roles
           await _setUserModeFromRoles(userData.roles);
@@ -264,6 +296,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       return response.when(
         success: (user, token, message) async {
           AppLogger.log('Login success - User: $user, Token: $token, Message: $message');
+          
+          // Check if user is permanently disabled even if login succeeded
+          // NOTE: This should not happen if backend is working correctly, but adding as safety check
+          if (user != null && user.isAccountLocked && user.accountLockedUntil == null) {
+            AppLogger.log('🔒 User is permanently disabled - throwing error');
+            throw Exception('Your account has been permanently disabled due to repeated violations of Bottleji\'s community guidelines. Please contact support: support@bottleji.com');
+          }
+          
           if (user != null && token != null) {
             AppLogger.log('Saving user data and token');
             AppLogger.log('User ID: ${user.id}');
@@ -295,6 +335,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
               AppLogger.log('❌ Error connecting to notifications: $e');
               // Don't fail login if WebSocket connection fails
             }
+            
+            // TODO: Save FCM token to backend after login
+            // FCM is not yet implemented, so commenting out for now
+            // try {
+            //   final fcmService = FCMService();
+            //   await fcmService.saveTokenToBackend();
+            //   AppLogger.log('✅ FCM token saved to backend after login');
+            // } catch (e) {
+            //   AppLogger.log('❌ Error saving FCM token after login: $e');
+            //   // Don't fail login if FCM token save fails
+            // }
             
             // Note: Skip syncing application status after login since we already have fresh user data
             // syncApplicationStatusFromDatabase().catchError((e) {
@@ -341,30 +392,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           AppLogger.log('AuthNotifier: Signup successful');
           AppLogger.log('AuthNotifier: Message: $message');
           
-          // Create a temporary user object for OTP verification
-          if (user == null && (message?.contains('verify your email') ?? false)) {
-            AppLogger.log('Creating temporary user for OTP verification');
-            final tempUser = UserData(
-              id: '',
-              email: email,
-              name: '',
-              phoneNumber: '',
-              address: '',
-              profilePhoto: '',
-              roles: ['household'],
-              collectorSubscriptionType: 'basic',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              isProfileComplete: false,
-            );
-            // Save the temporary user data
-            _saveAuth(tempUser);
-            state = AsyncValue.data(tempUser);
-          } else if (user != null) {
-            state = AsyncValue.data(user);
-          } else {
-            state = const AsyncValue.data(null);
-          }
+          // Account is not created yet - only created after OTP verification
+          // Don't save any user data or token yet
+          // Just set state to null to indicate signup was successful but account pending verification
+          state = const AsyncValue.data(null);
         },
         error: (message, statusCode) {
           AppLogger.log('AuthNotifier: Signup failed');
@@ -381,6 +412,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         message: e.toString(),
         statusCode: 500,
       );
+    }
+  }
+
+  Future<void> invalidateSession() async {
+    try {
+      await _authRepository.invalidateSession();
+      AppLogger.log('✅ Session invalidated on backend');
+    } catch (e) {
+      AppLogger.log('⚠️ Error invalidating session: $e');
+      // Don't throw, just log the error
     }
   }
 
@@ -483,6 +524,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           AppLogger.log('🔄 AuthProvider: New user roles: ${user?.roles}');
           
           if (user != null) {
+            // Check if user is permanently disabled
+            if (user.isAccountLocked && user.accountLockedUntil == null) {
+              AppLogger.log('🔒 AuthProvider: User is permanently disabled');
+              // Don't update state - let the UI handle showing the dialog
+              // The main.dart listener will detect this and show the dialog
+              return;
+            }
+            
             // Update the state with new user data
             state = AsyncValue.data(user);
             
@@ -539,6 +588,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       
       final notificationService = ref.read(notificationServiceProvider);
       
+      // Set up drop collected popup callback for household users
+      notificationService.onDropCollectedForHousehold = (notification) {
+        AppLogger.log('🎉 Drop collected notification received for household popup');
+        // Use a delayed callback to ensure context is available
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _handleDropCollectedForHousehold(notification);
+        });
+      };
+      
       // Set up force logout callback
       notificationService.onForceLogout = (reason) {
         AppLogger.log('🚪 Force logout received: $reason');
@@ -552,6 +610,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         // Update drops controller with the status change
         final dropsController = ref.read(dropsControllerProvider.notifier);
         dropsController.handleDropStatusUpdate(dropId, status, data);
+        
+        // Refresh user data when drop is collected to get latest reward history
+        if (status == 'drop_collected') {
+          refreshUserData().catchError((e) {
+            AppLogger.log('❌ Error refreshing user data after drop collected: $e');
+          });
+        }
       };
       
       // Connect to WebSocket
@@ -600,6 +665,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       
       final notificationService = _ref.read(notificationServiceProvider);
       
+      // Set up drop collected popup callback for household users
+      notificationService.onDropCollectedForHousehold = (notification) {
+        AppLogger.log('🎉 Drop collected notification received for household popup (on startup)');
+        // Use a delayed callback to ensure context is available
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _handleDropCollectedForHousehold(notification);
+        });
+      };
+      
       // Set up force logout callback
       notificationService.onForceLogout = (reason) {
         AppLogger.log('🚪 Force logout received on startup: $reason');
@@ -615,6 +689,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
         // Update drops controller with the status change
         final dropsController = _ref.read(dropsControllerProvider.notifier);
         dropsController.handleDropStatusUpdate(dropId, status, data);
+        
+        // Refresh user data when drop is collected to get latest reward history
+        if (status == 'drop_collected') {
+          refreshUserData().catchError((e) {
+            AppLogger.log('❌ Error refreshing user data after drop collected: $e');
+          });
+        }
       };
       
       // Set up account lock status update callback
@@ -1039,6 +1120,19 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     try {
       AppLogger.log('Handling session expiration...');
       
+      // Check if user is permanently disabled BEFORE clearing auth
+      final currentUser = state.value;
+      final isPermanentlyDisabled = currentUser != null && 
+          currentUser.isAccountLocked && 
+          currentUser.accountLockedUntil == null;
+      
+      // If permanently disabled, don't show session expired here
+      // The account disabled dialog will handle showing session expired after user acknowledges
+      if (isPermanentlyDisabled) {
+        AppLogger.log('🔒 User is permanently disabled - skipping session expired (account disabled dialog will handle it)');
+        return;
+      }
+      
       // Clear all cached data
       await _clearAuth();
       
@@ -1049,32 +1143,36 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Update state
       state = const AsyncValue.data(null);
       
+      // Session expired dialog is handled by main.dart after user acknowledges account disabled dialog
+      // TEMPORARILY DISABLED FOR TESTING - Session expired dialog
       // Show session expired dialog
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Session Expired'),
-              content: const Text('Your session has expired. Please login again to continue.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // Navigate to login screen
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/login',
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('Login'),
-                ),
-              ],
-            );
-          },
-        );
-      }
+      // if (context.mounted) {
+      //   showDialog(
+      //     context: context,
+      //     barrierDismissible: false,
+      //     builder: (BuildContext context) {
+      //       final l10n = AppLocalizations.of(context);
+      //       return AlertDialog(
+      //         title: Text(l10n.sessionExpired),
+      //         content: Text(l10n.sessionExpiredMessage),
+      //         actions: [
+      //           TextButton(
+      //             onPressed: () {
+      //               Navigator.of(context).pop();
+      //               // Navigate to login screen
+      //               Navigator.of(context).pushNamedAndRemoveUntil(
+      //                 '/login',
+      //                 (route) => false,
+      //               );
+      //             },
+      //             child: Text(l10n.login),
+      //           ),
+      //         ],
+      //       );
+      //     },
+      //   );
+      // }
+      print('⚠️ Session expired detected in handleSessionExpiration but dialog disabled for testing');
       AppLogger.log('Session expiration handled successfully');
     } catch (e) {
       AppLogger.log('Error handling session expiration: $e');
@@ -1137,6 +1235,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Get fresh user data from backend
       final response = await _authRepository.getProfile();
       
+      // Check if user is permanently disabled after refresh
+      response.when(
+        success: (user, token, message) {
+          if (user != null && 
+              user.isAccountLocked && 
+              user.accountLockedUntil == null) {
+            AppLogger.log('🔒 Session check: User is permanently disabled');
+            // Update state so main.dart listener can detect it
+            state = AsyncValue.data(user);
+          }
+        },
+        error: (message, statusCode) {
+          // Error handling
+        },
+      );
+      
       return response;
     } catch (e) {
       AppLogger.log('Error checking session validity: $e');
@@ -1148,6 +1262,19 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     try {
       AppLogger.log('Handling global 401 error...');
       
+      // Check if user is permanently disabled BEFORE clearing auth
+      final currentUser = state.value;
+      final isPermanentlyDisabled = currentUser != null && 
+          currentUser.isAccountLocked && 
+          currentUser.accountLockedUntil == null;
+      
+      // If permanently disabled, don't show session expired here
+      // The account disabled dialog will handle showing session expired after user acknowledges
+      if (isPermanentlyDisabled) {
+        AppLogger.log('🔒 User is permanently disabled - skipping session expired (account disabled dialog will handle it)');
+        return;
+      }
+      
       // Clear all cached data
       await _clearAuth();
       
@@ -1158,32 +1285,36 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Update state
       state = const AsyncValue.data(null);
       
+      // Session expired dialog is handled by main.dart after user acknowledges account disabled dialog
+      // TEMPORARILY DISABLED FOR TESTING - Session expired dialog
       // Show session expired dialog
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Session Expired'),
-              content: const Text('Your session has expired. Please login again to continue.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // Navigate to login screen
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/login',
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('Login'),
-                ),
-              ],
-            );
-          },
-        );
-      }
+      // if (context.mounted) {
+      //   showDialog(
+      //     context: context,
+      //     barrierDismissible: false,
+      //     builder: (BuildContext context) {
+      //       final l10n = AppLocalizations.of(context);
+      //       return AlertDialog(
+      //         title: Text(l10n.sessionExpired),
+      //         content: Text(l10n.sessionExpiredMessage),
+      //         actions: [
+      //           TextButton(
+      //             onPressed: () {
+      //               Navigator.of(context).pop();
+      //               // Navigate to login screen
+      //               Navigator.of(context).pushNamedAndRemoveUntil(
+      //                 '/login',
+      //                 (route) => false,
+      //               );
+      //             },
+      //             child: Text(l10n.login),
+      //           ),
+      //         ],
+      //       );
+      //     },
+      //   );
+      // }
+      print('⚠️ Session expired detected in handleGlobal401Error but dialog disabled for testing');
       AppLogger.log('Global 401 error handled successfully');
     } catch (e) {
       AppLogger.log('Error handling global 401 error: $e');
@@ -1239,6 +1370,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       collectorApplicationAppliedAt: appliedAt,
       collectorApplicationReviewedAt: reviewedAt,
       collectorApplicationRejectionReason: rejectionReason,
+      currentPoints: userData.currentPoints,
+      totalPointsEarned: userData.totalPointsEarned,
+      currentTier: userData.currentTier,
+      rewardHistory: userData.rewardHistory,
+      totalEarnings: userData.totalEarnings,
+      earningsHistory: userData.earningsHistory,
     );
     
     // Update state - this should trigger a rebuild of widgets watching this provider
@@ -1287,6 +1424,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           collectorApplicationAppliedAt: null,
           collectorApplicationReviewedAt: null,
           collectorApplicationRejectionReason: null,
+          currentPoints: userData.currentPoints,
+          totalPointsEarned: userData.totalPointsEarned,
+          currentTier: userData.currentTier,
+          rewardHistory: userData.rewardHistory,
+          totalEarnings: userData.totalEarnings,
+          earningsHistory: userData.earningsHistory,
         );
         // Update state
         state = AsyncValue.data(updatedUserData);
@@ -1339,6 +1482,211 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
           break;
       }
     };
+  }
+
+  /// Handle drop collected notification for household users - shows popup
+  void _handleDropCollectedForHousehold(NotificationPayload notification) {
+    try {
+      AppLogger.log('🎉 Handling drop collected notification for household popup');
+      
+      // Refresh user data to get latest reward history
+      refreshUserData().catchError((e) {
+        AppLogger.log('❌ Error refreshing user data after drop collected: $e');
+      });
+      
+      // Check if user is in household mode
+      final userModeAsync = _ref.read(userModeControllerProvider);
+      userModeAsync.whenData((userMode) {
+        if (userMode != UserMode.household) {
+          AppLogger.log('⚠️ User is not in household mode, skipping popup');
+          return;
+        }
+        
+        // Get the notification data
+        final data = notification.data ?? {};
+        final pointsAwarded = data['pointsAwarded'] as int? ?? 0;
+        final totalPoints = data['totalPoints'] as int? ?? 0;
+        final tierUpgraded = data['tierUpgraded'] as bool? ?? false;
+        final newTier = data['newTier'] as Map<String, dynamic>?;
+        final currentTier = data['currentTier'] as String?;
+        
+        AppLogger.log('🎉 Drop collected - Points: $pointsAwarded, Total: $totalPoints, Tier upgraded: $tierUpgraded');
+        
+        // Show popup using navigator key
+        final context = MyApp.navigatorKey.currentContext;
+        if (context != null) {
+          _showDropCollectedPopup(
+            context,
+            pointsAwarded: pointsAwarded,
+            totalPoints: totalPoints,
+            tierUpgraded: tierUpgraded,
+            newTier: newTier,
+            currentTier: currentTier,
+          );
+        } else {
+          AppLogger.log('⚠️ No context available to show popup');
+        }
+      });
+    } catch (e) {
+      AppLogger.log('❌ Error handling drop collected notification: $e');
+    }
+  }
+
+  /// Show drop collected popup dialog
+  void _showDropCollectedPopup(
+    BuildContext context, {
+    required int pointsAwarded,
+    required int totalPoints,
+    required bool tierUpgraded,
+    Map<String, dynamic>? newTier,
+    String? currentTier,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  size: 50,
+                  color: Color(0xFF00695C),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Title
+              Text(
+                tierUpgraded ? '🎉 Drop Collected & Tier Upgraded!' : '🎉 Drop Collected!',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              
+              // Points earned
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '+$pointsAwarded Points',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00695C),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Total: $totalPoints points',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Tier information
+              if (tierUpgraded && newTier != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.amber.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'New Tier: ${newTier['name'] ?? 'Unknown'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (currentTier != null)
+                Text(
+                  'Current Tier: $currentTier',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              
+              const SizedBox(height: 24),
+              
+              // Close button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00695C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Awesome!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Sync application status from database

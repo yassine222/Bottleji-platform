@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/auth/data/models/user_data.dart';
 import 'package:botleji/features/rewards/presentation/providers/reward_provider.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class RewardItemDetailPage extends ConsumerWidget {
   final RewardItem item;
@@ -35,7 +36,9 @@ class RewardItemDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(item.name),
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
+        centerTitle: true,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -174,7 +177,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        isInStock ? '${item.stock} available' : 'Out of stock',
+                        isInStock ? AppLocalizations.of(context).available(item.stock) : AppLocalizations.of(context).outOfStock,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: isInStock ? Colors.green : Colors.red,
                           fontWeight: FontWeight.w500,
@@ -233,7 +236,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                     Text(
                       canRedeem 
                           ? 'Order Now - ${item.pointCost} points'
-                          : _getOrderButtonText(canAfford, isInStock, item.isActive),
+                          : _getOrderButtonText(context, canAfford, isInStock, item.isActive),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -263,7 +266,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _getOrderButtonText(canAfford, isInStock, item.isActive),
+                        _getOrderButtonText(context, canAfford, isInStock, item.isActive),
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontWeight: FontWeight.w500,
@@ -327,10 +330,11 @@ class RewardItemDetailPage extends ConsumerWidget {
     );
   }
 
-  String _getOrderButtonText(bool canAfford, bool isInStock, bool isActive) {
-    if (!isActive) return 'Item is not available';
-    if (!isInStock) return 'Out of stock';
-    if (!canAfford) return 'Not enough points';
-    return 'Order Now';
+  String _getOrderButtonText(BuildContext context, bool canAfford, bool isInStock, bool isActive) {
+    final l10n = AppLocalizations.of(context);
+    if (!isActive) return l10n.itemNotAvailable;
+    if (!isInStock) return l10n.outOfStock;
+    if (!canAfford) return l10n.notEnoughPoints;
+    return l10n.orderNow;
   }
 }

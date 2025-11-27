@@ -12,7 +12,10 @@ import 'package:botleji/core/providers/connectivity_provider.dart';
 import 'package:botleji/features/drops/controllers/drops_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:botleji/core/widgets/account_lock_card.dart';
+import 'package:botleji/core/utils/map_styles.dart';
 import 'report_drop_dialog.dart';
+import 'package:botleji/l10n/app_localizations.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 class DropDetailsModal extends ConsumerStatefulWidget {
   final Drop drop;
@@ -65,6 +68,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
   }
 
   String _calculateDistance() {
+    final l10n = AppLocalizations.of(context);
     if (widget.currentLocation == null) return 'N/A';
     
     final distanceInMeters = Geolocator.distanceBetween(
@@ -75,13 +79,14 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     );
     
     if (distanceInMeters < 1000) {
-      return '${distanceInMeters.toStringAsFixed(0)}m';
+      return '${distanceInMeters.toStringAsFixed(0)}${l10n.meters}';
     } else {
-      return '${(distanceInMeters / 1000).toStringAsFixed(1)}km';
+      return '${(distanceInMeters / 1000).toStringAsFixed(1)}${l10n.kilometers}';
     }
   }
 
   String _calculateDuration() {
+    final l10n = AppLocalizations.of(context);
     if (widget.currentLocation == null) return 'N/A';
     
     final distanceInMeters = Geolocator.distanceBetween(
@@ -94,11 +99,11 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     // Estimate duration (walking speed of 5 km/h)
     final durationMinutes = (distanceInMeters / 1000 / 5 * 60).round();
     if (durationMinutes < 60) {
-      return '${durationMinutes}min';
+      return '${durationMinutes}${l10n.minutesShort}';
     } else {
       final hours = (durationMinutes / 60).floor();
       final mins = durationMinutes % 60;
-      return '${hours}h ${mins}min';
+      return '${hours}${l10n.hoursShort} ${mins}${l10n.minutesShort}';
     }
   }
 
@@ -133,19 +138,37 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
     final threeDaysAgo = today.subtract(const Duration(days: 3));
     
     final dateOnly = DateTime(date.year, date.month, date.day);
-    final timeStr = DateFormat('h:mm a').format(date);
+    final locale = Localizations.localeOf(context);
     
-    if (dateOnly == today) {
-      return 'Today at $timeStr';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday at $timeStr';
-    } else if (dateOnly == twoDaysAgo) {
-      return '2 days ago';
-    } else if (dateOnly == threeDaysAgo) {
-      return '3 days ago';
+    // Format time based on locale
+    String timeStr;
+    if (locale.languageCode == 'ar') {
+      // Arabic time format (24-hour)
+      timeStr = DateFormat('HH:mm').format(date);
     } else {
-      // More than 3 days ago - show exact date
-      return DateFormat('MMM dd, yyyy').format(date);
+      // English time format (12-hour with AM/PM)
+      timeStr = DateFormat('h:mm a').format(date);
+    }
+    
+    final l10n = AppLocalizations.of(context);
+    if (dateOnly == today) {
+      return l10n.todayAt(timeStr);
+    } else if (dateOnly == yesterday) {
+      return l10n.yesterdayAt(timeStr);
+    } else if (dateOnly == twoDaysAgo) {
+      return l10n.daysAgo(2);
+    } else if (dateOnly == threeDaysAgo) {
+      return l10n.daysAgo(3);
+    } else {
+      // More than 3 days ago - show exact date with locale-aware formatting
+      if (locale.languageCode == 'ar') {
+        // Arabic date format: "15 يناير 2024"
+        const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        return '${date.day} ${months[date.month - 1]} ${date.year}';
+      } else {
+        // English date format: "Jan 15, 2024"
+        return DateFormat('MMM dd, yyyy').format(date);
+      }
     }
   }
 
@@ -378,7 +401,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'No image available',
+                  AppLocalizations.of(context).noImageAvailable,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
@@ -473,7 +496,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Distance',
+                          AppLocalizations.of(context).distance,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 12,
@@ -523,7 +546,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Est. Time',
+                          AppLocalizations.of(context).estTime,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 12,
@@ -578,8 +601,12 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   ),
                   zoom: 13,
                 ),
-                onMapCreated: (controller) {
+                onMapCreated: (controller) async {
                   _mapController = controller;
+                  // Apply map style based on theme
+                  final brightness = Theme.of(context).brightness;
+                  final style = brightness == Brightness.dark ? MapStyles.dark : MapStyles.light;
+                  await controller.setMapStyle(style);
                   // Fit bounds to show both markers
                   Future.delayed(const Duration(milliseconds: 500), () {
                     _mapController?.animateCamera(
@@ -613,14 +640,14 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                     markerId: const MarkerId('current_location'),
                     position: widget.currentLocation!,
                     icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-                    infoWindow: const InfoWindow(title: 'Your Location'),
+                    infoWindow: InfoWindow(title: AppLocalizations.of(context).yourLocation),
                   ),
                   // Drop location marker
                   Marker(
                     markerId: MarkerId('drop_${widget.drop.id}'),
                     position: widget.drop.location,
                     icon: widget.customDropMarker ?? BitmapDescriptor.defaultMarker,
-                    infoWindow: InfoWindow(title: 'Drop Location'),
+                    infoWindow: InfoWindow(title: AppLocalizations.of(context).dropLocation),
                   ),
                 },
                 polylines: _polylines,
@@ -654,12 +681,12 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.info_outline, size: 14, color: Colors.white),
-                      SizedBox(width: 6),
+                    children: [
+                      const Icon(Icons.info_outline, size: 14, color: Colors.white),
+                      const SizedBox(width: 6),
                       Text(
-                        'Route Preview',
-                        style: TextStyle(
+                        AppLocalizations.of(context).routePreview,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -724,12 +751,12 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.home, size: 12, color: Color(0xFF00695C)),
-                          SizedBox(width: 4),
+                        children: [
+                          const Icon(Icons.home, size: 12, color: Color(0xFF00695C)),
+                          const SizedBox(width: 4),
                           Text(
-                            'Household',
-                            style: TextStyle(
+                            AppLocalizations.of(context).household,
+                            style: const TextStyle(
                               color: Color(0xFF00695C),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -798,9 +825,9 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Drop Information',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).dropInformation,
+                style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
@@ -811,13 +838,13 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           
           // Info grid
           _buildInfoRowWithCustomIcon(
-            label: 'Bottle Type',
-            value: widget.drop.bottleType.name.toUpperCase(),
+            label: AppLocalizations.of(context).bottleType,
+            value: widget.drop.bottleType.localizedDisplayName(context),
             customIcon: _getBottleTypeIcon(widget.drop.bottleType),
           ),
           const SizedBox(height: 12),
           _buildInfoRowWithCustomIcon(
-            label: 'Plastic Bottles',
+            label: AppLocalizations.of(context).numberOfPlasticBottles,
             value: '${widget.drop.numberOfBottles}',
             customIcon: Image.asset(
               'assets/icons/water-bottle.png',
@@ -828,7 +855,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           ),
           const SizedBox(height: 12),
           _buildInfoRowWithCustomIcon(
-            label: 'Cans',
+            label: AppLocalizations.of(context).numberOfCans,
             value: '${widget.drop.numberOfCans}',
             customIcon: Image.asset(
               'assets/icons/can.png',
@@ -839,21 +866,21 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
-            icon: Icons.inventory_2_outlined,
-            label: 'Total Items',
-            value: '${widget.drop.numberOfBottles + widget.drop.numberOfCans}',
+            icon: Icons.attach_money_outlined,
+            label: AppLocalizations.of(context).estimatedValue,
+            value: DropValueCalculator.formatEstimatedValue(widget.drop.estimatedValue),
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             icon: Icons.door_front_door_outlined,
-            label: 'Leave Outside',
-            value: widget.drop.leaveOutside ? 'Yes' : 'No',
+            label: AppLocalizations.of(context).leaveOutside,
+            value: widget.drop.leaveOutside ? AppLocalizations.of(context).yes : AppLocalizations.of(context).no,
             valueColor: widget.drop.leaveOutside ? const Color(0xFF00695C) : Colors.grey[700],
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             icon: Icons.calendar_today_outlined,
-            label: 'Created',
+            label: AppLocalizations.of(context).created,
             value: _formatRelativeDate(widget.drop.createdAt),
           ),
           
@@ -882,9 +909,9 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Notes',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context).notes,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                             color: Colors.amber,
@@ -1063,7 +1090,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 );
               },
               icon: const Icon(Icons.edit),
-              label: const Text('Edit Drop'),
+              label: Text(AppLocalizations.of(context).editDrop),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00695C),
                 foregroundColor: Colors.white,
@@ -1097,7 +1124,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   );
                 },
                 icon: const Icon(Icons.navigation),
-                label: const Text('Resume Navigation'),
+                label: Text(AppLocalizations.of(context).resumeNavigation),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00695C),
                   foregroundColor: Colors.white,
@@ -1123,13 +1150,13 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                     border: Border.all(color: Colors.amber.withOpacity(0.3)),
                   ),
                   child: Row(
-                    children: const [
-                      Icon(Icons.info_outline, color: Colors.amber, size: 20),
-                      SizedBox(width: 12),
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Complete your current collection before starting a new one.',
-                          style: TextStyle(fontSize: 13),
+                          AppLocalizations.of(context).completeCurrentCollectionFirst,
+                          style: const TextStyle(fontSize: 13),
                         ),
                       ),
                     ],
@@ -1142,7 +1169,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   child: ElevatedButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.directions),
-                    label: const Text('Start Collection'),
+                    label: Text(AppLocalizations.of(context).startCollection),
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -1168,8 +1195,8 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 if (!isOnline) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('You are offline. Please check your internet connection.'),
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context).youAreOffline),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -1235,7 +1262,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text(AppLocalizations.of(context).errorColon(e.toString())),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -1243,7 +1270,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
                 }
               },
               icon: const Icon(Icons.directions),
-              label: const Text('Start Collection'),
+              label: Text(AppLocalizations.of(context).startCollection),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00695C),
                 foregroundColor: Colors.white,
@@ -1263,7 +1290,7 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
               );
             },
             icon: const Icon(Icons.flag, size: 20),
-            label: const Text('Report Drop'),
+            label: Text(AppLocalizations.of(context).reportDrop),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),
@@ -1285,11 +1312,13 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
   }
 
   String _getStatusDisplayText(Drop drop) {
+    final l10n = AppLocalizations.of(context);
     // If drop is suspicious (flagged), show "FLAGGED" regardless of actual status
     if (drop.isSuspicious) {
-      return 'FLAGGED';
+      return l10n.flagged;
     }
-    return drop.status.name.toUpperCase();
+    // Use the enum's localized display name method
+    return drop.status.localizedDisplayName(context);
   }
 
 

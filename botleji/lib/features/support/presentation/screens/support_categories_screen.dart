@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/support/presentation/screens/support_item_selection_screen.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -16,9 +17,9 @@ class SupportCategoriesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Support Categories',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context).supportCategories,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: const Color(0xFF00695C),
         foregroundColor: Colors.white,
@@ -28,7 +29,7 @@ class SupportCategoriesScreen extends ConsumerWidget {
       body: userAsync.when(
         data: (user) {
           if (user == null) {
-            return const Center(child: Text('User not found'));
+            return Center(child: Text(AppLocalizations.of(context).userNotFound));
           }
 
           return SingleChildScrollView(
@@ -75,7 +76,7 @@ class SupportCategoriesScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'What do you need help with?',
+                              AppLocalizations.of(context).whatDoYouNeedHelpWith,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -84,7 +85,7 @@ class SupportCategoriesScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Select a category to continue',
+                              AppLocalizations.of(context).selectCategoryToContinue,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -100,7 +101,7 @@ class SupportCategoriesScreen extends ConsumerWidget {
 
                 // Categories
                 Text(
-                  'Support Categories',
+                  AppLocalizations.of(context).supportCategories,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -115,18 +116,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                   _buildCategoryCard(
                     context: context,
                     icon: Icons.local_drink,
-                    title: 'Drop Issues',
-                    description: 'Get help with drop-related problems',
-                    subtitle:
-                        'Expired drops, canceled collections, active collections',
+                    title: AppLocalizations.of(context).dropIssues,
+                    description: AppLocalizations.of(context).getHelpWithDropProblems,
+                    subtitle: AppLocalizations.of(context).dropIssuesSubtitle,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              const SupportItemSelectionScreen(
+                              SupportItemSelectionScreen(
                             category: 'drops',
-                            categoryTitle: 'Drop Issues',
+                            categoryTitle: AppLocalizations.of(context).dropIssues,
                           ),
                         ),
                       );
@@ -138,17 +138,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                   _buildCategoryCard(
                     context: context,
                     icon: Icons.assignment_ind,
-                    title: 'Application Issues',
-                    description: 'Get help with collector applications',
-                    subtitle: 'Rejected applications, pending reviews',
+                    title: AppLocalizations.of(context).applicationIssues,
+                    description: AppLocalizations.of(context).getHelpWithApplications,
+                    subtitle: AppLocalizations.of(context).applicationIssuesSubtitle,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              const SupportItemSelectionScreen(
+                              SupportItemSelectionScreen(
                             category: 'applications',
-                            categoryTitle: 'Application Issues',
+                            categoryTitle: AppLocalizations.of(context).applicationIssues,
                           ),
                         ),
                       );
@@ -159,18 +159,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                 _buildCategoryCard(
                   context: context,
                   icon: Icons.account_circle,
-                  title: 'Account Issues',
-                  description: 'Get help with your account',
-                  subtitle:
-                      'Profile updates, login problems, account settings',
+                  title: AppLocalizations.of(context).accountIssues,
+                  description: AppLocalizations.of(context).getHelpWithAccount,
+                  subtitle: AppLocalizations.of(context).accountIssuesSubtitle,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            const SupportItemSelectionScreen(
+                            SupportItemSelectionScreen(
                           category: 'account',
-                          categoryTitle: 'Account Issues',
+                          categoryTitle: AppLocalizations.of(context).accountIssues,
                         ),
                       ),
                     );
@@ -181,17 +180,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                 _buildCategoryCard(
                   context: context,
                   icon: Icons.bug_report,
-                  title: 'Technical Issues',
-                  description: 'Get help with app problems',
-                  subtitle: 'App crashes, bugs, performance issues',
+                  title: AppLocalizations.of(context).technicalIssues,
+                  description: AppLocalizations.of(context).getHelpWithAppProblems,
+                  subtitle: AppLocalizations.of(context).technicalIssuesSubtitle,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            const SupportItemSelectionScreen(
+                            SupportItemSelectionScreen(
                           category: 'technical',
-                          categoryTitle: 'Technical Issues',
+                          categoryTitle: AppLocalizations.of(context).technicalIssues,
                         ),
                       ),
                     );
@@ -203,18 +202,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                   _buildCategoryCard(
                     context: context,
                     icon: Icons.payment,
-                    title: 'Payment Issues',
-                    description: 'Get help with payments',
-                    subtitle:
-                        'Payment delays, missing payments, payment methods',
+                    title: AppLocalizations.of(context).paymentIssues,
+                    description: AppLocalizations.of(context).getHelpWithPayments,
+                    subtitle: AppLocalizations.of(context).paymentIssuesSubtitle,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              const SupportItemSelectionScreen(
+                              SupportItemSelectionScreen(
                             category: 'payments',
-                            categoryTitle: 'Payment Issues',
+                            categoryTitle: AppLocalizations.of(context).paymentIssues,
                           ),
                         ),
                       );
@@ -225,17 +223,17 @@ class SupportCategoriesScreen extends ConsumerWidget {
                 _buildCategoryCard(
                   context: context,
                   icon: Icons.help_outline,
-                  title: 'General Support',
-                  description: 'Get help with anything else',
-                  subtitle: 'Questions, suggestions, other issues',
+                  title: AppLocalizations.of(context).generalSupport,
+                  description: AppLocalizations.of(context).getHelpWithAnythingElse,
+                  subtitle: AppLocalizations.of(context).generalSupportSubtitle,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            const SupportItemSelectionScreen(
+                            SupportItemSelectionScreen(
                           category: 'general',
-                          categoryTitle: 'General Support',
+                          categoryTitle: AppLocalizations.of(context).generalSupport,
                         ),
                       ),
                     );
@@ -249,7 +247,7 @@ class SupportCategoriesScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error: $error'),
+          child: Text(AppLocalizations.of(context).errorColon(error.toString())),
         ),
       ),
     );

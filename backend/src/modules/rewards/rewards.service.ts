@@ -289,6 +289,23 @@ export class RewardsService {
         ).exec();
       }
 
+      // Add to reward history (collector rewards don't have a type field, but have collectedAt)
+      await this.userModel.findByIdAndUpdate(
+        collectorId,
+        {
+          $push: {
+            rewardHistory: {
+              dropId: dropId,
+              pointsAwarded: pointsToAward,
+              tier: newTier.tier,
+              tierUpgraded: tierUpgraded,
+              collectedAt: new Date(),
+              // No type field for collector rewards
+            }
+          }
+        }
+      ).exec();
+
       console.log(`✅ Points awarded successfully:`, {
         collectorId,
         pointsAwarded: pointsToAward,
@@ -367,6 +384,23 @@ export class RewardsService {
           { new: true }
         ).exec();
       }
+
+      // Add to reward history (household rewards have type: 'household_drop_collected')
+      await this.userModel.findByIdAndUpdate(
+        householdId,
+        {
+          $push: {
+            rewardHistory: {
+              dropId: dropId,
+              pointsAwarded: pointsToAward,
+              tier: newTier.tier,
+              tierUpgraded: tierUpgraded,
+              type: 'household_drop_collected',
+              collectedAt: new Date(),
+            }
+          }
+        }
+      ).exec();
 
       console.log(`✅ Points awarded successfully to household:`, {
         householdId,
@@ -569,10 +603,22 @@ export class RewardsService {
 
       return savedRedemption;
     } catch (error) {
-      await session.abortTransaction();
+      // Abort transaction if it's still active
+      if (session.inTransaction()) {
+        try {
+          await session.abortTransaction();
+        } catch (abortError) {
+          console.error('Error aborting transaction:', abortError);
+        }
+      }
       throw error;
     } finally {
-      session.endSession();
+      // Always end session, even if there's an error
+      try {
+        await session.endSession();
+      } catch (endError) {
+        console.error('Error ending session:', endError);
+      }
     }
   }
 
@@ -768,10 +814,22 @@ export class RewardsService {
       await session.commitTransaction();
       return updatedRedemption;
     } catch (error) {
-      await session.abortTransaction();
+      // Abort transaction if it's still active
+      if (session.inTransaction()) {
+        try {
+          await session.abortTransaction();
+        } catch (abortError) {
+          console.error('Error aborting transaction:', abortError);
+        }
+      }
       throw error;
     } finally {
-      session.endSession();
+      // Always end session, even if there's an error
+      try {
+        await session.endSession();
+      } catch (endError) {
+        console.error('Error ending session:', endError);
+      }
     }
   }
 
@@ -830,8 +888,8 @@ export class RewardsService {
         .exec();
 
       // Send real-time notification via WebSocket (just like account unlock)
-      const userId = (redemption.userId as any)._id ? (redemption.userId as any)._id.toString() : redemption.userId.toString();
-      this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String((redemption.userId as any)._id || redemption.userId);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'order_rejected',
         title: 'Order Rejected',
         message: `Your order was rejected: ${reason}. ${redemption.pointsSpent} points have been refunded to your account.`,
@@ -846,10 +904,22 @@ export class RewardsService {
       await session.commitTransaction();
       return updatedRedemption!;
     } catch (error) {
-      await session.abortTransaction();
+      // Abort transaction if it's still active
+      if (session.inTransaction()) {
+        try {
+          await session.abortTransaction();
+        } catch (abortError) {
+          console.error('Error aborting transaction:', abortError);
+        }
+      }
       throw error;
     } finally {
-      session.endSession();
+      // Always end session, even if there's an error
+      try {
+        await session.endSession();
+      } catch (endError) {
+        console.error('Error ending session:', endError);
+      }
     }
   }
 
@@ -898,8 +968,8 @@ export class RewardsService {
         .exec();
 
       // Send real-time notification via WebSocket (just like account unlock)
-      const userId = (redemption.userId as any)._id ? (redemption.userId as any)._id.toString() : redemption.userId.toString();
-      this.notificationsGateway.sendNotificationToUser(userId, {
+      const normalizedUserId = String((redemption.userId as any)._id || redemption.userId);
+      this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'order_approved',
         title: 'Order Approved! 🎉',
         message: `Your order has been approved and is being prepared for shipment. Tracking: ${shippingLabel.trackingNumber}`,

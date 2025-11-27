@@ -77,24 +77,15 @@ class StatsApiClient {
         queryParameters: queryParams,
       );
 
-      // Debug logging
-      print('Collection Attempts API Response Status: ${response.statusCode}');
-      print('Collection Attempts API Response Data Type: ${response.data.runtimeType}');
-      
       // Handle response data safely
       Map<String, dynamic> data;
       if (response.data is String) {
         data = json.decode(response.data as String);
-        print('JSON decoded from String');
       } else if (response.data is Map<String, dynamic>) {
         data = response.data as Map<String, dynamic>;
-        print('Response data already decoded');
       } else {
-        print('❌ Unexpected response data type: ${response.data.runtimeType}');
         throw Exception('Unexpected response data type: ${response.data.runtimeType}');
       }
-
-      print('Collection Attempts API Response Data Keys: ${data.keys.toList()}');
       
       // Convert CollectionAttempt data to CollectorHistory format for compatibility
       return _convertAttemptsToHistory(data);
@@ -115,10 +106,6 @@ class StatsApiClient {
     for (final attempt in attempts) {
       final timeline = attempt['timeline'] as List<dynamic>;
       final dropSnapshot = attempt['dropSnapshot'] as Map<String, dynamic>;
-      
-      print('🔍 Converting attempt to history:');
-      print('   dropSnapshot keys: ${dropSnapshot.keys}');
-      print('   imageUrl in snapshot: ${dropSnapshot['imageUrl']}');
       
       // Convert dropSnapshot to DropoffInfo format
       final dropoffInfo = {
@@ -156,6 +143,7 @@ class StatsApiClient {
           'interactionTime': event['timestamp'],
           'notes': event['details']?['notes'] ?? '',
           'cancellationReason': event['details']?['reason'],
+          'earnings': attempt['earnings'] ?? 0, // Include earnings from collection attempt
           'dropoff': dropoffInfo,
         });
       }
