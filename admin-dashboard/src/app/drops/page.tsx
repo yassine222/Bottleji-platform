@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { Package } from 'lucide-react';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 
 interface DropsStats {
