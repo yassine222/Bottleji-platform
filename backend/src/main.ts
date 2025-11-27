@@ -65,38 +65,37 @@ async function bootstrap() {
           'http://127.0.0.1:3001',
         ];
         
-        // Dynamic CORS handler to allow Render subdomains
-        app.enableCors({
-          origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-            // Allow requests with no origin
-            if (!origin) {
-              return callback(null, true);
-            }
-            
-            // Check if origin is in allowed list
-            if (allowedOrigins.includes(origin)) {
-              return callback(null, true);
-            }
-            
-            // Allow Render subdomains (*.onrender.com)
-            if (origin.includes('.onrender.com')) {
-              return callback(null, true);
-            }
-            
-            callback(new Error('Not allowed by CORS'));
-          },
-          methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-          credentials: true,
-          allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
-        });
       }
     } else {
       // In development, allow all origins for easier local testing
       allowedOrigins = true;
     }
     
+    // Configure CORS with dynamic origin handler
     app.enableCors({
-      origin: allowedOrigins,
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) {
+          return callback(null, true);
+        }
+        
+        // If allowedOrigins is boolean (true = allow all in dev)
+        if (allowedOrigins === true) {
+          return callback(null, true);
+        }
+        
+        // Check if origin is in allowed list
+        if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Allow Render subdomains (*.onrender.com) when ALLOWED_ORIGINS is not set
+        if (Array.isArray(allowedOrigins) && !process.env.ALLOWED_ORIGINS && origin.includes('.onrender.com')) {
+          return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
+      },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
