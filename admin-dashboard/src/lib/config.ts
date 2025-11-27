@@ -13,6 +13,11 @@ export const API_BASE_URL =
 
 // WebSocket URL (remove /api suffix if present, add /chat)
 export const getWebSocketUrl = (): string => {
+  // Use explicit WS URL env var, or derive from API URL
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://bottleji-api.onrender.com';
   // Remove /api if present
   const baseUrl = apiUrl.replace(/\/api$/, '');

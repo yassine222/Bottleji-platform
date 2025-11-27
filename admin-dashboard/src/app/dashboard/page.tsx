@@ -5831,14 +5831,14 @@ function SupportContent() {
 
     const connectWebSocket = () => {
       console.log(`🔌 Admin Dashboard: Attempting WebSocket connection (attempt ${retryCount + 1}/${maxRetries})`);
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://bottleji-api.onrender.com/chat';
       console.log('🔌 Connecting to:', wsUrl);
       console.log('🔌 Token length:', token.length);
 
       // Import Socket.IO client dynamically
       import('socket.io-client').then(({ io }) => {
         console.log('🔌 Socket.IO client loaded, creating connection...');
-        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://bottleji-api.onrender.com/chat';
         const newSocket = io(wsUrl, {
           auth: { token },
           transports: ['websocket'],
@@ -6115,7 +6115,7 @@ function SupportContent() {
       if (!activeSocket || !activeSocket.connected) {
         console.log('🔌 Admin Dashboard: Socket not connected, creating new connection...');
         const { io } = await import('socket.io-client');
-        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://bottleji-api.onrender.com/chat';
         activeSocket = io(wsUrl, {
           auth: { token },
           transports: ['websocket'],

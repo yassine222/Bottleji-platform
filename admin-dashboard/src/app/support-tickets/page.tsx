@@ -105,7 +105,7 @@ function TicketDetailModal({ ticket, onClose, onMessageSent, onStatusChange }: T
       }
 
       const { io } = await import('socket.io-client');
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'https://bottleji-api.onrender.com/chat';
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://bottleji-api.onrender.com/chat';
       const socket = io(wsUrl, {
         auth: { token },
         transports: ['websocket'],
