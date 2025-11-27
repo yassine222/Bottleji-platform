@@ -16,6 +16,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/apiEndpoints';
 
 interface DropsStats {
