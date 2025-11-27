@@ -67,6 +67,7 @@ export default function ChangePasswordPage() {
               src="/logo_v2.png"
               alt="Bottleji Logo"
               width={200}
+              unoptimized
               height={200}
               className="w-full h-full object-contain"
               priority
