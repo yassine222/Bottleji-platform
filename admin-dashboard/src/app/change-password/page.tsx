@@ -39,10 +39,13 @@ export default function ChangePasswordPage() {
     } catch (error: unknown) {
       console.error('❌ Password change error:', error);
       
-      if (error.response?.status === 401) {
-        setError('Current password is incorrect');
-      } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
+      // Type guard for axios errors
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+        if (axiosError.response?.status === 401) {
+          setError('Current password is incorrect');
+        } else if (axiosError.response?.data?.message) {
+          setError(axiosError.response.data.message);
       } else {
         setError('An error occurred while changing password. Please try again.');
       }
