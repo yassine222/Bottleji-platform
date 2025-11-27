@@ -183,6 +183,8 @@ Thumbs.db
 backend/dist/
 backend/node_modules/
 backend/.env
+backend/.env.*
+!backend/.env.example
 backend/.env.local
 backend/.env.development.local
 backend/.env.test.local
@@ -192,6 +194,10 @@ backend/*.log
 backend/npm-debug.log*
 backend/yarn-debug.log*
 backend/yarn-error.log*
+
+# Backend scripts .env files
+backend/scripts/**/.env
+backend/scripts/**/.env.*
 
 # Admin dashboard specific
 admin-dashboard/dist/

@@ -48,7 +48,7 @@ void main() async {
   // Force use of Cloudflare Tunnel for all network calls (avoids local network probing on iOS)
   // Quick tunnel URL from `cloudflared tunnel --url http://localhost:3000`
   await ServerConfig.setTunnelUrlOverride(
-    'https://creator-ruled-signal-makeup.trycloudflare.com',
+    'https://bottleji-api.onrender.com',
   );
 
   // Defer network detection and notification service initialization

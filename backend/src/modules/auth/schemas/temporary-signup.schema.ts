@@ -29,6 +29,6 @@ export class TemporarySignup {
 
 export const TemporarySignupSchema = SchemaFactory.createForClass(TemporarySignup);
 
-// Index for email lookup
-TemporarySignupSchema.index({ email: 1 }, { unique: true });
+// Note: Email index is automatically created by @Prop({ unique: true }) decorator above
+// No need to manually create it again to avoid duplicate index warning
 
