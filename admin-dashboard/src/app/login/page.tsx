@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
