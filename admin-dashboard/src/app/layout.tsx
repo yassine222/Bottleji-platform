@@ -7,6 +7,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Bottleji Admin',
   description: 'Admin dashboard for Bottleji application',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Bottleji Admin',
+  },
   icons: {
     icon: [
       { url: '/favicon/favicon.ico', sizes: 'any' },
@@ -17,6 +22,9 @@ export const metadata: Metadata = {
     apple: '/favicon/apple-touch-icon.png',
   },
   manifest: '/favicon/site.webmanifest',
+  other: {
+    'apple-mobile-web-app-title': 'Bottleji Admin',
+  },
 };
 
 export default function RootLayout({
