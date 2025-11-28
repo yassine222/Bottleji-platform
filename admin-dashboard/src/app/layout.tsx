@@ -13,13 +13,16 @@ export const metadata: Metadata = {
     title: 'Bottleji Admin',
   },
   icons: {
+    // Next.js 13+ automatically serves app/favicon.ico at /favicon.ico
+    // Also provide explicit paths for better compatibility
     icon: [
+      { url: '/favicon.ico', sizes: 'any' }, // Auto-served from app/favicon.ico
       { url: '/favicon/favicon.ico', sizes: 'any' },
       { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
     ],
-    shortcut: '/favicon/favicon.ico',
-    apple: '/favicon/apple-touch-icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png', // Auto-served from app/apple-icon.png
   },
   manifest: '/favicon/site.webmanifest',
   other: {

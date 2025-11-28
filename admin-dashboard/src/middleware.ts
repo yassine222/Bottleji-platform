@@ -22,7 +22,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files (logo, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|logo|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|favicon|logo|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.ico|.*\\.webmanifest).*)',
   ],
 };
 
