@@ -1558,5 +1558,17 @@
   "stateHint": "NY",
   "zipCodeHint": "10001",
   "countryHint": "USA",
-  "phoneNumberHint": "+1 (555) 123-4567"
+  "phoneNumberHint": "+1 (555) 123-4567",
+  "orderSuccessTitle": "Order Placed Successfully!",
+  "orderSuccessMessage": "Your order for {itemName} has been placed and is pending approval.",
+  "@orderSuccessMessage": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPendingApproval": "Your order is pending approval. You will be notified once it's reviewed.",
+  "viewOrderHistory": "View Order History",
+  "continueShopping": "Continue Shopping"
 }

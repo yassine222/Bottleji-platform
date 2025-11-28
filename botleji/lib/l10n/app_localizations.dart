@@ -5775,7 +5775,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderPendingApproval.
   ///
   /// In en, this message translates to:
-  /// **'Your order is pending approval.'**
+  /// **'Your order is pending approval. You will be notified once it\'s reviewed.'**
   String get orderPendingApproval;
 
   /// No description provided for @orderApprovedBeingPrepared.
@@ -5831,6 +5831,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'+1 (555) 123-4567'**
   String get phoneNumberHint;
+
+  /// No description provided for @orderSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Placed Successfully!'**
+  String get orderSuccessTitle;
+
+  /// No description provided for @orderSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order for {itemName} has been placed and is pending approval.'**
+  String orderSuccessMessage(String itemName);
+
+  /// No description provided for @viewOrderHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View Order History'**
+  String get viewOrderHistory;
+
+  /// No description provided for @continueShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Shopping'**
+  String get continueShopping;
 }
 
 class _AppLocalizationsDelegate

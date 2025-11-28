@@ -1109,5 +1109,17 @@
   "stateHint": "Île-de-France",
   "zipCodeHint": "75001",
   "countryHint": "France",
-  "phoneNumberHint": "+33 1 23 45 67 89"
+  "phoneNumberHint": "+33 1 23 45 67 89",
+  "orderSuccessTitle": "Commande passée avec succès !",
+  "orderSuccessMessage": "Votre commande pour {itemName} a été passée et est en attente d'approbation.",
+  "@orderSuccessMessage": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPendingApproval": "Votre commande est en attente d'approbation. Vous serez notifié une fois qu'elle sera examinée.",
+  "viewOrderHistory": "Voir l'historique des commandes",
+  "continueShopping": "Continuer les achats"
 }

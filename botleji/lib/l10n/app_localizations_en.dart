@@ -3125,7 +3125,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusLabel => 'Status:';
 
   @override
-  String get orderPendingApproval => 'Your order is pending approval.';
+  String get orderPendingApproval =>
+      'Your order is pending approval. You will be notified once it\'s reviewed.';
 
   @override
   String orderApprovedBeingPrepared(String trackingNumber) {
@@ -3156,4 +3157,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNumberHint => '+1 (555) 123-4567';
+
+  @override
+  String get orderSuccessTitle => 'Order Placed Successfully!';
+
+  @override
+  String orderSuccessMessage(String itemName) {
+    return 'Your order for $itemName has been placed and is pending approval.';
+  }
+
+  @override
+  String get viewOrderHistory => 'View Order History';
+
+  @override
+  String get continueShopping => 'Continue Shopping';
 }

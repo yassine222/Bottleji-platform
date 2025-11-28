@@ -3169,7 +3169,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get orderPendingApproval =>
-      'Votre commande est en attente d\'approbation.';
+      'Votre commande est en attente d\'approbation. Vous serez notifié une fois qu\'elle sera examinée.';
 
   @override
   String orderApprovedBeingPrepared(String trackingNumber) {
@@ -3200,4 +3200,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get phoneNumberHint => '+33 1 23 45 67 89';
+
+  @override
+  String get orderSuccessTitle => 'Commande passée avec succès !';
+
+  @override
+  String orderSuccessMessage(String itemName) {
+    return 'Votre commande pour $itemName a été passée et est en attente d\'approbation.';
+  }
+
+  @override
+  String get viewOrderHistory => 'Voir l\'historique des commandes';
+
+  @override
+  String get continueShopping => 'Continuer les achats';
 }

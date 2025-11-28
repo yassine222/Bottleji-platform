@@ -3168,7 +3168,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statusLabel => 'Status:';
 
   @override
-  String get orderPendingApproval => 'Ihre Bestellung wartet auf Genehmigung.';
+  String get orderPendingApproval =>
+      'Ihre Bestellung wartet auf Genehmigung. Sie werden benachrichtigt, sobald sie überprüft wurde.';
 
   @override
   String orderApprovedBeingPrepared(String trackingNumber) {
@@ -3199,4 +3200,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get phoneNumberHint => '+49 30 12345678';
+
+  @override
+  String get orderSuccessTitle => 'Bestellung erfolgreich aufgegeben!';
+
+  @override
+  String orderSuccessMessage(String itemName) {
+    return 'Ihre Bestellung für $itemName wurde aufgegeben und wartet auf Genehmigung.';
+  }
+
+  @override
+  String get viewOrderHistory => 'Bestellverlauf anzeigen';
+
+  @override
+  String get continueShopping => 'Weiter einkaufen';
 }

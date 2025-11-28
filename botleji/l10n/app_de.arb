@@ -1109,5 +1109,17 @@
   "stateHint": "Berlin",
   "zipCodeHint": "10115",
   "countryHint": "Deutschland",
-  "phoneNumberHint": "+49 30 12345678"
+  "phoneNumberHint": "+49 30 12345678",
+  "orderSuccessTitle": "Bestellung erfolgreich aufgegeben!",
+  "orderSuccessMessage": "Ihre Bestellung für {itemName} wurde aufgegeben und wartet auf Genehmigung.",
+  "@orderSuccessMessage": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPendingApproval": "Ihre Bestellung wartet auf Genehmigung. Sie werden benachrichtigt, sobald sie überprüft wurde.",
+  "viewOrderHistory": "Bestellverlauf anzeigen",
+  "continueShopping": "Weiter einkaufen"
 }

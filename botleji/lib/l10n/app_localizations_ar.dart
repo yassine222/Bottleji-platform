@@ -3098,7 +3098,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusLabel => 'الحالة:';
 
   @override
-  String get orderPendingApproval => 'طلبك في انتظار الموافقة.';
+  String get orderPendingApproval =>
+      'طلبك في انتظار الموافقة. سيتم إشعارك بمجرد مراجعته.';
 
   @override
   String orderApprovedBeingPrepared(String trackingNumber) {
@@ -3128,4 +3129,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneNumberHint => '+961 3 123456';
+
+  @override
+  String get orderSuccessTitle => 'تم تقديم الطلب بنجاح!';
+
+  @override
+  String orderSuccessMessage(String itemName) {
+    return 'تم تقديم طلبك لـ $itemName وهو في انتظار الموافقة.';
+  }
+
+  @override
+  String get viewOrderHistory => 'عرض سجل الطلبات';
+
+  @override
+  String get continueShopping => 'متابعة التسوق';
 }

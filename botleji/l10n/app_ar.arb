@@ -1479,5 +1479,17 @@
   "stateHint": "بيروت",
   "zipCodeHint": "1234",
   "countryHint": "لبنان",
-  "phoneNumberHint": "+961 3 123456"
+  "phoneNumberHint": "+961 3 123456",
+  "orderSuccessTitle": "تم تقديم الطلب بنجاح!",
+  "orderSuccessMessage": "تم تقديم طلبك لـ {itemName} وهو في انتظار الموافقة.",
+  "@orderSuccessMessage": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPendingApproval": "طلبك في انتظار الموافقة. سيتم إشعارك بمجرد مراجعته.",
+  "viewOrderHistory": "عرض سجل الطلبات",
+  "continueShopping": "متابعة التسوق"
 }
