@@ -7,8 +7,12 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Bottleji Admin',
   description: 'Admin dashboard for Bottleji application',
+  // Next.js 13+ automatically serves icon.png from the app directory
+  // Additional icons for better browser compatibility
   icons: {
-    icon: '/logo_v2.png',
+    icon: [
+      { url: '/logo_v2.png', type: 'image/png' },
+    ],
     shortcut: '/logo_v2.png',
     apple: '/logo_v2.png',
   },
