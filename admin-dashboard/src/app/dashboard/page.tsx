@@ -8227,6 +8227,7 @@ function RewardShopContent() {
   const [editingReward, setEditingReward] = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<'rewards' | 'orders'>('rewards');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('pending'); // Default to pending
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string>('');
@@ -9177,25 +9178,58 @@ function RewardShopContent() {
       {/* Orders Tab Content */}
       {activeTab === 'orders' && (
         <div className="space-y-6">
+          {/* Status Filter Chips */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
+            <div className="flex flex-wrap gap-2">
+              {['pending', 'approved', 'processing', 'shipped', 'delivered', 'rejected', 'cancelled'].map((status) => {
+                const count = orders.filter((o: any) => o.status === status).length;
+                const isActive = orderStatusFilter === status;
+                return (
+                  <button
+                    key={status}
+                    onClick={() => setOrderStatusFilter(status)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      isActive
+                        ? status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-500' :
+                          status === 'approved' ? 'bg-blue-100 text-blue-800 border-2 border-blue-500' :
+                          status === 'processing' ? 'bg-purple-100 text-purple-800 border-2 border-purple-500' :
+                          status === 'shipped' ? 'bg-indigo-100 text-indigo-800 border-2 border-indigo-500' :
+                          status === 'delivered' ? 'bg-green-100 text-green-800 border-2 border-green-500' :
+                          status === 'rejected' ? 'bg-red-100 text-red-800 border-2 border-red-500' :
+                          'bg-gray-100 text-gray-800 border-2 border-gray-500'
+                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {ordersLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-600"></div>
             </div>
-          ) : orders.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
+          ) : (() => {
+            // Filter orders by selected status
+            const filteredOrders = orders.filter((order: any) => order.status === orderStatusFilter);
+            
+            return filteredOrders.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No {orderStatusFilter} orders</h3>
+                  <p className="text-gray-600">No orders with {orderStatusFilter} status found.</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
-                <p className="text-gray-600">Orders will appear here when users redeem rewards.</p>
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {orders.map((order) => (
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {filteredOrders.map((order) => (
                 <div key={order.id || order._id} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     {/* Order Info */}
