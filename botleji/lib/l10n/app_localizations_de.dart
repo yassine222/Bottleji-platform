@@ -2061,7 +2061,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get iUnderstand => 'I Understand';
 
   @override
-  String get orderApproved => 'Order Approved';
+  String get orderApproved => 'Bestellung genehmigt';
 
   @override
   String orderApprovedMessage(String orderId) {

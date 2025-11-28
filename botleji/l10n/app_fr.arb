@@ -1089,6 +1089,15 @@
       }
     }
   },
+  "orderApproved": "Commande approuvée",
+  "orderApprovedBeingPrepared": "Votre commande est en cours de préparation pour l'expédition.{trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
   "pointsLabel": "Points :",
   "sizeLabel": "Taille :",
   "orderDateLabel": "Date de commande :",
