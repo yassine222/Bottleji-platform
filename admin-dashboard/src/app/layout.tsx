@@ -7,15 +7,16 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Bottleji Admin',
   description: 'Admin dashboard for Bottleji application',
-  // Next.js 13+ automatically serves icon.png from the app directory
-  // Additional icons for better browser compatibility
   icons: {
     icon: [
-      { url: '/logo_v2.png', type: 'image/png' },
+      { url: '/favicon/favicon.ico', sizes: 'any' },
+      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
     ],
-    shortcut: '/logo_v2.png',
-    apple: '/logo_v2.png',
+    shortcut: '/favicon/favicon.ico',
+    apple: '/favicon/apple-touch-icon.png',
   },
+  manifest: '/favicon/site.webmanifest',
 };
 
 export default function RootLayout({
