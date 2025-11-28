@@ -13,16 +13,16 @@ export const metadata: Metadata = {
     title: 'Bottleji Admin',
   },
   icons: {
-    // Next.js 13+ automatically serves app/favicon.ico at /favicon.ico
-    // Also provide explicit paths for better compatibility
+    // Use larger icons for better visibility in browser tabs
     icon: [
-      { url: '/favicon.ico', sizes: 'any' }, // Auto-served from app/favicon.ico
-      { url: '/favicon/favicon.ico', sizes: 'any' },
-      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon/favicon.svg', type: 'image/svg+xml' }, // SVG for modern browsers (scalable)
+      { url: '/favicon/web-app-manifest-192x192.png', type: 'image/png', sizes: '192x192' }, // Large icon
+      { url: '/favicon/web-app-manifest-512x512.png', type: 'image/png', sizes: '512x512' }, // Extra large
+      { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' }, // Medium
+      { url: '/favicon.ico', sizes: 'any' }, // Fallback ICO (auto-served from app/favicon.ico)
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-icon.png', // Auto-served from app/apple-icon.png
+    shortcut: '/favicon/favicon.ico',
+    apple: '/apple-icon.png', // Auto-served from app/apple-icon.png (180x180)
   },
   manifest: '/favicon/site.webmanifest',
   other: {
