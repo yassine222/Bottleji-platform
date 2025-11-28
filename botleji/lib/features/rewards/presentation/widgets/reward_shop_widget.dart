@@ -6,6 +6,7 @@ import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/rewards/presentation/pages/reward_item_detail_page.dart';
 import 'package:botleji/features/rewards/presentation/widgets/redemption_confirmation_dialog.dart';
+import 'package:botleji/features/rewards/presentation/widgets/order_success_popup.dart';
 import 'package:botleji/features/rewards/data/services/reward_service.dart';
 import 'package:botleji/l10n/app_localizations.dart';
 
@@ -361,11 +362,15 @@ class RewardShopWidget extends ConsumerWidget {
       ref.read(rewardShopProvider.notifier).refresh();
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).orderPlacedSuccessfully(item.name)),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
+        // Show success popup
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) => OrderSuccessPopup(
+            itemName: item.name,
+            onContinue: () {
+              // Popup will close automatically
+            },
           ),
         );
       }
