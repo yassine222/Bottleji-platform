@@ -3013,10 +3013,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cityRequired => 'يرجى إدخال المدينة';
 
   @override
-  String get state => 'الولاية/المحافظة';
+  String get state => 'الولاية';
 
   @override
-  String get stateRequired => 'يرجى إدخال الولاية/المحافظة';
+  String get stateRequired => 'يرجى إدخال الولاية';
 
   @override
   String get zipCode => 'الرمز البريدي';
