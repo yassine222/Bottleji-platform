@@ -98,11 +98,15 @@ class NotificationService extends ChangeNotifier {
   Function(String ticketId, bool isTyping, String senderType)? onTypingIndicator;
   Function(String ticketId, bool isPresent, String senderType)? onPresenceIndicator;
   Function(bool isLocked, DateTime? lockedUntil, int warningCount)? onAccountLockStatusUpdate;
+  Function(String orderId, String itemName, String rejectionReason, int pointsRefunded)? onOrderRejected;
+  Function(String orderId, String itemName, String? trackingNumber)? onOrderApproved;
   Function()? onAccountPermanentlyDisabled;
   Function()? onAccountDeleted; // Callback for permanent account disable (to show dialog)
   Function(String dropId, String reason)? onDropCensored;
   Function(String dropId, String status, Map<String, dynamic> data)? onDropStatusUpdate;
-  Function(NotificationPayload)? onDropCollectedForHousehold; // Callback for drop collected popup (household only)
+  Function(NotificationPayload)? onDropCollectedForHousehold;
+  Function(String orderId, String itemName, String rejectionReason, int pointsRefunded)? onOrderRejected;
+  Function(String orderId, String itemName, String? trackingNumber)? onOrderApproved; // Callback for drop collected popup (household only)
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -471,6 +475,10 @@ class NotificationService extends ChangeNotifier {
           debugPrint('🎉 Tracking Number: $trackingNumber');
           debugPrint('🎉 Estimated Delivery: $estimatedDelivery');
           
+          // Get item name from notification data
+          final itemName = data['data']?['rewardItemName']?.toString() ?? 
+                          'Your order';
+          
           // Show local notification
           _localNotificationService.showNotification(
             title: data['title'] ?? 'Order Approved! 🎉',
@@ -478,6 +486,11 @@ class NotificationService extends ChangeNotifier {
             id: 9300,
             payload: 'order_approved:$orderId',
           );
+          
+          // Call callback to show popup
+          if (onOrderApproved != null) {
+            onOrderApproved!(orderId, itemName, trackingNumber);
+          }
           
           // Skip generic handler to avoid duplicate toast
           return;
@@ -494,6 +507,11 @@ class NotificationService extends ChangeNotifier {
           debugPrint('❌ Rejection Reason: $rejectionReason');
           debugPrint('❌ Points Refunded: $pointsAmount');
           
+          // Get item name and points from notification data
+          final itemName = data['data']?['rewardItemName']?.toString() ?? 
+                          'Your order';
+          final pointsRefunded = int.tryParse(pointsAmount) ?? 0;
+          
           // Show local notification
           _localNotificationService.showNotification(
             title: data['title'] ?? 'Order Rejected',
@@ -501,6 +519,11 @@ class NotificationService extends ChangeNotifier {
             id: 9400,
             payload: 'order_rejected:$orderId',
           );
+          
+          // Call callback to show popup
+          if (onOrderRejected != null) {
+            onOrderRejected!(orderId, itemName, rejectionReason.isEmpty ? 'No reason provided' : rejectionReason, pointsRefunded);
+          }
           
           // Skip generic handler to avoid duplicate toast
           return;

@@ -3798,6 +3798,18 @@ abstract class AppLocalizations {
   /// **'Your order has been rejected. Reason: {reason}'**
   String orderRejectedMessage(String reason);
 
+  /// No description provided for @orderRejectedPointsRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} points have been refunded to your account.'**
+  String orderRejectedPointsRefunded(int points);
+
+  /// No description provided for @orderApprovedBeingPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order has been approved and is being prepared for shipment. Tracking: {trackingNumber}'**
+  String orderApprovedBeingPrepared(String trackingNumber);
+
   /// No description provided for @orderShipped.
   ///
   /// In en, this message translates to:
@@ -5777,12 +5789,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your order is pending approval. You will be notified once it\'s reviewed.'**
   String get orderPendingApproval;
-
-  /// No description provided for @orderApprovedBeingPrepared.
-  ///
-  /// In en, this message translates to:
-  /// **'Your order has been approved and is being prepared for shipment. Tracking: {trackingNumber}'**
-  String orderApprovedBeingPrepared(String trackingNumber);
 
   /// No description provided for @noRewardsAvailable.
   ///

@@ -2018,7 +2018,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get iUnderstand => 'فهمت';
 
   @override
-  String get orderApproved => 'تم الموافقة على الطلب';
+  String get orderApproved => 'تمت الموافقة على الطلب';
 
   @override
   String orderApprovedMessage(String orderId) {
@@ -2031,6 +2031,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String orderRejectedMessage(String reason) {
     return 'تم رفض طلبك. السبب: $reason';
+  }
+
+  @override
+  String orderRejectedPointsRefunded(int points) {
+    return 'تم استرداد $points نقطة إلى حسابك.';
+  }
+
+  @override
+  String orderApprovedBeingPrepared(String trackingNumber) {
+    return 'تمت الموافقة على طلبك وهو قيد التحضير للشحن. رقم التتبع: $trackingNumber';
   }
 
   @override
@@ -3100,11 +3110,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get orderPendingApproval =>
       'طلبك في انتظار الموافقة. سيتم إشعارك بمجرد مراجعته.';
-
-  @override
-  String orderApprovedBeingPrepared(String trackingNumber) {
-    return 'تمت الموافقة على طلبك وهو قيد التحضير للشحن. رقم التتبع: $trackingNumber';
-  }
 
   @override
   String get noRewardsAvailable => 'لا توجد مكافآت متاحة';

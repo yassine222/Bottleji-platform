@@ -6,6 +6,10 @@ import 'package:botleji/features/rewards/presentation/providers/reward_shop_prov
 import 'package:botleji/features/rewards/presentation/widgets/tier_upgrade_popup.dart';
 import 'package:botleji/features/rewards/presentation/widgets/reward_shop_widget.dart';
 import 'package:botleji/features/rewards/presentation/widgets/order_history_widget.dart';
+import 'package:botleji/features/rewards/presentation/widgets/order_rejection_popup.dart';
+import 'package:botleji/features/rewards/presentation/widgets/order_approval_popup.dart';
+import 'package:botleji/core/services/notification_service.dart';
+import 'package:botleji/main.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
 import 'package:botleji/features/rewards/data/services/reward_service.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
@@ -39,7 +43,80 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
       
       // Refresh when screen first becomes visible
       _refreshDataIfNeeded();
+      
+      // Set up order notification callbacks
+      _setupOrderNotificationCallbacks();
     });
+  }
+  
+  void _setupOrderNotificationCallbacks() {
+    final notificationService = ref.read(notificationServiceProvider);
+    
+    // Set up order rejected callback
+    notificationService.onOrderRejected = (orderId, itemName, rejectionReason, pointsRefunded) {
+      debugPrint('❌ RewardsScreen: Order rejected callback triggered');
+      debugPrint('❌ Order ID: $orderId');
+      debugPrint('❌ Item Name: $itemName');
+      debugPrint('❌ Rejection Reason: $rejectionReason');
+      debugPrint('❌ Points Refunded: $pointsRefunded');
+      
+      // Refresh reward stats to update points
+      ref.invalidate(rewardStatsProvider);
+      
+      // Show rejection popup
+      final context = MyApp.navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) => OrderRejectionPopup(
+            itemName: itemName,
+            rejectionReason: rejectionReason,
+            pointsRefunded: pointsRefunded,
+            onDismiss: () {
+              // Refresh order history
+              final authState = ref.read(authNotifierProvider);
+              final user = authState.value;
+              if (user != null) {
+                ref.read(orderHistoryNotifierProvider.notifier).refresh(user.id);
+              }
+            },
+          ),
+        );
+      }
+    };
+    
+    // Set up order approved callback
+    notificationService.onOrderApproved = (orderId, itemName, trackingNumber) {
+      debugPrint('🎉 RewardsScreen: Order approved callback triggered');
+      debugPrint('🎉 Order ID: $orderId');
+      debugPrint('🎉 Item Name: $itemName');
+      debugPrint('🎉 Tracking Number: $trackingNumber');
+      
+      // Refresh reward stats
+      ref.invalidate(rewardStatsProvider);
+      
+      // Show approval popup
+      final context = MyApp.navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) => OrderApprovalPopup(
+            itemName: itemName,
+            trackingNumber: trackingNumber,
+            onDismiss: () {
+              // Refresh order history
+              final authState = ref.read(authNotifierProvider);
+              final user = authState.value;
+              if (user != null) {
+                ref.read(orderHistoryNotifierProvider.notifier).refresh(user.id);
+              }
+            },
+          ),
+        );
+      }
+    };
   }
 
   @override

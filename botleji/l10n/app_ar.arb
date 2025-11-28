@@ -909,6 +909,23 @@
       }
     }
   },
+  "orderRejectedPointsRefunded": "تم استرداد {points} نقطة إلى حسابك.",
+  "@orderRejectedPointsRefunded": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "orderApproved": "تمت الموافقة على الطلب",
+  "orderApprovedBeingPrepared": "يتم تحضير طلبك للشحن.{trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
   "orderShipped": "تم شحن الطلب",
   "orderShippedMessage": "تم شحن طلبك. رقم التتبع: {tracking}",
   "@orderShippedMessage": {

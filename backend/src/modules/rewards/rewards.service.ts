@@ -892,11 +892,12 @@ export class RewardsService {
       this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'order_rejected',
         title: 'Order Rejected',
-        message: `Your order was rejected: ${reason}. ${redemption.pointsSpent} points have been refunded to your account.`,
+        message: `Your order for ${redemption.rewardItemName} was rejected: ${reason}. ${redemption.pointsSpent} points have been refunded to your account.`,
         data: {
           orderId: redemptionId,
           rejectionReason: reason,
           pointsAmount: redemption.pointsSpent,
+          rewardItemName: redemption.rewardItemName,
         },
         timestamp: new Date(),
       });
@@ -972,11 +973,12 @@ export class RewardsService {
       this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
         type: 'order_approved',
         title: 'Order Approved! 🎉',
-        message: `Your order has been approved and is being prepared for shipment. Tracking: ${shippingLabel.trackingNumber}`,
+        message: `Your order for ${redemption.rewardItemName} has been approved and is being prepared for shipment. Tracking: ${shippingLabel.trackingNumber}`,
         data: {
           orderId: redemptionId,
           trackingNumber: shippingLabel.trackingNumber,
           estimatedDelivery: shippingLabel.estimatedDelivery.toISOString(),
+          rewardItemName: redemption.rewardItemName,
         },
         timestamp: new Date(),
       });

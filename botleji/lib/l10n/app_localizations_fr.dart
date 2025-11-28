@@ -2073,6 +2073,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String orderRejectedPointsRefunded(int points) {
+    return '$points points have been refunded to your account.';
+  }
+
+  @override
+  String orderApprovedBeingPrepared(String trackingNumber) {
+    return 'Votre commande a été approuvée et est en cours de préparation pour l\'expédition. Suivi : $trackingNumber';
+  }
+
+  @override
   String get orderShipped => 'Order Shipped';
 
   @override
@@ -3170,11 +3180,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get orderPendingApproval =>
       'Votre commande est en attente d\'approbation. Vous serez notifié une fois qu\'elle sera examinée.';
-
-  @override
-  String orderApprovedBeingPrepared(String trackingNumber) {
-    return 'Votre commande a été approuvée et est en cours de préparation pour l\'expédition. Suivi : $trackingNumber';
-  }
 
   @override
   String get noRewardsAvailable => 'Aucune récompense disponible';

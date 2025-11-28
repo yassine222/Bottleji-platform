@@ -988,6 +988,23 @@
       }
     }
   },
+  "orderRejectedPointsRefunded": "{points} points have been refunded to your account.",
+  "@orderRejectedPointsRefunded": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "orderApproved": "Order Approved",
+  "orderApprovedBeingPrepared": "Your order is being prepared for shipment.{trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
   "orderShipped": "Order Shipped",
   "orderShippedMessage": "Your order has been shipped. Tracking: {tracking}",
   "@orderShippedMessage": {
