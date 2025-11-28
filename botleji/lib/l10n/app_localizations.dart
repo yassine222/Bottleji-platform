@@ -1689,7 +1689,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneNumberRequired.
   ///
   /// In en, this message translates to:
-  /// **'Phone number is required'**
+  /// **'Please enter phone number'**
   String get phoneNumberRequired;
 
   /// No description provided for @phoneNumberMustBe8Digits.
@@ -5573,6 +5573,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review Process'**
   String get reviewProcess;
+
+  /// No description provided for @tapToRedeem.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to redeem'**
+  String get tapToRedeem;
+
+  /// No description provided for @confirmOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Order'**
+  String get confirmOrder;
+
+  /// No description provided for @placeOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Place Order'**
+  String get placeOrder;
+
+  /// No description provided for @availability.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get availability;
+
+  /// No description provided for @streetAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Street Address'**
+  String get streetAddress;
+
+  /// No description provided for @streetAddressRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter street address'**
+  String get streetAddressRequired;
+
+  /// No description provided for @city.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get city;
+
+  /// No description provided for @cityRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter city'**
+  String get cityRequired;
+
+  /// No description provided for @state.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get state;
+
+  /// No description provided for @stateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter state'**
+  String get stateRequired;
+
+  /// No description provided for @zipCode.
+  ///
+  /// In en, this message translates to:
+  /// **'ZIP Code'**
+  String get zipCode;
+
+  /// No description provided for @zipCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter ZIP code'**
+  String get zipCodeRequired;
+
+  /// No description provided for @country.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get country;
+
+  /// No description provided for @countryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter country'**
+  String get countryRequired;
+
+  /// No description provided for @additionalNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Notes (Optional)'**
+  String get additionalNotes;
+
+  /// No description provided for @additionalNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Special delivery instructions...'**
+  String get additionalNotesHint;
+
+  /// No description provided for @sizeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Size Selection'**
+  String get sizeSelection;
+
+  /// No description provided for @footwear.
+  ///
+  /// In en, this message translates to:
+  /// **'Footwear'**
+  String get footwear;
+
+  /// No description provided for @jackets.
+  ///
+  /// In en, this message translates to:
+  /// **'Jackets'**
+  String get jackets;
+
+  /// No description provided for @bottoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Bottoms'**
+  String get bottoms;
+
+  /// No description provided for @pleaseSelectSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a size for this item'**
+  String get pleaseSelectSize;
+
+  /// No description provided for @thisItemNotAvailableForRedemption.
+  ///
+  /// In en, this message translates to:
+  /// **'This item is not available for redemption.'**
+  String get thisItemNotAvailableForRedemption;
+
+  /// No description provided for @thisItemOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'This item is out of stock.'**
+  String get thisItemOutOfStock;
+
+  /// No description provided for @youDontHaveEnoughPointsToRedeem.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have enough points to redeem this item.'**
+  String get youDontHaveEnoughPointsToRedeem;
+
+  /// No description provided for @cannotRedeemThisItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot redeem this item.'**
+  String get cannotRedeemThisItem;
+
+  /// No description provided for @orderPlacedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed successfully! {itemName} is pending approval.'**
+  String orderPlacedSuccessfully(String itemName);
+
+  /// No description provided for @failedToPlaceOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to place order: {error}'**
+  String failedToPlaceOrder(String error);
+
+  /// No description provided for @orderNowPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Now - {points} points'**
+  String orderNowPoints(int points);
+
+  /// No description provided for @yourPointsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Your points: {points}'**
+  String yourPointsValue(int points);
+
+  /// No description provided for @pointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Points:'**
+  String get pointsLabel;
+
+  /// No description provided for @sizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Size:'**
+  String get sizeLabel;
+
+  /// No description provided for @orderDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date:'**
+  String get orderDateLabel;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status:'**
+  String get statusLabel;
+
+  /// No description provided for @orderPendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is pending approval.'**
+  String get orderPendingApproval;
+
+  /// No description provided for @orderApprovedBeingPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order has been approved and is being prepared for shipment. Tracking: {trackingNumber}'**
+  String orderApprovedBeingPrepared(String trackingNumber);
+
+  /// No description provided for @noRewardsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Rewards Available'**
+  String get noRewardsAvailable;
+
+  /// No description provided for @checkBackLaterForRewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for exciting rewards!'**
+  String get checkBackLaterForRewards;
 }
 
 class _AppLocalizationsDelegate

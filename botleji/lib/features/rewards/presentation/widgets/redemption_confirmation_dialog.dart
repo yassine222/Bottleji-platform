@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:botleji/features/rewards/data/models/reward_models.dart';
+import 'package:botleji/l10n/app_localizations.dart';
 
 class RedemptionConfirmationDialog extends StatefulWidget {
   final RewardItem item;
@@ -92,7 +93,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Confirm Order',
+                  AppLocalizations.of(context).confirmOrder,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -156,7 +157,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Your points: ${widget.userPoints}',
+                            AppLocalizations.of(context).yourPointsValue(widget.userPoints),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: canAfford ? Colors.green : Colors.red,
                             ),
@@ -169,7 +170,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
 
                     // Delivery Address Form
                     Text(
-                      'Delivery Address',
+                      AppLocalizations.of(context).deliveryAddress,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -179,14 +180,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     // Street Address
                     TextFormField(
                       controller: _streetController,
-                      decoration: const InputDecoration(
-                        labelText: 'Street Address *',
+                      decoration: InputDecoration(
+                        labelText: '${AppLocalizations.of(context).streetAddress} *',
                         hintText: '123 Main Street',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter street address';
+                          return AppLocalizations.of(context).streetAddressRequired;
                         }
                         return null;
                       },
@@ -200,14 +201,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                           flex: 2,
                           child: TextFormField(
                             controller: _cityController,
-                            decoration: const InputDecoration(
-                              labelText: 'City *',
+                            decoration: InputDecoration(
+                              labelText: '${AppLocalizations.of(context).city} *',
                               hintText: 'New York',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter city';
+                                return AppLocalizations.of(context).cityRequired;
                               }
                               return null;
                             },
@@ -217,14 +218,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                         Expanded(
                           child: TextFormField(
                             controller: _stateController,
-                            decoration: const InputDecoration(
-                              labelText: 'State *',
+                            decoration: InputDecoration(
+                              labelText: '${AppLocalizations.of(context).state} *',
                               hintText: 'NY',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter state';
+                                return AppLocalizations.of(context).stateRequired;
                               }
                               return null;
                             },
@@ -240,14 +241,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                         Expanded(
                           child: TextFormField(
                             controller: _zipCodeController,
-                            decoration: const InputDecoration(
-                              labelText: 'ZIP Code *',
+                            decoration: InputDecoration(
+                              labelText: '${AppLocalizations.of(context).zipCode} *',
                               hintText: '10001',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter ZIP code';
+                                return AppLocalizations.of(context).zipCodeRequired;
                               }
                               return null;
                             },
@@ -257,14 +258,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                         Expanded(
                           child: TextFormField(
                             controller: _countryController,
-                            decoration: const InputDecoration(
-                              labelText: 'Country *',
+                            decoration: InputDecoration(
+                              labelText: '${AppLocalizations.of(context).country} *',
                               hintText: 'USA',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter country';
+                                return AppLocalizations.of(context).countryRequired;
                               }
                               return null;
                             },
@@ -277,15 +278,15 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     // Phone Number
                     TextFormField(
                       controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number *',
+                      decoration: InputDecoration(
+                        labelText: '${AppLocalizations.of(context).phoneNumber} *',
                         hintText: '+1 (555) 123-4567',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter phone number';
+                          return AppLocalizations.of(context).phoneNumberRequired;
                         }
                         return null;
                       },
@@ -295,10 +296,10 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     // Additional Notes
                     TextFormField(
                       controller: _notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Additional Notes (Optional)',
-                        hintText: 'Special delivery instructions...',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).additionalNotes,
+                        hintText: AppLocalizations.of(context).additionalNotesHint,
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 2,
                     ),
@@ -308,7 +309,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     // Size Selection (only for wearable items)
                     if (_isWearableItem()) ...[
                       Text(
-                        'Size Selection',
+                        AppLocalizations.of(context).sizeSelection,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -374,7 +375,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -388,7 +389,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       disabledBackgroundColor: Colors.grey[300],
                     ),
-                    child: const Text('Place Order'),
+                    child: Text(AppLocalizations.of(context).placeOrder),
                   ),
                 ),
               ],
@@ -404,8 +405,8 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
       // Check if size selection is required but not provided
       if (_isWearableItem() && (selectedSize == null || selectedSizeType == null)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a size for this item'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseSelectSize),
             backgroundColor: Colors.red,
           ),
         );
@@ -430,10 +431,11 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   }
 
   String _getErrorMessage(bool canAfford, bool isInStock, bool isActive) {
-    if (!isActive) return 'This item is not available for redemption.';
-    if (!isInStock) return 'This item is out of stock.';
-    if (!canAfford) return 'You don\'t have enough points to redeem this item.';
-    return 'Cannot redeem this item.';
+    final l10n = AppLocalizations.of(context);
+    if (!isActive) return l10n.thisItemNotAvailableForRedemption;
+    if (!isInStock) return l10n.thisItemOutOfStock;
+    if (!canAfford) return l10n.youDontHaveEnoughPointsToRedeem;
+    return l10n.cannotRedeemThisItem;
   }
 
   bool _isWearableItem() {
@@ -459,7 +461,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
           // Size type selection (if multiple types)
           if (wearableTypes.length > 1) ...[
             Text(
-              'Item Type',
+              AppLocalizations.of(context).itemType,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -472,7 +474,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
           // Size selection
           if (selectedSizeType != null) ...[
             Text(
-              'Size',
+              AppLocalizations.of(context).size,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -618,13 +620,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   }
 
   String _getTypeLabel(String type) {
+    final l10n = AppLocalizations.of(context);
     switch (type) {
       case 'footwear':
-        return 'Footwear';
+        return l10n.footwear;
       case 'jacket':
-        return 'Jackets';
+        return l10n.jackets;
       case 'bottoms':
-        return 'Bottoms';
+        return l10n.bottoms;
       default:
         return type;
     }

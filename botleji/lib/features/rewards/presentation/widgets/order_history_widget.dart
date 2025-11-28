@@ -277,7 +277,7 @@ class _OrderHistoryCard extends StatelessWidget {
                   if (redemption.deliveryAddress.phoneNumber.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Phone: ${redemption.deliveryAddress.phoneNumber}',
+                      '${AppLocalizations.of(context).phoneNumber}: ${redemption.deliveryAddress.phoneNumber}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

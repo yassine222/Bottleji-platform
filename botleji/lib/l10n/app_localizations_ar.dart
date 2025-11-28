@@ -861,7 +861,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveProfile => 'حفظ الملف الشخصي';
 
   @override
-  String get phoneNumberRequired => 'رقم الهاتف مطلوب';
+  String get phoneNumberRequired => 'يرجى إدخال رقم الهاتف';
 
   @override
   String get phoneNumberMustBe8Digits => 'يجب أن يكون رقم الهاتف 8 أرقام';
@@ -2510,7 +2510,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get viewType => 'نوع العرض';
 
   @override
-  String get itemType => 'نوع العنصر';
+  String get itemType => 'نوع القطعة';
 
   @override
   String get last3Months => 'آخر 3 أشهر';
@@ -2987,4 +2987,127 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reviewProcess => 'عملية المراجعة';
+
+  @override
+  String get tapToRedeem => 'اضغط للاستبدال';
+
+  @override
+  String get confirmOrder => 'تأكيد الطلب';
+
+  @override
+  String get placeOrder => 'تقديم الطلب';
+
+  @override
+  String get availability => 'التوفر';
+
+  @override
+  String get streetAddress => 'عنوان الشارع';
+
+  @override
+  String get streetAddressRequired => 'يرجى إدخال عنوان الشارع';
+
+  @override
+  String get city => 'المدينة';
+
+  @override
+  String get cityRequired => 'يرجى إدخال المدينة';
+
+  @override
+  String get state => 'الولاية/المحافظة';
+
+  @override
+  String get stateRequired => 'يرجى إدخال الولاية/المحافظة';
+
+  @override
+  String get zipCode => 'الرمز البريدي';
+
+  @override
+  String get zipCodeRequired => 'يرجى إدخال الرمز البريدي';
+
+  @override
+  String get country => 'البلد';
+
+  @override
+  String get countryRequired => 'يرجى إدخال البلد';
+
+  @override
+  String get additionalNotes => 'ملاحظات إضافية (اختياري)';
+
+  @override
+  String get additionalNotesHint => 'تعليمات التسليم الخاصة...';
+
+  @override
+  String get sizeSelection => 'اختيار المقاس';
+
+  @override
+  String get footwear => 'الأحذية';
+
+  @override
+  String get jackets => 'السترات';
+
+  @override
+  String get bottoms => 'البناطيل';
+
+  @override
+  String get pleaseSelectSize => 'يرجى اختيار مقاس لهذه القطعة';
+
+  @override
+  String get thisItemNotAvailableForRedemption =>
+      'هذه القطعة غير متاحة للاستبدال.';
+
+  @override
+  String get thisItemOutOfStock => 'هذه القطعة غير متوفرة.';
+
+  @override
+  String get youDontHaveEnoughPointsToRedeem =>
+      'ليس لديك نقاط كافية لاستبدال هذه القطعة.';
+
+  @override
+  String get cannotRedeemThisItem => 'لا يمكن استبدال هذه القطعة.';
+
+  @override
+  String orderPlacedSuccessfully(String itemName) {
+    return 'تم تقديم الطلب بنجاح! $itemName في انتظار الموافقة.';
+  }
+
+  @override
+  String failedToPlaceOrder(String error) {
+    return 'فشل تقديم الطلب: $error';
+  }
+
+  @override
+  String orderNowPoints(int points) {
+    return 'اطلب الآن - $points نقطة';
+  }
+
+  @override
+  String yourPointsValue(int points) {
+    return 'نقاطك: $points';
+  }
+
+  @override
+  String get pointsLabel => 'النقاط:';
+
+  @override
+  String get sizeLabel => 'المقاس:';
+
+  @override
+  String get orderDateLabel => 'تاريخ الطلب:';
+
+  @override
+  String get statusLabel => 'الحالة:';
+
+  @override
+  String get orderPendingApproval => 'طلبك في انتظار الموافقة.';
+
+  @override
+  String orderApprovedBeingPrepared(String trackingNumber) {
+    return 'تمت الموافقة على طلبك وهو قيد التحضير للشحن. رقم التتبع: $trackingNumber';
+  }
+
+  @override
+  String get noRewardsAvailable => 'لا توجد مكافآت متاحة';
+
+  @override
+  String get checkBackLaterForRewards => 'ارجع لاحقًا للحصول على مكافآت مثيرة!';
 }

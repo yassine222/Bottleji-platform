@@ -878,7 +878,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveProfile => 'Profil speichern';
 
   @override
-  String get phoneNumberRequired => 'Telefonnummer ist erforderlich';
+  String get phoneNumberRequired => 'Bitte geben Sie die Telefonnummer ein';
 
   @override
   String get phoneNumberMustBe8Digits =>
@@ -3055,4 +3055,130 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reviewProcess => 'Überprüfungsprozess';
+
+  @override
+  String get tapToRedeem => 'Tippen zum Einlösen';
+
+  @override
+  String get confirmOrder => 'Bestellung bestätigen';
+
+  @override
+  String get placeOrder => 'Bestellung aufgeben';
+
+  @override
+  String get availability => 'Verfügbarkeit';
+
+  @override
+  String get streetAddress => 'Straßenadresse';
+
+  @override
+  String get streetAddressRequired => 'Bitte geben Sie die Straßenadresse ein';
+
+  @override
+  String get city => 'Stadt';
+
+  @override
+  String get cityRequired => 'Bitte geben Sie die Stadt ein';
+
+  @override
+  String get state => 'Bundesland/Provinz';
+
+  @override
+  String get stateRequired => 'Bitte geben Sie das Bundesland/die Provinz ein';
+
+  @override
+  String get zipCode => 'Postleitzahl';
+
+  @override
+  String get zipCodeRequired => 'Bitte geben Sie die Postleitzahl ein';
+
+  @override
+  String get country => 'Land';
+
+  @override
+  String get countryRequired => 'Bitte geben Sie das Land ein';
+
+  @override
+  String get additionalNotes => 'Zusätzliche Hinweise (optional)';
+
+  @override
+  String get additionalNotesHint => 'Besondere Lieferanweisungen...';
+
+  @override
+  String get sizeSelection => 'Größenauswahl';
+
+  @override
+  String get footwear => 'Schuhe';
+
+  @override
+  String get jackets => 'Jacken';
+
+  @override
+  String get bottoms => 'Hosen';
+
+  @override
+  String get pleaseSelectSize =>
+      'Bitte wählen Sie eine Größe für diesen Artikel';
+
+  @override
+  String get thisItemNotAvailableForRedemption =>
+      'Dieser Artikel ist nicht zum Einlösen verfügbar.';
+
+  @override
+  String get thisItemOutOfStock => 'Dieser Artikel ist nicht vorrätig.';
+
+  @override
+  String get youDontHaveEnoughPointsToRedeem =>
+      'Sie haben nicht genug Punkte, um diesen Artikel einzulösen.';
+
+  @override
+  String get cannotRedeemThisItem =>
+      'Dieser Artikel kann nicht eingelöst werden.';
+
+  @override
+  String orderPlacedSuccessfully(String itemName) {
+    return 'Bestellung erfolgreich aufgegeben! $itemName wartet auf Genehmigung.';
+  }
+
+  @override
+  String failedToPlaceOrder(String error) {
+    return 'Bestellung fehlgeschlagen: $error';
+  }
+
+  @override
+  String orderNowPoints(int points) {
+    return 'Jetzt bestellen - $points Punkte';
+  }
+
+  @override
+  String yourPointsValue(int points) {
+    return 'Ihre Punkte: $points';
+  }
+
+  @override
+  String get pointsLabel => 'Punkte:';
+
+  @override
+  String get sizeLabel => 'Größe:';
+
+  @override
+  String get orderDateLabel => 'Bestelldatum:';
+
+  @override
+  String get statusLabel => 'Status:';
+
+  @override
+  String get orderPendingApproval => 'Ihre Bestellung wartet auf Genehmigung.';
+
+  @override
+  String orderApprovedBeingPrepared(String trackingNumber) {
+    return 'Ihre Bestellung wurde genehmigt und wird für den Versand vorbereitet. Tracking: $trackingNumber';
+  }
+
+  @override
+  String get noRewardsAvailable => 'Keine Belohnungen verfügbar';
+
+  @override
+  String get checkBackLaterForRewards =>
+      'Schauen Sie später vorbei für aufregende Belohnungen!';
 }

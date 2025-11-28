@@ -1028,5 +1028,80 @@
   "applicationInReview": "Bewerbung in Überprüfung",
   "applicationInReviewDialogContent": "Ihre Bewerbung wird derzeit von unserem Team überprüft. Dieser Prozess dauert normalerweise 1-3 Werktage. Sie werden benachrichtigt, sobald eine Entscheidung getroffen wurde.",
   "reviewProcess": "Überprüfungsprozess",
-  "back": "Zurück"
+  "back": "Zurück",
+  "tapToRedeem": "Tippen zum Einlösen",
+  "confirmOrder": "Bestellung bestätigen",
+  "placeOrder": "Bestellung aufgeben",
+  "availability": "Verfügbarkeit",
+  "streetAddress": "Straßenadresse",
+  "streetAddressRequired": "Bitte geben Sie die Straßenadresse ein",
+  "city": "Stadt",
+  "cityRequired": "Bitte geben Sie die Stadt ein",
+  "state": "Bundesland/Provinz",
+  "stateRequired": "Bitte geben Sie das Bundesland/die Provinz ein",
+  "zipCode": "Postleitzahl",
+  "zipCodeRequired": "Bitte geben Sie die Postleitzahl ein",
+  "country": "Land",
+  "countryRequired": "Bitte geben Sie das Land ein",
+  "phoneNumber": "Telefonnummer",
+  "phoneNumberRequired": "Bitte geben Sie die Telefonnummer ein",
+  "additionalNotes": "Zusätzliche Hinweise (optional)",
+  "additionalNotesHint": "Besondere Lieferanweisungen...",
+  "sizeSelection": "Größenauswahl",
+  "itemType": "Artikeltyp",
+  "footwear": "Schuhe",
+  "jackets": "Jacken",
+  "bottoms": "Hosen",
+  "pleaseSelectSize": "Bitte wählen Sie eine Größe für diesen Artikel",
+  "thisItemNotAvailableForRedemption": "Dieser Artikel ist nicht zum Einlösen verfügbar.",
+  "thisItemOutOfStock": "Dieser Artikel ist nicht vorrätig.",
+  "youDontHaveEnoughPointsToRedeem": "Sie haben nicht genug Punkte, um diesen Artikel einzulösen.",
+  "cannotRedeemThisItem": "Dieser Artikel kann nicht eingelöst werden.",
+  "orderPlacedSuccessfully": "Bestellung erfolgreich aufgegeben! {itemName} wartet auf Genehmigung.",
+  "@orderPlacedSuccessfully": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPlaceOrder": "Bestellung fehlgeschlagen: {error}",
+  "@failedToPlaceOrder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNowPoints": "Jetzt bestellen - {points} Punkte",
+  "@orderNowPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "yourPointsValue": "Ihre Punkte: {points}",
+  "@yourPointsValue": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsLabel": "Punkte:",
+  "sizeLabel": "Größe:",
+  "orderDateLabel": "Bestelldatum:",
+  "statusLabel": "Status:",
+  "orderPendingApproval": "Ihre Bestellung wartet auf Genehmigung.",
+  "orderApprovedBeingPrepared": "Ihre Bestellung wurde genehmigt und wird für den Versand vorbereitet. Tracking: {trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "noRewardsAvailable": "Keine Belohnungen verfügbar",
+  "checkBackLaterForRewards": "Schauen Sie später vorbei für aufregende Belohnungen!"
 }

@@ -1477,5 +1477,80 @@
   "applicationInReview": "Application in Review",
   "applicationInReviewDialogContent": "Your application is currently being reviewed by our team. This process typically takes 1-3 business days. You will be notified once a decision has been made.",
   "reviewProcess": "Review Process",
-  "back": "Back"
+  "back": "Back",
+  "tapToRedeem": "Tap to redeem",
+  "confirmOrder": "Confirm Order",
+  "placeOrder": "Place Order",
+  "availability": "Availability",
+  "streetAddress": "Street Address",
+  "streetAddressRequired": "Please enter street address",
+  "city": "City",
+  "cityRequired": "Please enter city",
+  "state": "State",
+  "stateRequired": "Please enter state",
+  "zipCode": "ZIP Code",
+  "zipCodeRequired": "Please enter ZIP code",
+  "country": "Country",
+  "countryRequired": "Please enter country",
+  "phoneNumber": "Phone Number",
+  "phoneNumberRequired": "Please enter phone number",
+  "additionalNotes": "Additional Notes (Optional)",
+  "additionalNotesHint": "Special delivery instructions...",
+  "sizeSelection": "Size Selection",
+  "itemType": "Item Type",
+  "footwear": "Footwear",
+  "jackets": "Jackets",
+  "bottoms": "Bottoms",
+  "pleaseSelectSize": "Please select a size for this item",
+  "thisItemNotAvailableForRedemption": "This item is not available for redemption.",
+  "thisItemOutOfStock": "This item is out of stock.",
+  "youDontHaveEnoughPointsToRedeem": "You don't have enough points to redeem this item.",
+  "cannotRedeemThisItem": "Cannot redeem this item.",
+  "orderPlacedSuccessfully": "Order placed successfully! {itemName} is pending approval.",
+  "@orderPlacedSuccessfully": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPlaceOrder": "Failed to place order: {error}",
+  "@failedToPlaceOrder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNowPoints": "Order Now - {points} points",
+  "@orderNowPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "yourPointsValue": "Your points: {points}",
+  "@yourPointsValue": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsLabel": "Points:",
+  "sizeLabel": "Size:",
+  "orderDateLabel": "Order Date:",
+  "statusLabel": "Status:",
+  "orderPendingApproval": "Your order is pending approval.",
+  "orderApprovedBeingPrepared": "Your order has been approved and is being prepared for shipment. Tracking: {trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "noRewardsAvailable": "No Rewards Available",
+  "checkBackLaterForRewards": "Check back later for exciting rewards!"
 }

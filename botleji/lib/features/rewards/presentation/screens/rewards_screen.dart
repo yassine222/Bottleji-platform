@@ -838,7 +838,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                redemption.status.value.toUpperCase(),
+                                _getStatusText(context, redemption.status),
                                 style: TextStyle(
                                   color: _getStatusColor(redemption.status),
                                   fontSize: 12,
@@ -849,13 +849,13 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text('Points: ${redemption.pointsSpent}'),
+                        Text('${AppLocalizations.of(context).pointsLabel} ${redemption.pointsSpent}'),
                         if (redemption.selectedSize != null) ...[
                           const SizedBox(height: 4),
-                          Text('Size: ${redemption.selectedSize} (${redemption.sizeType})'),
+                          Text('${AppLocalizations.of(context).sizeLabel} ${redemption.selectedSize} (${redemption.sizeType})'),
                         ],
                         const SizedBox(height: 4),
-                        Text('Order Date: ${_formatDate(redemption.createdAt)}'),
+                        Text('${AppLocalizations.of(context).orderDateLabel} ${_formatDate(redemption.createdAt)}'),
                       ],
                     ),
                   ),
@@ -866,6 +866,26 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
         );
       },
     );
+  }
+
+  String _getStatusText(BuildContext context, RedemptionStatus status) {
+    final l10n = AppLocalizations.of(context);
+    switch (status) {
+      case RedemptionStatus.pending:
+        return l10n.pending;
+      case RedemptionStatus.approved:
+        return l10n.approved;
+      case RedemptionStatus.processing:
+        return l10n.processing;
+      case RedemptionStatus.shipped:
+        return l10n.shipped;
+      case RedemptionStatus.delivered:
+        return l10n.delivered;
+      case RedemptionStatus.cancelled:
+        return l10n.cancelled;
+      case RedemptionStatus.rejected:
+        return l10n.rejected;
+    }
   }
 
   Color _getStatusColor(RedemptionStatus status) {

@@ -1028,5 +1028,80 @@
   "applicationInReview": "Demande en cours d'examen",
   "applicationInReviewDialogContent": "Votre demande est actuellement en cours d'examen par notre équipe. Ce processus prend généralement 1 à 3 jours ouvrables. Vous serez notifié une fois qu'une décision aura été prise.",
   "reviewProcess": "Processus d'examen",
-  "back": "Retour"
+  "back": "Retour",
+  "tapToRedeem": "Appuyer pour échanger",
+  "confirmOrder": "Confirmer la commande",
+  "placeOrder": "Passer la commande",
+  "availability": "Disponibilité",
+  "streetAddress": "Adresse de la rue",
+  "streetAddressRequired": "Veuillez entrer l'adresse de la rue",
+  "city": "Ville",
+  "cityRequired": "Veuillez entrer la ville",
+  "state": "État/Province",
+  "stateRequired": "Veuillez entrer l'état/la province",
+  "zipCode": "Code postal",
+  "zipCodeRequired": "Veuillez entrer le code postal",
+  "country": "Pays",
+  "countryRequired": "Veuillez entrer le pays",
+  "phoneNumber": "Numéro de téléphone",
+  "phoneNumberRequired": "Veuillez entrer le numéro de téléphone",
+  "additionalNotes": "Notes supplémentaires (optionnel)",
+  "additionalNotesHint": "Instructions de livraison spéciales...",
+  "sizeSelection": "Sélection de la taille",
+  "itemType": "Type d'article",
+  "footwear": "Chaussures",
+  "jackets": "Vestes",
+  "bottoms": "Pantalons",
+  "pleaseSelectSize": "Veuillez sélectionner une taille pour cet article",
+  "thisItemNotAvailableForRedemption": "Cet article n'est pas disponible pour l'échange.",
+  "thisItemOutOfStock": "Cet article est en rupture de stock.",
+  "youDontHaveEnoughPointsToRedeem": "Vous n'avez pas assez de points pour échanger cet article.",
+  "cannotRedeemThisItem": "Impossible d'échanger cet article.",
+  "orderPlacedSuccessfully": "Commande passée avec succès ! {itemName} est en attente d'approbation.",
+  "@orderPlacedSuccessfully": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPlaceOrder": "Échec de la commande : {error}",
+  "@failedToPlaceOrder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNowPoints": "Commander maintenant - {points} points",
+  "@orderNowPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "yourPointsValue": "Vos points : {points}",
+  "@yourPointsValue": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsLabel": "Points :",
+  "sizeLabel": "Taille :",
+  "orderDateLabel": "Date de commande :",
+  "statusLabel": "Statut :",
+  "orderPendingApproval": "Votre commande est en attente d'approbation.",
+  "orderApprovedBeingPrepared": "Votre commande a été approuvée et est en cours de préparation pour l'expédition. Suivi : {trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "noRewardsAvailable": "Aucune récompense disponible",
+  "checkBackLaterForRewards": "Revenez plus tard pour des récompenses passionnantes !"
 }

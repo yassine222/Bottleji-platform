@@ -20,7 +20,7 @@ class RewardShopWidget extends ConsumerWidget {
     final user = authState.value;
 
     if (user == null) {
-      return const Center(child: Text('Please log in to view rewards'));
+      return Center(child: Text(AppLocalizations.of(context).pleaseLogInToViewOrderHistory));
     }
 
     // Load items if empty and not loading
@@ -52,11 +52,11 @@ class RewardShopWidget extends ConsumerWidget {
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
                 const SizedBox(height: 8),
-                Text('Failed to load rewards'),
+                Text(AppLocalizations.of(context).failedToLoadOrderHistory),
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () => ref.read(rewardShopProvider.notifier).refresh(),
-                  child: const Text('Retry'),
+                  child: Text(AppLocalizations.of(context).retry),
                 ),
               ],
             ),
@@ -146,7 +146,7 @@ class RewardShopWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Rewards Available',
+            AppLocalizations.of(context).noRewardsAvailable,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Colors.grey[600],
               fontWeight: FontWeight.bold,
@@ -154,7 +154,7 @@ class RewardShopWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Check back later for exciting rewards!',
+            AppLocalizations.of(context).checkBackLaterForRewards,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[500],
             ),
@@ -263,7 +263,7 @@ class RewardShopWidget extends ConsumerWidget {
               // Stock status
               if (!isInStock)
                 Text(
-                  'Out of Stock',
+                  AppLocalizations.of(context).outOfStock,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -279,7 +279,7 @@ class RewardShopWidget extends ConsumerWidget {
                 )
               else
                 Text(
-                  'Tap to redeem',
+                  AppLocalizations.of(context).tapToRedeem,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
@@ -363,7 +363,7 @@ class RewardShopWidget extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Order placed successfully! ${item.name} is pending approval.'),
+            content: Text(AppLocalizations.of(context).orderPlacedSuccessfully(item.name)),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           ),
@@ -374,7 +374,7 @@ class RewardShopWidget extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to place order: $e'),
+            content: Text(AppLocalizations.of(context).failedToPlaceOrder(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),

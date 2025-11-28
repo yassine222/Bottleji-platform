@@ -864,7 +864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveProfile => 'Save Profile';
 
   @override
-  String get phoneNumberRequired => 'Phone number is required';
+  String get phoneNumberRequired => 'Please enter phone number';
 
   @override
   String get phoneNumberMustBe8Digits => 'Phone number must be 8 digits';
@@ -3014,4 +3014,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewProcess => 'Review Process';
+
+  @override
+  String get tapToRedeem => 'Tap to redeem';
+
+  @override
+  String get confirmOrder => 'Confirm Order';
+
+  @override
+  String get placeOrder => 'Place Order';
+
+  @override
+  String get availability => 'Availability';
+
+  @override
+  String get streetAddress => 'Street Address';
+
+  @override
+  String get streetAddressRequired => 'Please enter street address';
+
+  @override
+  String get city => 'City';
+
+  @override
+  String get cityRequired => 'Please enter city';
+
+  @override
+  String get state => 'State';
+
+  @override
+  String get stateRequired => 'Please enter state';
+
+  @override
+  String get zipCode => 'ZIP Code';
+
+  @override
+  String get zipCodeRequired => 'Please enter ZIP code';
+
+  @override
+  String get country => 'Country';
+
+  @override
+  String get countryRequired => 'Please enter country';
+
+  @override
+  String get additionalNotes => 'Additional Notes (Optional)';
+
+  @override
+  String get additionalNotesHint => 'Special delivery instructions...';
+
+  @override
+  String get sizeSelection => 'Size Selection';
+
+  @override
+  String get footwear => 'Footwear';
+
+  @override
+  String get jackets => 'Jackets';
+
+  @override
+  String get bottoms => 'Bottoms';
+
+  @override
+  String get pleaseSelectSize => 'Please select a size for this item';
+
+  @override
+  String get thisItemNotAvailableForRedemption =>
+      'This item is not available for redemption.';
+
+  @override
+  String get thisItemOutOfStock => 'This item is out of stock.';
+
+  @override
+  String get youDontHaveEnoughPointsToRedeem =>
+      'You don\'t have enough points to redeem this item.';
+
+  @override
+  String get cannotRedeemThisItem => 'Cannot redeem this item.';
+
+  @override
+  String orderPlacedSuccessfully(String itemName) {
+    return 'Order placed successfully! $itemName is pending approval.';
+  }
+
+  @override
+  String failedToPlaceOrder(String error) {
+    return 'Failed to place order: $error';
+  }
+
+  @override
+  String orderNowPoints(int points) {
+    return 'Order Now - $points points';
+  }
+
+  @override
+  String yourPointsValue(int points) {
+    return 'Your points: $points';
+  }
+
+  @override
+  String get pointsLabel => 'Points:';
+
+  @override
+  String get sizeLabel => 'Size:';
+
+  @override
+  String get orderDateLabel => 'Order Date:';
+
+  @override
+  String get statusLabel => 'Status:';
+
+  @override
+  String get orderPendingApproval => 'Your order is pending approval.';
+
+  @override
+  String orderApprovedBeingPrepared(String trackingNumber) {
+    return 'Your order has been approved and is being prepared for shipment. Tracking: $trackingNumber';
+  }
+
+  @override
+  String get noRewardsAvailable => 'No Rewards Available';
+
+  @override
+  String get checkBackLaterForRewards =>
+      'Check back later for exciting rewards!';
 }

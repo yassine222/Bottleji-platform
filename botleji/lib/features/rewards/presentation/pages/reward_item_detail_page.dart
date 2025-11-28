@@ -135,7 +135,7 @@ class RewardItemDetailPage extends ConsumerWidget {
 
             // Description
             Text(
-              'Description',
+              AppLocalizations.of(context).description,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -162,7 +162,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Availability',
+                    AppLocalizations.of(context).availability,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -195,7 +195,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Your points: $userPoints',
+                        AppLocalizations.of(context).yourPointsValue(userPoints),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: canAfford ? Colors.green : Colors.orange,
                           fontWeight: FontWeight.w500,
@@ -235,7 +235,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       canRedeem 
-                          ? 'Order Now - ${item.pointCost} points'
+                          ? AppLocalizations.of(context).orderNowPoints(item.pointCost)
                           : _getOrderButtonText(context, canAfford, isInStock, item.isActive),
                       style: const TextStyle(
                         fontSize: 16,

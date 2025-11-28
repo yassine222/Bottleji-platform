@@ -1398,5 +1398,80 @@
   "applicationInReview": "الطلب قيد المراجعة",
   "applicationInReviewDialogContent": "يتم حاليًا مراجعة طلبك من قبل فريقنا. تستغرق هذه العملية عادة من 1 إلى 3 أيام عمل. سيتم إشعارك بمجرد اتخاذ القرار.",
   "reviewProcess": "عملية المراجعة",
-  "back": "رجوع"
+  "back": "رجوع",
+  "tapToRedeem": "اضغط للاستبدال",
+  "confirmOrder": "تأكيد الطلب",
+  "placeOrder": "تقديم الطلب",
+  "availability": "التوفر",
+  "streetAddress": "عنوان الشارع",
+  "streetAddressRequired": "يرجى إدخال عنوان الشارع",
+  "city": "المدينة",
+  "cityRequired": "يرجى إدخال المدينة",
+  "state": "الولاية/المحافظة",
+  "stateRequired": "يرجى إدخال الولاية/المحافظة",
+  "zipCode": "الرمز البريدي",
+  "zipCodeRequired": "يرجى إدخال الرمز البريدي",
+  "country": "البلد",
+  "countryRequired": "يرجى إدخال البلد",
+  "phoneNumber": "رقم الهاتف",
+  "phoneNumberRequired": "يرجى إدخال رقم الهاتف",
+  "additionalNotes": "ملاحظات إضافية (اختياري)",
+  "additionalNotesHint": "تعليمات التسليم الخاصة...",
+  "sizeSelection": "اختيار المقاس",
+  "itemType": "نوع القطعة",
+  "footwear": "الأحذية",
+  "jackets": "السترات",
+  "bottoms": "البناطيل",
+  "pleaseSelectSize": "يرجى اختيار مقاس لهذه القطعة",
+  "thisItemNotAvailableForRedemption": "هذه القطعة غير متاحة للاستبدال.",
+  "thisItemOutOfStock": "هذه القطعة غير متوفرة.",
+  "youDontHaveEnoughPointsToRedeem": "ليس لديك نقاط كافية لاستبدال هذه القطعة.",
+  "cannotRedeemThisItem": "لا يمكن استبدال هذه القطعة.",
+  "orderPlacedSuccessfully": "تم تقديم الطلب بنجاح! {itemName} في انتظار الموافقة.",
+  "@orderPlacedSuccessfully": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPlaceOrder": "فشل تقديم الطلب: {error}",
+  "@failedToPlaceOrder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNowPoints": "اطلب الآن - {points} نقطة",
+  "@orderNowPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "yourPointsValue": "نقاطك: {points}",
+  "@yourPointsValue": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsLabel": "النقاط:",
+  "sizeLabel": "المقاس:",
+  "orderDateLabel": "تاريخ الطلب:",
+  "statusLabel": "الحالة:",
+  "orderPendingApproval": "طلبك في انتظار الموافقة.",
+  "orderApprovedBeingPrepared": "تمت الموافقة على طلبك وهو قيد التحضير للشحن. رقم التتبع: {trackingNumber}",
+  "@orderApprovedBeingPrepared": {
+    "placeholders": {
+      "trackingNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "noRewardsAvailable": "لا توجد مكافآت متاحة",
+  "checkBackLaterForRewards": "ارجع لاحقًا للحصول على مكافآت مثيرة!"
 }
