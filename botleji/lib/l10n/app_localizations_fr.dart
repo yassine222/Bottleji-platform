@@ -3182,4 +3182,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get checkBackLaterForRewards =>
       'Revenez plus tard pour des récompenses passionnantes !';
+
+  @override
+  String get streetAddressHint => '123 Rue Principale';
+
+  @override
+  String get cityHint => 'Paris';
+
+  @override
+  String get stateHint => 'Île-de-France';
+
+  @override
+  String get zipCodeHint => '75001';
+
+  @override
+  String get countryHint => 'France';
+
+  @override
+  String get phoneNumberHint => '+33 1 23 45 67 89';
 }

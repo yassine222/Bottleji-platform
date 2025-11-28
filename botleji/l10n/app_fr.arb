@@ -1103,5 +1103,11 @@
     }
   },
   "noRewardsAvailable": "Aucune récompense disponible",
-  "checkBackLaterForRewards": "Revenez plus tard pour des récompenses passionnantes !"
+  "checkBackLaterForRewards": "Revenez plus tard pour des récompenses passionnantes !",
+  "streetAddressHint": "123 Rue Principale",
+  "cityHint": "Paris",
+  "stateHint": "Île-de-France",
+  "zipCodeHint": "75001",
+  "countryHint": "France",
+  "phoneNumberHint": "+33 1 23 45 67 89"
 }

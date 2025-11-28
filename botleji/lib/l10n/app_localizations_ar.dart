@@ -3110,4 +3110,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get checkBackLaterForRewards => 'ارجع لاحقًا للحصول على مكافآت مثيرة!';
+
+  @override
+  String get streetAddressHint => '123 شارع الرئيسي';
+
+  @override
+  String get cityHint => 'بيروت';
+
+  @override
+  String get stateHint => 'بيروت';
+
+  @override
+  String get zipCodeHint => '1234';
+
+  @override
+  String get countryHint => 'لبنان';
+
+  @override
+  String get phoneNumberHint => '+961 3 123456';
 }

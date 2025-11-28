@@ -1103,5 +1103,11 @@
     }
   },
   "noRewardsAvailable": "Keine Belohnungen verfügbar",
-  "checkBackLaterForRewards": "Schauen Sie später vorbei für aufregende Belohnungen!"
+  "checkBackLaterForRewards": "Schauen Sie später vorbei für aufregende Belohnungen!",
+  "streetAddressHint": "123 Hauptstraße",
+  "cityHint": "Berlin",
+  "stateHint": "Berlin",
+  "zipCodeHint": "10115",
+  "countryHint": "Deutschland",
+  "phoneNumberHint": "+49 30 12345678"
 }

@@ -3138,4 +3138,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get checkBackLaterForRewards =>
       'Check back later for exciting rewards!';
+
+  @override
+  String get streetAddressHint => '123 Main Street';
+
+  @override
+  String get cityHint => 'New York';
+
+  @override
+  String get stateHint => 'NY';
+
+  @override
+  String get zipCodeHint => '10001';
+
+  @override
+  String get countryHint => 'USA';
+
+  @override
+  String get phoneNumberHint => '+1 (555) 123-4567';
 }

@@ -1473,5 +1473,11 @@
     }
   },
   "noRewardsAvailable": "لا توجد مكافآت متاحة",
-  "checkBackLaterForRewards": "ارجع لاحقًا للحصول على مكافآت مثيرة!"
+  "checkBackLaterForRewards": "ارجع لاحقًا للحصول على مكافآت مثيرة!",
+  "streetAddressHint": "123 شارع الرئيسي",
+  "cityHint": "بيروت",
+  "stateHint": "بيروت",
+  "zipCodeHint": "1234",
+  "countryHint": "لبنان",
+  "phoneNumberHint": "+961 3 123456"
 }

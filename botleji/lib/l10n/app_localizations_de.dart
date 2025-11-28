@@ -3181,4 +3181,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get checkBackLaterForRewards =>
       'Schauen Sie später vorbei für aufregende Belohnungen!';
+
+  @override
+  String get streetAddressHint => '123 Hauptstraße';
+
+  @override
+  String get cityHint => 'Berlin';
+
+  @override
+  String get stateHint => 'Berlin';
+
+  @override
+  String get zipCodeHint => '10115';
+
+  @override
+  String get countryHint => 'Deutschland';
+
+  @override
+  String get phoneNumberHint => '+49 30 12345678';
 }

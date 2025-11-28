@@ -1552,5 +1552,11 @@
     }
   },
   "noRewardsAvailable": "No Rewards Available",
-  "checkBackLaterForRewards": "Check back later for exciting rewards!"
+  "checkBackLaterForRewards": "Check back later for exciting rewards!",
+  "streetAddressHint": "123 Main Street",
+  "cityHint": "New York",
+  "stateHint": "NY",
+  "zipCodeHint": "10001",
+  "countryHint": "USA",
+  "phoneNumberHint": "+1 (555) 123-4567"
 }

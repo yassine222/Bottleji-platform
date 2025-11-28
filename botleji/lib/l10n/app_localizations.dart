@@ -5795,6 +5795,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check back later for exciting rewards!'**
   String get checkBackLaterForRewards;
+
+  /// No description provided for @streetAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'123 Main Street'**
+  String get streetAddressHint;
+
+  /// No description provided for @cityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New York'**
+  String get cityHint;
+
+  /// No description provided for @stateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'NY'**
+  String get stateHint;
+
+  /// No description provided for @zipCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'10001'**
+  String get zipCodeHint;
+
+  /// No description provided for @countryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'USA'**
+  String get countryHint;
+
+  /// No description provided for @phoneNumberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'+1 (555) 123-4567'**
+  String get phoneNumberHint;
 }
 
 class _AppLocalizationsDelegate
