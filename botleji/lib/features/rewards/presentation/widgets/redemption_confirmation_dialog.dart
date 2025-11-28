@@ -182,7 +182,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       controller: _streetController,
                       decoration: InputDecoration(
                         labelText: '${AppLocalizations.of(context).streetAddress} *',
-                        hintText: AppLocalizations.of(context).streetAddressHint,
                         border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -203,7 +202,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                             controller: _cityController,
                             decoration: InputDecoration(
                               labelText: '${AppLocalizations.of(context).city} *',
-                              hintText: AppLocalizations.of(context).cityHint,
                               border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -220,7 +218,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                             controller: _stateController,
                             decoration: InputDecoration(
                               labelText: '${AppLocalizations.of(context).state} *',
-                              hintText: AppLocalizations.of(context).stateHint,
                               border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -243,7 +240,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                             controller: _zipCodeController,
                             decoration: InputDecoration(
                               labelText: '${AppLocalizations.of(context).zipCode} *',
-                              hintText: AppLocalizations.of(context).zipCodeHint,
                               border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -260,7 +256,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                             controller: _countryController,
                             decoration: InputDecoration(
                               labelText: '${AppLocalizations.of(context).country} *',
-                              hintText: AppLocalizations.of(context).countryHint,
                               border: const OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -280,7 +275,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       controller: _phoneController,
                       decoration: InputDecoration(
                         labelText: '${AppLocalizations.of(context).phoneNumber} *',
-                        hintText: AppLocalizations.of(context).phoneNumberHint,
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,
@@ -298,7 +292,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       controller: _notesController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context).additionalNotes,
-                        hintText: AppLocalizations.of(context).additionalNotesHint,
                         border: const OutlineInputBorder(),
                       ),
                       maxLines: 2,
