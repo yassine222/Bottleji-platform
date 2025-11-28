@@ -8387,6 +8387,11 @@ function RewardShopContent() {
         updatedAt: new Date(order.updatedAt)
       }));
       
+      // Sort by createdAt (oldest first) - ascending order
+      transformedOrders.sort((a: any, b: any) => {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+      
       setOrders(transformedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -8760,7 +8765,7 @@ function RewardShopContent() {
             <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
-            Orders ({orders.length})
+            Orders ({orders.filter((o: any) => o.status === orderStatusFilter).length})
           </button>
         </div>
       </div>
@@ -9215,21 +9220,25 @@ function RewardShopContent() {
             // Filter orders by selected status
             const filteredOrders = orders.filter((order: any) => order.status === orderStatusFilter);
             
-            return filteredOrders.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
+            if (filteredOrders.length === 0) {
+              return (
+                <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No {orderStatusFilter} orders</h3>
+                    <p className="text-gray-600">No orders with {orderStatusFilter} status found.</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No {orderStatusFilter} orders</h3>
-                  <p className="text-gray-600">No orders with {orderStatusFilter} status found.</p>
                 </div>
-              </div>
-            ) : (
+              );
+            }
+            
+            return (
               <div className="grid grid-cols-1 gap-6">
-                {filteredOrders.map((order) => (
+                {filteredOrders.map((order: any) => (
                 <div key={order.id || order._id} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     {/* Order Info */}
@@ -9370,9 +9379,10 @@ function RewardShopContent() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
