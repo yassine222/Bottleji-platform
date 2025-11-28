@@ -16,8 +16,6 @@ const nextConfig = {
   },
   // Ensure proper routing in production
   trailingSlash: false,
-  // Output configuration for Render
-  output: 'standalone',
 };
 
 module.exports = nextConfig;
