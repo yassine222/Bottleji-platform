@@ -24,7 +24,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
   final _zipCodeController = TextEditingController();
-  final _countryController = TextEditingController();
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   
@@ -50,7 +49,6 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
     _cityController.dispose();
     _stateController.dispose();
     _zipCodeController.dispose();
-    _countryController.dispose();
     _phoneController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -232,41 +230,19 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     ),
                     const SizedBox(height: 12),
 
-                    // ZIP Code and Country Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _zipCodeController,
-                            decoration: InputDecoration(
-                              labelText: '${AppLocalizations.of(context).zipCode} *',
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context).zipCodeRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _countryController,
-                            decoration: InputDecoration(
-                              labelText: '${AppLocalizations.of(context).country} *',
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context).countryRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
+                    // ZIP Code
+                    TextFormField(
+                      controller: _zipCodeController,
+                      decoration: InputDecoration(
+                        labelText: '${AppLocalizations.of(context).zipCode} *',
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return AppLocalizations.of(context).zipCodeRequired;
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 12),
 
@@ -411,7 +387,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
         city: _cityController.text.trim(),
         state: _stateController.text.trim(),
         zipCode: _zipCodeController.text.trim(),
-        country: _countryController.text.trim(),
+        country: '', // Country field removed from UI
         phoneNumber: _phoneController.text.trim(),
         additionalNotes: _notesController.text.trim().isNotEmpty 
             ? _notesController.text.trim() 
