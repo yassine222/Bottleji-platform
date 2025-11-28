@@ -8,10 +8,7 @@ export const metadata: Metadata = {
   title: 'Bottleji Admin',
   description: 'Admin dashboard for Bottleji application',
   icons: {
-    icon: [
-      { url: '/logo_v2.png', type: 'image/png', sizes: '32x32' },
-      { url: '/logo_v2.png', type: 'image/png', sizes: '16x16' },
-    ],
+    icon: '/logo_v2.png',
     shortcut: '/logo_v2.png',
     apple: '/logo_v2.png',
   },
