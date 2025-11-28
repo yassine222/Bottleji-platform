@@ -19,8 +19,8 @@ export class DeliveryAddressDto {
   zipCode: string;
 
   @IsString()
-  @IsNotEmpty()
-  country: string;
+  @IsOptional()
+  country?: string;
 
   @IsString()
   @IsNotEmpty()

@@ -38,7 +38,7 @@ export class RewardRedemption extends Document {
       city: { type: String, required: true },
       state: { type: String, required: true },
       zipCode: { type: String, required: true },
-      country: { type: String, required: true },
+      country: { type: String, required: false },
       phoneNumber: { type: String, required: true },
       additionalNotes: { type: String, required: false }
     }

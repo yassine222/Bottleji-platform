@@ -387,7 +387,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
         city: _cityController.text.trim(),
         state: _stateController.text.trim(),
         zipCode: _zipCodeController.text.trim(),
-        country: '', // Country field removed from UI
+        country: 'Tunisia', // Default country
         phoneNumber: _phoneController.text.trim(),
         additionalNotes: _notesController.text.trim().isNotEmpty 
             ? _notesController.text.trim() 
