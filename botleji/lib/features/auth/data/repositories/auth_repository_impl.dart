@@ -474,9 +474,10 @@ class AuthRepository {
       }
       
       // Build complete profile data by merging current data with updates
+      // Only send fields that are in SetupProfileDto (name, phoneNumber, address, profilePhoto)
+      // Do NOT send 'roles' as it's not in the DTO and will cause validation failure with forbidNonWhitelisted
       final data = <String, dynamic>{
         'name': name ?? currentUser.name ?? '', // name is required by backend
-        'roles': currentUser.roles,
       };
       
       // Only include fields that are provided or have current values
