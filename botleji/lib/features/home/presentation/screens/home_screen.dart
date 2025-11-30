@@ -2131,7 +2131,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
-                    if (mode == UserMode.collector) return drops;
+                    if (mode == UserMode.collector) {
+                      // For collectors, filter out collected drops (safety measure)
+                      // The backend should already filter these, but this ensures UI consistency
+                      return drops.where((drop) => drop.status != DropStatus.collected).toList();
+                    }
                     // Household: show only active drops (pending or accepted) - same as "Active" tab
                     final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops
@@ -2321,7 +2325,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 final filteredDrops = userMode.maybeWhen(
                   data: (mode) {
-                    if (mode == UserMode.collector) return drops;
+                    if (mode == UserMode.collector) {
+                      // For collectors, filter out collected drops (safety measure)
+                      // The backend should already filter these, but this ensures UI consistency
+                      return drops.where((drop) => drop.status != DropStatus.collected).toList();
+                    }
                     // Household: show only active drops (pending or accepted) - same as "Active" tab
                     final currentUserId = ref.read(authNotifierProvider).value?.id;
                     return drops

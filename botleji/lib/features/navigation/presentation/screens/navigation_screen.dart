@@ -25,6 +25,7 @@ import 'package:botleji/features/collection/presentation/providers/collection_at
 import 'package:botleji/features/earnings/presentation/providers/earnings_provider.dart';
 import 'package:botleji/core/services/notification_service.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Transportation mode enum
@@ -3694,8 +3695,22 @@ void _showWarningNotification() async {
         }
         
         // Force refresh the drops list to ensure UI updates
+        // Use the correct load method based on user mode to filter out collected drops
         debugPrint('🔄 Force refreshing drops list...');
-        await ref.read(dropsControllerProvider.notifier).loadDrops();
+        final userMode = ref.read(userModeControllerProvider);
+        await userMode.whenData((mode) async {
+          if (mode == UserMode.collector) {
+            // For collectors, load only available drops (excludes collected ones)
+            await ref.read(dropsControllerProvider.notifier).loadDropsAvailableForCollectors(
+              excludeCollectorId: collectorId,
+            );
+            debugPrint('✅ Refreshed collector drops (excluding collected)');
+          } else {
+            // For household, load all user drops (they'll be filtered in the UI)
+            await ref.read(dropsControllerProvider.notifier).loadDrops();
+            debugPrint('✅ Refreshed household drops');
+          }
+        });
         
         // Dialog will handle navigation, no need to wait here
         debugPrint('✅ Collection success dialog should be showing now');
