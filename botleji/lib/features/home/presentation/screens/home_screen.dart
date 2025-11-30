@@ -2057,6 +2057,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             
             // Subscribe to collector locations when drops are loaded (household mode only)
             // Only subscribe once per drop to prevent infinite loops
+            // Also clean up tracking for expired/cancelled/collected drops
             dropsState.maybeWhen(
               data: (drops) {
                 final mode = userMode.value;
@@ -2073,10 +2074,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _subscribeToCollectorLocations(acceptedDrops);
                     });
                   }
+                  
+                  // Clean up collector tracking for drops that are no longer accepted
+                  // (expired, cancelled, or collected)
+                  final dropsToCleanup = drops.where((drop) => 
+                    _subscribedDrops.contains(drop.id) &&
+                    drop.status != DropStatus.accepted
+                  ).toList();
+                  
+                  if (dropsToCleanup.isNotEmpty) {
+                    for (final drop in dropsToCleanup) {
+                      debugPrint('🧹 Drop ${drop.id} status changed to ${drop.status.name}, cleaning up collector tracking');
+                      _cleanupCollectorLocation(drop.id);
+                    }
+                  }
                 }
               },
               orElse: () {},
             );
+            
+            // Listen for drop status updates from notification service (for immediate cleanup)
+            // Note: The callback is already set in auth_provider, so we'll just add our cleanup logic
+            // by watching the drops state changes (which is already done above)
 
             // Check subscription status for pro features
             final subscriptionState = ref.watch(collectorSubscriptionControllerProvider);
