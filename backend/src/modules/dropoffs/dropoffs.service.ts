@@ -2038,7 +2038,9 @@ export class DropoffsService {
               lng: dropoff.location.coordinates[0]
             }
           }
-        }]
+        }],
+        // Initialize location tracking fields
+        currentCollectorLocation: null
       });
 
       const savedAttempt = await collectionAttempt.save();
@@ -2112,6 +2114,7 @@ export class DropoffsService {
           completedAt: now,
           durationMinutes,
           earnings,
+          currentCollectorLocation: null, // Clear location when collection ends
           $push: { timeline: outcomeEvent }  // Use $push instead of spreading array
         },
         { new: true }
@@ -2442,5 +2445,208 @@ export class DropoffsService {
       .exec();
     
     return reports;
+  }
+
+  /**
+   * Update collector's current location for an active collection attempt
+   * @param attemptId - Collection attempt ID
+   * @param location - Location data (latitude, longitude, accuracy, speed, heading)
+   * @returns Updated collection attempt
+   */
+  async updateCollectorLocation(
+    attemptId: string,
+    location: {
+      latitude: number;
+      longitude: number;
+      accuracy?: number;
+      speed?: number;
+      heading?: number;
+    }
+  ) {
+    console.log(`📍 updateCollectorLocation called for attempt ${attemptId}:`, location);
+    try {
+      console.log(`📍 Updating collector location for attempt: ${attemptId}`);
+      
+      // Find the collection attempt
+      const attempt = await this.collectionAttemptModel.findById(attemptId).exec();
+      if (!attempt) {
+        throw new NotFoundException('Collection attempt not found');
+      }
+
+      // Only allow updates for active attempts
+      if (attempt.status !== 'active') {
+        throw new BadRequestException('Cannot update location for completed collection attempt');
+      }
+
+      // Validate location coordinates
+      if (location.latitude < -90 || location.latitude > 90) {
+        throw new BadRequestException('Invalid latitude (must be between -90 and 90)');
+      }
+      if (location.longitude < -180 || location.longitude > 180) {
+        throw new BadRequestException('Invalid longitude (must be between -180 and 180)');
+      }
+
+      // Update current collector location
+      const now = new Date();
+      const updatedAttempt = await this.collectionAttemptModel.findByIdAndUpdate(
+        attemptId,
+        {
+          currentCollectorLocation: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            timestamp: now,
+            speed: location.speed,
+            heading: location.heading,
+          }
+        },
+        { new: true }
+      ).exec();
+
+      if (!updatedAttempt) {
+        throw new NotFoundException('Collection attempt not found after update');
+      }
+
+      console.log(`✅ Collector location updated in database: ${location.latitude}, ${location.longitude}`);
+      console.log(`📋 Updated attempt document:`, {
+        attemptId: updatedAttempt._id.toString(),
+        status: updatedAttempt.status,
+        hasLocation: !!updatedAttempt.currentCollectorLocation,
+        location: updatedAttempt.currentCollectorLocation,
+      });
+
+      // Get dropoff to find household user
+      const dropoff = await this.dropoffModel.findById(attempt.dropoffId).exec();
+      if (dropoff) {
+        console.log(`📡 Broadcasting location to household user for dropoff: ${(dropoff as any)._id.toString()}`);
+        // Broadcast location to household user via WebSocket
+        await this.broadcastLocationToHousehold(
+          (dropoff as any)._id.toString(),
+          attempt._id.toString(),
+          updatedAttempt.currentCollectorLocation!
+        );
+      } else {
+        console.log(`⚠️ Dropoff not found for attempt: ${attempt.dropoffId}`);
+      }
+
+      return updatedAttempt;
+    } catch (error) {
+      console.error('❌ Error updating collector location:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get collector's current location for a collection attempt
+   * @param attemptId - Collection attempt ID
+   * @returns Current collector location or null
+   */
+  async getCollectorLocation(attemptId: string) {
+    try {
+      const attempt = await this.collectionAttemptModel.findById(attemptId).exec();
+      if (!attempt) {
+        throw new NotFoundException('Collection attempt not found');
+      }
+
+      return attempt.currentCollectorLocation || null;
+    } catch (error) {
+      console.error('❌ Error getting collector location:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Broadcast collector location to household user via WebSocket
+   * @param dropoffId - Dropoff ID
+   * @param attemptId - Collection attempt ID
+   * @param location - Current collector location
+   */
+  private async broadcastLocationToHousehold(
+    dropoffId: string,
+    attemptId: string,
+    location: {
+      latitude: number;
+      longitude: number;
+      accuracy?: number;
+      timestamp: Date;
+      speed?: number;
+      heading?: number;
+    }
+  ) {
+    try {
+      // Get dropoff to find household user
+      const dropoff = await this.dropoffModel.findById(dropoffId).populate('userId', '_id').exec();
+      if (!dropoff) {
+        console.log(`⚠️ Dropoff not found: ${dropoffId}`);
+        return;
+      }
+
+      const dropoffDoc = dropoff as any;
+      const householdUserId = dropoffDoc.userId?._id?.toString() || dropoffDoc.userId?.toString();
+      if (!householdUserId) {
+        console.log(`⚠️ Household user not found for dropoff: ${dropoffId}`);
+        return;
+      }
+
+      // Calculate distance and ETA (optional - can be calculated on frontend)
+      const dropLocation = dropoff.location.coordinates;
+      const distanceRemaining = this.calculateDistance(
+        location.latitude,
+        location.longitude,
+        dropLocation[1], // lat
+        dropLocation[0]  // lng
+      );
+
+      // Broadcast to household user's WebSocket room
+      this.notificationsGateway.server
+        .to(`user:${householdUserId}`)
+        .emit('collector_location_received', {
+          dropoffId,
+          attemptId,
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            timestamp: location.timestamp,
+            speed: location.speed,
+            heading: location.heading,
+          },
+          distanceRemaining, // meters
+        });
+
+      console.log(`📡 Broadcasted collector location to household user: ${householdUserId}`);
+    } catch (error) {
+      console.error('❌ Error broadcasting location to household:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Calculate distance between two coordinates (Haversine formula)
+   * @param lat1 - Latitude of first point
+   * @param lon1 - Longitude of first point
+   * @param lat2 - Latitude of second point
+   * @param lon2 - Longitude of second point
+   * @returns Distance in meters
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLon = this.toRadians(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /**
+   * Convert degrees to radians
+   */
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
   }
 } 

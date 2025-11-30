@@ -1,5 +1,45 @@
 import 'package:botleji/core/services/timezone_service.dart';
 
+class CollectorLocation {
+  final double latitude;
+  final double longitude;
+  final double? accuracy; // GPS accuracy in meters
+  final DateTime timestamp;
+  final double? speed; // Speed in m/s
+  final double? heading; // Direction in degrees (0-360)
+
+  CollectorLocation({
+    required this.latitude,
+    required this.longitude,
+    this.accuracy,
+    required this.timestamp,
+    this.speed,
+    this.heading,
+  });
+
+  factory CollectorLocation.fromJson(Map<String, dynamic> json) {
+    return CollectorLocation(
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      accuracy: json['accuracy'] != null ? (json['accuracy'] as num).toDouble() : null,
+      timestamp: TimezoneService.parseToGermanTime(json['timestamp']),
+      speed: json['speed'] != null ? (json['speed'] as num).toDouble() : null,
+      heading: json['heading'] != null ? (json['heading'] as num).toDouble() : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      if (accuracy != null) 'accuracy': accuracy,
+      'timestamp': timestamp.toIso8601String(),
+      if (speed != null) 'speed': speed,
+      if (heading != null) 'heading': heading,
+    };
+  }
+}
+
 class CollectionAttempt {
   final String id;
   final String dropoffId;
@@ -14,6 +54,7 @@ class CollectionAttempt {
   final int attemptNumber;
   final int cancellationCount;
   final double? earnings; // Earnings for this collection (only when outcome === 'collected')
+  final CollectorLocation? currentCollectorLocation; // Real-time collector location
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +72,7 @@ class CollectionAttempt {
     required this.attemptNumber,
     required this.cancellationCount,
     this.earnings,
+    this.currentCollectorLocation,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -54,6 +96,9 @@ class CollectionAttempt {
       attemptNumber: json['attemptNumber'],
       cancellationCount: json['cancellationCount'],
       earnings: json['earnings'] != null ? (json['earnings'] as num).toDouble() : null,
+      currentCollectorLocation: json['currentCollectorLocation'] != null
+          ? CollectorLocation.fromJson(json['currentCollectorLocation'])
+          : null,
       createdAt: TimezoneService.parseToGermanTime(json['createdAt']),
       updatedAt: TimezoneService.parseToGermanTime(json['updatedAt']),
     );
@@ -74,6 +119,7 @@ class CollectionAttempt {
       'attemptNumber': attemptNumber,
       'cancellationCount': cancellationCount,
       'earnings': earnings,
+      'currentCollectorLocation': currentCollectorLocation?.toJson(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };

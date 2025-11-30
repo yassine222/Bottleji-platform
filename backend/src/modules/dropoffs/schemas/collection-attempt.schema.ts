@@ -114,6 +114,17 @@ export class CollectionAttempt {
   earnings: number; // Earnings for this collection (only when outcome === 'collected')
   // Formula: (numberOfBottles * 0.025) + (numberOfCans * 0.06)
 
+  // Real-time collector location tracking
+  @Prop({ type: Object, default: null })
+  currentCollectorLocation?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number; // GPS accuracy in meters
+    timestamp: Date;
+    speed?: number; // Speed in m/s
+    heading?: number; // Direction in degrees (0-360)
+  };
+
   // Timestamps
   @Prop()
   createdAt: Date;

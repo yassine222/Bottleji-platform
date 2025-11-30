@@ -16,6 +16,7 @@ import { UsersService } from '../users/users.service';
 import { NotificationsService } from './notifications.service';
 import { FCMService } from './fcm.service';
 import { NotificationType, NotificationPriority } from './schemas/notification.schema';
+import { DropoffsService } from '../dropoffs/dropoffs.service';
 
 export interface NotificationPayload {
   type: string;
@@ -45,6 +46,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
     private fcmService: FCMService,
+    @Inject(forwardRef(() => DropoffsService))
+    private dropoffsService: DropoffsService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -77,6 +80,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       
       console.log(`✅ User ${normalizedUserId} connected (original: ${userId})`);
       console.log(`📊 Total connected users: ${this.connectedUsers.size}`);
+      
+      // Add event listener to catch all events for debugging
+      (client as any).onAny((eventName: string, ...args: any[]) => {
+        console.log(`🔍 ===== INCOMING WEBSOCKET EVENT =====`);
+        console.log(`🔍 Event name: ${eventName}`);
+        console.log(`🔍 Client ID: ${client.id}`);
+        console.log(`🔍 User ID: ${normalizedUserId}`);
+        console.log(`🔍 Args:`, JSON.stringify(args, null, 2));
+        console.log(`🔍 ====================================`);
+      });
       
       // Removed welcome notification - no longer needed for testing
 
@@ -190,6 +203,131 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
           timestamp: new Date(),
         });
       }
+    }
+  }
+
+  /**
+   * Handle collector location updates
+   * Collectors send their location via WebSocket, which is then broadcasted to household users
+   */
+  @SubscribeMessage('collector_location_update')
+  async handleCollectorLocationUpdate(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
+    try {
+      console.log('📨 ===== COLLECTOR LOCATION UPDATE HANDLER CALLED =====');
+      console.log('📨 WebSocket event received: collector_location_update');
+      console.log('📦 Event data:', JSON.stringify(data, null, 2));
+      console.log('🔌 Client ID:', client.id);
+      console.log('👥 Connected users count:', this.connectedUsers.size);
+      
+      // Find the user ID (collector) by looking through the connected users map
+      let collectorId: string | null = null;
+      for (const [uid, socket] of this.connectedUsers.entries()) {
+        if (socket.id === client.id) {
+          collectorId = uid;
+          break;
+        }
+      }
+
+      if (!collectorId) {
+        console.error('❌ Collector location update: User not found in connected users');
+        console.error('🔍 Available connected users:', Array.from(this.connectedUsers.keys()));
+        client.emit('error', { message: 'User not authenticated' });
+        return;
+      }
+
+      console.log(`✅ Found collector ID: ${collectorId}`);
+
+      // Validate required fields
+      if (!data.attemptId) {
+        console.error('❌ Collector location update: Missing attemptId');
+        client.emit('error', { message: 'Missing attemptId' });
+        return;
+      }
+
+      if (data.latitude === undefined || data.longitude === undefined) {
+        console.error('❌ Collector location update: Missing latitude or longitude');
+        client.emit('error', { message: 'Missing latitude or longitude' });
+        return;
+      }
+
+      console.log(`📍 Collector ${collectorId} location update for attempt ${data.attemptId}:`, {
+        latitude: data.latitude,
+        longitude: data.longitude,
+        accuracy: data.accuracy,
+        speed: data.speed,
+        heading: data.heading,
+      });
+
+      // Update location via dropoffs service (this will also broadcast to household)
+      console.log('🔄 Calling dropoffsService.updateCollectorLocation...');
+      const result = await this.dropoffsService.updateCollectorLocation(data.attemptId, {
+        latitude: data.latitude,
+        longitude: data.longitude,
+        accuracy: data.accuracy,
+        speed: data.speed,
+        heading: data.heading,
+      });
+
+      console.log('✅ updateCollectorLocation returned:', result ? 'Success' : 'Failed');
+
+      // Send confirmation to collector
+      client.emit('collector_location_update_confirmed', {
+        attemptId: data.attemptId,
+        timestamp: new Date(),
+      });
+
+      console.log(`✅ Collector location update processed for attempt ${data.attemptId}`);
+    } catch (error: any) {
+      console.error('❌ Error handling collector location update:', error);
+      console.error('❌ Error stack:', error.stack);
+      client.emit('error', {
+        message: error.message || 'Failed to update location',
+        code: error.status || 500,
+      });
+    }
+  }
+
+  /**
+   * Handle subscription to collector location updates (for household users)
+   * This is optional - location updates are automatically sent to the drop owner
+   */
+  @SubscribeMessage('subscribe_to_collector_location')
+  handleSubscribeToCollectorLocation(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
+    try {
+      // Find the user ID by looking through the connected users map
+      let userId: string | null = null;
+      for (const [uid, socket] of this.connectedUsers.entries()) {
+        if (socket.id === client.id) {
+          userId = uid;
+          break;
+        }
+      }
+
+      if (!userId) {
+        console.error('❌ Subscribe to collector location: User not found');
+        client.emit('error', { message: 'User not authenticated' });
+        return;
+      }
+
+      if (!data.dropoffId) {
+        console.error('❌ Subscribe to collector location: Missing dropoffId');
+        client.emit('error', { message: 'Missing dropoffId' });
+        return;
+      }
+
+      // Join room for this drop (optional - location is already sent to user room)
+      client.join(`drop:${data.dropoffId}`);
+      console.log(`✅ User ${userId} subscribed to collector location for drop ${data.dropoffId}`);
+
+      client.emit('subscribed_to_collector_location', {
+        dropoffId: data.dropoffId,
+        timestamp: new Date(),
+      });
+    } catch (error: any) {
+      console.error('❌ Error subscribing to collector location:', error);
+      client.emit('error', {
+        message: error.message || 'Failed to subscribe',
+      });
     }
   }
 

@@ -87,6 +87,7 @@ class NotificationService extends ChangeNotifier {
   List<NotificationPayload> get notifications => List.unmodifiable(_notifications);
   int get unreadCount => _notifications.where((n) => !(n.data?['read'] == true)).length;
   bool get hasSocket => _socket != null;
+  IO.Socket? get socket => _socket; // Expose socket for location updates
 
   // Callbacks
   Function(String reason)? onForceLogout;
@@ -105,8 +106,6 @@ class NotificationService extends ChangeNotifier {
   Function(String dropId, String reason)? onDropCensored;
   Function(String dropId, String status, Map<String, dynamic> data)? onDropStatusUpdate;
   Function(NotificationPayload)? onDropCollectedForHousehold;
-  Function(String orderId, String itemName, String rejectionReason, int pointsRefunded)? onOrderRejected;
-  Function(String orderId, String itemName, String? trackingNumber)? onOrderApproved; // Callback for drop collected popup (household only)
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -821,6 +820,30 @@ class NotificationService extends ChangeNotifier {
       _socket!.emit('ping');
     } else {
       debugPrint('🏓 Cannot send ping - socket not connected');
+    }
+  }
+
+  /// Send collector location update via WebSocket
+  void sendCollectorLocationUpdate({
+    required String attemptId,
+    required double latitude,
+    required double longitude,
+    double? accuracy,
+    double? speed,
+    double? heading,
+  }) {
+    if (_socket != null && _isConnected) {
+      _socket!.emit('collector_location_update', {
+        'attemptId': attemptId,
+        'latitude': latitude,
+        'longitude': longitude,
+        if (accuracy != null) 'accuracy': accuracy,
+        if (speed != null) 'speed': speed,
+        if (heading != null) 'heading': heading,
+      });
+      debugPrint('📍 Sent collector location update: $latitude, $longitude');
+    } else {
+      debugPrint('⚠️ Cannot send location update: WebSocket not connected');
     }
   }
 

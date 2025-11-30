@@ -23,6 +23,79 @@ import 'package:botleji/features/rewards/presentation/widgets/collection_success
 import 'package:botleji/l10n/app_localizations.dart';
 import 'package:botleji/features/collection/presentation/providers/collection_attempts_provider.dart';
 import 'package:botleji/features/earnings/presentation/providers/earnings_provider.dart';
+import 'package:botleji/core/services/notification_service.dart';
+import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Transportation mode enum
+enum TransportationMode {
+  walking,
+  driving,
+  bicycling,
+}
+
+extension TransportationModeExtension on TransportationMode {
+  String get apiValue {
+    switch (this) {
+      case TransportationMode.walking:
+        return 'walking';
+      case TransportationMode.driving:
+        return 'driving';
+      case TransportationMode.bicycling:
+        return 'bicycling';
+    }
+  }
+  
+  String getDisplayName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case TransportationMode.walking:
+        return l10n.walking;
+      case TransportationMode.driving:
+        return l10n.driving;
+      case TransportationMode.bicycling:
+        return l10n.bicycling;
+    }
+  }
+  
+  IconData get icon {
+    switch (this) {
+      case TransportationMode.walking:
+        return Icons.directions_walk;
+      case TransportationMode.driving:
+        return Icons.directions_car;
+      case TransportationMode.bicycling:
+        return Icons.directions_bike;
+    }
+  }
+  
+  List<PatternItem> get polylinePattern {
+    switch (this) {
+      case TransportationMode.walking:
+        // Dots pattern for walking (like Google Maps)
+        // Using very small dashes to create visible dots since PatternItem.dot doesn't render
+        return [PatternItem.dash(3), PatternItem.gap(5)];
+      case TransportationMode.driving:
+        // Solid line for driving
+        return [];
+      case TransportationMode.bicycling:
+        // Dotted pattern for bicycling (thin dots)
+        // Using very small dashes to create visible dots since PatternItem.dot doesn't render
+        return [PatternItem.dash(2), PatternItem.gap(4)];
+    }
+  }
+  
+  int get polylineWidth {
+    switch (this) {
+      case TransportationMode.walking:
+        return 8; // Thicker for better visibility
+      case TransportationMode.driving:
+        return 8;
+      case TransportationMode.bicycling:
+        return 5; // Slightly thicker for visibility but still thin
+    }
+  }
+}
 
 // Navigation step model
 class NavigationStep {
@@ -41,6 +114,85 @@ class NavigationStep {
     required this.polylinePoints,
     this.streetName,
   });
+  
+  Map<String, dynamic> toJson() {
+    return {
+      'instruction': instruction,
+      'distance': distance,
+      'duration': duration,
+      'maneuver': maneuver,
+      'polylinePoints': polylinePoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'streetName': streetName,
+    };
+  }
+  
+  factory NavigationStep.fromJson(Map<String, dynamic> json) {
+    return NavigationStep(
+      instruction: json['instruction'] as String,
+      distance: json['distance'] as String,
+      duration: json['duration'] as String,
+      maneuver: json['maneuver'] as String,
+      polylinePoints: (json['polylinePoints'] as List)
+          .map((p) => LatLng((p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()))
+          .toList(),
+      streetName: json['streetName'] as String?,
+    );
+  }
+}
+
+// Cached route data structure
+class _CachedRoute {
+  final Map<String, dynamic> routeData; // Full API response data
+  final List<NavigationStep> navigationSteps;
+  final List<LatLng> polylinePoints;
+  final String routeDistance;
+  final String routeDuration;
+  final DateTime cachedAt;
+  final String transportationMode;
+
+  _CachedRoute({
+    required this.routeData,
+    required this.navigationSteps,
+    required this.polylinePoints,
+    required this.routeDistance,
+    required this.routeDuration,
+    required this.cachedAt,
+    required this.transportationMode,
+  });
+
+  bool get isValid {
+    // Cache is valid as long as it exists (expiration handled by collection lifecycle)
+    // Routes are cleared when collection timer expires or collection is cancelled/completed
+    return true;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routeData': routeData,
+      'navigationSteps': navigationSteps.map((s) => s.toJson()).toList(),
+      'polylinePoints': polylinePoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'routeDistance': routeDistance,
+      'routeDuration': routeDuration,
+      'cachedAt': cachedAt.toIso8601String(),
+      'transportationMode': transportationMode,
+    };
+  }
+
+  factory _CachedRoute.fromJson(Map<String, dynamic> json) {
+    return _CachedRoute(
+      routeData: json['routeData'] as Map<String, dynamic>,
+      navigationSteps: (json['navigationSteps'] as List)
+          .map((s) => NavigationStep.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      polylinePoints: (json['polylinePoints'] as List)
+          .map((p) => LatLng((p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()))
+          .toList(),
+      routeDistance: json['routeDistance'] as String,
+      routeDuration: json['routeDuration'] as String,
+      cachedAt: DateTime.parse(json['cachedAt'] as String),
+      transportationMode: json['transportationMode'] as String,
+    );
+  }
 }
 
 class NavigationScreen extends ConsumerStatefulWidget {
@@ -74,10 +226,21 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   bool _isMoving = false;
   bool _isUserInteracting = false;
   bool _hasInitialCameraPosition = false;
+  int _closestPolylinePointIndex = 0; // Track the closest point on the polyline to remove passed segments
+  int _previousClosestPolylinePointIndex = 0; // Track previous closest point to calculate distance traveled
+  double _lastPolylineUpdateDistance = 0.0; // Track distance traveled since last polyline update
   LatLng? _lastLocation;
   DateTime? _lastLocationTime;
   Timer? _locationTimer;
   StreamSubscription<Position>? _locationSubscription;
+  TransportationMode _transportationMode = TransportationMode.driving; // Default to driving
+  bool _transportationModeLocked = false; // Lock after first selection to prevent timer exploitation
+  
+  // Route caching
+  static final Map<String, _CachedRoute> _inMemoryCache = {}; // In-memory cache (static to persist across widget rebuilds)
+  static const String _cachePrefix = 'route_cache_';
+  static int _apiCallCount = 0; // Track API calls for verification
+  static int _cacheHitCount = 0; // Track cache hits for verification
   
   // Custom marker icon
   BitmapDescriptor? _customDropMarker;
@@ -94,8 +257,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   // Proximity and slide button variables
   static const double _arrivalThreshold = 100.0; // 100 meters threshold - increased for better UX
   static const double _movementThreshold = 5.0;
-  static const Duration _fastUpdateInterval = Duration(seconds: 1);
-  static const Duration _slowUpdateInterval = Duration(seconds: 3);
+  // Optimized intervals matching industry standards (Wolt, Uber, etc.)
+  static const Duration _fastUpdateInterval = Duration(seconds: 3); // Changed from 1s to 3s for better battery life
+  static const Duration _slowUpdateInterval = Duration(seconds: 5); // Changed from 3s to 5s when stationary
   
   // Slide button variables
   bool _showSlideButton = false;
@@ -108,6 +272,11 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
 
   // Navigation card minimize/expand variables
   bool _isNavigationCardMinimized = false;
+
+  // Location broadcasting variables
+  String? _activeAttemptId; // Collection attempt ID for location broadcasting
+  DateTime? _lastLocationBroadcastTime; // Track last broadcast time
+  static const Duration _locationBroadcastInterval = Duration(seconds: 10); // Broadcast every 10 seconds
 
   @override
   void initState() {
@@ -123,7 +292,52 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _slideAnimationController, curve: Curves.easeInOut),
     );
+    _loadTransportationMode();
     _initializeLocation();
+  }
+
+  Future<void> _loadTransportationMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedMode = prefs.getString('transportation_mode_${widget.dropId}');
+      final isLocked = prefs.getBool('transportation_mode_locked_${widget.dropId}') ?? false;
+      
+      if (savedMode != null) {
+        setState(() {
+          _transportationMode = TransportationMode.values.firstWhere(
+            (mode) => mode.name == savedMode,
+            orElse: () => TransportationMode.driving,
+          );
+          _transportationModeLocked = isLocked;
+        });
+      } else {
+        // If no saved mode, check if drop was just accepted - allow one change
+        // Save the default mode initially
+        await _saveTransportationMode();
+      }
+    } catch (e) {
+      debugPrint('Error loading transportation mode: $e');
+    }
+  }
+
+  Future<void> _saveTransportationMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('transportation_mode_${widget.dropId}', _transportationMode.name);
+      await prefs.setBool('transportation_mode_locked_${widget.dropId}', _transportationModeLocked);
+    } catch (e) {
+      debugPrint('Error saving transportation mode: $e');
+    }
+  }
+
+  Future<void> _clearTransportationMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('transportation_mode_${widget.dropId}');
+      await prefs.remove('transportation_mode_locked_${widget.dropId}');
+    } catch (e) {
+      debugPrint('Error clearing transportation mode: $e');
+    }
   }
 
 
@@ -194,7 +408,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           setState(() {
             _remainingSeconds--;
           });
-          debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
           
           // Check for warning notification at 30% of total time remaining
           final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
@@ -284,7 +497,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           setState(() {
             _remainingSeconds--;
           });
-          debugPrint('⏰ Timer tick: ${_remainingSeconds} seconds remaining');
           
           // Check for warning notification at 30% of total time remaining
           final warningThreshold = (_totalTimeoutSeconds * 0.3).round();
@@ -315,6 +527,12 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Set flag immediately to prevent multiple calls
     _hasTimedOut = true;
+    
+    // Clear route cache when timer expires
+    await _clearRouteCache();
+    
+    // Stop location broadcasting
+    _stopLocationBroadcasting();
     
     debugPrint('⏰ TIMEOUT REACHED - Starting timeout handling... (forceShow: $forceShow)');
     
@@ -600,6 +818,17 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         _calculateRoute(_currentLocation!, widget.destination);
         _startLocationMonitoring();
         
+        // Get active collection attempt ID for location broadcasting
+        debugPrint('🔍 Navigation initialized, getting active attempt ID...');
+        _getActiveAttemptId().then((_) {
+          debugPrint('✅ Attempt ID retrieval completed: $_activeAttemptId');
+          if (_activeAttemptId == null) {
+            debugPrint('⚠️ WARNING: Attempt ID is still null after retrieval!');
+          } else {
+            debugPrint('✅ Ready to broadcast location updates with attempt ID: $_activeAttemptId');
+          }
+        });
+        
         // In debug mode, force immediate distance calculation
         // if (_debugMode) { // Removed debug mode
         //   debugPrint('🧪 DEBUG MODE: Forcing immediate distance calculation');
@@ -638,16 +867,74 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   }
 
   void _updateCameraPosition(LatLng newLocation) {
-    // Completely disable automatic camera updates - only manual control allowed
-    debugPrint('⏸️ Camera updates disabled - manual control only');
-    // Do nothing - camera stays where user puts it
+    // Don't update camera if user is manually interacting with the map
+    if (_isUserInteracting || _mapController == null) {
+      return;
+    }
+    
+    // Find the next turn point or destination to calculate bearing
+    LatLng? targetPoint;
+    
+    // Collect all polyline points
+    List<LatLng> allPolylinePoints = [];
+    for (var step in _navigationSteps) {
+      allPolylinePoints.addAll(step.polylinePoints);
+    }
+    
+    if (allPolylinePoints.isEmpty) {
+      // Fallback to destination if no polyline points
+      targetPoint = widget.destination;
+    } else {
+      // Find a point ahead on the route (look ahead 200-300 meters or 30% of remaining route)
+      int lookAheadIndex = _closestPolylinePointIndex;
+      double lookAheadDistance = 0;
+      const double targetLookAhead = 250.0; // Look ahead 250 meters
+      
+      for (int i = _closestPolylinePointIndex; i < allPolylinePoints.length - 1; i++) {
+        final distance = Geolocator.distanceBetween(
+          allPolylinePoints[i].latitude,
+          allPolylinePoints[i].longitude,
+          allPolylinePoints[i + 1].latitude,
+          allPolylinePoints[i + 1].longitude,
+        );
+        lookAheadDistance += distance;
+        lookAheadIndex = i + 1;
+        
+        if (lookAheadDistance >= targetLookAhead) {
+          break;
+        }
+      }
+      
+      // Use the look-ahead point, or destination if we've passed most of the route
+      targetPoint = lookAheadIndex < allPolylinePoints.length 
+          ? allPolylinePoints[lookAheadIndex]
+          : widget.destination;
+    }
+    
+    // Calculate bearing from current location to target point
+    double bearing = 0.0;
+    if (targetPoint != null) {
+      bearing = _calculateBearing(newLocation, targetPoint);
+    }
+    
+    // Update camera to follow user position with appropriate zoom and bearing
+    _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: newLocation,
+          zoom: 18.5,
+          tilt: 0,
+          bearing: bearing,
+        ),
+      ),
+    );
   }
 
 
   void _startLocationStream() {
     const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.medium, // Reduced accuracy for better performance
-      distanceFilter: 10, // Update every 10 meters of movement (increased from 5)
+      accuracy: LocationAccuracy.high, // High accuracy for navigation
+      distanceFilter: 5, // Update every 5 meters of movement (optimized for navigation apps)
     );
 
     _locationSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
@@ -684,12 +971,33 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           });
         }
         
-        // Camera updates disabled - only manual control allowed
-        // _updateCameraPosition(newLocation); // Removed automatic camera updates
+        // Update camera to follow user position and adjust for next turn
+        if (!_isUserInteracting && mounted) {
+          _updateCameraPosition(newLocation);
+        }
         
         // Update distance immediately when location changes
         if (mounted) {
           _updateDistanceToDestination();
+        }
+
+        // Broadcast location to household user (if attempt ID is available)
+        if (_activeAttemptId != null) {
+          _broadcastLocation(newLocation, position.accuracy, position.speed, position.heading);
+        } else {
+          // Debug: Log when attempt ID is not available and retry
+          final now = DateTime.now();
+          if (_lastLocationBroadcastTime == null || 
+              now.difference(_lastLocationBroadcastTime ?? DateTime(1970)) > const Duration(seconds: 10)) {
+            debugPrint('⚠️ Cannot broadcast location: _activeAttemptId is null, retrying to get attempt ID...');
+            // Try to get attempt ID again if we don't have it
+            _getActiveAttemptId().then((_) {
+              debugPrint('🔄 Retry completed, _activeAttemptId is now: $_activeAttemptId');
+            });
+            setState(() {
+              _lastLocationBroadcastTime = now; // Prevent spam
+            });
+          }
         }
       },
       onError: (error) {
@@ -698,6 +1006,102 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         _startSlowLocationUpdates();
       },
     );
+  }
+
+  /// Get active collection attempt ID for location broadcasting
+  Future<void> _getActiveAttemptId() async {
+    try {
+      final activeCollection = ref.read(navigationControllerProvider.notifier).activeCollection;
+      if (activeCollection == null) {
+        debugPrint('⚠️ No active collection found for location broadcasting');
+        return;
+      }
+
+      debugPrint('🔍 Getting active attempt ID for dropoff: ${activeCollection.dropoffId}');
+      final dio = ApiClientConfig.createDio();
+      final attemptsResponse = await dio.get(
+        '${ApiConfig.baseUrlSync}/dropoffs/${activeCollection.dropoffId}/attempts',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      debugPrint('📦 Attempts response: ${attemptsResponse.data}');
+      final attempts = attemptsResponse.data as List;
+      debugPrint('📦 Found ${attempts.length} attempts');
+      
+      final activeAttempt = attempts.firstWhere(
+        (a) => a['status'] == 'active',
+        orElse: () => null,
+      );
+
+      if (activeAttempt != null) {
+        final attemptId = activeAttempt['_id'];
+        setState(() {
+          _activeAttemptId = attemptId;
+        });
+        debugPrint('✅ Active attempt ID for location broadcasting: $_activeAttemptId');
+        debugPrint('📋 Attempt details: status=${activeAttempt['status']}, collectorId=${activeAttempt['collectorId']}');
+      } else {
+        debugPrint('⚠️ No active collection attempt found for location broadcasting');
+        debugPrint('📋 Available attempts: ${attempts.map((a) => '${a['_id']}: ${a['status']}').join(', ')}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error getting active attempt ID: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Broadcast collector location via WebSocket
+  void _broadcastLocation(LatLng location, double? accuracy, double? speed, double? heading) {
+    // Only broadcast if enough time has passed since last broadcast
+    final now = DateTime.now();
+    if (_lastLocationBroadcastTime != null &&
+        now.difference(_lastLocationBroadcastTime!) < _locationBroadcastInterval) {
+      return; // Skip if too soon
+    }
+
+    if (_activeAttemptId == null) {
+      debugPrint('⚠️ Cannot broadcast location: _activeAttemptId is null');
+      return; // No active attempt
+    }
+
+    final notificationService = ref.read(notificationServiceProvider);
+    if (!notificationService.isConnected) {
+      debugPrint('⚠️ WebSocket not connected, cannot broadcast location');
+      return;
+    }
+
+    try {
+      debugPrint('📡 Broadcasting collector location: attemptId=$_activeAttemptId, lat=${location.latitude}, lng=${location.longitude}');
+      notificationService.sendCollectorLocationUpdate(
+        attemptId: _activeAttemptId!,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: accuracy,
+        speed: speed,
+        heading: heading,
+      );
+
+      setState(() {
+        _lastLocationBroadcastTime = now;
+      });
+      debugPrint('✅ Location broadcasted successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error broadcasting location: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Stop location broadcasting
+  void _stopLocationBroadcasting() {
+    setState(() {
+      _activeAttemptId = null;
+      _lastLocationBroadcastTime = null;
+    });
+    debugPrint('🛑 Stopped location broadcasting');
   }
 
 
@@ -710,9 +1114,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       LatLng currentLatLng = _currentLocation!;
       
       // Only get new position if we don't have a recent one from the stream
-      // Increased interval to reduce frequency of new position requests
+      // Optimized interval matching industry standards (15 seconds)
       if (_lastLocationTime == null || 
-          DateTime.now().difference(_lastLocationTime!) > const Duration(seconds: 10)) {
+          DateTime.now().difference(_lastLocationTime!) > const Duration(seconds: 15)) {
         try {
           const LocationSettings locationSettings = LocationSettings(
             accuracy: LocationAccuracy.high,
@@ -720,7 +1124,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           );
           final position = await Geolocator.getCurrentPosition(locationSettings: locationSettings);
           currentLatLng = LatLng(position.latitude, position.longitude);
-          debugPrint('✅ Got new position: ${position.latitude}, ${position.longitude}');
         } catch (locationError) {
           // If getting new position fails, just use the current one from stream
           debugPrint('⚠️ Could not get new position, using current: $locationError');
@@ -747,11 +1150,20 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         double minDistance = double.infinity;
         LatLng closestPoint = _navigationSteps.first.polylinePoints.first;
         int closestStepIndex = 0;
+        int closestPointIndex = 0; // Track the index in the full polyline
+        
+        // Collect all polyline points with their indices
+        List<LatLng> allPolylinePoints = [];
+        for (var step in _navigationSteps) {
+          allPolylinePoints.addAll(step.polylinePoints);
+        }
         
         // Search through all route steps to find the closest point
+        int globalIndex = 0;
         for (int i = 0; i < _navigationSteps.length; i++) {
           final step = _navigationSteps[i];
-          for (final point in step.polylinePoints) {
+          for (int j = 0; j < step.polylinePoints.length; j++) {
+            final point = step.polylinePoints[j];
             final distance = Geolocator.distanceBetween(
               currentLatLng.latitude,
               currentLatLng.longitude,
@@ -762,7 +1174,38 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               minDistance = distance;
               closestPoint = point;
               closestStepIndex = i;
+              closestPointIndex = globalIndex;
             }
+            globalIndex++;
+          }
+        }
+        
+        // Update the closest polyline point index for polyline shrinking
+        // Also update current step index if we've progressed to a new step
+        if (mounted) {
+          bool stepChanged = false;
+          setState(() {
+            // Store previous index before updating
+            _previousClosestPolylinePointIndex = _closestPolylinePointIndex;
+            _closestPolylinePointIndex = closestPointIndex;
+            
+            // Update current step index if we've moved to a new step
+            // Use the closest step index, but only advance forward (don't go backwards)
+            if (closestStepIndex > _currentStepIndex) {
+              _currentStepIndex = closestStepIndex;
+              stepChanged = true;
+            }
+          });
+          
+          // Update polyline to remove passed segments (uses previous index to calculate distance)
+          _updatePolylineForProgress();
+          
+          // Update turn instructions if we've moved to a new step
+          if (stepChanged) {
+            _updateNextTurnInfo();
+          } else {
+            // Even if step hasn't changed, update the distance to next turn dynamically
+            _updateNextTurnDistance();
           }
         }
         
@@ -820,10 +1263,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           // This prevents the "You have arrived" card from showing too early
           _hasReachedDestination = remainingDistance <= 5.0;
           
-          // Show slide button when collector is within threshold distance
-          // For very close drops (< 10m), always show button for testing
+          // Show slide button when collector is within threshold distance OR when destination is reached
+          // For very close drops (< 10m), always show button
           // For normal drops, show button when within threshold
-          final shouldShowSlideButton = remainingDistance < 10.0 || remainingDistance <= _arrivalThreshold;
+          // Always show when destination is reached to allow collection confirmation
+          final shouldShowSlideButton = _hasReachedDestination || 
+                                       remainingDistance < 10.0 || 
+                                       remainingDistance <= _arrivalThreshold;
           
           // Auto-expand card when slide button appears
           if (shouldShowSlideButton && !_showSlideButton) {
@@ -833,36 +1279,104 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           _showSlideButton = shouldShowSlideButton;
         });
         
-        debugPrint('📍 Distance to destination: ${remainingDistance.toStringAsFixed(2)} meters');
-        debugPrint('📍 Arrival threshold: $_arrivalThreshold meters');
-        debugPrint('📍 Has reached destination: $_hasReachedDestination');
-        debugPrint('📍 Show slide button: $_showSlideButton');
-        
-        // Debug button type
-        if (remainingDistance < 10.0) {
-          debugPrint('🧪 Very close drop detected - showing TESTING button');
-        } else if (_showSlideButton) {
-          debugPrint('🎯 Normal drop within threshold - showing LOCATION-BASED button');
-        } else {
-          debugPrint('📏 Drop too far - no button shown');
-        }
-        
-        // Additional logging for close drops
-        if (remainingDistance <= 50.0) {
-          debugPrint('🎯 Close drop detected: ${remainingDistance.toStringAsFixed(2)}m - Button should be visible');
-        }
-        
-        // Debug the button visibility logic
-        debugPrint('🔍 Button visibility check:');
-        debugPrint('🔍 remainingDistance: ${remainingDistance}');
-        debugPrint('🔍 _arrivalThreshold: $_arrivalThreshold');
-        debugPrint('🔍 remainingDistance <= _arrivalThreshold: ${remainingDistance <= _arrivalThreshold}');
-        debugPrint('🔍 _showSlideButton will be: ${remainingDistance <= _arrivalThreshold}');
       }
     } catch (e) {
       debugPrint('Error updating distance: $e');
       // Don't let this error crash the app
     }
+  }
+
+  void _updatePolylineForProgress() {
+    if (_navigationSteps.isEmpty || _polylines.isEmpty) {
+      return;
+    }
+    
+    // Collect all polyline points from all steps
+    List<LatLng> allPolylinePoints = [];
+    for (var step in _navigationSteps) {
+      allPolylinePoints.addAll(step.polylinePoints);
+    }
+    
+    if (allPolylinePoints.isEmpty) {
+      return;
+    }
+    
+    // Calculate distance traveled along the route since last update
+    // This is the distance from the previous closest point to the current closest point
+    double distanceTraveled = 0.0;
+    if (_previousClosestPolylinePointIndex < _closestPolylinePointIndex) {
+      // Moved forward - calculate distance along the route
+      for (int i = _previousClosestPolylinePointIndex; i < _closestPolylinePointIndex; i++) {
+        if (i + 1 < allPolylinePoints.length) {
+          distanceTraveled += Geolocator.distanceBetween(
+            allPolylinePoints[i].latitude,
+            allPolylinePoints[i].longitude,
+            allPolylinePoints[i + 1].latitude,
+            allPolylinePoints[i + 1].longitude,
+          );
+        }
+      }
+    }
+    
+    // Accumulate distance traveled
+    _lastPolylineUpdateDistance += distanceTraveled;
+    
+    // Only update if we've moved at least 5 meters forward (same as location stream)
+    const double updateThreshold = 5.0; // meters
+    final totalDistanceTraveled = _lastPolylineUpdateDistance;
+    if (totalDistanceTraveled < updateThreshold) {
+      // Not enough distance traveled, skip update
+      return;
+    }
+    
+    // Reset accumulated distance after update
+    _lastPolylineUpdateDistance = 0.0;
+    
+    // Calculate start index with a small buffer (look back 2 points for smooth transition)
+    int startIndex = (_closestPolylinePointIndex - 2).clamp(0, allPolylinePoints.length - 1);
+    
+    // Don't update if too early in the route (first few points)
+    if (startIndex < 3) {
+      return;
+    }
+    
+    List<LatLng> remainingPoints = allPolylinePoints.sublist(startIndex);
+    
+    // Ensure we have at least 2 points for a valid polyline
+    if (remainingPoints.length < 2) {
+      return;
+    }
+    
+    // If we're very close to destination, ensure destination is included
+    final lastPoint = remainingPoints.last;
+    final distanceToDestination = Geolocator.distanceBetween(
+      lastPoint.latitude,
+      lastPoint.longitude,
+      widget.destination.latitude,
+      widget.destination.longitude,
+    );
+    
+    if (distanceToDestination > 10 && remainingPoints.last != widget.destination) {
+      remainingPoints.add(widget.destination);
+    }
+    
+    // Update the polyline with remaining points
+    setState(() {
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: remainingPoints,
+          color: const Color(0xFF00695C),
+          width: _transportationMode.polylineWidth,
+          geodesic: true,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          patterns: _transportationMode.polylinePattern,
+        ),
+      };
+    });
+    
+    debugPrint('🔄 Updated polyline: moved ${distanceTraveled.toStringAsFixed(1)}m (total: ${totalDistanceTraveled.toStringAsFixed(1)}m), removed ${startIndex} passed points, showing ${remainingPoints.length} remaining points');
   }
 
   void _createStraightLineRoute(LatLng origin, LatLng destination, double distance) {
@@ -871,13 +1385,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     // Create a simple straight-line polyline
     final points = <LatLng>[origin, destination];
     
-    // Create polyline
+    // Create polyline with pattern based on transportation mode
     final polyline = Polyline(
       polylineId: const PolylineId('straight_line_route'),
       points: points,
       color: const Color(0xFF00695C),
-      width: 4,
-      patterns: [],
+      width: _transportationMode.polylineWidth,
+      patterns: _transportationMode.polylinePattern,
     );
     
     // Update state
@@ -893,6 +1407,206 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     });
     
     debugPrint('✅ Straight-line route created: ${distance.toStringAsFixed(2)}m');
+  }
+
+  // Generate cache key for route
+  String _generateCacheKey(LatLng origin, LatLng destination, TransportationMode mode) {
+    // Include dropId in cache key so routes are per-drop
+    // Round coordinates to 4 decimal places (~11 meters precision) to allow slight variations
+    final originLat = origin.latitude.toStringAsFixed(4);
+    final originLng = origin.longitude.toStringAsFixed(4);
+    final destLat = destination.latitude.toStringAsFixed(4);
+    final destLng = destination.longitude.toStringAsFixed(4);
+    return '${widget.dropId}_${originLat}_${originLng}_${destLat}_${destLng}_${mode.name}';
+  }
+  
+  // Clear cache for this drop (clears all transportation modes for this drop)
+  Future<void> _clearRouteCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Clear cache for all transportation modes for this drop
+      // Since we don't know the exact origin used, we'll clear all cache entries for this drop
+      final allKeys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).toList();
+      final dropCacheKeys = allKeys.where((key) => key.contains('_${widget.dropId}_')).toList();
+      
+      for (final key in dropCacheKeys) {
+        await prefs.remove(key);
+        // Extract cache key from pref key (remove prefix)
+        final cacheKey = key.replaceFirst(_cachePrefix, '');
+        _inMemoryCache.remove(cacheKey);
+      }
+      
+      debugPrint('🧹 Cleared route cache for drop: ${widget.dropId} (${dropCacheKeys.length} entries)');
+    } catch (e) {
+      debugPrint('❌ Error clearing cache: $e');
+    }
+  }
+
+  // Get cached route
+  Future<_CachedRoute?> _getCachedRoute(String cacheKey) async {
+    debugPrint('🔍 Checking cache for key: $cacheKey');
+    
+    // Check in-memory cache first (fastest)
+    final inMemoryRoute = _inMemoryCache[cacheKey];
+    if (inMemoryRoute != null && inMemoryRoute.isValid) {
+      debugPrint('✅ Found route in IN-MEMORY cache');
+      debugPrint('📅 Cached at: ${inMemoryRoute.cachedAt}');
+      return inMemoryRoute;
+    } else if (inMemoryRoute != null && !inMemoryRoute.isValid) {
+      debugPrint('⚠️ In-memory cache entry exists but is invalid');
+    } else {
+      debugPrint('❌ Not found in in-memory cache');
+    }
+
+    // Check SharedPreferences cache
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKeyPrefs = '$_cachePrefix$cacheKey';
+      debugPrint('🔍 Checking SharedPreferences for key: $cacheKeyPrefs');
+      final cachedJson = prefs.getString(cacheKeyPrefs);
+      
+      if (cachedJson != null) {
+        debugPrint('✅ Found entry in SharedPreferences, parsing...');
+        final cachedRoute = _CachedRoute.fromJson(json.decode(cachedJson) as Map<String, dynamic>);
+        if (cachedRoute.isValid) {
+          debugPrint('✅ Found route in SHAREDPREFERENCES cache');
+          debugPrint('📅 Cached at: ${cachedRoute.cachedAt}');
+          // Update in-memory cache
+          _inMemoryCache[cacheKey] = cachedRoute;
+          return cachedRoute;
+        } else {
+          debugPrint('⚠️ Cached route invalid, removing from cache');
+          await prefs.remove(cacheKeyPrefs);
+        }
+      } else {
+        debugPrint('❌ Not found in SharedPreferences cache');
+      }
+    } catch (e) {
+      debugPrint('❌ Error reading cache: $e');
+    }
+
+    debugPrint('❌ No valid cache found');
+    return null;
+  }
+
+  // Store route in cache
+  Future<void> _storeRouteInCache(String cacheKey, _CachedRoute route) async {
+    // Store in in-memory cache
+    _inMemoryCache[cacheKey] = route;
+    
+    // Store in SharedPreferences cache (limit to last 10 routes to avoid storage bloat)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKeyPrefs = '$_cachePrefix$cacheKey';
+      await prefs.setString(cacheKeyPrefs, json.encode(route.toJson()));
+      
+      // Clean up old cache entries (keep only last 10)
+      await _cleanupOldCacheEntries(prefs);
+      
+      debugPrint('✅ Route stored in cache (key: $cacheKey)');
+    } catch (e) {
+      debugPrint('❌ Error storing cache: $e');
+    }
+  }
+
+  // Process route data (extracted from _calculateRoute for reuse with cached routes)
+  void _processRouteData(
+    Map<String, dynamic> data,
+    List<LatLng> points,
+    List<NavigationStep> navigationSteps,
+    String routeDistance,
+    String routeDuration,
+  ) {
+    setState(() {
+      _routeDistance = routeDistance;
+      _routeDuration = routeDuration;
+    });
+
+    // Update active collection with route information
+    _updateActiveCollectionWithRouteInfo();
+    
+    if (points.isNotEmpty) {
+      debugPrint('✅ Creating polyline with ${points.length} points...');
+      setState(() {
+        _polylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: points,
+            color: const Color(0xFF00695C), // App's green color
+            width: _transportationMode.polylineWidth,
+            geodesic: true,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            patterns: _transportationMode.polylinePattern,
+          ),
+        };
+        // Initialize closest point index to 0 (start of route)
+        _closestPolylinePointIndex = 0;
+        _previousClosestPolylinePointIndex = 0;
+        _lastPolylineUpdateDistance = 0.0;
+      });
+      
+      debugPrint('✅ Polyline added to map with ${_polylines.length} polylines');
+      debugPrint('Polyline color: ${const Color(0xFF00695C)}');
+      debugPrint('Polyline start: ${points.first.latitude}, ${points.first.longitude}');
+      debugPrint('Polyline end: ${points.last.latitude}, ${points.last.longitude}');
+      debugPrint('🎉 Route calculation and polyline creation completed successfully!');
+    } else {
+      debugPrint('Warning: No polyline points decoded!');
+    }
+
+    _navigationSteps = navigationSteps;
+    
+    debugPrint('✅ Navigation steps processed successfully!');
+
+    _updateNextTurnInfo();
+    
+    // Initialize closest point index
+    _closestPolylinePointIndex = 0;
+    _previousClosestPolylinePointIndex = 0;
+    _lastPolylineUpdateDistance = 0.0;
+    
+    // Center camera on the beginning of the route with high zoom
+    _centerCameraOnRouteStart();
+    _initializeTimer(); // Initialize timer after route is calculated
+  }
+
+  // Clean up old cache entries (keep only last 10)
+  Future<void> _cleanupOldCacheEntries(SharedPreferences prefs) async {
+    try {
+      final allKeys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).toList();
+      
+      if (allKeys.length > 10) {
+        // Get all cached routes with their timestamps
+        final routesWithTime = <MapEntry<String, DateTime>>[];
+        for (final key in allKeys) {
+          try {
+            final cachedJson = prefs.getString(key);
+            if (cachedJson != null) {
+              final data = json.decode(cachedJson) as Map<String, dynamic>;
+              final cachedAt = DateTime.parse(data['cachedAt'] as String);
+              routesWithTime.add(MapEntry(key, cachedAt));
+            }
+          } catch (e) {
+            // Skip invalid entries
+            continue;
+          }
+        }
+        
+        // Sort by time (oldest first) and remove oldest entries
+        routesWithTime.sort((a, b) => a.value.compareTo(b.value));
+        final toRemove = routesWithTime.length - 10;
+        
+        for (int i = 0; i < toRemove; i++) {
+          await prefs.remove(routesWithTime[i].key);
+        }
+        
+        debugPrint('🧹 Cleaned up ${toRemove} old cache entries');
+      }
+    } catch (e) {
+      debugPrint('❌ Error cleaning up cache: $e');
+    }
   }
 
   Future<void> _calculateRoute(LatLng origin, LatLng destination) async {
@@ -915,12 +1629,30 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         _createStraightLineRoute(origin, destination, straightLineDistance);
         return;
       }
+
+      // Check cache before making API call
+      final cacheKey = _generateCacheKey(origin, destination, _transportationMode);
+      debugPrint('🔍 Cache key: $cacheKey');
+      final cachedRoute = await _getCachedRoute(cacheKey);
+      
+      if (cachedRoute != null) {
+        _cacheHitCount++;
+        debugPrint('✅ CACHE HIT #$_cacheHitCount - Using cached route (saved API call!)');
+        debugPrint('📊 API Calls: $_apiCallCount | Cache Hits: $_cacheHitCount');
+        // Use cached route data
+        _processRouteData(cachedRoute.routeData, cachedRoute.polylinePoints, cachedRoute.navigationSteps, cachedRoute.routeDistance, cachedRoute.routeDuration);
+        return;
+      }
+
+      _apiCallCount++;
+      debugPrint('📡 CACHE MISS - No valid cache found, making API call #$_apiCallCount...');
+      debugPrint('📊 API Calls: $_apiCallCount | Cache Hits: $_cacheHitCount');
       
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/directions/json?'
         'origin=${origin.latitude},${origin.longitude}'
         '&destination=${destination.latitude},${destination.longitude}'
-        '&mode=driving'
+        '&mode=${_transportationMode.apiValue}'
         '&units=metric'
         '&key=AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E'
       );
@@ -929,7 +1661,12 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       debugPrint('Using API key: AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E');
 
       final dio = ApiClientConfig.createDio();
-      debugPrint('Making API call...');
+      debugPrint('🌐 ========== MAKING API CALL #$_apiCallCount ==========');
+      debugPrint('🌐 API URL: ${url.toString().replaceAll('AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E', 'API_KEY_HIDDEN')}');
+      debugPrint('🌐 Origin: ${origin.latitude}, ${origin.longitude}');
+      debugPrint('🌐 Destination: ${destination.latitude}, ${destination.longitude}');
+      debugPrint('🌐 Mode: ${_transportationMode.name}');
+      debugPrint('🌐 ============================================');
       
       Map<String, dynamic> data;
       try {
@@ -1001,22 +1738,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           debugPrint('First step duration type: ${firstStep['duration']?.runtimeType}');
         }
         
-        setState(() {
-          // Handle distance safely
-          if (leg['distance'] is Map && leg['distance']['text'] is String) {
-            _routeDistance = leg['distance']['text'] as String;
-          } else {
-            _routeDistance = 'Unknown distance';
-          }
-          
-          // Handle duration safely
-          if (leg['duration'] is Map && leg['duration']['text'] is String) {
-            _routeDuration = leg['duration']['text'] as String;
-          } else {
-            _routeDuration = 'Unknown duration';
-          }
-        });
-
         // Check if overview_polyline exists
         if (route['overview_polyline'] == null) {
           debugPrint('ERROR: No overview_polyline in route');
@@ -1041,55 +1762,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         }
         
         debugPrint('Route calculated successfully!');
-        // Handle distance safely for debug print
-        String distanceText = 'Unknown';
-        if (leg['distance'] is Map && leg['distance']['text'] is String) {
-          distanceText = leg['distance']['text'] as String;
-        }
-        
-        // Handle duration safely for debug print
-        String durationText = 'Unknown';
-        if (leg['duration'] is Map && leg['duration']['text'] is String) {
-          durationText = leg['duration']['text'] as String;
-        }
-        
-        debugPrint('Route distance: $distanceText');
-        debugPrint('Route duration: $durationText');
         debugPrint('Polyline points count: ${points.length}');
-        
-        // Update active collection with route information
-        _updateActiveCollectionWithRouteInfo();
-        
-        if (points.isNotEmpty) {
-          debugPrint('✅ Creating polyline with ${points.length} points...');
-          setState(() {
-            _polylines = {
-              Polyline(
-                polylineId: const PolylineId('route'),
-                points: points,
-                color: const Color(0xFF00695C), // App's green color
-                width: 8, // Increased width for better visibility
-                geodesic: true,
-                startCap: Cap.roundCap,
-                endCap: Cap.roundCap,
-              ),
-            };
-          });
-          
-          debugPrint('✅ Polyline added to map with ${_polylines.length} polylines');
-          debugPrint('Polyline color: ${const Color(0xFF00695C)}');
-          debugPrint('Polyline start: ${points.first.latitude}, ${points.first.longitude}');
-          debugPrint('Polyline end: ${points.last.latitude}, ${points.last.longitude}');
-          debugPrint('🎉 Route calculation and polyline creation completed successfully!');
-        } else {
-          debugPrint('Warning: No polyline points decoded!');
-        }
 
         // Parse navigation steps
         final steps = leg['steps'] as List;
         debugPrint('✅ Processing ${steps.length} navigation steps...');
         
-        _navigationSteps = steps.map((step) {
+        final navigationSteps = steps.map((step) {
           debugPrint('Processing step: ${step.keys.toList()}');
           
           // Handle polyline data safely
@@ -1137,11 +1816,29 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         
         debugPrint('✅ Navigation steps processed successfully!');
 
-        _updateNextTurnInfo();
+        // Extract route distance and duration
+        final routeDistance = leg['distance'] is Map && leg['distance']['text'] is String
+            ? leg['distance']['text'] as String
+            : 'Unknown distance';
+        final routeDuration = leg['duration'] is Map && leg['duration']['text'] is String
+            ? leg['duration']['text'] as String
+            : 'Unknown duration';
         
-        // Center camera on the beginning of the route with high zoom
-        _centerCameraOnRouteStart();
-        _initializeTimer(); // Initialize timer after route is calculated
+        // Store route in cache for future use
+        final cachedRoute = _CachedRoute(
+          routeData: data,
+          navigationSteps: navigationSteps,
+          polylinePoints: points,
+          routeDistance: routeDistance,
+          routeDuration: routeDuration,
+          cachedAt: DateTime.now(),
+          transportationMode: _transportationMode.name,
+        );
+        
+        await _storeRouteInCache(cacheKey, cachedRoute);
+        
+        // Process the route data
+        _processRouteData(data, points, navigationSteps, routeDistance, routeDuration);
       } else {
         debugPrint('❌ Directions API error: ${data['status']}');
         debugPrint('❌ Error message: ${data['error_message'] ?? 'No error message'}');
@@ -1245,6 +1942,57 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     }
   }
 
+  void _updateNextTurnDistance() {
+    if (_currentLocation == null || _currentStepIndex >= _navigationSteps.length) {
+      return;
+    }
+    
+    // Calculate the actual distance to the next turn dynamically
+    final currentStep = _navigationSteps[_currentStepIndex];
+    if (currentStep.polylinePoints.isEmpty) {
+      return;
+    }
+    
+    // Find the closest point on the current step's polyline
+    double minDistance = double.infinity;
+    int closestPointIndex = 0;
+    
+    for (int i = 0; i < currentStep.polylinePoints.length; i++) {
+      final point = currentStep.polylinePoints[i];
+      final distance = Geolocator.distanceBetween(
+        _currentLocation!.latitude,
+        _currentLocation!.longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPointIndex = i;
+      }
+    }
+    
+    // Calculate distance from closest point to the end of this step
+    double distanceToTurn = 0;
+    for (int i = closestPointIndex; i < currentStep.polylinePoints.length - 1; i++) {
+      distanceToTurn += Geolocator.distanceBetween(
+        currentStep.polylinePoints[i].latitude,
+        currentStep.polylinePoints[i].longitude,
+        currentStep.polylinePoints[i + 1].latitude,
+        currentStep.polylinePoints[i + 1].longitude,
+      );
+    }
+    
+    // Add distance from current position to closest point
+    distanceToTurn += minDistance;
+    
+    // Update the distance display
+    if (mounted) {
+      setState(() {
+        _nextTurnDistance = _formatDistance(distanceToTurn);
+      });
+    }
+  }
+
   String _formatDistance(double distanceInMeters) {
     if (distanceInMeters >= 1000) {
       final km = distanceInMeters / 1000;
@@ -1258,6 +2006,117 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     final minutes = (seconds / 60).floor();
     final remainingSeconds = seconds % 60;
     return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildTransportationModeChip(
+    BuildContext context,
+    TransportationMode mode,
+    bool isDark,
+  ) {
+    final theme = Theme.of(context);
+    final isSelected = _transportationMode == mode;
+    return GestureDetector(
+      onTap: () {
+        // Prevent changing if locked
+        if (_transportationModeLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).transportationModeLocked),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+        
+        if (_transportationMode != mode) {
+          setState(() {
+            _transportationMode = mode;
+            _transportationModeLocked = true; // Lock after first change
+          });
+          _saveTransportationMode();
+          
+          // Update existing polyline with new pattern immediately
+          if (_polylines.isNotEmpty) {
+            final existingPolyline = _polylines.first;
+            setState(() {
+              _polylines = {
+                Polyline(
+                  polylineId: existingPolyline.polylineId,
+                  points: existingPolyline.points,
+                  color: existingPolyline.color,
+                  width: mode.polylineWidth,
+                  geodesic: existingPolyline.geodesic,
+                  startCap: existingPolyline.startCap,
+                  endCap: existingPolyline.endCap,
+                  patterns: mode.polylinePattern,
+                ),
+              };
+            });
+          }
+          // Recalculate route with new mode
+          if (_currentLocation != null) {
+            _calculateRoute(_currentLocation!, widget.destination);
+          }
+        }
+      },
+      child: Opacity(
+        opacity: _transportationModeLocked && !isSelected ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF00695C)
+                : (isDark ? AppColors.darkSurface : Colors.white),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF00695C)
+                  : (isDark
+                      ? AppColors.darkPrimary.withOpacity(0.3)
+                      : AppColors.lightPrimary.withOpacity(0.3)),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                mode.icon,
+                size: 18,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  mode.getDisplayName(context),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isSelected && _transportationModeLocked) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.lock,
+                  size: 14,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   IconData _getManeuverIcon(String maneuver) {
@@ -1307,7 +2166,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     return Container(
       width: double.infinity,
-    margin: const EdgeInsets.fromLTRB(16, 25, 16, 16),
+    margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1327,7 +2186,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       ),
       child: SafeArea(
         child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -1336,7 +2195,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               Row(
                 children: [
                   Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                     color: const Color(0xFF00695C).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -1344,7 +2203,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                   child: const Icon(
                       Icons.route,
                     color: Color(0xFF00695C),
-                    size: 24,
+                    size: 22,
                     ),
                   ),
                 const SizedBox(width: 12),
@@ -1398,7 +2257,38 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 ],
               ),
               
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            
+            /// ---------------- TRANSPORTATION MODE SELECTOR ----------------
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTransportationModeChip(
+                    context,
+                    TransportationMode.walking,
+                    isDark,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildTransportationModeChip(
+                    context,
+                    TransportationMode.driving,
+                    isDark,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildTransportationModeChip(
+                    context,
+                    TransportationMode.bicycling,
+                    isDark,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
 
             /// ---------------- CONDITIONAL CONTENT (MINIMIZED/EXPANDED) ----------------
             if (_isNavigationCardMinimized) ...[
@@ -1499,13 +2389,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     ),
                   ],
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               ],
               
             /// ---------------- DISTANCE TO DESTINATION ----------------
               Container(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: _hasReachedDestination 
                     ? Colors.green.withOpacity(0.1)
@@ -1548,12 +2438,12 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 ),
               ),
               
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
               
             /// ---------------- TIMER ----------------
               Container(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                 color: _remainingSeconds < 300
                     ? Colors.orange.withOpacity(0.1)
@@ -1592,77 +2482,35 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 ),
               ),
               
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
               
             /// ---------------- ACTION BUTTONS ----------------
-              if (_hasReachedDestination) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text(AppLocalizations.of(context).cancelCollection),
-                            content: Text(
-                                AppLocalizations.of(context).areYouSureCancelCollection),
-                              actions: [
-                                TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, false),
-                                  child: Text(AppLocalizations.of(context).no),
-                                ),
-                                FilledButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, true),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.lightError,
-                                ),
-                                  child: Text(AppLocalizations.of(context).yesCancel),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirmed == true) {
-                            _showCancellationDialog(context);
-                          }
-                        },
-                        icon: const Icon(Icons.cancel),
-                        label: Text(AppLocalizations.of(context).cancel),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.lightError,
-                          side: BorderSide(color: AppColors.lightError),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-              // Show slide button when close to drop, otherwise show nothing
-              if (_showSlideButton) ...[
-                // Slide to Collect Button (when close to drop)
+              // Show slide button when close to drop or when destination is reached
+              if (_showSlideButton || _hasReachedDestination) ...[
+                // Slide to Collect Button (when close to drop or at destination)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _buildSlideButton(),
                 ),
                 
-                const SizedBox(height: 12),
-                
-                // Cancel Collection Button (when slide button is visible) - Clickable
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildCancelButton(),
+                // "Drop not found?" text link when close or at destination
+                const SizedBox(height: 6),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      _showCancellationDialog(context);
+                    },
+                    child: Text(
+                      AppLocalizations.of(context).dropNotFound,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
                 ),
               ],
-            ],
               ],
             ],
           ),
@@ -1807,6 +2655,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               rotateGesturesEnabled: true,
               tiltGesturesEnabled: true,
               minMaxZoomPreference: const MinMaxZoomPreference(15, 20),
+              padding: const EdgeInsets.only(top: 180), // Add top padding to account for navigation banner
             ),
             
             // Navigation Banner
@@ -2085,6 +2934,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -2112,14 +2962,18 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).dropInformation,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(
+                      Icons.close,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -2137,9 +2991,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 200,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.image_not_supported, size: 50),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -2150,7 +3008,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -2168,21 +3026,25 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                             const SizedBox(height: 4),
                             Text(
                               '${activeCollection.numberOfBottles}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Text(
                               AppLocalizations.of(context).plasticBottles,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
                         Container(
                           width: 1,
                           height: 50,
-                          color: Colors.grey[300],
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                         Column(
                           children: [
@@ -2194,14 +3056,18 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                             const SizedBox(height: 4),
                             Text(
                               '${activeCollection.numberOfCans}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Text(
                               AppLocalizations.of(context).cans,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -2216,13 +3082,15 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                         children: [
                           Text(
                             '${AppLocalizations.of(context).bottleType}: ',
-                            style: const TextStyle(color: Colors.grey),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           Text(
                             _getLocalizedBottleType(activeCollection.bottleType!),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF00695C),
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ],
@@ -2238,19 +3106,28 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber[50],
+                    color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber[200]!),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.tertiaryContainer,
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.note, color: Colors.amber, size: 20),
+                      Icon(
+                        Icons.note,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           activeCollection.notes!,
-                          style: const TextStyle(fontSize: 14),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ],
@@ -2264,19 +3141,26 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[200]!),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.door_front_door, color: Colors.blue, size: 20),
+                      Icon(
+                        Icons.door_front_door,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         AppLocalizations.of(context).leaveOutside,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -2447,6 +3331,15 @@ void _showWarningNotification() async {
       // Clear the persistent collection state
       await ref.read(navigationControllerProvider.notifier).cancelCollection();
       
+      // Clear transportation mode for this drop
+      await _clearTransportationMode();
+      
+      // Clear route cache for this drop
+      await _clearRouteCache();
+      
+      // Stop location broadcasting
+      _stopLocationBroadcasting();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2594,28 +3487,56 @@ void _showWarningNotification() async {
 
     final startPoint = _navigationSteps.first.polylinePoints.first;
     
-    // Calculate bearing from the first two points of the polyline
+    // Calculate bearing from start to a point further along the route for better alignment
+    // This ensures the camera aligns with the overall polyline direction, especially for straight lines
     double bearing = 0.0;
-    if (_navigationSteps.first.polylinePoints.length >= 2) {
-      final secondPoint = _navigationSteps.first.polylinePoints[1];
-      bearing = _calculateBearing(startPoint, secondPoint);
-      debugPrint('🧭 Calculated bearing: ${bearing.toStringAsFixed(1)}°');
+    LatLng? directionPoint;
+    
+    // Collect all polyline points from all steps
+    List<LatLng> allPolylinePoints = [];
+    for (var step in _navigationSteps) {
+      allPolylinePoints.addAll(step.polylinePoints);
     }
     
-    final cameraUpdate = CameraUpdate.newLatLngZoom(startPoint, 18.0);
+    if (allPolylinePoints.length >= 2) {
+      // Find a point that's at least 100 meters away from start, or use a point 20% along the route
+      int targetIndex = (allPolylinePoints.length * 0.2).round().clamp(1, allPolylinePoints.length - 1);
+      directionPoint = allPolylinePoints[targetIndex];
+      
+      // If the point is too close, find a point further along
+      double distance = Geolocator.distanceBetween(
+        startPoint.latitude,
+        startPoint.longitude,
+        directionPoint.latitude,
+        directionPoint.longitude,
+      );
+      
+      // If less than 100 meters, try to find a point further along
+      if (distance < 100 && allPolylinePoints.length > targetIndex + 5) {
+        targetIndex = (allPolylinePoints.length * 0.4).round().clamp(1, allPolylinePoints.length - 1);
+        directionPoint = allPolylinePoints[targetIndex];
+      }
+      
+      bearing = _calculateBearing(startPoint, directionPoint);
+      debugPrint('🧭 Calculated bearing from start to point ${targetIndex}/${allPolylinePoints.length}: ${bearing.toStringAsFixed(1)}°');
+    }
+    
+    // Zoom in more (zoom 19.5) and align camera with polyline direction
+    // The padding set on GoogleMap widget will ensure polyline is visible below navigation banner
+    final cameraUpdate = CameraUpdate.newLatLngZoom(startPoint, 19.5);
     _mapController!.animateCamera(cameraUpdate).then((_) {
-      // Set the bearing after the camera position is set
+      // Set the bearing after the camera position is set to align with polyline direction
       _mapController!.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
           target: startPoint,
-          zoom: 18.0,
+          zoom: 18.5,
           tilt: 0,
           bearing: bearing,
         ),
       ));
     });
     
-    debugPrint('📍 Centering camera on route start at ${startPoint.latitude}, ${startPoint.longitude} with zoom 18 and bearing ${bearing.toStringAsFixed(1)}°');
+    debugPrint('📍 Centering camera on route start at ${startPoint.latitude}, ${startPoint.longitude} with zoom 19.5 and bearing ${bearing.toStringAsFixed(1)}°');
   }
 
   double _calculateBearing(LatLng start, LatLng end) {
@@ -2662,6 +3583,15 @@ void _showWarningNotification() async {
         final rewardData = await ref
             .read(dropsControllerProvider.notifier)
             .confirmCollectionWithRewards(widget.dropId);
+
+        // Clear transportation mode for this drop after collection
+        await _clearTransportationMode();
+        
+        // Clear route cache for this drop after collection
+        await _clearRouteCache();
+        
+        // Stop location broadcasting
+        _stopLocationBroadcasting();
 
         debugPrint('✅ Collection confirmed successfully!');
         

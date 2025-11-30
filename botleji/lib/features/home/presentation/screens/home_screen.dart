@@ -41,9 +41,16 @@ import 'package:botleji/core/theme/app_typography.dart';
 import 'package:botleji/core/navigation/app_routes.dart';
 import 'package:botleji/core/widgets/active_collection_indicator.dart';
 import 'package:botleji/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:botleji/core/services/notification_service.dart';
+import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/l10n/app_localizations.dart';
+import 'package:dio/dio.dart';
+import 'package:botleji/core/config/api_config.dart';
+import 'package:botleji/core/api/api_client.dart';
 import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/features/stats/presentation/widgets/session_value_card.dart';
+import 'package:botleji/features/auth/controllers/collector_subscription_controller.dart';
+import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
 
 
 // Navigation step model
@@ -96,7 +103,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   
   // Custom marker icon
   BitmapDescriptor? _customDropMarker;
+  BitmapDescriptor? _collectorMarkerIcon; // Collector location marker
   
+  // Collector location tracking (for household users)
+  Map<String, LatLng?> _collectorLocations = {}; // dropId -> collector location
+  Map<String, String> _dropToAttemptId = {}; // dropId -> attemptId
+  Map<String, double?> _collectorDistances = {}; // dropId -> distance remaining
+  Set<String> _subscribedDrops = {}; // Track which drops we've already subscribed to (prevent infinite loops)
+
   // Form fields
   int _numberOfBottles = 1;
   int _numberOfCans = 0; // Start with 0 cans since default is plastic bottles
@@ -792,6 +806,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         AppLogger.log('❌ Home: Error loading custom marker: $e');
       });
       
+      // Load collector marker icon
+      _loadCollectorMarker().catchError((e) {
+        AppLogger.log('❌ Home: Error loading collector marker: $e');
+      });
+      
       // Step 3: Wait a bit before location initialization (release mode needs more time)
       await Future.delayed(const Duration(milliseconds: 300));
       
@@ -860,6 +879,241 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       }
     }
+  }
+
+  // Load collector marker icon from assets
+  Future<void> _loadCollectorMarker() async {
+    if (!mounted) return;
+    
+    try {
+      final BitmapDescriptor collectorIcon = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration.empty,
+        'assets/icons/collector-pin.png',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _collectorMarkerIcon = collectorIcon;
+        });
+        debugPrint('✅ Collector marker icon loaded successfully');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading collector marker icon: $e');
+      // Fallback to default marker if loading fails
+      if (mounted) {
+        setState(() {
+          _collectorMarkerIcon = BitmapDescriptor.defaultMarker;
+        });
+      }
+    }
+  }
+
+  /// Subscribe to collector location updates for accepted drops
+  Future<void> _subscribeToCollectorLocations(List<Drop> drops) async {
+    try {
+      final userMode = ref.read(userModeControllerProvider);
+      await userMode.whenData((mode) async {
+        // Only subscribe for household users
+        if (mode != UserMode.household) return;
+
+        // Filter out drops we've already subscribed to
+        final newDrops = drops.where((drop) => !_subscribedDrops.contains(drop.id)).toList();
+        if (newDrops.isEmpty) {
+          debugPrint('📍 All drops already subscribed, skipping');
+          return;
+        }
+
+        // Find accepted drops from new drops
+        final acceptedDrops = newDrops.where((drop) => drop.status == DropStatus.accepted).toList();
+        if (acceptedDrops.isEmpty) {
+          debugPrint('📍 No new accepted drops to track collector location');
+          return;
+        }
+
+        final notificationService = ref.read(notificationServiceProvider);
+        if (!notificationService.isConnected) {
+          debugPrint('⚠️ WebSocket not connected, cannot subscribe to collector locations');
+          return;
+        }
+
+        // Get collection attempts for accepted drops
+        final dio = ApiClientConfig.createDio();
+        for (final drop in acceptedDrops) {
+          // Skip if already subscribed
+          if (_subscribedDrops.contains(drop.id)) {
+            debugPrint('⏭️ Already subscribed to drop ${drop.id}, skipping');
+            continue;
+          }
+
+          try {
+            final attemptsResponse = await dio.get(
+              '${ApiConfig.baseUrlSync}/dropoffs/${drop.id}/attempts',
+              options: Options(
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              ),
+            );
+
+            final attempts = attemptsResponse.data as List;
+            final activeAttempt = attempts.firstWhere(
+              (a) => a['status'] == 'active',
+              orElse: () => null,
+            );
+
+            if (activeAttempt != null) {
+              final attemptId = activeAttempt['_id'];
+              setState(() {
+                _dropToAttemptId[drop.id] = attemptId;
+                _subscribedDrops.add(drop.id); // Mark as subscribed
+              });
+
+              // Subscribe to location updates for this drop
+              notificationService.socket?.emit('subscribe_to_collector_location', {
+                'dropoffId': drop.id,
+              });
+              debugPrint('📡 Emitted subscribe_to_collector_location for drop ${drop.id}');
+
+              // Get initial location if available
+              if (activeAttempt['currentCollectorLocation'] != null) {
+                final location = activeAttempt['currentCollectorLocation'];
+                final collectorLocation = LatLng(
+                  location['latitude'] as double,
+                  location['longitude'] as double,
+                );
+                setState(() {
+                  _collectorLocations[drop.id] = collectorLocation;
+                });
+                debugPrint('📍 Loaded initial collector location for drop ${drop.id}: ${collectorLocation.latitude}, ${collectorLocation.longitude}');
+              } else {
+                debugPrint('⚠️ No initial collector location found for drop ${drop.id}');
+              }
+
+              debugPrint('✅ Subscribed to collector location for drop ${drop.id}, attemptId: $attemptId');
+            } else {
+              debugPrint('⚠️ No active attempt found for drop ${drop.id}');
+            }
+          } catch (e) {
+            debugPrint('❌ Error getting attempts for drop ${drop.id}: $e');
+          }
+        }
+
+        // Set up WebSocket listener for location updates (only once)
+        if (!_subscribedDrops.isEmpty) {
+          _setupLocationUpdateListener();
+        }
+      });
+    } catch (e) {
+      debugPrint('❌ Error subscribing to collector locations: $e');
+    }
+  }
+
+  /// Set up WebSocket listener for collector location updates
+  void _setupLocationUpdateListener() {
+    final notificationService = ref.read(notificationServiceProvider);
+    
+    // Remove existing listener if any
+    notificationService.socket?.off('collector_location_received');
+    
+    // Add new listener
+    notificationService.socket?.on('collector_location_received', (data) {
+      try {
+        debugPrint('📨 Received collector_location_received event: $data');
+        final dropoffId = data['dropoffId'] as String?;
+        final locationData = data['location'] as Map<String, dynamic>?;
+        final distanceRemaining = data['distanceRemaining'] as double?;
+
+        debugPrint('📍 Parsing location data - dropoffId: $dropoffId, locationData: $locationData');
+
+        if (dropoffId != null && locationData != null) {
+          final location = LatLng(
+            (locationData['latitude'] as num).toDouble(),
+            (locationData['longitude'] as num).toDouble(),
+          );
+
+          debugPrint('✅ Valid collector location received for drop $dropoffId: ${location.latitude}, ${location.longitude}');
+          debugPrint('📏 Distance remaining: $distanceRemaining meters');
+
+          if (mounted) {
+            setState(() {
+              _collectorLocations[dropoffId] = location;
+              if (distanceRemaining != null) {
+                _collectorDistances[dropoffId] = distanceRemaining;
+              }
+            });
+            debugPrint('✅ Updated collector location state for drop $dropoffId');
+            debugPrint('📍 Current collector locations map: $_collectorLocations');
+          } else {
+            debugPrint('⚠️ Widget not mounted, cannot update state');
+          }
+        } else {
+          debugPrint('⚠️ Missing dropoffId or locationData in received event');
+        }
+      } catch (e, stackTrace) {
+        debugPrint('❌ Error handling location update: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
+      }
+    });
+  }
+
+  /// Build polylines showing route from collector to drop (household mode only)
+  Set<Polyline> _buildCollectorRoutePolylines(AsyncValue<List<Drop>> dropsState, AsyncValue<UserMode> userMode) {
+    final polylines = <Polyline>{};
+    
+    final mode = userMode.value;
+    if (mode != UserMode.household) {
+      return polylines;
+    }
+    
+    dropsState.maybeWhen(
+      data: (drops) {
+        final currentUserId = ref.read(authNotifierProvider).value?.id;
+        final filteredDrops = drops
+            .where((drop) =>
+                drop.userId == currentUserId &&
+                !drop.isSuspicious &&
+                !drop.isCensored &&
+                (drop.cancellationCount) < 3 &&
+                (drop.status == DropStatus.pending || drop.status == DropStatus.accepted) &&
+                drop.status != DropStatus.stale)
+            .toList();
+        
+        for (final drop in filteredDrops) {
+          if (drop.status == DropStatus.accepted && _collectorLocations[drop.id] != null) {
+            final collectorLocation = _collectorLocations[drop.id]!;
+            
+            // Create a simple straight-line polyline from collector to drop
+            // In production, you could fetch actual route from Google Directions API
+            polylines.add(
+              Polyline(
+                polylineId: PolylineId('collector_route_${drop.id}'),
+                points: [collectorLocation, drop.location],
+                color: Colors.orange.withOpacity(0.7),
+                width: 4,
+                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+                geodesic: true,
+              ),
+            );
+            
+            debugPrint('🛣️ Added route polyline from collector to drop ${drop.id}');
+          }
+        }
+      },
+      orElse: () {},
+    );
+    
+    return polylines;
+  }
+
+  /// Clean up collector location tracking when drop status changes
+  void _cleanupCollectorLocation(String dropId) {
+    setState(() {
+      _collectorLocations.remove(dropId);
+      _dropToAttemptId.remove(dropId);
+      _collectorDistances.remove(dropId);
+      _subscribedDrops.remove(dropId); // Remove from subscribed set so it can be re-subscribed if needed
+    });
+    debugPrint('🧹 Cleaned up collector location tracking for drop $dropId');
   }
 
   void _checkSessionImmediately() async {
@@ -1800,10 +2054,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             final dropsState = ref.watch(dropsControllerProvider);
             final userMode = ref.watch(userModeControllerProvider);
+            
+            // Subscribe to collector locations when drops are loaded (household mode only)
+            // Only subscribe once per drop to prevent infinite loops
+            dropsState.maybeWhen(
+              data: (drops) {
+                final mode = userMode.value;
+                if (mode == UserMode.household && drops.isNotEmpty) {
+                  // Check if we need to subscribe to any new accepted drops
+                  final acceptedDrops = drops.where((drop) => 
+                    drop.status == DropStatus.accepted && 
+                    !_subscribedDrops.contains(drop.id)
+                  ).toList();
+                  
+                  if (acceptedDrops.isNotEmpty) {
+                    // Subscribe only to new drops
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _subscribeToCollectorLocations(acceptedDrops);
+                    });
+                  }
+                }
+              },
+              orElse: () {},
+            );
+
+            // Check subscription status for pro features
+            final subscriptionState = ref.watch(collectorSubscriptionControllerProvider);
+            final isPro = subscriptionState.maybeWhen(
+              data: (subscriptionType) => subscriptionType == 'premium',
+              orElse: () => false,
+            );
 
             final circles = userMode.maybeWhen(
               data: (mode) {
-                if (mode == UserMode.collector && _currentLocation != null) {
+                // Only show collection radius for pro subscribers
+                if (mode == UserMode.collector && _currentLocation != null && isPro) {
                   return {
                     Circle(
                       circleId: const CircleId('collection_radius'),
@@ -1843,7 +2128,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   orElse: () => drops,
                 );
 
-                return filteredDrops
+                // Create drop markers
+                final dropMarkersSet = filteredDrops
                     .map((drop) => Marker(
                           markerId: MarkerId('drop_${drop.id}'),
                           position: drop.location,
@@ -1851,6 +2137,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onTap: () => _showDropDetails(drop),
                         ))
                     .toSet();
+
+                // Add collector markers and route for accepted drops (household mode only)
+                final currentMode = userMode.value;
+                if (currentMode == UserMode.household) {
+                  for (final drop in filteredDrops) {
+                    if (drop.status == DropStatus.accepted && _collectorLocations[drop.id] != null) {
+                      final collectorLocation = _collectorLocations[drop.id]!;
+                      
+                      // Add collector marker
+                      dropMarkersSet.add(
+                        Marker(
+                          markerId: MarkerId('collector_${drop.id}'),
+                          position: collectorLocation,
+                          icon: _collectorMarkerIcon ?? BitmapDescriptor.defaultMarker,
+                          infoWindow: InfoWindow(
+                            title: 'Collector Location',
+                            snippet: _collectorDistances[drop.id] != null
+                                ? '${(_collectorDistances[drop.id]! / 1000).toStringAsFixed(1)} km to drop'
+                                : 'On the way',
+                          ),
+                        ),
+                      );
+                      
+                      debugPrint('📍 Adding collector marker for drop ${drop.id} at ${collectorLocation.latitude}, ${collectorLocation.longitude}');
+                    }
+                  }
+                }
+
+                return dropMarkersSet;
               },
               loading: () => <Marker>{},
               error: (error, stack) => <Marker>{},
@@ -1870,7 +2185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     myLocationButtonEnabled: true,
                     markers: _isNavigationMode ? {} : dropMarkers,
                     circles: _isNavigationMode ? {} : circles,
-                    polylines: _polylines,
+                    polylines: _isNavigationMode ? _polylines : _buildCollectorRoutePolylines(dropsState, userMode),
                     zoomControlsEnabled: true,
                     zoomGesturesEnabled: true,
                     minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
@@ -1953,9 +2268,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final dropsState = ref.watch(dropsControllerProvider);
             final userMode = ref.watch(userModeControllerProvider);
 
+            // Check subscription status for pro features
+            final subscriptionState = ref.watch(collectorSubscriptionControllerProvider);
+            final isPro = subscriptionState.maybeWhen(
+              data: (subscriptionType) => subscriptionType == 'premium',
+              orElse: () => false,
+            );
+
             final circles = userMode.maybeWhen(
               data: (mode) {
-                if (mode == UserMode.collector && _currentLocation != null) {
+                // Only show collection radius for pro subscribers
+                if (mode == UserMode.collector && _currentLocation != null && isPro) {
                   return {
                     Circle(
                       circleId: const CircleId('collection_radius'),
@@ -2022,7 +2345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     myLocationButtonEnabled: true,
                     markers: _isNavigationMode ? {} : dropMarkers,
                     circles: _isNavigationMode ? {} : circles,
-                    polylines: _polylines,
+                    polylines: _isNavigationMode ? _polylines : _buildCollectorRoutePolylines(dropsState, userMode),
                     zoomControlsEnabled: true,
                     zoomGesturesEnabled: true,
                     minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
@@ -2902,11 +3225,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           right: 0,
                           child: Center(
                             child: FloatingActionButton.extended(
-                              onPressed: () => _showSetRadiusSheet(context),
+                              onPressed: () => _showAdvancedFeaturesSheet(context),
                               label: Builder(
-                                builder: (context) => Text(AppLocalizations.of(context).setCollectionRadius),
+                                builder: (context) => Text(AppLocalizations.of(context).advancedFeatures),
                               ),
-                              icon: const Icon(Icons.radar),
+                              icon: const Icon(Icons.tune),
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             ),
@@ -2996,6 +3319,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       enableDrag: false,
       isDismissible: true,
       useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           height: MediaQuery.of(context).size.height * 0.9,
@@ -3238,10 +3565,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   target: _currentLocation ?? const LatLng(36.8065, 10.1815),
                   zoom: 15,
                 ),
-                onMapCreated: (controller) {
+                onMapCreated: (controller) async {
                   setModalState(() {
                     _mapController = controller;
                   });
+                  // Apply map style based on theme
+                  await _applyMapStyle(controller);
                 },
                 onCameraMove: (position) {
                   if (!_isLocationLocked && !_useCurrentLocation) {
@@ -3315,33 +3644,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildMapOverlays(StateSetter setModalState) {
     return Stack(
       children: [
-        // Lock indicator
-        Positioned(
-          top: 8,
-          left: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock, color: Colors.white, size: 16),
-                const SizedBox(width: 4),
-                const Text(
-                  'Form Locked',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
         // Info message
         Positioned(
           top: 8,
@@ -4160,6 +4462,250 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
   
+
+  void _showAdvancedFeaturesSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.tune,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).advancedFeatures,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          AppLocalizations.of(context).advancedFeaturesDescription,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Set Collector Radius Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.radar,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppLocalizations.of(context).setCollectorRadius,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context).setCollectionRadiusDescription,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${_collectionRadius.toStringAsFixed(1)} ${AppLocalizations.of(context).kilometers}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: _collectionRadius,
+                      min: 1.0,
+                      max: 20.0,
+                      divisions: 19,
+                      label: '${_collectionRadius.toStringAsFixed(1)} ${AppLocalizations.of(context).kilometers}',
+                      onChanged: (value) {
+                        setState(() {
+                          _collectionRadius = value;
+                        });
+                        _updateCollectionRadius(value);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final subscriptionState = ref.watch(collectorSubscriptionControllerProvider);
+                        final isPro = subscriptionState.maybeWhen(
+                          data: (type) => type == 'premium',
+                          orElse: () => false,
+                        );
+                        
+                        return FilledButton(
+                          onPressed: () {
+                            if (!isPro) {
+                              // Show subscription required dialog
+                              Navigator.pop(context);
+                              _showSubscriptionRequiredDialog(context);
+                            } else {
+                              // Save radius for pro users
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context).collectionRadiusUpdated),
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                ),
+                              );
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(AppLocalizations.of(context).saveRadius),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // More advanced features can be added here in the future
+              // For example:
+              // - Auto-accept drops within radius
+              // - Priority collection zones
+              // - Custom collection schedules
+              // etc.
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSubscriptionRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.star,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).proFeatureRequired,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          AppLocalizations.of(context).proFeatureRequiredMessage,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              AppLocalizations.of(context).cancel,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UpgradeToProScreen(),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+            child: Text(AppLocalizations.of(context).upgradeToPro),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showSetRadiusSheet(BuildContext context) {
     showModalBottomSheet(

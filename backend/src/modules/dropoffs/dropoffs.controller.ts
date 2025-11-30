@@ -199,6 +199,25 @@ export class DropoffsController {
     );
   }
 
+  @Patch(':dropoffId/attempts/:attemptId/location')
+  updateCollectorLocation(
+    @Param('attemptId') attemptId: string,
+    @Body() body: {
+      latitude: number;
+      longitude: number;
+      accuracy?: number;
+      speed?: number;
+      heading?: number;
+    }
+  ) {
+    return this.dropoffsService.updateCollectorLocation(attemptId, body);
+  }
+
+  @Get(':dropoffId/attempts/:attemptId/location')
+  getCollectorLocation(@Param('attemptId') attemptId: string) {
+    return this.dropoffsService.getCollectorLocation(attemptId);
+  }
+
   @Get('collector/:collectorId/attempts')
   getCollectorAttempts(
     @Param('collectorId') collectorId: string,
