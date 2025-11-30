@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseGuards, Inject, forwardRef } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { JwtService } from '@nestjs/jwt';
@@ -40,15 +41,19 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   private connectedUsers = new Map<string, Socket>();
 
+  private dropoffsService: DropoffsService;
+
   constructor(
     private jwtService: JwtService,
     private usersService: UsersService,
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
     private fcmService: FCMService,
-    @Inject(forwardRef(() => DropoffsService))
-    private dropoffsService: DropoffsService,
-  ) {}
+    private moduleRef: ModuleRef,
+  ) {
+    // Get DropoffsService lazily to avoid circular dependency issues
+    this.dropoffsService = this.moduleRef.get(DropoffsService, { strict: false });
+  }
 
   async handleConnection(client: Socket) {
     try {
