@@ -276,7 +276,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   // Location broadcasting variables
   String? _activeAttemptId; // Collection attempt ID for location broadcasting
   DateTime? _lastLocationBroadcastTime; // Track last broadcast time
-  static const Duration _locationBroadcastInterval = Duration(seconds: 10); // Broadcast every 10 seconds
+  LatLng? _lastBroadcastLocation; // Track last broadcast location for distance calculation
+  static const Duration _locationBroadcastInterval = Duration(seconds: 5); // Time-based fallback: broadcast every 5 seconds
+  static const double _locationBroadcastDistanceThreshold = 5.0; // Distance-based: broadcast when moved 5 meters
 
   @override
   void initState() {
@@ -1055,14 +1057,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   }
 
   /// Broadcast collector location via WebSocket
+  /// Uses hybrid approach: broadcast when moved ≥5m OR ≥5s elapsed (industry standard)
   void _broadcastLocation(LatLng location, double? accuracy, double? speed, double? heading) {
-    // Only broadcast if enough time has passed since last broadcast
-    final now = DateTime.now();
-    if (_lastLocationBroadcastTime != null &&
-        now.difference(_lastLocationBroadcastTime!) < _locationBroadcastInterval) {
-      return; // Skip if too soon
-    }
-
     if (_activeAttemptId == null) {
       debugPrint('⚠️ Cannot broadcast location: _activeAttemptId is null');
       return; // No active attempt
@@ -1074,8 +1070,43 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       return;
     }
 
+    final now = DateTime.now();
+    bool shouldBroadcast = false;
+    String? broadcastReason;
+
+    // Check if this is the first broadcast
+    if (_lastLocationBroadcastTime == null || _lastBroadcastLocation == null) {
+      shouldBroadcast = true;
+      broadcastReason = 'initial broadcast';
+    } else {
+      // Calculate distance moved since last broadcast
+      final distanceMoved = Geolocator.distanceBetween(
+        _lastBroadcastLocation!.latitude,
+        _lastBroadcastLocation!.longitude,
+        location.latitude,
+        location.longitude,
+      );
+
+      // Calculate time elapsed since last broadcast
+      final timeElapsed = now.difference(_lastLocationBroadcastTime!);
+
+      // Hybrid approach: broadcast if moved ≥5m OR ≥5s elapsed
+      if (distanceMoved >= _locationBroadcastDistanceThreshold) {
+        shouldBroadcast = true;
+        broadcastReason = 'distance threshold (${distanceMoved.toStringAsFixed(1)}m ≥ ${_locationBroadcastDistanceThreshold}m)';
+      } else if (timeElapsed >= _locationBroadcastInterval) {
+        shouldBroadcast = true;
+        broadcastReason = 'time threshold (${timeElapsed.inSeconds}s ≥ ${_locationBroadcastInterval.inSeconds}s)';
+      }
+    }
+
+    if (!shouldBroadcast) {
+      // Don't broadcast yet - conditions not met
+      return;
+    }
+
     try {
-      debugPrint('📡 Broadcasting collector location: attemptId=$_activeAttemptId, lat=${location.latitude}, lng=${location.longitude}');
+      debugPrint('📡 Broadcasting collector location: attemptId=$_activeAttemptId, lat=${location.latitude}, lng=${location.longitude}, reason: $broadcastReason');
       notificationService.sendCollectorLocationUpdate(
         attemptId: _activeAttemptId!,
         latitude: location.latitude,
@@ -1087,8 +1118,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
 
       setState(() {
         _lastLocationBroadcastTime = now;
+        _lastBroadcastLocation = location; // Update last broadcast location
       });
-      debugPrint('✅ Location broadcasted successfully');
+      debugPrint('✅ Location broadcasted successfully ($broadcastReason)');
     } catch (e, stackTrace) {
       debugPrint('❌ Error broadcasting location: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -1100,6 +1132,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     setState(() {
       _activeAttemptId = null;
       _lastLocationBroadcastTime = null;
+      _lastBroadcastLocation = null; // Reset last broadcast location
     });
     debugPrint('🛑 Stopped location broadcasting');
   }
