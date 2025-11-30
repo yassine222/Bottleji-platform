@@ -473,26 +473,16 @@ class AuthRepository {
         return AuthResponse.error(message: 'Could not get current user data', statusCode: 500);
       }
       
-      // Build complete profile data by merging current data with updates
+      // Build complete profile data - name, phoneNumber, and address are now required
       // Only send fields that are in SetupProfileDto (name, phoneNumber, address, profilePhoto)
       // Do NOT send 'roles' as it's not in the DTO and will cause validation failure with forbidNonWhitelisted
       final data = <String, dynamic>{
         'name': name ?? currentUser.name ?? '', // name is required by backend
+        'phoneNumber': phoneNumber ?? currentUser.phoneNumber ?? '', // phoneNumber is now required
+        'address': address ?? currentUser.address ?? '', // address is now required
       };
       
-      // Only include fields that are provided or have current values
-      if (phoneNumber != null) {
-        data['phoneNumber'] = phoneNumber;
-      } else if (currentUser.phoneNumber != null) {
-        data['phoneNumber'] = currentUser.phoneNumber;
-      }
-      
-      if (address != null) {
-        data['address'] = address;
-      } else if (currentUser.address != null) {
-        data['address'] = currentUser.address;
-      }
-      
+      // Only include profilePhoto if provided (it's optional)
       if (profilePhoto != null) {
         data['profilePhoto'] = profilePhoto;
       } else if (currentUser.profilePhoto != null) {
@@ -810,6 +800,36 @@ class AuthRepository {
     } catch (e) {
       print('❌ Error invalidating session: $e');
       // Don't throw, just log the error
+    }
+  }
+
+  Future<Map<String, dynamic>> sendPhoneOTP(String phoneNumber) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await _apiClient.sendPhoneOTP(phoneNumber, 'Bearer $token');
+      return response;
+    } catch (e) {
+      print('sendPhoneOTP: Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyPhoneOTP(String phoneNumber, String otp) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await _apiClient.verifyPhoneOTP(phoneNumber, otp, 'Bearer $token');
+      return response;
+    } catch (e) {
+      print('verifyPhoneOTP: Error: $e');
+      rethrow;
     }
   }
 } 
