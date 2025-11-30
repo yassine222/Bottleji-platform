@@ -323,6 +323,11 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
+    // Check if phone number is verified before allowing profile completion
+    if (!user.isPhoneVerified || user.phoneNumber !== setupProfileDto.phoneNumber) {
+      throw new BadRequestException('Phone number must be verified before completing profile setup');
+    }
+
     const updatedUser = await this.usersService.update(userId, {
       name: setupProfileDto.name,
       phoneNumber: setupProfileDto.phoneNumber,
@@ -471,6 +476,82 @@ export class AuthService {
       isProfileComplete: user.isProfileComplete,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    };
+  }
+
+  async sendPhoneOTP(userId: string, phoneNumber: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Generate OTP (hardcoded for now until Trello implementation)
+    const otp = '123456'; // Hardcoded OTP for testing
+    const otpExpiresAt = new Date();
+    otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
+
+    // Store OTP in user record
+    await this.usersService.update(userId, {
+      phoneNumber: phoneNumber,
+      phoneVerificationOtp: otp,
+      phoneOtpExpiresAt: otpExpiresAt,
+      phoneOtpAttempts: 0,
+      isPhoneVerified: false, // Reset verification status when sending new OTP
+    });
+
+    // TODO: Send OTP via SMS service (Trello implementation)
+    // For now, just return the OTP in the response (remove in production)
+    console.log(`📱 Phone OTP for ${phoneNumber}: ${otp}`);
+
+    return {
+      message: 'Phone OTP sent successfully',
+      phoneNumber: phoneNumber,
+      otp: otp, // Remove this in production - only for testing with hardcoded OTP
+    };
+  }
+
+  async verifyPhoneOTP(userId: string, phoneNumber: string, otp: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Check if phone number matches
+    if (user.phoneNumber !== phoneNumber) {
+      throw new BadRequestException('Phone number does not match');
+    }
+
+    // Check if OTP has expired
+    if (!user.phoneOtpExpiresAt || new Date() > user.phoneOtpExpiresAt) {
+      throw new BadRequestException('Phone OTP has expired. Please request a new OTP.');
+    }
+
+    // Check OTP attempts
+    if (user.phoneOtpAttempts >= 3) {
+      throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
+    }
+
+    // Verify OTP (hardcoded for now)
+    if (user.phoneVerificationOtp !== otp) {
+      // Increment OTP attempts
+      await this.usersService.update(userId, {
+        phoneOtpAttempts: (user.phoneOtpAttempts || 0) + 1,
+      });
+      throw new BadRequestException('Invalid phone OTP');
+    }
+
+    // OTP is valid - mark phone as verified
+    await this.usersService.update(userId, {
+      isPhoneVerified: true,
+      phoneVerificationOtp: undefined, // Clear OTP after successful verification
+      phoneOtpExpiresAt: undefined,
+      phoneOtpAttempts: 0,
+    });
+
+    return {
+      message: 'Phone number verified successfully',
+      phoneNumber: phoneNumber,
+      isPhoneVerified: true,
     };
   }
 

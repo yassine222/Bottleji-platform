@@ -108,6 +108,16 @@ export class User extends Document {
   @Prop()
   resetPasswordOtpExpiry?: Date;
 
+  // Phone verification OTP fields
+  @Prop()
+  phoneVerificationOtp?: string;
+
+  @Prop()
+  phoneOtpExpiresAt?: Date;
+
+  @Prop({ default: 0 })
+  phoneOtpAttempts: number;
+
   // Admin password change requirement
   @Prop({ default: false })
   mustChangePassword: boolean;

@@ -140,4 +140,31 @@ class AuthApiClient {
     );
     return AuthResponse.fromJson(response.data);
   }
+
+  Future<Map<String, dynamic>> sendPhoneOTP(String phoneNumber, String token) async {
+    final response = await _dio.post(
+      '$baseUrl/auth/send-phone-otp',
+      data: {'phoneNumber': phoneNumber},
+      options: Options(headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> verifyPhoneOTP(String phoneNumber, String otp, String token) async {
+    final response = await _dio.post(
+      '$baseUrl/auth/verify-phone-otp',
+      data: {
+        'phoneNumber': phoneNumber,
+        'otp': otp,
+      },
+      options: Options(headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }),
+    );
+    return response.data;
+  }
 } 

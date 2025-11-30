@@ -6,12 +6,12 @@ export class SetupProfileDto {
   name: string;
 
   @IsString()
-  @IsOptional()
-  phoneNumber?: string;
+  @IsNotEmpty()
+  phoneNumber: string;
 
   @IsString()
-  @IsOptional()
-  address?: string;
+  @IsNotEmpty()
+  address: string;
 
   @IsString()
   @IsOptional()

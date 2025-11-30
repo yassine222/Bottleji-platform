@@ -70,6 +70,18 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('send-phone-otp')
+  async sendPhoneOTP(@Request() req, @Body() body: { phoneNumber: string }) {
+    return this.authService.sendPhoneOTP(req.user.id, body.phoneNumber);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-phone-otp')
+  async verifyPhoneOTP(@Request() req, @Body() body: { phoneNumber: string; otp: string }) {
+    return this.authService.verifyPhoneOTP(req.user.id, body.phoneNumber, body.otp);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('verify-phone')
   async verifyPhone(@Request() req, @Body() body: { phoneNumber: string; firebaseToken: string }) {
     return this.authService.verifyPhone(req.user.id, body.phoneNumber, body.firebaseToken);
