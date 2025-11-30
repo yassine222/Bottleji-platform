@@ -140,7 +140,7 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
   Widget build(BuildContext context) {
     const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -168,7 +168,7 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                       children: [
                         // Logo
                         Image.asset(
-                          'assets/images/logo_v2.png',
+                          'assets/images/logo_v2-no-background.png',
                           height: 200,
                         ),
                         const SizedBox(height: 32),
@@ -197,8 +197,8 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                             controller: _otpController,
                             keyboardType: TextInputType.number,
                             cursorColor: appGreenColor,
-                            textStyle: const TextStyle(
-                              color: Colors.black87,
+                            textStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -207,9 +207,9 @@ class _OTPVerificationScreenState extends ConsumerState<OTPVerificationScreen> {
                               borderRadius: BorderRadius.circular(12),
                               fieldHeight: 50,
                               fieldWidth: 40,
-                              activeFillColor: Colors.grey[50]!,
+                              activeFillColor: Theme.of(context).colorScheme.surface,
                               selectedFillColor: appGreenColor.withOpacity(0.1),
-                              inactiveFillColor: Colors.grey[50]!,
+                              inactiveFillColor: Theme.of(context).colorScheme.surface,
                               activeColor: appGreenColor,
                               selectedColor: appGreenColor,
                               inactiveColor: appGreenColor.withOpacity(0.5),

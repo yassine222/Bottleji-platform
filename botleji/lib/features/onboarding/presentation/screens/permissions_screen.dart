@@ -285,7 +285,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -302,10 +302,10 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).appPermissions,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -336,19 +336,19 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                     const SizedBox(height: 16),
                     Text(
                       AppLocalizations.of(context).bottlejiRequiresAdditionalPermissions,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       AppLocalizations.of(context).permissionsHelpProvideBestExperience,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -373,10 +373,10 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.grey[200]!,
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                         ),
                       ),
                       child: Row(
@@ -389,12 +389,12 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                             decoration: BoxDecoration(
                               color: isGranted 
                                   ? appGreenColor.withOpacity(0.1)
-                                  : Colors.grey.withOpacity(0.1),
+                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               permission.icon,
-                              color: isGranted ? appGreenColor : Colors.grey,
+                              color: isGranted ? appGreenColor : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               size: 24,
                             ),
                           ),
@@ -409,10 +409,10 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                               children: [
                                 Text(
                                   permission.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -420,9 +420,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   permission.description,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                     height: 1.3,
                                   ),
                                   maxLines: 3,

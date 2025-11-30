@@ -128,7 +128,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
   Widget build(BuildContext context) {
     const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -156,7 +156,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                       children: [
                         // Logo
                         Image.asset(
-                          'assets/images/logo_v2.png',
+                          'assets/images/logo_v2-no-background.png',
                           height: 200,
                         ),
                         const SizedBox(height: 32),
@@ -180,12 +180,12 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
-                          style: const TextStyle(color: Colors.black87),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           decoration: InputDecoration(
                             labelText: AppLocalizations.of(context).newPassword,
                             labelStyle: const TextStyle(color: appGreenColor),
                             hintText: AppLocalizations.of(context).enterNewPassword,
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                             prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -211,19 +211,19 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                               borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
-                          style: const TextStyle(color: Colors.black87),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           decoration: InputDecoration(
                             labelText: AppLocalizations.of(context).confirmPassword,
                             labelStyle: const TextStyle(color: appGreenColor),
                             hintText: AppLocalizations.of(context).confirmNewPassword,
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                             prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -249,7 +249,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                               borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                         const SizedBox(height: 24),

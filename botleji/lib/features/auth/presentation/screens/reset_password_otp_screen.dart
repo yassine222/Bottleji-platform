@@ -138,7 +138,7 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
   Widget build(BuildContext context) {
     const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -163,7 +163,7 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                     children: [
                       // Logo
                       Image.asset(
-                        'assets/images/logo_v2.png',
+                        'assets/images/logo_v2-no-background.png',
                         height: 200,
                       ),
                       const SizedBox(height: 32),
@@ -194,14 +194,14 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                           keyboardType: TextInputType.number,
                           cursorColor: appGreenColor,
                           animationType: AnimationType.fade,
-                          textStyle: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
+                          textStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
                           pinTheme: PinTheme(
                             shape: PinCodeFieldShape.box,
                             borderRadius: BorderRadius.circular(12),
                             fieldHeight: 50,
                             fieldWidth: 40,
-                            activeFillColor: Colors.grey[50]!,
-                            inactiveFillColor: Colors.grey[50]!,
+                            activeFillColor: Theme.of(context).colorScheme.surface,
+                            inactiveFillColor: Theme.of(context).colorScheme.surface,
                             selectedFillColor: appGreenColor.withOpacity(0.1),
                             activeColor: appGreenColor,
                             inactiveColor: appGreenColor.withOpacity(0.5),
@@ -252,8 +252,8 @@ class _ResetPasswordOtpScreenState extends ConsumerState<ResetPasswordOtpScreen>
                                 children: [
                                   Text(
                                     AppLocalizations.of(context).didntReceiveCode,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   TextButton(

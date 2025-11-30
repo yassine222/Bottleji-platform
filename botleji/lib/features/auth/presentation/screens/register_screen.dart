@@ -81,7 +81,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -94,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     // Logo
                     Image.asset(
-                      'assets/images/logo_v2.png',
+                      'assets/images/logo_v2-no-background.png',
                       height:200,
                     ),
                     const SizedBox(height: 16),
@@ -120,12 +120,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context).email,
                       labelStyle: const TextStyle(color: appGreenColor),
                       hintText: AppLocalizations.of(context).enterYourEmail,
-                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       prefixIcon: const Icon(Icons.email_outlined, color: appGreenColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -140,7 +140,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surface,
                     ),
                     validator: (value) {
                       final l10n = AppLocalizations.of(context);
@@ -159,12 +159,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context).password,
                       labelStyle: const TextStyle(color: appGreenColor),
                       hintText: AppLocalizations.of(context).createAPassword,
-                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -192,7 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surface,
                     ),
                     validator: (value) {
                       final l10n = AppLocalizations.of(context);
@@ -211,12 +211,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context).confirmPassword,
                       labelStyle: const TextStyle(color: appGreenColor),
                       hintText: AppLocalizations.of(context).confirmYourPassword,
-                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -244,7 +244,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderSide: const BorderSide(color: appGreenColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surface,
                     ),
                     validator: (value) {
                       final l10n = AppLocalizations.of(context);
@@ -296,7 +296,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Text(
                         AppLocalizations.of(context).alreadyHaveAccount,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       TextButton(

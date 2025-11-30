@@ -88,7 +88,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -113,8 +113,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onPressed: _skipOnboarding,
                     child: Text(
                       AppLocalizations.of(context).skip,
-                      style: const TextStyle(
-                        color: Colors.grey,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         fontSize: 16,
                       ),
                     ),
@@ -252,9 +252,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           // Description only (title and subtitle are in the illustration)
           Text(
             page.description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               height: 1.5,
             ),
             textAlign: TextAlign.center,

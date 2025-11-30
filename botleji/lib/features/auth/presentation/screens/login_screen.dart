@@ -261,7 +261,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     const appGreenColor = Color(0xFF00695C);
     print('🔍 LoginScreen build - _showAccountDisabledCard: $_showAccountDisabledCard');
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -277,19 +277,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Builder(
                         builder: (context) {
                           final l10n = AppLocalizations.of(context);
+                          final theme = Theme.of(context);
                           return Container(
                             margin: const EdgeInsets.only(bottom: 24),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: theme.colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.red.shade200,
+                                color: theme.colorScheme.error,
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.shade200.withOpacity(0.5),
+                                  color: theme.colorScheme.error.withOpacity(0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -302,7 +303,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   children: [
                                     Icon(
                                       Icons.warning_amber_rounded,
-                                      color: Colors.red.shade700,
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
                                       size: 28,
                                     ),
                                     const SizedBox(width: 8),
@@ -312,14 +313,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.red.shade900,
+                                          color: Theme.of(context).colorScheme.onErrorContainer,
                                         ),
                                       ),
                                     ),
                                     IconButton(
                                       icon: Icon(
                                         Icons.close,
-                                        color: Colors.red.shade700,
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
                                         size: 22,
                                       ),
                                       onPressed: () {
@@ -341,7 +342,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   l10n.accountDeletedMessage,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.red.shade800,
+                                    color: Theme.of(context).colorScheme.onErrorContainer,
                                     height: 1.5,
                                   ),
                                 ),
@@ -351,7 +352,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     Icon(
                                       Icons.email_outlined,
                                       size: 16,
-                                      color: Colors.red.shade700,
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -359,7 +360,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.red.shade700,
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
                                       ),
                                     ),
                                   ],
@@ -377,19 +378,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         builder: (context) {
                           print('🔍 Building account disabled card widget - _showAccountDisabledCard: $_showAccountDisabledCard');
                           final l10n = AppLocalizations.of(context);
+                          final theme = Theme.of(context);
                           return Container(
                             margin: const EdgeInsets.only(bottom: 24),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: theme.colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.red.shade200,
+                                color: theme.colorScheme.error,
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.shade200.withOpacity(0.5),
+                                  color: theme.colorScheme.error.withOpacity(0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -412,14 +414,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.red.shade900,
+                                          color: Theme.of(context).colorScheme.onErrorContainer,
                                         ),
                                       ),
                                     ),
                                     IconButton(
                                       icon: Icon(
                                         Icons.close,
-                                        color: Colors.red.shade700,
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
                                         size: 22,
                                       ),
                                       onPressed: () {
@@ -446,7 +448,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   l10n.accountDisabledMessage,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.red.shade800,
+                                    color: Theme.of(context).colorScheme.onErrorContainer,
                                     height: 1.5,
                                   ),
                                 ),
@@ -456,7 +458,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     Icon(
                                       Icons.email_outlined,
                                       size: 16,
-                                      color: Colors.red.shade700,
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -464,7 +466,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.red.shade700,
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
                                       ),
                                     ),
                                   ],
@@ -477,7 +479,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     
                     // Logo and Welcome Text
                     Image.asset(
-                      'assets/images/logo_v2.png',
+                      'assets/images/logo_v2-no-background.png',
                       height: 200,                      
                     ),
                   const SizedBox(height: 32),
@@ -516,12 +518,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       return TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.black87),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: l10n.email,
                           labelStyle: const TextStyle(color: appGreenColor),
                           hintText: l10n.enterYourEmail,
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                           prefixIcon: const Icon(Icons.email_outlined, color: appGreenColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -536,7 +538,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderSide: const BorderSide(color: appGreenColor, width: 2),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[50],
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -559,12 +561,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       return TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: const TextStyle(color: Colors.black87),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: l10n.password,
                           labelStyle: const TextStyle(color: appGreenColor),
                           hintText: l10n.enterYourPassword,
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                           prefixIcon: const Icon(Icons.lock_outline, color: appGreenColor),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -592,7 +594,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderSide: const BorderSide(color: appGreenColor, width: 2),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[50],
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -677,7 +679,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Text(
                             l10n.dontHaveAccount,
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.black87,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           TextButton(

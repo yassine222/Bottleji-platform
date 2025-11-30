@@ -74,7 +74,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     const appGreenColor = Color(0xFF00695C);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
           child: Column(
             children: [
@@ -102,7 +102,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         children: [
                         // Logo
                         Image.asset(
-                          'assets/images/logo_v2.png',
+                          'assets/images/logo_v2-no-background.png',
                           height:200,
                         ),
                         const SizedBox(height: 32),
@@ -126,12 +126,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(color: Colors.black87),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           decoration: InputDecoration(
                             labelText: AppLocalizations.of(context).email,
                             labelStyle: const TextStyle(color: appGreenColor),
                             hintText: AppLocalizations.of(context).enterYourEmail,
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                             prefixIcon: const Icon(Icons.email_outlined, color: appGreenColor),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -146,7 +146,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                               borderSide: const BorderSide(color: appGreenColor, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surface,
                           ),
                           validator: (value) {
                             final l10n = AppLocalizations.of(context);
