@@ -422,29 +422,33 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
         debugPrint('   Has thumbnail: ${content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty}');
         
         if (content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty) {
-          return Image.network(
-            content.thumbnailUrl!,
-            fit: BoxFit.cover,
+          return Container(
             width: double.infinity,
-            loadingBuilder: (context, child, loadingProgress) {
+            height: 200,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Image.network(
+              content.thumbnailUrl!,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) {
                 debugPrint('✅ Thumbnail loaded successfully');
                 return child;
               }
               debugPrint('⏳ Loading thumbnail... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF00695C),
+                return Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF00695C),
+                    ),
                   ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('❌ Thumbnail load error: $error');
-              return _buildDefaultVideoPlaceholder();
-            },
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('❌ Thumbnail load error: $error');
+                return _buildDefaultVideoPlaceholder();
+              },
+            ),
           );
         }
         debugPrint('⚠️ No thumbnail URL, using placeholder');
@@ -452,22 +456,26 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
         
       case TrainingType.image:
         if (content.mediaUrl != null && content.mediaUrl!.isNotEmpty) {
-          return Image.network(
-            content.mediaUrl!,
-            fit: BoxFit.cover,
+          return Container(
             width: double.infinity,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF00695C),
+            height: 200,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Image.network(
+              content.mediaUrl!,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF00695C),
+                    ),
                   ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) => _buildDefaultImagePlaceholder(),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => _buildDefaultImagePlaceholder(),
+            ),
           );
         }
         return _buildDefaultImagePlaceholder();

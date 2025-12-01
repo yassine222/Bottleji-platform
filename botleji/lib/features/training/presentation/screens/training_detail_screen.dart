@@ -29,31 +29,32 @@ class TrainingDetailScreen extends StatelessWidget {
             if (content.type == TrainingType.image && content.mediaUrl != null)
               Hero(
                 tag: 'training_${content.id}',
-                child: Image.network(
-                  content.mediaUrl!,
+                child: Container(
                   width: double.infinity,
                   height: 300,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 300,
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF00695C),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Image.network(
+                    content.mediaUrl!,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF00695C),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 300,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        size: 80,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 80,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        ),
                       ),
                     ),
                   ),
