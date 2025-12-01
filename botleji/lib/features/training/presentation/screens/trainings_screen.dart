@@ -428,7 +428,8 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Image.network(
               content.thumbnailUrl!,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
               loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) {
                 debugPrint('✅ Thumbnail loaded successfully');
@@ -462,7 +463,8 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Image.network(
               content.mediaUrl!,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return Container(
