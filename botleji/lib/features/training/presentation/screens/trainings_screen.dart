@@ -23,7 +23,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     final trainingContentAsync = ref.watch(trainingContentProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).trainingCenter),
         backgroundColor: const Color(0xFF00695C),
@@ -130,23 +130,24 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline,
                       size: 64,
-                      color: Colors.red,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Failed to load training content',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       error.toString(),
-                      style: const TextStyle(color: Colors.grey),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -194,7 +195,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     ];
 
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SizedBox(
         height: 40,
@@ -222,11 +223,11 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                   _selectedCategory = category['value']!;
                 });
               },
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               selectedColor: const Color(0xFF00695C),
               checkmarkColor: Colors.white,
               side: BorderSide(
-                color: isSelected ? const Color(0xFF00695C) : Colors.grey.shade300,
+                color: isSelected ? const Color(0xFF00695C) : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                 width: 1,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -241,11 +242,11 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -266,10 +267,10 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                 // Title
                       Text(
                   content.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -281,7 +282,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                   content.description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -295,13 +296,15 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
                   runSpacing: 8,
                         children: [
                     _buildBadge(
+                      context,
                       content.category.icon,
                       content.category.localizedDisplayName(context),
-                      Colors.grey.shade100,
-                      Colors.grey.shade700,
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                     if (content.isNew)
                       _buildBadge(
+                        context,
                         '🎉',
                         'NEW',
                         const Color(0xFF00695C).withOpacity(0.1),
@@ -327,7 +330,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             height: 200,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              color: Colors.grey.shade200,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -430,7 +433,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
               }
               debugPrint('⏳ Loading thumbnail... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
               return Container(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: const Center(
                   child: CircularProgressIndicator(
                     color: Color(0xFF00695C),
@@ -456,7 +459,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: const Center(
                   child: CircularProgressIndicator(
                     color: Color(0xFF00695C),
@@ -539,7 +542,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
     );
   }
 
-  Widget _buildBadge(String icon, String label, Color bgColor, Color textColor) {
+  Widget _buildBadge(BuildContext context, String icon, String label, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -567,7 +570,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
             Icon(
               Icons.school_outlined,
               size: 80,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -575,7 +578,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -583,7 +586,7 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
               'Check back later for new training materials',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -652,6 +655,9 @@ class _TrainingsScreenState extends ConsumerState<TrainingsScreen> {
           isHousehold
               ? AppLocalizations.of(context).trainingCenterInfoHousehold
               : AppLocalizations.of(context).trainingCenterInfoCollector,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         actions: [
           TextButton(

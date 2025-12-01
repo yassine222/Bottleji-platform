@@ -13,7 +13,7 @@ class TrainingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: const SizedBox.shrink(),
         backgroundColor: const Color(0xFF00695C),
@@ -38,7 +38,7 @@ class TrainingDetailScreen extends StatelessWidget {
                     if (loadingProgress == null) return child;
                     return Container(
                       height: 300,
-                      color: Colors.grey.shade300,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Center(
                         child: CircularProgressIndicator(
                           color: Color(0xFF00695C),
@@ -48,12 +48,12 @@ class TrainingDetailScreen extends StatelessWidget {
                   },
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 300,
-                    color: Colors.grey.shade300,
-                    child: const Center(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Center(
                       child: Icon(
                         Icons.broken_image_outlined,
                         size: 80,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       ),
                     ),
                   ),
@@ -62,7 +62,7 @@ class TrainingDetailScreen extends StatelessWidget {
             
             // Content Section
             Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,10 +70,10 @@ class TrainingDetailScreen extends StatelessWidget {
                   // Title
                   Text(
                     content.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -87,8 +87,8 @@ class TrainingDetailScreen extends StatelessWidget {
                         context,
                         content.category.icon,
                         content.category.localizedDisplayName(context),
-                        Colors.grey.shade100,
-                        Colors.grey.shade700,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                        Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       ),
                       if (content.isNew)
                         _buildBadge(
@@ -103,7 +103,7 @@ class TrainingDetailScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   
                   // Divider
-                  Divider(color: Colors.grey.shade200, thickness: 1),
+                  Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.2), thickness: 1),
                   const SizedBox(height: 20),
                   
                   // Description Header
@@ -132,7 +132,7 @@ class TrainingDetailScreen extends StatelessWidget {
                     content.description,
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       height: 1.6,
                     ),
                   ),
@@ -140,7 +140,7 @@ class TrainingDetailScreen extends StatelessWidget {
                   // Story Content
                   if (content.type == TrainingType.story && content.content != null) ...[
                     const SizedBox(height: 24),
-                    Divider(color: Colors.grey.shade200, thickness: 1),
+                    Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.2), thickness: 1),
                     const SizedBox(height: 20),
                     Row(
                       children: [
@@ -165,7 +165,7 @@ class TrainingDetailScreen extends StatelessWidget {
                       content.content!,
                       style: TextStyle(
                         fontSize: 15,
-                        color: Colors.grey.shade800,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                         height: 1.8,
                       ),
                     ),
