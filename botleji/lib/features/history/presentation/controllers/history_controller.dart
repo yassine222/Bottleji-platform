@@ -40,7 +40,7 @@ class HistoryController extends StateNotifier<AsyncValue<CollectorHistory>> {
     // Prevent multiple simultaneous requests
     if (_isLoading) return;
     
-    // Check if we need to reload (parameters changed)
+    // Check if we need to reload (parameters changed or state is not data)
     if (status == _currentStatus && timeRange == _currentTimeRange && state.hasValue) {
       return; // Already loaded with same parameters
     }

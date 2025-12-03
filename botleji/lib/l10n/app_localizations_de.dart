@@ -91,6 +91,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get signInToContinue => 'Melden Sie sich an, um fortzufahren';
 
   @override
+  String get signInWithPhone => 'Sign in with Phone';
+
+  @override
+  String get enterPhoneNumberToReceiveOTP =>
+      'Enter your phone number to receive an OTP code';
+
+  @override
+  String get or => 'OR';
+
+  @override
+  String get sendOTP => 'Send OTP';
+
+  @override
+  String get resendOTP => 'Resend OTP';
+
+  @override
+  String get resendOTPIn => 'Resend OTP in';
+
+  @override
+  String get pleaseEnterOTP => 'Please enter the OTP code';
+
+  @override
+  String get invalidOTP => 'Invalid OTP code';
+
+  @override
+  String get enterOTP => 'Enter OTP Code';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'Please enter your phone number';
+
+  @override
   String get dontHaveAccount => 'Haben Sie noch kein Konto?';
 
   @override
@@ -545,7 +576,27 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get setCollectionRadiusDescription =>
-      'Set the radius (in kilometers) within which you want to collect bottles.';
+      'Legen Sie den Radius (in Kilometern) fest, innerhalb dessen Sie Flaschen sammeln möchten.';
+
+  @override
+  String get advancedFeatures => 'Erweiterte Funktionen';
+
+  @override
+  String get advancedFeaturesDescription =>
+      'Exklusive Funktionen für Pro-Sammler';
+
+  @override
+  String get setCollectorRadius => 'Sammlerradius festlegen';
+
+  @override
+  String get proFeatureRequired => 'Pro-Funktion erforderlich';
+
+  @override
+  String get proFeatureRequiredMessage =>
+      'Diese Funktion ist exklusiv für Pro-Sammler. Upgraden Sie auf Pro, um auf erweiterte Funktionen wie das Festlegen des Sammelradius und mehr zuzugreifen.';
+
+  @override
+  String get upgradeToPro => 'Auf Pro upgraden';
 
   @override
   String get kilometers => 'km';
@@ -773,10 +824,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bottleType => 'Flaschentyp';
 
   @override
-  String get numberOfPlasticBottles => 'Anzahl der Plastikflaschen';
+  String get numberOfPlasticBottles => 'Plastikflaschen';
 
   @override
-  String get numberOfCans => 'Anzahl der Dosen';
+  String get numberOfCans => 'Dosen';
 
   @override
   String get notesOptional => 'Notizen (optional)';
@@ -987,6 +1038,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bitte geben Sie eine gültige Telefonnummer mit Ländercode ein (z. B. +49 123456789)';
 
   @override
+  String get enterYourPhoneNumber => 'Enter your phone number';
+
+  @override
   String get locationPermissionRequired =>
       'Standortberechtigung ist für Adressfunktionen erforderlich';
 
@@ -1144,6 +1198,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get thisMonth => 'Diesen Monat';
+
+  @override
+  String get earningsOverview => 'Earnings Overview';
 
   @override
   String get thisYear => 'Dieses Jahr';
@@ -1891,6 +1948,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get remaining => 'remaining';
 
   @override
+  String get walking => 'Gehen';
+
+  @override
+  String get driving => 'Fahren';
+
+  @override
+  String get bicycling => 'Fahrrad';
+
+  @override
+  String get transportationModeLocked =>
+      'Transportmodus ist für diesen Abgabepunkt gesperrt. Er kann nach der Auswahl nicht mehr geändert werden.';
+
+  @override
   String get completeCollectionIn => 'Complete collection in:';
 
   @override
@@ -1990,6 +2060,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get cancelCollectionMessage =>
       'Are you sure you want to cancel this collection? Please select a reason:';
+
+  @override
+  String get dropNotFound => 'Sammelstelle nicht gefunden?';
 
   @override
   String get noAccess => 'Kein Zugang';
@@ -2221,9 +2294,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get gettingStarted => 'Erste Schritte';
-
-  @override
-  String get advancedFeatures => 'Erweiterte Funktionen';
 
   @override
   String get troubleshooting => 'Fehlerbehebung';

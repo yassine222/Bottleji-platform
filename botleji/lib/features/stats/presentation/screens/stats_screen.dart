@@ -16,6 +16,7 @@ import 'package:botleji/features/collection/data/models/collection_attempt.dart'
 import 'package:botleji/features/stats/presentation/widgets/stats_chart_carousel.dart';
 import 'package:botleji/features/stats/presentation/widgets/household_stats_chart_carousel.dart';
 import 'package:botleji/core/services/timezone_service.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/l10n/app_localizations.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -175,6 +176,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             stale: staleDrops,
             censored: censoredDrops,
             total: totalDrops,
+            drops: drops,
           ),
           const SizedBox(height: 24),
           
@@ -335,15 +337,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     required IconData icon,
     required Color color,
   }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -378,7 +383,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -394,15 +399,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     required int staleDrops,
     required int censoredDrops,
   }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -437,7 +445,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Text(
             AppLocalizations.of(context).totalDrops,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
@@ -461,15 +469,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     required int totalCans,
     required int totalItems,
   }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -504,7 +515,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Text(
             AppLocalizations.of(context).totalItemsRecycled,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
@@ -532,7 +543,17 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     required int stale,
     required int censored,
     required int total,
+    required List<Drop> drops,
   }) {
+    final theme = Theme.of(context);
+    
+    // Calculate total estimated value from all drops
+    double totalEstimatedValue = 0.0;
+    for (final drop in drops) {
+      totalEstimatedValue += drop.estimatedValue;
+    }
+    totalEstimatedValue = double.parse(totalEstimatedValue.toStringAsFixed(2));
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -547,12 +568,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: theme.colorScheme.shadow.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: const Offset(0, 2),
@@ -561,6 +584,54 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
           child: Column(
             children: [
+              // Total Drops with Estimated Value
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        total.toString(),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppLocalizations.of(context).totalDrops,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        DropValueCalculator.formatEstimatedValue(totalEstimatedValue),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppLocalizations.of(context).estimatedValue,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Status breakdown rows
               _buildStatusRow(AppLocalizations.of(context).pending, pending, total, Colors.orange),
               const SizedBox(height: 8),
               _buildStatusRow(AppLocalizations.of(context).collected, collected, total, Colors.green),
@@ -609,7 +680,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         Text(
           '(${percentage.toStringAsFixed(1)}%)',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -621,6 +692,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     required int totalCans,
     required int totalItems,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -635,12 +707,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: theme.colorScheme.shadow.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: const Offset(0, 2),
@@ -670,7 +744,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         Text(
                           AppLocalizations.of(context).recycledBottles(_formatLargeNumber(totalBottles)),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -680,7 +754,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     _formatLargeNumber(totalBottles),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[600],
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -707,7 +781,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         Text(
                           AppLocalizations.of(context).recycledCans(_formatLargeNumber(totalCans)),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -717,17 +791,23 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     _formatLargeNumber(totalCans),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange[600],
+                      color: theme.colorScheme.tertiary,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              const Divider(),
+              Divider(
+                color: theme.colorScheme.outline.withOpacity(0.2),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.recycling, color: Colors.green, size: 24),
+                  Icon(
+                    Icons.recycling,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -741,7 +821,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     _formatLargeNumber(totalItems),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[600],
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -786,42 +866,49 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         ),
         const SizedBox(height: 16),
         if (recentDrops.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: const Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.add_location_outlined,
-                    size: 48,
-                    color: Colors.grey,
+          Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
                   ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No drops yet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
-                    ),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.add_location_outlined,
+                        size: 48,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No drops yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create your first drop to start recycling',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create your first drop to start recycling',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           )
         else
           Column(
@@ -834,16 +921,19 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Widget _buildRecentDropCard(Drop drop) {
     final itemsText = AppLocalizations.of(context).items;
     final itemCount = drop.numberOfBottles + drop.numberOfCans;
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -858,7 +948,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             height: 60,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(
+                color: theme.colorScheme.outline.withOpacity(0.3),
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
@@ -869,12 +961,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: theme.colorScheme.surfaceVariant,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.image_not_supported,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurfaceVariant,
                             size: 24,
                           ),
                         );
@@ -882,7 +974,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: theme.colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -1048,7 +1140,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             Text(
               title,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1334,10 +1426,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       const SizedBox(width: 12),
                     ],
                     Text(
-                      '${AppLocalizations.of(context).total}: ${dropSnapshot.totalItems}',
+                      DropValueCalculator.formatEstimatedValue(
+                        DropValueCalculator.calculateEstimatedValue(
+                          plasticBottleCount: dropSnapshot.numberOfBottles,
+                          cansCount: dropSnapshot.numberOfCans,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF00695C),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
@@ -1465,7 +1562,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             height: 60,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
@@ -1543,10 +1642,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       const SizedBox(width: 12),
                     ],
                     Text(
-                      '${AppLocalizations.of(context).total}: ${dropoff.numberOfBottles + dropoff.numberOfCans}',
+                      DropValueCalculator.formatEstimatedValue(
+                        DropValueCalculator.calculateEstimatedValue(
+                          plasticBottleCount: dropoff.numberOfBottles,
+                          cansCount: dropoff.numberOfCans,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF00695C),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
@@ -2004,7 +2108,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           child: Text(
             '$label:',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
               fontSize: 11,
             ),
@@ -2025,17 +2129,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Color _getStatusColor(String interactionType) {
+    final theme = Theme.of(context);
     switch (interactionType) {
       case 'collected':
-        return Colors.green;
+        return theme.colorScheme.primary;
       case 'cancelled':
-        return Colors.red;
+        return theme.colorScheme.error;
       case 'accepted':
-        return Colors.blue;
+        return theme.colorScheme.tertiary;
       case 'expired':
-        return Colors.purple;
+        return theme.colorScheme.error;
       default:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 
@@ -2372,7 +2477,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                   child: Icon(
                                     Icons.map,
                                     size: 24,
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               );
@@ -2512,16 +2617,11 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                           height: 12,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isCollected
-                                ? Colors.green
-                                : isCancelled
-                                    ? Colors.red
-                                    : isExpired
-                                        ? Colors.purple
-                                        : isAccepted
-                                            ? Colors.blue
-                                            : Colors.grey,
-                            border: Border.all(color: Colors.white, width: 2),
+                            color: _getStatusColor(interaction.interactionType),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 2,
+                            ),
                           ),
                         ),
                         if (!isLast)
@@ -2530,7 +2630,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                               width: 2,
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey[300],
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(1),
                               ),
                             ),
@@ -2549,7 +2649,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                 .bodySmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                           ),
                           const SizedBox(height: 4),
@@ -2560,15 +2660,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                 .bodySmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w500,
-                                  color: isCollected
-                                      ? Colors.green
-                                      : isCancelled
-                                          ? Colors.red
-                                          : isExpired
-                                              ? Colors.purple
-                                              : isAccepted
-                                                  ? Colors.blue
-                                                  : Colors.grey,
+                                  color: _getStatusColor(interaction.interactionType),
                                 ),
                           ),
                           if (interaction.notes?.isNotEmpty == true) ...[
@@ -2580,7 +2672,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                                   .bodySmall
                                   ?.copyWith(
                                     fontSize: 10,
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
                           ],
@@ -2669,7 +2761,9 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                     height: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      ),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -2726,7 +2820,9 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                     height: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      ),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -2896,10 +2992,15 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${AppLocalizations.of(context).total} ${_formatLargeNumber(dropSnapshot.numberOfBottles + dropSnapshot.numberOfCans)}',
+                      DropValueCalculator.formatEstimatedValue(
+                        DropValueCalculator.calculateEstimatedValue(
+                          plasticBottleCount: dropSnapshot.numberOfBottles,
+                          cansCount: dropSnapshot.numberOfCans,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF00695C),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],

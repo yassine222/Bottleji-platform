@@ -98,10 +98,8 @@ class _SessionValueCardState extends ConsumerState<SessionValueCard> {
           final today = DateTime(now.year, now.month, now.day);
           print('💰 SessionValueCard - Today date: $today');
           
-          // Try to find today's entry first, otherwise use the most recent entry
+          // Try to find today's entry
           Map<String, dynamic>? todayEntry;
-          Map<String, dynamic>? mostRecentEntry;
-          DateTime? mostRecentDate;
           
           for (var entry in userData.earningsHistory!) {
             print('💰 SessionValueCard - Checking entry: $entry');
@@ -144,55 +142,54 @@ class _SessionValueCardState extends ConsumerState<SessionValueCard> {
                 print('💰 SessionValueCard - ✅ Found today entry!');
                 break; // Found today's entry, no need to continue
               }
-              
-              // Track the most recent entry (for fallback)
-              if (mostRecentDate == null || entryDate.isAfter(mostRecentDate)) {
-                mostRecentDate = entryDate;
-                mostRecentEntry = entry;
-                print('💰 SessionValueCard - Updated most recent entry: $entryDate');
-              }
             } catch (e) {
               print('💰 SessionValueCard - Error parsing date: $e');
               continue;
             }
           }
           
-          // Use today's entry if found, otherwise use the most recent entry
-          final entryToUse = todayEntry ?? mostRecentEntry;
-          
-          if (entryToUse != null && entryToUse.isNotEmpty) {
-            print('💰 SessionValueCard - Using ${todayEntry != null ? "today's" : "most recent"} entry');
-            print('💰 SessionValueCard - Entry keys: ${entryToUse.keys}');
-            print('💰 SessionValueCard - Entry earnings value: ${entryToUse['earnings']} (type: ${entryToUse['earnings'].runtimeType})');
-            print('💰 SessionValueCard - Entry collectionCount value: ${entryToUse['collectionCount']} (type: ${entryToUse['collectionCount'].runtimeType})');
+          // Only use today's entry if it exists AND has an active session
+          // Don't fall back to most recent entry - only show current active session
+          if (todayEntry != null && todayEntry.isNotEmpty) {
+            final isActive = todayEntry['isActive'] ?? false;
             
-            final earningsValue = entryToUse['earnings'];
-            if (earningsValue != null) {
-              if (earningsValue is double) {
-                todayEarnings = earningsValue;
-              } else if (earningsValue is int) {
-                todayEarnings = earningsValue.toDouble();
-              } else if (earningsValue is num) {
-                todayEarnings = earningsValue.toDouble();
-              } else if (earningsValue is String) {
-                todayEarnings = double.tryParse(earningsValue) ?? 0.0;
+            // Only show earnings if there's an active session today
+            if (isActive) {
+              print('💰 SessionValueCard - Using today\'s active entry');
+              print('💰 SessionValueCard - Entry keys: ${todayEntry.keys}');
+              print('💰 SessionValueCard - Entry earnings value: ${todayEntry['earnings']} (type: ${todayEntry['earnings'].runtimeType})');
+              print('💰 SessionValueCard - Entry collectionCount value: ${todayEntry['collectionCount']} (type: ${todayEntry['collectionCount'].runtimeType})');
+              
+              final earningsValue = todayEntry['earnings'];
+              if (earningsValue != null) {
+                if (earningsValue is double) {
+                  todayEarnings = earningsValue;
+                } else if (earningsValue is int) {
+                  todayEarnings = earningsValue.toDouble();
+                } else if (earningsValue is num) {
+                  todayEarnings = earningsValue.toDouble();
+                } else if (earningsValue is String) {
+                  todayEarnings = double.tryParse(earningsValue) ?? 0.0;
+                }
               }
-            }
-            
-            final countValue = entryToUse['collectionCount'];
-            if (countValue != null) {
-              if (countValue is int) {
-                todayCollectionCount = countValue;
-              } else if (countValue is num) {
-                todayCollectionCount = countValue.toInt();
-              } else if (countValue is String) {
-                todayCollectionCount = int.tryParse(countValue) ?? 0;
+              
+              final countValue = todayEntry['collectionCount'];
+              if (countValue != null) {
+                if (countValue is int) {
+                  todayCollectionCount = countValue;
+                } else if (countValue is num) {
+                  todayCollectionCount = countValue.toInt();
+                } else if (countValue is String) {
+                  todayCollectionCount = int.tryParse(countValue) ?? 0;
+                }
               }
+              
+              print('💰 SessionValueCard - ✅ Final values: ${todayEarnings} TND, ${todayCollectionCount} collections');
+            } else {
+              print('💰 SessionValueCard - Today\'s entry exists but is not active, showing 0');
             }
-            
-            print('💰 SessionValueCard - ✅ Final values: ${todayEarnings} TND, ${todayCollectionCount} collections');
           } else {
-            print('💰 SessionValueCard - ❌ No entry found for today');
+            print('💰 SessionValueCard - ❌ No entry found for today, showing 0');
           }
         } else {
           print('💰 SessionValueCard - ❌ No earningsHistory in user data or it\'s empty');

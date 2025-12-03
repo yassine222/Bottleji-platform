@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
@@ -6,6 +6,7 @@ import { NotificationsGateway } from './notifications.gateway';
 import { FCMService } from './fcm.service';
 import { Notification, NotificationSchema } from './schemas/notification.schema';
 import { UsersModule } from '../users/users.module';
+import { DropoffsModule } from '../dropoffs/dropoffs.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -15,6 +16,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       { name: Notification.name, schema: NotificationSchema },
     ]),
     UsersModule,
+    forwardRef(() => DropoffsModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

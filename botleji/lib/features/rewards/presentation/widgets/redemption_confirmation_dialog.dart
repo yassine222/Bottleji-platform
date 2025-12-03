@@ -60,11 +60,12 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
     final isInStock = widget.item.stock > 0;
     final canRedeem = canAfford && isInStock && widget.item.isActive;
 
+    final theme = Theme.of(context);
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -74,7 +75,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: theme.colorScheme.outline.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -122,9 +123,11 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: theme.colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.2),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +160,9 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                           Text(
                             AppLocalizations.of(context).yourPointsValue(widget.userPoints),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: canAfford ? Colors.green : Colors.red,
+                              color: canAfford 
+                                ? theme.colorScheme.primary 
+                                : theme.colorScheme.error,
                             ),
                           ),
                         ],
@@ -293,19 +298,25 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.red[50],
+                          color: theme.colorScheme.errorContainer,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red[200]!),
+                          border: Border.all(
+                            color: theme.colorScheme.error.withOpacity(0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.warning, color: Colors.red[700], size: 20),
+                            Icon(
+                              Icons.warning,
+                              color: theme.colorScheme.onErrorContainer,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _getErrorMessage(canAfford, isInStock, widget.item.isActive),
                                 style: TextStyle(
-                                  color: Colors.red[700],
+                                  color: theme.colorScheme.onErrorContainer,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -330,9 +341,11 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
               bottom: MediaQuery.of(context).viewInsets.bottom + 20,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               border: Border(
-                top: BorderSide(color: Colors.grey[200]!),
+                top: BorderSide(
+                  color: theme.colorScheme.outline.withOpacity(0.2),
+                ),
               ),
             ),
             child: Row(
@@ -342,7 +355,9 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                     onPressed: () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.grey[300]!),
+                      side: BorderSide(
+                        color: theme.colorScheme.outline.withOpacity(0.3),
+                      ),
                     ),
                     child: Text(AppLocalizations.of(context).cancel),
                   ),
@@ -353,10 +368,10 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                   child: ElevatedButton(
                     onPressed: canRedeem ? _handleConfirm : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      disabledBackgroundColor: Colors.grey[300],
+                      disabledBackgroundColor: theme.colorScheme.surfaceVariant,
                     ),
                     child: Text(AppLocalizations.of(context).placeOrder),
                   ),
@@ -412,6 +427,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   }
 
   Widget _buildSizeSelection() {
+    final theme = Theme.of(context);
     final wearableTypes = <String>[];
     if (widget.item.isFootwear) wearableTypes.add('footwear');
     if (widget.item.isJacket) wearableTypes.add('jacket');
@@ -420,9 +436,11 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: theme.colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,6 +475,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   }
 
   Widget _buildSizeTypeOption(String type) {
+    final theme = Theme.of(context);
     final isSelected = selectedSizeType == type;
     final icon = _getTypeIcon(type);
     final label = _getTypeLabel(type);
@@ -474,10 +493,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.white,
+            color: isSelected 
+              ? theme.colorScheme.primaryContainer 
+              : theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
+              color: isSelected 
+                ? theme.colorScheme.primary 
+                : theme.colorScheme.outline.withOpacity(0.3),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -485,14 +508,18 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
             children: [
               Icon(
                 icon,
-                color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+                color: isSelected 
+                  ? theme.colorScheme.onPrimaryContainer 
+                  : theme.colorScheme.onSurfaceVariant,
                 size: 16,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Theme.of(context).primaryColor : Colors.grey[700],
+                  color: isSelected 
+                    ? theme.colorScheme.onPrimaryContainer 
+                    : theme.colorScheme.onSurface,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -501,7 +528,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
               if (isSelected)
                 Icon(
                   Icons.check_circle,
-                  color: Theme.of(context).primaryColor,
+                  color: theme.colorScheme.onPrimaryContainer,
                   size: 16,
                 ),
             ],
@@ -512,6 +539,7 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
   }
 
   Widget _buildSizeGrid() {
+    final theme = Theme.of(context);
     final sizes = _getSizeOptions(selectedSizeType!);
     
     return Container(
@@ -537,10 +565,14 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
             borderRadius: BorderRadius.circular(6),
             child: Container(
               decoration: BoxDecoration(
-                color: isSelected ? Theme.of(context).primaryColor : Colors.white,
+                color: isSelected 
+                  ? theme.colorScheme.primary 
+                  : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
+                  color: isSelected 
+                    ? theme.colorScheme.primary 
+                    : theme.colorScheme.outline.withOpacity(0.3),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -548,7 +580,9 @@ class _RedemptionConfirmationDialogState extends State<RedemptionConfirmationDia
                 child: Text(
                   size,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[700],
+                    color: isSelected 
+                      ? theme.colorScheme.onPrimary 
+                      : theme.colorScheme.onSurface,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 10,
                   ),

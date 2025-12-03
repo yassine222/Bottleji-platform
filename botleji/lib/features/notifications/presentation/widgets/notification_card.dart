@@ -21,16 +21,17 @@ class NotificationCard extends ConsumerWidget {
     final color = _getNotificationColor(notification.type);
     final isUnread = !notification.isRead;
     
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: isUnread 
                 ? color.withOpacity(0.15)
-                : Colors.grey.withOpacity(0.08),
+                : theme.colorScheme.shadow.withOpacity(0.08),
             blurRadius: isUnread ? 12 : 6,
             spreadRadius: isUnread ? 2 : 0,
             offset: const Offset(0, 2),
@@ -82,7 +83,7 @@ class NotificationCard extends ConsumerWidget {
                   ),
                   child: Icon(
                     _getNotificationIcon(notification.type),
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                     size: 24,
                   ),
                 ),
@@ -108,8 +109,8 @@ class NotificationCard extends ConsumerWidget {
                                         : FontWeight.w600,
                                     fontSize: 15,
                                     color: isUnread 
-                                        ? Colors.grey[900] 
-                                        : Colors.grey[700],
+                                        ? theme.colorScheme.onSurface 
+                                        : theme.colorScheme.onSurface.withOpacity(0.87),
                                     height: 1.3,
                                   ),
                                 ),
@@ -118,9 +119,7 @@ class NotificationCard extends ConsumerWidget {
                                   _getLocalizedMessage(context, notification),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: isUnread 
-                                        ? Colors.grey[700] 
-                                        : Colors.grey[600],
+                                    color: theme.colorScheme.onSurfaceVariant,
                                     height: 1.4,
                                   ),
                                   maxLines: 3,
@@ -157,7 +156,7 @@ class NotificationCard extends ConsumerWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              color: theme.colorScheme.surfaceVariant,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -166,7 +165,7 @@ class NotificationCard extends ConsumerWidget {
                                 Icon(
                                   Icons.access_time,
                                   size: 12,
-                                  color: Colors.grey[600],
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -174,7 +173,7 @@ class NotificationCard extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.grey[700],
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -190,13 +189,13 @@ class NotificationCard extends ConsumerWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: notification.priority == NotificationPriority.urgent
-                                    ? Colors.red[50]
-                                    : Colors.orange[50],
+                                    ? theme.colorScheme.errorContainer
+                                    : theme.colorScheme.tertiaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: notification.priority == NotificationPriority.urgent
-                                      ? Colors.red[200]!
-                                      : Colors.orange[200]!,
+                                      ? theme.colorScheme.error
+                                      : theme.colorScheme.tertiary,
                                   width: 1,
                                 ),
                               ),
@@ -207,8 +206,8 @@ class NotificationCard extends ConsumerWidget {
                                     Icons.priority_high,
                                     size: 12,
                                     color: notification.priority == NotificationPriority.urgent
-                                        ? Colors.red[700]
-                                        : Colors.orange[700],
+                                        ? theme.colorScheme.onErrorContainer
+                                        : theme.colorScheme.onTertiaryContainer,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -219,8 +218,8 @@ class NotificationCard extends ConsumerWidget {
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                       color: notification.priority == NotificationPriority.urgent
-                                          ? Colors.red[700]
-                                          : Colors.orange[700],
+                                          ? theme.colorScheme.onErrorContainer
+                                          : theme.colorScheme.onTertiaryContainer,
                                     ),
                                   ),
                                 ],
@@ -286,7 +285,7 @@ class NotificationCard extends ConsumerWidget {
                         child: Icon(
                           Icons.close_rounded,
                           size: 20,
-                          color: Colors.grey[400],
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),

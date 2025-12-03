@@ -151,20 +151,27 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Notification Settings'),
-        backgroundColor: const Color(0xFF00695C),
-        foregroundColor: Colors.white,
+        title: Text(
+          'Notification Settings',
+          style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onPrimary,
+              ),
+        ),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                color: Color(0xFF00695C),
+                color: colorScheme.primary,
               ),
             )
           : ListView(
@@ -328,13 +335,14 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   }
 
   Widget _buildInfoCard({required bool isDarkMode}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: colorScheme.primary.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -344,12 +352,12 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              color: colorScheme.primary.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.info_outline_rounded,
-              color: Colors.blue,
+              color: colorScheme.primary,
               size: 24,
             ),
           ),
@@ -363,7 +371,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -371,7 +379,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                   'Customize which notifications you want to receive. You can always change these settings later.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    color: colorScheme.onSurface.withOpacity(0.7),
                     height: 1.5,
                   ),
                 ),
@@ -384,6 +392,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   }
 
   Widget _buildPermissionCard({required bool isDarkMode}) {
+    final colorScheme = Theme.of(context).colorScheme;
     debugPrint('🔔 Building permission card with status: $_notificationPermission');
     final isGranted = _notificationPermission == AuthorizationStatus.authorized ||
                       _notificationPermission == AuthorizationStatus.provisional;
@@ -392,11 +401,11 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -413,13 +422,13 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isGranted
-                        ? const Color(0xFF00695C).withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
+                        ? colorScheme.primary.withOpacity(0.1)
+                        : colorScheme.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     isGranted ? Icons.check_circle_rounded : Icons.notifications_off_rounded,
-                    color: isGranted ? const Color(0xFF00695C) : Colors.orange,
+                    color: isGranted ? colorScheme.primary : colorScheme.error,
                     size: 24,
                   ),
                 ),
@@ -433,7 +442,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white : Colors.black87,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -443,7 +452,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: isGranted ? Colors.green : Colors.orange,
+                              color: isGranted ? colorScheme.primary : colorScheme.error,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -453,7 +462,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isGranted ? Colors.green : Colors.orange,
+                              color: isGranted ? colorScheme.primary : colorScheme.error,
                             ),
                           ),
                         ],
@@ -470,7 +479,7 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                   : 'Notification permission is required to receive updates',
               style: TextStyle(
                 fontSize: 13,
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             if (!isGranted) ...[
@@ -505,16 +514,17 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
   }
 
   Widget _buildSectionHeader({required bool isDarkMode, required String title}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-          letterSpacing: 0.5,
-        ),
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+              letterSpacing: 0.5,
+            ),
       ),
     );
   }
@@ -528,13 +538,14 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
     required ValueChanged<bool> onChanged,
     bool enabled = true,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -547,13 +558,13 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: enabled
-                ? const Color(0xFF00695C).withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? colorScheme.primary.withOpacity(0.1)
+                : colorScheme.outline.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: enabled ? const Color(0xFF00695C) : Colors.grey,
+            color: enabled ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.4),
             size: 24,
           ),
         ),
@@ -563,8 +574,8 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: enabled
-                ? (isDarkMode ? Colors.white : Colors.black87)
-                : Colors.grey,
+                ? colorScheme.onSurface
+                : colorScheme.onSurface.withOpacity(0.5),
           ),
         ),
         subtitle: Text(
@@ -572,14 +583,14 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
           style: TextStyle(
             fontSize: 13,
             color: enabled
-                ? (isDarkMode ? Colors.grey[400] : Colors.grey[600])
-                : Colors.grey,
+                ? colorScheme.onSurface.withOpacity(0.7)
+                : colorScheme.onSurface.withOpacity(0.5),
           ),
         ),
         trailing: Switch(
           value: value,
           onChanged: enabled ? onChanged : null,
-          activeColor: const Color(0xFF00695C),
+          activeColor: colorScheme.primary,
         ),
       ),
     );

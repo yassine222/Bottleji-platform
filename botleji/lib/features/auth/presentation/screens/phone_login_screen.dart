@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../providers/auth_provider.dart';
@@ -25,12 +26,51 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   String? _verificationId;
   String _countryCode = '+1'; // Default country code
   String _completePhoneNumber = '';
+  String _initialCountryCode = 'US'; // Will be set from device locale
   bool _isCodeSent = false;
   bool _isLoading = false;
   bool _isSendingSMS = false;
   bool _isVerifyingCode = false;
   Timer? _resendTimer;
   int _resendCountdown = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _detectCountryCode();
+  }
+
+  void _detectCountryCode() {
+    try {
+      // Get device locale
+      final locale = Platform.localeName; // e.g., "en_US", "fr_FR", "de_DE", "ar_TN"
+      final parts = locale.split('_');
+      
+      if (parts.length >= 2) {
+        final countryCode = parts.last.toUpperCase();
+        // Validate it's a 2-letter country code
+        if (countryCode.length == 2) {
+          _initialCountryCode = countryCode;
+          print('🌍 Detected country code from locale: $locale -> $_initialCountryCode');
+          return;
+        }
+      }
+      
+      // Fallback: try to extract from locale string
+      final countryMatch = RegExp(r'[A-Z]{2}').firstMatch(locale);
+      if (countryMatch != null) {
+        _initialCountryCode = countryMatch.group(0)!;
+        print('🌍 Detected country code from locale pattern: $locale -> $_initialCountryCode');
+        return;
+      }
+      
+      print('⚠️ Could not detect country code from locale: $locale, defaulting to US');
+      _initialCountryCode = 'US';
+    } catch (e) {
+      print('⚠️ Error detecting country code: $e, defaulting to US');
+      _initialCountryCode = 'US';
+    }
+  }
 
   @override
   void dispose() {
@@ -326,7 +366,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surface,
                     ),
-                    initialCountryCode: 'US', // Default country, will auto-detect from device
+                    initialCountryCode: _initialCountryCode, // Auto-detected from device locale
                     onChanged: (phone) {
                       _countryCode = phone.countryCode;
                       _completePhoneNumber = phone.completeNumber;

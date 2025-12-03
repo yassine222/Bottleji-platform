@@ -321,7 +321,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     final currentUserMode = ref.watch(userModeControllerProvider);
 
     return Drawer(
-      backgroundColor: isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       child: Column(
         children: [
           // Modern Header with User Profile
@@ -502,7 +502,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                       return Text(
                         l10n.activeMode,
                         style: TextStyle(
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
@@ -513,11 +513,11 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+                    color: theme.colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: theme.colorScheme.shadow.withOpacity(0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -968,7 +968,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.person_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).myAccount),
@@ -986,7 +986,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             data: (mode) => mode == UserMode.collector ? ListTile(
             leading: Icon(
                 Icons.history_rounded,
-                color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+                color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).history),
@@ -1005,7 +1005,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.notifications_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).notifications),
@@ -1021,7 +1021,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.school_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).trainings),
@@ -1037,7 +1037,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.card_giftcard_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).referAndEarn),
@@ -1053,7 +1053,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.settings_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).settings),
@@ -1069,7 +1069,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.support_agent_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).support),
@@ -1085,7 +1085,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ListTile(
             leading: Icon(
               Icons.description_rounded,
-              color: isDarkMode ? const Color(0xFF00695C) : const Color(0xFF00695C),
+              color: theme.colorScheme.primary,
             ),
             title: Builder(
               builder: (context) => Text(AppLocalizations.of(context).termsAndConditions),

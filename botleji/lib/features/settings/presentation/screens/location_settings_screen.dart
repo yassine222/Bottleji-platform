@@ -94,14 +94,21 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Location Settings'),
-        backgroundColor: const Color(0xFF00695C),
-        foregroundColor: Colors.white,
+        title: Text(
+          'Location Settings',
+          style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onPrimary,
+              ),
+        ),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
         actions: [
           IconButton(
@@ -112,9 +119,9 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                color: Color(0xFF00695C),
+                color: colorScheme.primary,
               ),
             )
           : RefreshIndicator(
@@ -195,10 +202,11 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
     required String description,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: color.withOpacity(0.3),
@@ -211,7 +219,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(0.16),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -230,7 +238,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -238,7 +246,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    color: colorScheme.onSurface.withOpacity(0.7),
                     height: 1.5,
                   ),
                 ),
@@ -260,13 +268,14 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
     String? actionLabel,
     VoidCallback? onActionTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -283,13 +292,13 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isEnabled
-                        ? const Color(0xFF00695C).withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
+                        ? colorScheme.primary.withOpacity(0.1)
+                        : colorScheme.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     icon,
-                    color: isEnabled ? const Color(0xFF00695C) : Colors.orange,
+                    color: isEnabled ? colorScheme.primary : colorScheme.error,
                     size: 24,
                   ),
                 ),
@@ -303,7 +312,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white : Colors.black87,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -313,7 +322,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: isEnabled ? Colors.green : Colors.orange,
+                              color: isEnabled ? colorScheme.primary : colorScheme.error,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -323,7 +332,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isEnabled ? Colors.green : Colors.orange,
+                              color: isEnabled ? colorScheme.primary : colorScheme.error,
                             ),
                           ),
                         ],
@@ -338,7 +347,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
               description,
               style: TextStyle(
                 fontSize: 13,
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             if (actionLabel != null && onActionTap != null) ...[
@@ -348,8 +357,8 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                 child: ElevatedButton(
                   onPressed: onActionTap,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00695C),
-                    foregroundColor: Colors.white,
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -376,13 +385,14 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
     required bool isDarkMode,
     required Position position,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -398,12 +408,12 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00695C).withOpacity(0.1),
+                    color: colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.my_location_rounded,
-                    color: Color(0xFF00695C),
+                    color: colorScheme.primary,
                     size: 24,
                   ),
                 ),
@@ -414,7 +424,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -460,19 +470,20 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
     required String value,
     required IconData icon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Icon(
           icon,
           size: 16,
-          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+          color: colorScheme.onSurface.withOpacity(0.6),
         ),
         const SizedBox(width: 8),
         Text(
           '$label: ',
           style: TextStyle(
             fontSize: 13,
-            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            color: colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
         Text(
@@ -480,7 +491,7 @@ class _LocationSettingsScreenState extends ConsumerState<LocationSettingsScreen>
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.white : Colors.black87,
+            color: colorScheme.onSurface,
           ),
         ),
       ],

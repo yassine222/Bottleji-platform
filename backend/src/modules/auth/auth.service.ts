@@ -201,6 +201,13 @@ export class AuthService {
       throw new UnauthorizedException('Please verify your email first');
     }
 
+    // Check if this is a phone-registered user trying to login with email/password
+    // Phone-registered users must always use phone + OTP login, even if they added an email later
+    if (user.registeredWithPhone) {
+      console.log(`❌ Login failed: Phone-registered user trying to login with email/password: ${user.id}`);
+      throw new UnauthorizedException('This account was created with phone number. Please use phone number login with OTP verification instead.');
+    }
+
     // Compare password using bcrypt
     console.log(`🔐 Comparing password for user: ${user.id}`);
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
@@ -640,7 +647,8 @@ export class AuthService {
       isPhoneVerified: true, // Phone is verified via Firebase OTP
       phoneVerificationId: firebaseToken,
       isVerified: true, // Phone verification counts as verification
-      // User can add real email in profile setup
+      registeredWithPhone: true, // Mark that user registered with phone - they must always use phone login
+      // User can add real email in profile setup, but cannot use email/password login
     });
 
     // Generate JWT token
@@ -748,6 +756,12 @@ export class AuthService {
       };
     }
 
+    // Block password reset for phone-registered users
+    // They must always use phone + OTP login
+    if (user.registeredWithPhone) {
+      throw new BadRequestException('This account was created with phone number. Password reset is not available. Please use phone number login with OTP verification instead.');
+    }
+
     const otp = this.generateOTP();
     const otpExpiresAt = new Date();
     otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
@@ -773,6 +787,12 @@ export class AuthService {
       throw new BadRequestException('Invalid email or OTP');
     }
 
+    // Block password reset for phone-registered users
+    // They must always use phone + OTP login
+    if (user.registeredWithPhone) {
+      throw new BadRequestException('This account was created with phone number. Password reset is not available. Please use phone number login with OTP verification instead.');
+    }
+
     if (user.resetPasswordOtpExpiry && new Date() > user.resetPasswordOtpExpiry) {
       throw new BadRequestException('Password reset code has expired. Please request a new one.');
     }
@@ -790,6 +810,12 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new BadRequestException('Invalid email or OTP');
+    }
+
+    // Block password reset for phone-registered users
+    // They must always use phone + OTP login
+    if (user.registeredWithPhone) {
+      throw new BadRequestException('This account was created with phone number. Password reset is not available. Please use phone number login with OTP verification instead.');
     }
 
     if (user.resetPasswordOtpExpiry && new Date() > user.resetPasswordOtpExpiry) {

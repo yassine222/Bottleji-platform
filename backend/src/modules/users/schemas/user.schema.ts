@@ -57,6 +57,9 @@ export class User extends Document {
   @Prop()
   phoneVerificationId?: string;
 
+  @Prop({ default: false })
+  registeredWithPhone: boolean; // Track if user originally registered with phone number
+
   @Prop()
   address?: string;
 

@@ -1218,6 +1218,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         // Also update current step index if we've progressed to a new step
         if (mounted) {
           bool stepChanged = false;
+          final previousIndex = _closestPolylinePointIndex;
           setState(() {
             // Store previous index before updating
             _previousClosestPolylinePointIndex = _closestPolylinePointIndex;
@@ -1230,6 +1231,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
               stepChanged = true;
             }
           });
+          
+          if (closestPointIndex != previousIndex) {
+            debugPrint('🎯 Closest polyline point updated: $previousIndex → $closestPointIndex (step: $_currentStepIndex/${_navigationSteps.length - 1})');
+          }
           
           // Update polyline to remove passed segments (uses previous index to calculate distance)
           _updatePolylineForProgress();
@@ -1322,8 +1327,11 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
 
   void _updatePolylineForProgress() {
     if (_navigationSteps.isEmpty || _polylines.isEmpty) {
+      debugPrint('⚠️ Cannot update polyline: navigationSteps=${_navigationSteps.isEmpty}, polylines=${_polylines.isEmpty}, mode=${_transportationMode.name}');
       return;
     }
+    
+    debugPrint('🔄 Polyline shrinking check: mode=${_transportationMode.name}, steps=${_navigationSteps.length}');
     
     // Collect all polyline points from all steps
     List<LatLng> allPolylinePoints = [];
@@ -1332,6 +1340,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     }
     
     if (allPolylinePoints.isEmpty) {
+      debugPrint('⚠️ Cannot update polyline: no polyline points available');
       return;
     }
     
@@ -1350,6 +1359,14 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           );
         }
       }
+      debugPrint('📍 Polyline progress: previousIndex=$_previousClosestPolylinePointIndex, currentIndex=$_closestPolylinePointIndex, distanceTraveled=${distanceTraveled.toStringAsFixed(2)}m');
+    } else if (_previousClosestPolylinePointIndex == _closestPolylinePointIndex) {
+      debugPrint('📍 Polyline progress: closest point index unchanged ($_closestPolylinePointIndex), no distance calculated');
+    } else {
+      debugPrint('⚠️ Polyline progress: closest point moved backwards (previous=$_previousClosestPolylinePointIndex, current=$_closestPolylinePointIndex), skipping');
+      // Reset if moved backwards (shouldn't happen, but handle gracefully)
+      _previousClosestPolylinePointIndex = _closestPolylinePointIndex;
+      return;
     }
     
     // Accumulate distance traveled
@@ -1358,8 +1375,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     // Only update if we've moved at least 5 meters forward (same as location stream)
     const double updateThreshold = 5.0; // meters
     final totalDistanceTraveled = _lastPolylineUpdateDistance;
+    debugPrint('📏 Polyline update check: accumulated=${totalDistanceTraveled.toStringAsFixed(2)}m, threshold=${updateThreshold}m');
     if (totalDistanceTraveled < updateThreshold) {
       // Not enough distance traveled, skip update
+      debugPrint('⏸️ Polyline update skipped: not enough distance traveled yet');
       return;
     }
     
@@ -1371,6 +1390,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Don't update if too early in the route (first few points)
     if (startIndex < 3) {
+      debugPrint('⏸️ Polyline update skipped: too early in route (startIndex=$startIndex < 3)');
       return;
     }
     
@@ -1378,6 +1398,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     
     // Ensure we have at least 2 points for a valid polyline
     if (remainingPoints.length < 2) {
+      debugPrint('⏸️ Polyline update skipped: not enough remaining points (${remainingPoints.length} < 2)');
       return;
     }
     
@@ -1393,6 +1414,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     if (distanceToDestination > 10 && remainingPoints.last != widget.destination) {
       remainingPoints.add(widget.destination);
     }
+    
+    final originalPointCount = allPolylinePoints.length;
+    final removedPointCount = startIndex;
     
     // Update the polyline with remaining points
     setState(() {
@@ -1410,7 +1434,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       };
     });
     
-    debugPrint('🔄 Updated polyline: moved ${distanceTraveled.toStringAsFixed(1)}m (total: ${totalDistanceTraveled.toStringAsFixed(1)}m), removed ${startIndex} passed points, showing ${remainingPoints.length} remaining points');
+    debugPrint('✅ Polyline SHRUNK [${_transportationMode.name}]: moved ${distanceTraveled.toStringAsFixed(1)}m (total: ${totalDistanceTraveled.toStringAsFixed(1)}m), removed $removedPointCount/$originalPointCount points, showing ${remainingPoints.length} remaining points');
   }
 
   void _createStraightLineRoute(LatLng origin, LatLng destination, double distance) {

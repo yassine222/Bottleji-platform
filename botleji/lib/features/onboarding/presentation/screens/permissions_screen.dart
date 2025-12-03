@@ -9,8 +9,7 @@ import 'package:botleji/core/services/network_initialization_service.dart';
 import 'package:botleji/core/config/server_config.dart';
 import 'package:botleji/features/notifications/data/services/notification_service.dart';
 import 'package:botleji/l10n/app_localizations.dart';
-// TODO: FCM is not yet implemented
-// import 'package:botleji/core/services/fcm_service.dart';
+import 'package:botleji/core/services/fcm_service.dart';
 
 const appGreenColor = Color(0xFF00695C);
 
@@ -209,17 +208,16 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
           
           print('FirebaseMessaging notification permission: ${status.authorizationStatus} (granted: $isGranted)');
           
-          // TODO: Initialize FCM service after user grants notification permission
-          // FCM is not yet implemented, so commenting out for now
-          // if (isGranted) {
-          //   try {
-          //     await FCMService().initialize();
-          //     print('✅ FCM service initialized after user granted notification permission');
-          //   } catch (e) {
-          //     print('⚠️ Error initializing FCM service: $e');
-          //     // Don't fail the permission request if FCM init fails
-          //   }
-          // }
+          // Initialize FCM service after user grants notification permission
+          if (isGranted) {
+            try {
+              await FCMService().initialize();
+              print('✅ FCM service initialized after user granted notification permission');
+            } catch (e) {
+              print('⚠️ Error initializing FCM service: $e');
+              // Don't fail the permission request if FCM init fails
+            }
+          }
         } catch (e) {
           print('Error requesting notification permission: $e');
           isGranted = false;

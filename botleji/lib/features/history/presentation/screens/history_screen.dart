@@ -10,7 +10,6 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math' as math;
 import 'package:botleji/core/services/timezone_service.dart';
-import 'package:botleji/features/earnings/presentation/providers/earnings_provider.dart';
 import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/l10n/app_localizations.dart';
 
@@ -27,11 +26,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? selectedItemType;
   String? selectedBottleType;
   String selectedViewType = 'Collections'; // Default to 'Collections', can be 'Earnings'
+  String? selectedEarningsTimeRange = 'Daily'; // Default to 'Daily' (Today), can be 'Weekly', 'Monthly', 'All Time', or null
   final ScrollController _scrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
-  
-  // Stable params for earnings history provider to prevent recreation
-  static const earningsHistoryParams = {'page': 1, 'limit': 20};
 
   // Filter options
   final List<String> viewTypeOptions = [
@@ -69,6 +65,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     'glass',
     'aluminum',
     'mixed',
+  ];
+
+  // Earnings-specific time range options (Daily is default)
+  final List<String> earningsTimeRangeOptions = [
+    'Daily',
+    'Weekly',
+    'Monthly',
+    'All Time',
   ];
 
   String _getLocalizedTimeRangeOption(String option) {
@@ -159,7 +163,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -169,7 +172,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       selectedTimeRange = null;
       selectedItemType = null;
       selectedBottleType = null;
-      _searchController.clear();
     });
     // No need to reload data since we're using client-side filtering
   }
@@ -268,10 +270,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: _showSearchDialog,
-                  ),
                 ],
               ),
               body: _buildHouseholdDropsList(userData!.id!),
@@ -369,8 +367,8 @@ Widget _buildCollectorHistory(BuildContext context) {
       body: RefreshIndicator(
         onRefresh: () async {
           if (selectedViewType == 'Earnings') {
-            // Refresh earnings - use stable params
-            ref.invalidate(earningsHistoryProvider(earningsHistoryParams));
+            // Refresh user data to get latest earnings
+            ref.invalidate(authNotifierProvider);
           } else {
             final controller = ref.read(historyControllerProvider.notifier);
             await controller.refresh();
@@ -451,10 +449,10 @@ Widget _buildFilterChipsAndActions() {
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),
@@ -475,51 +473,11 @@ Widget _buildFilterChipsAndActions() {
           ],
         ),
         const SizedBox(height: 12),
-        // Filter and search buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _showFilterDialog,
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.filter_list, size: 20),
-                    if (_hasActiveFilters())
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                label: Text(AppLocalizations.of(context).filter),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF00695C),
-                  side: const BorderSide(color: Color(0xFF00695C)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _showSearchDialog,
-                icon: const Icon(Icons.search, size: 20),
-                label: Text(AppLocalizations.of(context).search),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF00695C),
-                  side: const BorderSide(color: Color(0xFF00695C)),
-                ),
-              ),
-            ),
-          ],
-        ),
+        // Filter chips (different for Collections vs Earnings)
+        if (selectedViewType == 'Earnings')
+          _buildEarningsFilterChips()
+        else
+          _buildCollectionsFilterChips(),
       ],
     ),
   );
@@ -529,9 +487,19 @@ Widget _buildViewTypeChip(String label, IconData icon, String displayText) {
   final isSelected = selectedViewType == label;
   return GestureDetector(
     onTap: () {
+      final previousViewType = selectedViewType;
       setState(() {
         selectedViewType = label;
       });
+      
+      // If switching to Collections tab, reload history with current filters
+      if (label == 'Collections' && previousViewType != 'Collections') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final controller = ref.read(historyControllerProvider.notifier);
+          // Load history with current Collections filters (not Earnings filters)
+          controller.loadHistory(status: selectedStatus, timeRange: selectedTimeRange);
+        });
+      }
     },
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -571,93 +539,385 @@ Widget _buildViewTypeChip(String label, IconData icon, String displayText) {
 }
 
 Widget _buildEarningsView() {
-  // Get earnings history from user data (like reward history)
   final userDataAsync = ref.watch(authNotifierProvider);
   
   return userDataAsync.when(
     data: (userData) {
       final earningsHistory = userData?.earningsHistory ?? [];
-      print('📊 Earnings history from user data: ${earningsHistory.length} items');
-      print('📊 Earnings history raw data: $earningsHistory');
-      if (earningsHistory.isNotEmpty) {
-        print('📊 First earnings item: ${earningsHistory.first}');
-        print('📊 First earnings item keys: ${earningsHistory.first.keys}');
-        print('📊 First earnings item date: ${earningsHistory.first['date']} (type: ${earningsHistory.first['date'].runtimeType})');
-        print('📊 First earnings item earnings: ${earningsHistory.first['earnings']} (type: ${earningsHistory.first['earnings'].runtimeType})');
-        print('📊 First earnings item collectionCount: ${earningsHistory.first['collectionCount']} (type: ${earningsHistory.first['collectionCount'].runtimeType})');
-      }
       
-      // Sort by date (newest first)
-      final sortedHistory = List<Map<String, dynamic>>.from(earningsHistory);
-  sortedHistory.sort((a, b) {
-    final dateA = a['date'] != null 
-        ? (a['date'] is String 
-            ? DateTime.parse(a['date']) 
-            : a['date'] is DateTime
-                ? a['date'] as DateTime
-                : DateTime.now())
-        : DateTime(1970);
-    final dateB = b['date'] != null
-        ? (b['date'] is String
-            ? DateTime.parse(b['date'])
-            : b['date'] is DateTime
-                ? b['date'] as DateTime
-                : DateTime.now())
-        : DateTime(1970);
-    return dateB.compareTo(dateA);
-  });
-  
-      if (sortedHistory.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context).noEarningsHistoryYet,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
+      if (earningsHistory.isEmpty) {
+        return Column(
+          children: [
+            // Overview card even when no history
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildEarningsOverviewCard(0.0, selectedEarningsTimeRange ?? 'All Time'),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).noEarningsHistoryYet,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context).earningsWillAppearHere,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                AppLocalizations.of(context).earningsWillAppearHere,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+            ),
+          ],
+        );
+      }
+
+      // Apply time range filter
+      List<Map<String, dynamic>> filteredHistory = List<Map<String, dynamic>>.from(earningsHistory);
+      
+      if (selectedEarningsTimeRange != null && selectedEarningsTimeRange != 'All Time') {
+        final now = TimezoneService.now();
+        DateTime? startDate;
+
+        switch (selectedEarningsTimeRange) {
+          case 'Daily':
+            startDate = DateTime(now.year, now.month, now.day);
+            break;
+          case 'Weekly':
+            startDate = now.subtract(const Duration(days: 7));
+            break;
+          case 'Monthly':
+            startDate = DateTime(now.year, now.month - 1, now.day);
+            break;
+        }
+
+        if (startDate != null) {
+          filteredHistory = filteredHistory.where((item) {
+            final date = item['date'] != null
+                ? (item['date'] is String
+                    ? DateTime.parse(item['date'])
+                    : item['date'] is DateTime
+                        ? item['date'] as DateTime
+                        : DateTime.now())
+                : DateTime(1970);
+            return date.isAfter(startDate!);
+          }).toList();
+        }
+      }
+
+      // Group earnings by session date
+      final groupedEarnings = <String, List<Map<String, dynamic>>>{};
+      final locale = Localizations.localeOf(context);
+      final dateFormat = locale.languageCode == 'ar'
+          ? DateFormat('dd MMM yyyy', 'en')
+          : DateFormat('MMM dd, yyyy', locale.toString());
+
+      for (var item in filteredHistory) {
+        final date = item['date'] != null
+            ? (item['date'] is String
+                ? DateTime.parse(item['date'])
+                : item['date'] is DateTime
+                    ? item['date'] as DateTime
+                    : DateTime.now())
+            : DateTime.now();
+        
+        String groupKey;
+        if (selectedEarningsTimeRange == 'Daily') {
+          groupKey = dateFormat.format(date);
+        } else if (selectedEarningsTimeRange == 'Weekly') {
+          // Group by week (start of week)
+          final weekStart = date.subtract(Duration(days: date.weekday - 1));
+          groupKey = 'Week of ${dateFormat.format(weekStart)}';
+        } else if (selectedEarningsTimeRange == 'Monthly') {
+          // Group by month
+          final monthFormat = locale.languageCode == 'ar'
+              ? DateFormat('MMM yyyy', 'en')
+              : DateFormat('MMM yyyy', locale.toString());
+          groupKey = monthFormat.format(date);
+        } else {
+          // Default: group by date
+          groupKey = dateFormat.format(date);
+        }
+
+        if (!groupedEarnings.containsKey(groupKey)) {
+          groupedEarnings[groupKey] = [];
+        }
+        groupedEarnings[groupKey]!.add(item);
+      }
+
+      // Sort groups by date (newest first)
+      final sortedGroups = groupedEarnings.entries.toList()
+        ..sort((a, b) {
+          // Get the first item's date from each group for sorting
+          final dateA = a.value.first['date'] != null
+              ? (a.value.first['date'] is String
+                  ? DateTime.parse(a.value.first['date'])
+                  : a.value.first['date'] is DateTime
+                      ? a.value.first['date'] as DateTime
+                      : DateTime.now())
+              : DateTime(1970);
+          final dateB = b.value.first['date'] != null
+              ? (b.value.first['date'] is String
+                  ? DateTime.parse(b.value.first['date'])
+                  : b.value.first['date'] is DateTime
+                      ? b.value.first['date'] as DateTime
+                      : DateTime.now())
+              : DateTime(1970);
+          return dateB.compareTo(dateA);
+        });
+
+      // Calculate total from filtered list
+      double filteredTotal = 0;
+      for (var item in filteredHistory) {
+        filteredTotal += (item['earnings'] ?? 0).toDouble();
+      }
+
+      if (sortedGroups.isEmpty) {
+        return Column(
+          children: [
+            // Overview card even when no filtered results
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildEarningsOverviewCard(filteredTotal, selectedEarningsTimeRange ?? 'All Time'),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).noEarningsHistoryYet,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
+            ),
+          ],
         );
       }
 
       return ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: sortedHistory.length,
+        itemCount: sortedGroups.length + 1, // +1 for overview card
         itemBuilder: (context, index) {
-          if (index >= sortedHistory.length) {
-            return const SizedBox.shrink();
+          // Show overview card at the top
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildEarningsOverviewCard(filteredTotal, selectedEarningsTimeRange ?? 'All Time'),
+            );
           }
 
-          final item = sortedHistory[index];
-          return _buildEarningsHistoryItem(context, item);
+          // Adjust index for groups
+          final groupIndex = index - 1;
+          final group = sortedGroups[groupIndex];
+          final groupItems = group.value;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Add spacing between groups (no header with date/total)
+              if (groupIndex > 0)
+                const SizedBox(height: 16),
+              // Group items
+              ...groupItems.map((item) => _buildEarningsHistoryItem(context, item)),
+            ],
+          );
         },
       );
     },
     loading: () => const Center(child: CircularProgressIndicator()),
     error: (error, stack) {
-      print('❌ Error loading user data for earnings: $error');
       return Center(
-        child: Text(AppLocalizations.of(context).errorLoadingEarnings(error.toString())),
+        child: Text(
+          AppLocalizations.of(context).errorLoadingEarnings(error.toString()),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       );
     },
+  );
+}
+
+Widget _buildEarningsFilterChips() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppLocalizations.of(context).timeRange,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        ),
+      ),
+      const SizedBox(height: 8),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: earningsTimeRangeOptions.map((option) {
+            final isSelected = (selectedEarningsTimeRange == option) || 
+                (selectedEarningsTimeRange == null && option == 'All Time');
+            String displayText = option;
+            if (option == 'Daily') {
+              displayText = AppLocalizations.of(context).today;
+            } else if (option == 'Weekly') {
+              displayText = AppLocalizations.of(context).thisWeek;
+            } else if (option == 'Monthly') {
+              displayText = AppLocalizations.of(context).thisMonth;
+            } else {
+              displayText = AppLocalizations.of(context).allTime;
+            }
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(displayText),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (!selected) return;
+                  setState(() {
+                    selectedEarningsTimeRange = option == 'All Time' ? null : option;
+                  });
+                },
+                selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+                checkmarkColor: const Color(0xFF00695C),
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                labelStyle: TextStyle(
+                  color: isSelected 
+                      ? const Color(0xFF00695C) 
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildCollectionsFilterChips() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Status filter chips
+      Text(
+        AppLocalizations.of(context).status,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        ),
+      ),
+      const SizedBox(height: 8),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: statusOptions.map((option) {
+            final isSelected = selectedStatus == option || 
+                (selectedStatus == null && option == 'All');
+            String displayText = option == 'All' 
+                ? AppLocalizations.of(context).all
+                : option == 'collected'
+                    ? AppLocalizations.of(context).collected
+                    : option == 'cancelled'
+                        ? AppLocalizations.of(context).cancelled
+                        : AppLocalizations.of(context).pending;
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(displayText),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (!selected) return;
+                  setState(() {
+                    selectedStatus = option == 'All' ? null : option;
+                  });
+                },
+                selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+                checkmarkColor: const Color(0xFF00695C),
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                labelStyle: TextStyle(
+                  color: isSelected 
+                      ? const Color(0xFF00695C) 
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+      const SizedBox(height: 12),
+      // Time range filter chips
+      Text(
+        AppLocalizations.of(context).timeRange,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        ),
+      ),
+      const SizedBox(height: 8),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: timeRangeOptions.map((option) {
+            final isSelected = selectedTimeRange == option || 
+                (selectedTimeRange == null && option == 'All Time');
+            final displayText = _getLocalizedTimeRangeOption(option);
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(displayText),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (!selected) return;
+                  setState(() {
+                    selectedTimeRange = option == 'All Time' ? null : option;
+                  });
+                },
+                selectedColor: const Color(0xFF00695C).withOpacity(0.2),
+                checkmarkColor: const Color(0xFF00695C),
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                labelStyle: TextStyle(
+                  color: isSelected 
+                      ? const Color(0xFF00695C) 
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    ],
   );
 }
 
@@ -689,11 +949,20 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
           ? DateTime.parse(item['lastCollectionTime'])
           : item['lastCollectionTime'] as DateTime)
       : date;
-  final isActive = item['isActive'] ?? false;
+  
+  // Only show active if it's today AND there's an active session
+  final now = TimezoneService.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final todayEnd = todayStart.add(const Duration(days: 1));
+  final isToday = date.isAfter(todayStart.subtract(const Duration(days: 1))) && 
+                  date.isBefore(todayEnd);
+  final hasActiveSession = item['isActive'] ?? false;
+  final isActive = isToday && hasActiveSession;
 
   return Card(
-    margin: const EdgeInsets.only(bottom: 16),
+    margin: const EdgeInsets.only(bottom: 12),
     elevation: 2,
+    color: Theme.of(context).colorScheme.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     ),
@@ -727,13 +996,14 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                         dateFormat.format(date),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$collectionCount ${collectionCount == 1 ? AppLocalizations.of(context).collection : AppLocalizations.of(context).collections}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -745,13 +1015,13 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                 decoration: BoxDecoration(
                   color: isActive
                       ? Colors.green.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isActive ? AppLocalizations.of(context).active : AppLocalizations.of(context).completed,
                   style: TextStyle(
-                    color: isActive ? Colors.green : Colors.grey[700],
+                    color: isActive ? Colors.green : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -769,7 +1039,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                   Text(
                     AppLocalizations.of(context).totalEarnings,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -788,7 +1058,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                   Text(
                     AppLocalizations.of(context).sessionTime,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -796,6 +1066,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                     '${timeFormat.format(startTime)} - ${timeFormat.format(lastCollectionTime)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -808,27 +1079,147 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
   );
 }
 
+Widget _buildEarningsOverviewCard(double total, String filterType) {
+  // Get label and icon based on filter type
+  String label;
+  IconData icon;
+  Color color;
+  
+  final l10n = AppLocalizations.of(context);
+  
+  switch (filterType) {
+    case 'Daily':
+      label = l10n.today;
+      icon = Icons.today;
+      color = Colors.blue;
+      break;
+    case 'Weekly':
+      label = l10n.thisWeek;
+      icon = Icons.calendar_view_week;
+      color = Colors.orange;
+      break;
+    case 'Monthly':
+      label = l10n.thisMonth;
+      icon = Icons.calendar_month;
+      color = Colors.green;
+      break;
+    default:
+      label = l10n.allTime;
+      icon = Icons.all_inclusive;
+      color = const Color(0xFF00695C);
+  }
+  
+  return Card(
+    elevation: 4,
+    color: Theme.of(context).colorScheme.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00695C).withOpacity(0.1),
+            const Color(0xFF00695C).withOpacity(0.05),
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00695C).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.trending_up,
+                  color: Color(0xFF00695C),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                AppLocalizations.of(context).earningsOverview,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildOverviewStat(
+            label,
+            total,
+            icon,
+            color,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildOverviewStat(String label, double amount, IconData icon, Color color) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: color.withOpacity(0.3),
+        width: 1,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          DropValueCalculator.formatEstimatedValue(amount),
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
  
 
   List<CollectorInteraction> _applyFilters(List<CollectorInteraction> interactions) {
     List<CollectorInteraction> filtered = interactions;
     
-    // Apply search filter
-    if (_searchController.text.isNotEmpty) {
-      final searchTerm = _searchController.text.toLowerCase();
-      filtered = filtered.where((interaction) {
-        final dropoff = interaction.dropoff;
-        if (dropoff != null) {
-          return dropoff.notes?.toLowerCase().contains(searchTerm) == true ||
-                 dropoff.bottleType.toLowerCase().contains(searchTerm) ||
-                 interaction.notes?.toLowerCase().contains(searchTerm) == true ||
-                 interaction.cancellationReason?.toLowerCase().contains(searchTerm) == true;
-        }
-        return interaction.notes?.toLowerCase().contains(searchTerm) == true ||
-               interaction.cancellationReason?.toLowerCase().contains(searchTerm) == true;
-      }).toList();
-    }
-
     // Apply status filter
     if (selectedStatus != null && selectedStatus != 'All') {
       filtered = filtered.where((interaction) {
@@ -905,15 +1296,6 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
   List<Drop> _applyFiltersToDrops(List<Drop> drops) {
     // My Drops: show censored drops too, but mark them; do not hide here
     List<Drop> filtered = drops;
-
-    // Apply search filter
-    if (_searchController.text.isNotEmpty) {
-      final searchTerm = _searchController.text.toLowerCase();
-      filtered = filtered.where((drop) {
-        return drop.notes?.toLowerCase().contains(searchTerm) == true ||
-               drop.bottleType.name.toLowerCase().contains(searchTerm) == true;
-      }).toList();
-    }
 
     // Apply status filter
     if (selectedStatus != null && selectedStatus != 'All') {
@@ -1002,7 +1384,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                           height: 120,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[300]!),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -1012,12 +1396,12 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[200],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.image_not_supported,
-                                    color: Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                     size: 60,
                                   ),
                                 );
@@ -1026,7 +1410,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                                 if (loadingProgress == null) return child;
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[200],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Center(
@@ -1042,12 +1426,12 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.image_not_supported,
-                            color: Colors.grey,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                             size: 60,
                           ),
                         ),
@@ -1060,21 +1444,26 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                             height: 120,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                              ),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Stack(
-                                children: [
-                                  // Static map image - using simple static map like drops tab
-                                  Image.network(
-                                    _getStaticMapUrl(LatLng(
+                            child: Stack(
+                              children: [
+                                // Static map image - using simple static map like drops tab
+                                Image.network(
+                                  _getStaticMapUrl(
+                                    LatLng(
                                       dropoff!.location.coordinates[1],
                                       dropoff.location.coordinates[0],
-                                    )),
-                                    width: double.infinity,
-                                    height: 120,
-                                    fit: BoxFit.cover,
+                                    ),
+                                    isDark: Theme.of(context).brightness == Brightness.dark,
+                                  ),
+                                  width: double.infinity,
+                                  height: 120,
+                                  fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         width: double.infinity,
@@ -1239,7 +1628,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                             shape: BoxShape.circle,
                             color: _getStatusColor(interaction.interactionType),
                             border: Border.all(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               width: 2,
                             ),
                           ),
@@ -1382,7 +1771,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                         height: 120,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -1390,10 +1781,13 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                             children: [
                               // Static map image
                               Image.network(
-                                _getStaticMapUrl(LatLng(
-                                  drop.location.latitude,
-                                  drop.location.longitude,
-                                )),
+                                _getStaticMapUrl(
+                                  LatLng(
+                                    drop.location.latitude,
+                                    drop.location.longitude,
+                                  ),
+                                  isDark: Theme.of(context).brightness == Brightness.dark,
+                                ),
                                 width: double.infinity,
                                 height: 120,
                                 fit: BoxFit.cover,
@@ -1402,13 +1796,13 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                                     width: double.infinity,
                                     height: 120,
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[200],
+                                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     ),
                                     child: Center(
                                       child: Icon(
                                         Icons.map,
                                         size: 24,
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                       ),
                                     ),
                                   );
@@ -1628,6 +2022,18 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
               color: Colors.blue,
             ),
           ),
+          // Connector between step 1 and 2
+          Container(
+            width: 2,
+            height: 36,
+            margin: const EdgeInsets.only(bottom: 30),
+            decoration: BoxDecoration(
+              color: (drop.status == DropStatus.accepted || drop.status == DropStatus.collected)
+                  ? Colors.green.withOpacity(0.3)
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
           // Step 2: Accepted (shows as "Collector on his way" for household)
           Expanded(
             child: _buildLiveTimelineStep(
@@ -1645,6 +2051,18 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
               isActive: drop.status == DropStatus.accepted,
               isLive: drop.status == DropStatus.accepted,
               color: Colors.green,
+            ),
+          ),
+          // Connector between step 2 and 3
+          Container(
+            width: 2,
+            height: 36,
+            margin: const EdgeInsets.only(bottom: 30),
+            decoration: BoxDecoration(
+              color: drop.status == DropStatus.collected
+                  ? Colors.orange.withOpacity(0.3)
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(1),
             ),
           ),
           // Step 3: Collected
@@ -1794,9 +2212,16 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: isCompleted ? color : Colors.grey[300],
+                color: isCompleted 
+                    ? color 
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
-                border: isActive ? Border.all(color: color, width: 3) : null,
+                border: isActive 
+                    ? Border.all(color: color, width: 3) 
+                    : Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                        width: 1,
+                      ),
                 boxShadow: isLive ? [
                   BoxShadow(
                     color: color.withOpacity(0.3),
@@ -1809,7 +2234,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                   ? _buildAnimatedSandClock()
                   : Icon(
                       icon,
-                      color: isCompleted ? Colors.white : Colors.grey[600],
+                      color: isCompleted 
+                          ? Colors.white 
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       size: 18,
                     ),
             ),
@@ -1823,7 +2250,10 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                   decoration: BoxDecoration(
                     color: Colors.green,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 2,
+                    ),
                   ),
                   child: const Center(
                     child: SizedBox(
@@ -1845,7 +2275,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isCompleted ? color : Colors.grey[600],
+            color: isCompleted 
+                ? color 
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
           textAlign: TextAlign.center,
         ),
@@ -1853,7 +2285,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
           subtitle,
           style: TextStyle(
             fontSize: 9,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
           textAlign: TextAlign.center,
           maxLines: 2,
@@ -2005,23 +2437,32 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: Row(
           children: [
-            const Icon(Icons.filter_list),
+            Icon(
+              Icons.filter_list,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(width: 8),
-            Text(AppLocalizations.of(context).filterHistory),
+            Text(
+              AppLocalizations.of(context).filterHistory,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             if (_hasActiveFilters())
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   AppLocalizations.of(context).activeFilters,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2032,58 +2473,57 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              // View type filter (Collections vs Earnings)
-              _buildFilterDropdown(
-                AppLocalizations.of(context).viewType,
-                selectedViewType,
-                viewTypeOptions,
-                (value) => setState(() => selectedViewType = value),
-                isActive: selectedViewType != 'Collections',
-              ),
-              const SizedBox(height: 16),
-              // Status filter (only show for Collections view)
-              if (selectedViewType != 'Earnings')
-                _buildFilterDropdown(
-                  AppLocalizations.of(context).status,
-                  selectedStatus ?? 'All',
-                  statusOptions,
-                  (value) => setState(() => selectedStatus = value == 'All' ? null : value),
-                  isActive: selectedStatus != null,
-                ),
-              if (selectedViewType != 'Earnings') const SizedBox(height: 16),
+            children: selectedViewType == 'Earnings'
+                ? [
+                    // Earnings time range filter
+                    _buildFilterDropdown(
+                      AppLocalizations.of(context).timeRange,
+                      selectedEarningsTimeRange ?? 'All Time',
+                      earningsTimeRangeOptions,
+                      (value) => setState(() => selectedEarningsTimeRange = value == 'All Time' ? null : value),
+                      isActive: selectedEarningsTimeRange != null,
+                    ),
+                  ]
+                : [
+                    // Status filter
+                    _buildFilterDropdown(
+                      AppLocalizations.of(context).status,
+                      selectedStatus ?? 'All',
+                      statusOptions,
+                      (value) => setState(() => selectedStatus = value == 'All' ? null : value),
+                      isActive: selectedStatus != null,
+                    ),
+                    const SizedBox(height: 16),
 
-              // Time range filter
-              _buildFilterDropdown(
-                AppLocalizations.of(context).timeRange,
-                selectedTimeRange ?? 'All Time',
-                timeRangeOptions,
-                (value) => setState(() => selectedTimeRange = value == 'All Time' ? null : value),
-                isActive: selectedTimeRange != null,
-              ),
-              const SizedBox(height: 16),
+                    // Time range filter
+                    _buildFilterDropdown(
+                      AppLocalizations.of(context).timeRange,
+                      selectedTimeRange ?? 'All Time',
+                      timeRangeOptions,
+                      (value) => setState(() => selectedTimeRange = value == 'All Time' ? null : value),
+                      isActive: selectedTimeRange != null,
+                    ),
+                    const SizedBox(height: 16),
 
-              // Item type filter (only show for Collections view)
-              if (selectedViewType != 'Earnings')
-                _buildFilterDropdown(
-                  AppLocalizations.of(context).itemType,
-                  selectedItemType ?? 'All Items',
-                  itemTypeOptions,
-                  (value) => setState(() => selectedItemType = value == 'All Items' ? null : value),
-                  isActive: selectedItemType != null,
-                ),
-              if (selectedViewType != 'Earnings') const SizedBox(height: 16),
+                    // Item type filter
+                    _buildFilterDropdown(
+                      AppLocalizations.of(context).itemType,
+                      selectedItemType ?? 'All Items',
+                      itemTypeOptions,
+                      (value) => setState(() => selectedItemType = value == 'All Items' ? null : value),
+                      isActive: selectedItemType != null,
+                    ),
+                    const SizedBox(height: 16),
 
-              // Bottle type filter (only show for Collections view)
-              if (selectedViewType != 'Earnings')
-                _buildFilterDropdown(
-                  AppLocalizations.of(context).bottleType,
-                  selectedBottleType ?? 'All Types',
-                  bottleTypeOptions,
-                  (value) => setState(() => selectedBottleType = value == 'All Types' ? null : value),
-                  isActive: selectedBottleType != null,
-                ),
-            ],
+                    // Bottle type filter
+                    _buildFilterDropdown(
+                      AppLocalizations.of(context).bottleType,
+                      selectedBottleType ?? 'All Types',
+                      bottleTypeOptions,
+                      (value) => setState(() => selectedBottleType = value == 'All Types' ? null : value),
+                      isActive: selectedBottleType != null,
+                    ),
+                  ],
           ),
         ),
         actions: [
@@ -2094,28 +2534,36 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                 selectedTimeRange = null;
                 selectedItemType = null;
                 selectedBottleType = null;
-                selectedViewType = 'Collections';
-                _searchController.clear();
+                selectedEarningsTimeRange = null;
               });
               // No need to reload data since we're using client-side filtering
             },
             child: Text(
               AppLocalizations.of(context).clearAll,
-              style: const TextStyle(
-                color: Colors.red,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context).cancel),
+            child: Text(
+              AppLocalizations.of(context).cancel,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               // No need to reload data since we're using client-side filtering
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
             child: Text(AppLocalizations.of(context).apply),
           ),
         ],
@@ -2124,12 +2572,13 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
   }
 
   bool _hasActiveFilters() {
+    if (selectedViewType == 'Earnings') {
+      return selectedEarningsTimeRange != null;
+    }
     return selectedStatus != null ||
            selectedTimeRange != null ||
            selectedItemType != null ||
-           selectedBottleType != null ||
-           selectedViewType != 'Collections' ||
-           _searchController.text.isNotEmpty;
+           selectedBottleType != null;
   }
 
   Widget _buildFilterDropdown(
@@ -2146,29 +2595,57 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
           label,
           style: TextStyle(
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? Colors.blue : Colors.grey[700],
+            color: isActive 
+                ? Theme.of(context).colorScheme.primary 
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: currentValue,
           decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
-              borderSide: BorderSide(color: isActive ? Colors.blue : Colors.grey[300]!),
+              borderSide: BorderSide(
+                color: isActive 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: isActive ? Colors.blue : Colors.grey[300]!),
+              borderSide: BorderSide(
+                color: isActive 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: isActive ? Colors.blue : Colors.grey[300]!),
+              borderSide: BorderSide(
+                color: isActive 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            suffixIcon: isActive ? const Icon(Icons.check_circle, color: Colors.blue) : null,
+            suffixIcon: isActive 
+                ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary) 
+                : null,
           ),
           items: options.map((option) {
             String displayText = option;
             if (label == AppLocalizations.of(context).timeRange) {
               displayText = _getLocalizedTimeRangeOption(option);
+              // Handle earnings-specific options
+              if (selectedViewType == 'Earnings') {
+                if (option == 'Daily') {
+                  displayText = AppLocalizations.of(context).today;
+                } else if (option == 'Weekly') {
+                  displayText = AppLocalizations.of(context).thisWeek;
+                } else if (option == 'Monthly') {
+                  displayText = AppLocalizations.of(context).thisMonth;
+                }
+              }
             } else if (label == AppLocalizations.of(context).itemType) {
               displayText = _getLocalizedItemTypeOption(option);
             } else if (label == AppLocalizations.of(context).bottleType) {
@@ -2183,16 +2660,15 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                           : option == 'pending'
                               ? AppLocalizations.of(context).pending
                               : option;
-            } else if (label == AppLocalizations.of(context).viewType) {
-              displayText = option == 'Collections'
-                  ? AppLocalizations.of(context).collections
-                  : option == 'Earnings'
-                      ? AppLocalizations.of(context).earnings
-                      : option;
             }
             return DropdownMenuItem(
               value: option,
-              child: Text(displayText),
+              child: Text(
+                displayText,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -2205,38 +2681,6 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
     );
   }
 
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context).searchHistory),
-        content: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context).searchByNotesBottleTypeOrCancellationReason,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) {
-            setState(() {}); // Trigger rebuild to apply search filter
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _searchController.clear();
-              setState(() {});
-              Navigator.of(context).pop();
-            },
-            child: Text(AppLocalizations.of(context).clear),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context).search),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showInteractionDetails(CollectorInteraction interaction) {
     showModalBottomSheet(
@@ -2945,7 +3389,6 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                     selectedTimeRange = null;
                     selectedItemType = null;
                     selectedBottleType = null;
-                    _searchController.clear();
                   });
                   _loadInitialData();
                 },
@@ -2977,9 +3420,6 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
     }
     if (selectedBottleType != null && selectedBottleType != 'All Types') {
       filters.add('Bottle Type: $selectedBottleType');
-    }
-    if (_searchController.text.isNotEmpty) {
-      filters.add('Search: "${_searchController.text}"');
     }
     return filters.join(', ');
   }
@@ -3102,7 +3542,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                       height: 120,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -3112,12 +3554,12 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.image_not_supported,
-                                color: Colors.grey,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                 size: 60,
                               ),
                             );
@@ -3126,7 +3568,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                             if (loadingProgress == null) return child;
                             return Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Center(
@@ -3143,12 +3585,12 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.image_not_supported,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                         size: 60,
                       ),
                     ),
@@ -3161,7 +3603,9 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                         height: 120,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -3173,6 +3617,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                                     firstInteraction.dropoff!.location.coordinates[1],
                                     firstInteraction.dropoff!.location.coordinates[0],
                                   ),
+                                  isDark: Theme.of(context).brightness == Brightness.dark,
                                 ),
                                 width: double.infinity,
                                 height: 120,
@@ -3181,12 +3626,12 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                                   return Container(
                                     width: double.infinity,
                                     height: 120,
-                                    color: Colors.grey[200],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     child: Center(
                                       child: Icon(
                                         Icons.map,
                                         size: 24,
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                       ),
                                     ),
                                   );
@@ -3351,7 +3796,10 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                                         : isAccepted
                                             ? Colors.blue
                                             : Colors.grey,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 2,
+                            ),
                           ),
                         ),
                         if (!isLast)
@@ -3360,7 +3808,7 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
                               width: 2,
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey[300],
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(1),
                               ),
                             ),
@@ -3444,21 +3892,53 @@ Widget _buildEarningsHistoryItem(BuildContext context, Map<String, dynamic> item
 }
 
 
-  String _getStaticMapUrl(LatLng location) {
+  String _getStaticMapUrl(LatLng location, {bool isDark = false}) {
     // Use the same API key that works in the drops tab
     const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
     const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
     
-    // Use the same format as the drops tab
-    final parameters = {
-      'center': '${location.latitude},${location.longitude}',
-      'zoom': '16',
-      'size': '600x400',
-      'maptype': 'roadmap',
-      'key': apiKey,
-    };
-    final queryParameters = Uri.parse(baseUrl).replace(queryParameters: parameters);
-    return queryParameters.toString();
+    // Build base query parameters
+    final queryParts = <String>[
+      'center=${location.latitude},${location.longitude}',
+      'zoom=16',
+      'size=600x400',
+      'maptype=roadmap',
+    ];
+    
+    // Add dark theme styling if needed
+    if (isDark) {
+      // Dark theme styles - each style is added as a separate parameter
+      final darkStyles = [
+        'feature:all|element:labels.text.fill|color:0xffffff|lightness:-100',
+        'feature:all|element:labels.text.stroke|color:0x000000|lightness:100',
+        'feature:all|element:labels.icon|visibility:off',
+        'feature:administrative|element:geometry.stroke|color:0x444444',
+        'feature:administrative|element:geometry.fill|color:0x1a1a1a',
+        'feature:landscape|element:geometry|color:0x2d2d2d',
+        'feature:landscape|element:geometry.fill|color:0x1a1a1a',
+        'feature:poi|element:geometry|color:0x2d2d2d',
+        'feature:poi|element:geometry.fill|color:0x1a1a1a',
+        'feature:road|element:geometry|color:0x3d3d3d',
+        'feature:road|element:geometry.fill|color:0x2d2d2d',
+        'feature:road|element:labels.text.fill|color:0xffffff',
+        'feature:road|element:labels.text.stroke|color:0x000000',
+        'feature:transit|element:geometry|color:0x2d2d2d',
+        'feature:transit|element:geometry.fill|color:0x1a1a1a',
+        'feature:water|element:geometry|color:0x1a1a1a',
+        'feature:water|element:geometry.fill|color:0x0a0a0a',
+      ];
+      
+      // Add each style parameter
+      for (final style in darkStyles) {
+        queryParts.add('style=${Uri.encodeComponent(style)}');
+      }
+    }
+    
+    // Add API key
+    queryParts.add('key=$apiKey');
+    
+    // Build final URL
+    return '$baseUrl?${queryParts.join('&')}';
   }
 }
 

@@ -13,6 +13,7 @@ import 'package:google_maps_webservice/places.dart';
 import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/auth/data/models/user_data.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -52,6 +53,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneFocusNode = FocusNode();
+  
+  String _phoneCountryCode = '+1';
+  String _completePhoneNumber = '';
+  String _initialPhoneCountryCode = 'US';
   
   // Phone verification fields
   final _smsCodeController = TextEditingController();
@@ -135,11 +140,33 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _initializeScreen() async {
     try {
+      // Detect country code from device locale
+      _detectPhoneCountryCode();
+      
       // Initialize phone number if provided and already verified (from phone sign-in)
       if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty && widget.isPhoneVerified) {
-        _phoneController.text = widget.phoneNumber!;
+        // Extract country code and local number from full phone number
+        final fullPhone = widget.phoneNumber!;
+        // Try to extract country code (starts with +)
+        if (fullPhone.startsWith('+')) {
+          // Find where country code ends (usually 1-3 digits)
+          final match = RegExp(r'^\+(\d{1,3})(.+)').firstMatch(fullPhone);
+          if (match != null) {
+            _phoneCountryCode = '+${match.group(1)}';
+            final localNumber = match.group(2)!.replaceAll(RegExp(r'[^0-9]'), '');
+            _phoneController.text = localNumber;
+            // Try to determine country from country code
+            _initialPhoneCountryCode = _getCountryFromCode(_phoneCountryCode);
+          } else {
+            // Fallback: use as-is
+            _phoneController.text = fullPhone;
+          }
+        } else {
+          _phoneController.text = fullPhone;
+        }
         _isPhoneVerified = true;
         _originalPhone = widget.phoneNumber!;
+        _completePhoneNumber = widget.phoneNumber!;
         print('📱 ProfileSetupScreen: Phone number initialized from phone sign-in: ${widget.phoneNumber}');
       }
       
@@ -183,6 +210,33 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         });
       }
     }
+  }
+
+  void _detectPhoneCountryCode() {
+    try {
+      final locale = Platform.localeName;
+      final parts = locale.split('_');
+      if (parts.length >= 2) {
+        final countryCode = parts.last.toUpperCase();
+        if (countryCode.length == 2) {
+          _initialPhoneCountryCode = countryCode;
+          print('🌍 ProfileSetupScreen: Detected country code: $_initialPhoneCountryCode');
+          return;
+        }
+      }
+      _initialPhoneCountryCode = 'US';
+    } catch (e) {
+      _initialPhoneCountryCode = 'US';
+    }
+  }
+
+  String _getCountryFromCode(String code) {
+    // Common country code mappings
+    final codeMap = {
+      '+1': 'US', '+216': 'TN', '+33': 'FR', '+49': 'DE', 
+      '+44': 'GB', '+212': 'MA', '+213': 'DZ', '+966': 'SA',
+    };
+    return codeMap[code] ?? 'US';
   }
 
   @override
@@ -768,14 +822,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         return;
       }
       
-      if (_phoneController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).pleaseEnterYourPhoneNumber),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+      // Only require phone if not already verified from phone sign-in
+      if (!(widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty)) {
+        if (_phoneController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).pleaseEnterYourPhoneNumber),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
       }
       
       if (_addressController.text.trim().isEmpty) {
@@ -821,13 +878,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         print('Email changed from "${widget.email}" to "${_emailController.text}"');
       }
       
-      // Check if phone changed and is not empty
+      // Check if phone changed and is not empty, OR if phone is already verified from phone sign-in (need to include it)
       if (_isPhoneModified && _phoneController.text.isNotEmpty) {
-        // Remove spaces and include Tunisian country code with phone number
-        final digitsOnly = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-        final fullPhoneNumber = '+216$digitsOnly';
+        // Use the complete phone number with country code from IntlPhoneField
+        final fullPhoneNumber = _completePhoneNumber.isNotEmpty 
+            ? _completePhoneNumber 
+            : '$_phoneCountryCode${_phoneController.text.replaceAll(RegExp(r'[^0-9]'), '')}';
         changedFields['phone'] = fullPhoneNumber;
         print('Phone changed from "$_originalPhone" to "$fullPhoneNumber"');
+      } else if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+        // Phone is already verified from phone sign-in, include it in the profile setup
+        changedFields['phone'] = widget.phoneNumber!;
+        print('Phone already verified from phone sign-in: ${widget.phoneNumber}');
       }
       
       // Check if address changed
@@ -1091,12 +1153,24 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               _fullNameController.text = user.name ?? '';
             }
             if (_phoneController.text.isEmpty) {
-              // Remove +216 prefix if it exists in the stored phone number
+              // Extract local number from full phone number (remove country code)
               String phoneNumber = user.phoneNumber ?? '';
-              if (phoneNumber.startsWith('+216')) {
-                phoneNumber = phoneNumber.substring(4); // Remove +216
+              if (phoneNumber.startsWith('+')) {
+                // Try to extract country code and local number
+                final match = RegExp(r'^\+(\d{1,3})(.+)').firstMatch(phoneNumber);
+                if (match != null) {
+                  final countryCode = '+${match.group(1)}';
+                  final localNumber = match.group(2)!.replaceAll(RegExp(r'[^0-9]'), '');
+                  _phoneCountryCode = countryCode;
+                  _phoneController.text = localNumber;
+                  _initialPhoneCountryCode = _getCountryFromCode(countryCode);
+                } else {
+                  // Fallback: just use the number as-is
+                  _phoneController.text = phoneNumber;
+                }
+              } else {
+                _phoneController.text = phoneNumber;
               }
-              _phoneController.text = phoneNumber;
               // Reset the cleared flag when phone number is loaded
               _hasPhoneBeenCleared = false;
             }
@@ -1135,9 +1209,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () async {
                 // Silently logout without confirmation dialog
-                  // Clear SharedPreferences
+                  // Clear only auth-related SharedPreferences, preserve onboarding flags
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear();
+                  await prefs.remove('auth_token');
+                  await prefs.remove('auth_data');
+                  await prefs.setBool('is_logged_in', false);
                   
                   // Logout from auth provider
                   await ref.read(authNotifierProvider.notifier).logout(ref);
@@ -1302,301 +1378,334 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               ),
                               const SizedBox(height: 20),
                               
-                              // Phone Field with Inline Verification Badge
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Phone field with inline verification badge
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.lightMapPin.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Icon(
-                                              Icons.phone_outlined,
-                                              color: AppColors.lightMapPin,
-                                              size: 20,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            AppLocalizations.of(context).phoneNumber,
-                                            style: theme.textTheme.bodyMedium?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: theme.colorScheme.onSurface,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      // Phone number input field with country code
-                                      Row(
-                                        children: [
-                                          // Static Tunisian country code with flag - compact version
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: theme.colorScheme.outline),
-                                              borderRadius: BorderRadius.circular(12),
-                                              color: theme.colorScheme.surface,
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Text(
-                                                  '🇹🇳', // Tunisian flag emoji
-                                                  style: TextStyle(fontSize: 16),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  '+216',
-                                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          // Phone number input field - give it more space
-                                          Expanded(
-                                            flex: 5, // Give even more space to the phone field
-                                            child: TextFormField(
-                                controller: _phoneController,
-                                              focusNode: _phoneFocusNode,
-                                              keyboardType: TextInputType.number,
-                                              maxLength: 8,
-                                              inputFormatters: [
-                                                FilteringTextInputFormatter.digitsOnly,
-                                              ],
-                                              decoration: InputDecoration(
-                                                hintText: '12345678',
-                                                counterText: '', // Hide character counter
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                                                ),
-                                                enabledBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                                                ),
-                                                focusedBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: appGreenColor, width: 2),
-                                                ),
-                                                filled: true,
-                                                fillColor: theme.colorScheme.surface,
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                              ),
-                                validator: (v) {
-                                                // Always validate as required for new users
-                                                if (widget.isNewUserSetup) {
-                                                  if (v == null || v.isEmpty) {
-                                                    return AppLocalizations.of(context).phoneNumberRequired;
-                                                  }
-                                                  // Remove spaces and check if it's exactly 8 digits
-                                                  final digitsOnly = v.replaceAll(RegExp(r'[^0-9]'), '');
-                                                  if (digitsOnly.length != 8) {
-                                                    return AppLocalizations.of(context).phoneNumberMustBe8Digits;
-                                                  }
-                                                  if (!RegExp(r'^[0-9]+$').hasMatch(digitsOnly)) {
-                                                    return AppLocalizations.of(context).phoneNumberMustContainOnlyDigits;
-                                                  }
-                                                }
-                                                // For existing users, only validate if the phone has been modified and is not empty
-                                                if (_isPhoneModified && (v != null && v.isNotEmpty)) {
-                                                  if (v == null || v.isEmpty) {
-                                                    return AppLocalizations.of(context).phoneNumberRequired;
-                                                  }
-                                                  // Remove spaces and check if it's exactly 8 digits
-                                                  final digitsOnly = v.replaceAll(RegExp(r'[^0-9]'), '');
-                                                  if (digitsOnly.length != 8) {
-                                                    return AppLocalizations.of(context).phoneNumberMustBe8Digits;
-                                                  }
-                                                  if (!RegExp(r'^[0-9]+$').hasMatch(digitsOnly)) {
-                                                    return AppLocalizations.of(context).phoneNumberMustContainOnlyDigits;
-                                                  }
-                                                }
-                                                return null; // Skip validation if phone hasn't changed or is empty
-                                              },
-                                            ),
-                                          ),
-
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  
-                                  // Phone verification status - displayed below the phone field
-                                  if (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
+                              // Phone Field - Only show if not already verified from phone sign-in
+                              if (!(widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty))
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Row(
                                       children: [
-                                        Icon(
-                                          _isPhoneVerifiedStatus(user) ? Icons.verified : Icons.warning,
-                                          size: 16,
-                                          color: _isPhoneVerifiedStatus(user) ? Colors.green : Colors.orange,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          _getPhoneVerificationMessage(user),
-                                          style: TextStyle(
-                                            color: _isPhoneVerifiedStatus(user) ? Colors.green.shade800 : Colors.orange.shade800,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                  
-                                  // Phone verification UI - show only when needed
-                                  if (_shouldShowVerificationUI(user)) ...[
-                                    // Verification buttons
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        SizedBox(
-                                          width: 120,
-                                          child: OutlinedButton.icon(
-                                            onPressed: _isSendingSMS ? null : _sendSMSVerification,
-                                            icon: _isSendingSMS 
-                                                ? SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: appGreenColor,
-                                                    ),
-                                                  )
-                                                : const Icon(Icons.send, size: 16),
-                                            label: Text(
-                                              _isSendingSMS ? AppLocalizations.of(context).sending : AppLocalizations.of(context).sendCode,
-                                              style: const TextStyle(fontSize: 12),
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: appGreenColor,
-                                              side: BorderSide(color: appGreenColor),
-                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                            ),
-                                          ),
-                                        ),
-                                        if (_verificationId != null) ...[
-                                          SizedBox(
-                                            width: 100,
-                                            child: OutlinedButton.icon(
-                                              onPressed: _resendCountdown > 0 ? null : _resendSMS,
-                                              icon: const Icon(Icons.refresh, size: 16),
-                                              label: Text(
-                                                _resendCountdown > 0 ? '$_resendCountdown' : AppLocalizations.of(context).resend,
-                                                style: const TextStyle(fontSize: 12),
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor: _resendCountdown > 0 ? Colors.grey : appGreenColor,
-                                                side: BorderSide(color: _resendCountdown > 0 ? Colors.grey : appGreenColor),
-                                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    
-                                    // SMS Code Input
-                                    if (_verificationId != null) ...[
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller: _smsCodeController,
-                                              keyboardType: TextInputType.number,
-                                              maxLength: 6,
-                                              textDirection: TextDirection.ltr, // Force LTR for OTP codes
-                                              decoration: InputDecoration(
-                                                labelText: AppLocalizations.of(context).smsCode,
-                                                hintText: AppLocalizations.of(context).enter6DigitCode,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                                                ),
-                                                enabledBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                                                ),
-                                                focusedBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(color: appGreenColor, width: 2),
-                                                ),
-                                                filled: true,
-                                                fillColor: theme.colorScheme.surface,
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                                counterText: '',
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          SizedBox(
-                                            child: FilledButton.icon(
-                                              onPressed: _isVerifyingCode ? null : _verifySMSCode,
-                                              icon: _isVerifyingCode 
-                                                  ? SizedBox(
-                                                      width: 16,
-                                                      height: 16,
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: Colors.white,
-                                                      ),
-                                                    )
-                                                  : const Icon(Icons.check),
-                                              label: Text(_isVerifyingCode ? AppLocalizations.of(context).verifying : AppLocalizations.of(context).verifyCode),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor: appGreenColor,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      
-                                      // Verification status
-                                      if (_isPhoneVerified) ...[
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: Colors.green.shade50,
+                                            color: AppColors.lightMapPin.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.green.shade200),
                                           ),
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.green, size: 16),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                AppLocalizations.of(context).phoneNumberVerified,
-                                                style: TextStyle(
-                                                  color: Colors.green.shade800,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
+                                          child: Icon(
+                                            Icons.phone_outlined,
+                                            color: AppColors.lightMapPin,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          AppLocalizations.of(context).phoneNumber,
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.onSurface,
                                           ),
                                         ),
                                       ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Phone number input field with country code picker
+                                    IntlPhoneField(
+                                      controller: _phoneController,
+                                      enabled: !(widget.isPhoneVerified && widget.phoneNumber != null),
+                                      style: TextStyle(color: theme.colorScheme.onSurface),
+                                      decoration: InputDecoration(
+                                        hintText: AppLocalizations.of(context).enterYourPhoneNumber,
+                                        hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: theme.colorScheme.outline),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: theme.colorScheme.outline),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: appGreenColor, width: 2),
+                                        ),
+                                        filled: true,
+                                        fillColor: theme.colorScheme.surface,
+                                      ),
+                                      initialCountryCode: _initialPhoneCountryCode,
+                                      onChanged: (phone) {
+                                        _phoneCountryCode = phone.countryCode;
+                                        _completePhoneNumber = phone.completeNumber;
+                                        if (phone.number.isNotEmpty) {
+                                          _isPhoneModified = true;
+                                        }
+                                      },
+                                      validator: (phone) {
+                                        // Skip validation if phone is already verified from phone sign-in
+                                        if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+                                          return null; // Phone already verified, no validation needed
+                                        }
+                                        
+                                        // Always validate as required for new users (email sign-up)
+                                        if (widget.isNewUserSetup) {
+                                          if (phone == null || phone.number.isEmpty) {
+                                            return AppLocalizations.of(context).phoneNumberRequired;
+                                          }
+                                          if (!PhoneVerificationService.isValidPhoneNumber(phone.completeNumber)) {
+                                            return AppLocalizations.of(context).pleaseEnterValidPhoneNumber;
+                                          }
+                                        }
+                                        // For existing users, only validate if the phone has been modified
+                                        if (_isPhoneModified && phone != null && phone.number.isNotEmpty) {
+                                          if (!PhoneVerificationService.isValidPhoneNumber(phone.completeNumber)) {
+                                            return AppLocalizations.of(context).pleaseEnterValidPhoneNumber;
+                                          }
+                                        }
+                                        return null;
+                                      },
+                                      dropdownIcon: Icon(
+                                        Icons.arrow_drop_down,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                      flagsButtonPadding: const EdgeInsets.only(left: 12),
+                                      dropdownTextStyle: TextStyle(
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                // Show verified phone number (read-only) for phone sign-in users
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.phone_outlined,
+                                            color: Colors.green,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          AppLocalizations.of(context).phoneNumber,
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.onSurface,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.verified, color: Colors.green, size: 20),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              widget.phoneNumber!,
+                                              style: TextStyle(
+                                                color: theme.colorScheme.onSurface,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              AppLocalizations.of(context).phoneNumberVerified,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              
+                              // Phone verification status - only show for email sign-in users who need to verify
+                              if (!(widget.isPhoneVerified && widget.phoneNumber != null) && user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _isPhoneVerifiedStatus(user) ? Icons.verified : Icons.warning,
+                                      size: 16,
+                                      color: _isPhoneVerifiedStatus(user) ? Colors.green : Colors.orange,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _getPhoneVerificationMessage(user),
+                                      style: TextStyle(
+                                        color: _isPhoneVerifiedStatus(user) ? Colors.green.shade800 : Colors.orange.shade800,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                                  
+                              // Phone verification UI - show only when needed (not for phone sign-in users)
+                              if (!(widget.isPhoneVerified && widget.phoneNumber != null) && _shouldShowVerificationUI(user)) ...[
+                                // Verification buttons
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    SizedBox(
+                                      width: 120,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _isSendingSMS ? null : _sendSMSVerification,
+                                        icon: _isSendingSMS 
+                                            ? SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: appGreenColor,
+                                                ),
+                                              )
+                                            : const Icon(Icons.send, size: 16),
+                                        label: Text(
+                                          _isSendingSMS ? AppLocalizations.of(context).sending : AppLocalizations.of(context).sendCode,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: appGreenColor,
+                                          side: BorderSide(color: appGreenColor),
+                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_verificationId != null) ...[
+                                      SizedBox(
+                                        width: 100,
+                                        child: OutlinedButton.icon(
+                                          onPressed: _resendCountdown > 0 ? null : _resendSMS,
+                                          icon: const Icon(Icons.refresh, size: 16),
+                                          label: Text(
+                                            _resendCountdown > 0 ? '$_resendCountdown' : AppLocalizations.of(context).resend,
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: _resendCountdown > 0 ? Colors.grey : appGreenColor,
+                                            side: BorderSide(color: _resendCountdown > 0 ? Colors.grey : appGreenColor),
+                                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                
+                                // SMS Code Input
+                                if (_verificationId != null) ...[
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: _smsCodeController,
+                                          keyboardType: TextInputType.number,
+                                          maxLength: 6,
+                                          textDirection: TextDirection.ltr, // Force LTR for OTP codes
+                                          decoration: InputDecoration(
+                                            labelText: AppLocalizations.of(context).smsCode,
+                                            hintText: AppLocalizations.of(context).enter6DigitCode,
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: BorderSide(color: appGreenColor, width: 2),
+                                            ),
+                                            filled: true,
+                                            fillColor: theme.colorScheme.surface,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            counterText: '',
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      SizedBox(
+                                        child: FilledButton.icon(
+                                          onPressed: _isVerifyingCode ? null : _verifySMSCode,
+                                          icon: _isVerifyingCode 
+                                              ? SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const Icon(Icons.check),
+                                          label: Text(_isVerifyingCode ? AppLocalizations.of(context).verifying : AppLocalizations.of(context).verifyCode),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: appGreenColor,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  
+                                  // Verification status
+                                  if (_isPhoneVerified) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.green.shade200),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            AppLocalizations.of(context).phoneNumberVerified,
+                                            style: TextStyle(
+                                              color: Colors.green.shade800,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ),
+                              ],
                               const SizedBox(height: 20),
                               
                               // Address Field
@@ -1652,7 +1761,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: Builder(
             builder: (context) => Text(
@@ -1670,7 +1779,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         ),
       ),
       error: (error, stackTrace) => Scaffold(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: Builder(
             builder: (context) => Text(
@@ -1690,20 +1799,20 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: theme.colorScheme.error,
+                color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(height: 16),
               Text(
                 'Error loading profile',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.error,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
                 textAlign: TextAlign.center,
               ),

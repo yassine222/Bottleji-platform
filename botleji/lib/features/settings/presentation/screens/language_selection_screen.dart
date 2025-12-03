@@ -9,7 +9,7 @@ class LanguageSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     final currentLocale = ref.watch(localizationControllerProvider);
     final localizationController = ref.read(localizationControllerProvider.notifier);
     final l10n = AppLocalizations.of(context);
@@ -22,11 +22,17 @@ class LanguageSelectionScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(l10n.selectLanguage),
-        backgroundColor: const Color(0xFF00695C),
-        foregroundColor: Colors.white,
+        title: Text(
+          l10n.selectLanguage,
+          style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onPrimary,
+              ),
+        ),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
       ),
       body: ListView(
@@ -38,17 +44,17 @@ class LanguageSelectionScreen extends ConsumerWidget {
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF00695C)
+                    ? colorScheme.primary
                     : Colors.transparent,
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: colorScheme.shadow.withOpacity(0.15),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -59,27 +65,27 @@ class LanguageSelectionScreen extends ConsumerWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00695C).withOpacity(0.1),
+                  color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.language_rounded,
-                  color: const Color(0xFF00695C),
+                  color: colorScheme.primary,
                   size: 24,
                 ),
               ),
               title: Text(
                 displayName,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
               ),
               trailing: isSelected
                   ? Icon(
                       Icons.check_circle,
-                      color: const Color(0xFF00695C),
+                      color: colorScheme.primary,
                       size: 24,
                     )
                   : const SizedBox.shrink(),

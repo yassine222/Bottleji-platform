@@ -51,7 +51,7 @@ class RewardItemDetailPage extends ConsumerWidget {
               width: double.infinity,
               height: 250,
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: item.imageUrl != null
@@ -60,10 +60,10 @@ class RewardItemDetailPage extends ConsumerWidget {
                       child: Image.network(
                         item.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderIcon(),
+                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderIcon(context),
                       ),
                     )
-                  : _buildPlaceholderIcon(),
+                  : _buildPlaceholderIcon(context),
             ),
 
             const SizedBox(height: 24),
@@ -77,6 +77,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                     item.name,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -116,7 +117,7 @@ class RewardItemDetailPage extends ConsumerWidget {
             // Category and Subcategory
             Row(
               children: [
-                _buildInfoChip(context, item.category.name, Icons.category),
+                _buildInfoChip(context, item.category.displayName, Icons.category),
                 const SizedBox(width: 8),
                 if (item.subCategory.isNotEmpty) ...[
                   _buildInfoChip(context, item.subCategory, Icons.label),
@@ -126,7 +127,9 @@ class RewardItemDetailPage extends ConsumerWidget {
                   context,
                   item.isActive ? 'Active' : 'Inactive',
                   item.isActive ? Icons.check_circle : Icons.cancel,
-                  color: item.isActive ? Colors.green : Colors.red,
+                  color: item.isActive 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.error,
                 ),
               ],
             ),
@@ -154,9 +157,11 @@ class RewardItemDetailPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,15 +257,17 @@ class RewardItemDetailPage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[200]!),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.orange[700],
+                      color: Theme.of(context).colorScheme.onTertiaryContainer,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -268,7 +275,7 @@ class RewardItemDetailPage extends ConsumerWidget {
                       child: Text(
                         _getOrderButtonText(context, canAfford, isInStock, item.isActive),
                         style: TextStyle(
-                          color: Colors.orange[700],
+                          color: Theme.of(context).colorScheme.onTertiaryContainer,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -289,13 +296,17 @@ class RewardItemDetailPage extends ConsumerWidget {
     IconData icon, {
     Color? color,
   }) {
+    final theme = Theme.of(context);
+    final chipColor = color ?? theme.colorScheme.primary;
+    final textColor = color ?? theme.colorScheme.primary;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: (color ?? Theme.of(context).primaryColor).withOpacity(0.1),
+        color: chipColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: (color ?? Theme.of(context).primaryColor).withOpacity(0.3),
+          color: chipColor.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -304,13 +315,13 @@ class RewardItemDetailPage extends ConsumerWidget {
           Icon(
             icon,
             size: 16,
-            color: color ?? Theme.of(context).primaryColor,
+            color: textColor,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              color: color ?? Theme.of(context).primaryColor,
+              color: textColor,
               fontWeight: FontWeight.w500,
               fontSize: 12,
             ),
@@ -320,12 +331,12 @@ class RewardItemDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlaceholderIcon() {
-    return const Center(
+  Widget _buildPlaceholderIcon(BuildContext context) {
+    return Center(
       child: Icon(
         Icons.card_giftcard,
         size: 64,
-        color: Colors.grey,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

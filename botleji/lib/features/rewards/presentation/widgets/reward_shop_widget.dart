@@ -50,7 +50,7 @@ class RewardShopWidget extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 8),
                 Text(AppLocalizations.of(context).failedToLoadOrderHistory),
                 const SizedBox(height: 8),
@@ -133,22 +133,24 @@ class RewardShopWidget extends ConsumerWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Column(
         children: [
           Icon(
             Icons.store_outlined,
             size: 64,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noRewardsAvailable,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -156,7 +158,7 @@ class RewardShopWidget extends ConsumerWidget {
           Text(
             AppLocalizations.of(context).checkBackLaterForRewards,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -209,7 +211,7 @@ class RewardShopWidget extends ConsumerWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: item.imageUrl != null
@@ -293,11 +295,13 @@ class RewardShopWidget extends ConsumerWidget {
   }
 
   Widget _buildPlaceholderIcon() {
-    return const Center(
-      child: Icon(
-        Icons.card_giftcard,
-        size: 32,
-        color: Colors.grey,
+    return Builder(
+      builder: (context) => Center(
+        child: Icon(
+          Icons.card_giftcard,
+          size: 32,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

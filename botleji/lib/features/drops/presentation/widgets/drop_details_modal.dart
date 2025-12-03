@@ -865,23 +865,38 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.attach_money_outlined,
+          _buildInfoRowWithCustomIcon(
             label: AppLocalizations.of(context).estimatedValue,
             value: DropValueCalculator.formatEstimatedValue(widget.drop.estimatedValue),
+            customIcon: Image.asset(
+              'assets/icons/money-bag.png',
+              width: 18,
+              height: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.door_front_door_outlined,
+          _buildInfoRowWithCustomIcon(
             label: AppLocalizations.of(context).leaveOutside,
             value: widget.drop.leaveOutside ? AppLocalizations.of(context).yes : AppLocalizations.of(context).no,
-            valueColor: widget.drop.leaveOutside ? const Color(0xFF00695C) : Colors.grey[700],
+            valueColor: widget.drop.leaveOutside ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+            customIcon: Image.asset(
+              'assets/icons/door.png',
+              width: 18,
+              height: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.calendar_today_outlined,
+          _buildInfoRowWithCustomIcon(
             label: AppLocalizations.of(context).created,
             value: _formatRelativeDate(widget.drop.createdAt),
+            customIcon: Image.asset(
+              'assets/icons/calendar.png',
+              width: 18,
+              height: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           
           // Notes (if any)
@@ -945,26 +960,31 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 18,
-          color: Colors.grey[600],
+        SizedBox(
+          width: 18,
+          child: Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
         ),
-        Flexible(
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 100,
           child: Text(
             value,
             style: TextStyle(
-              color: valueColor ?? Colors.grey[900],
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),
@@ -984,37 +1004,36 @@ class _DropDetailsModalState extends ConsumerState<DropDetailsModal> {
   }) {
     return Row(
       children: [
-        if (customIcon != null) ...[
-          // Use Flexible instead of fixed SizedBox to prevent overflow
-          Flexible(
-            child: SizedBox(
-              height: 18,
-              child: customIcon,
-            ),
-          ),
-          const SizedBox(width: 12),
-        ] else ...[
-          Icon(
-            Icons.info_outline,
-            size: 18,
-            color: Colors.grey[600],
-          ),
-          const SizedBox(width: 12),
-        ],
+        SizedBox(
+          width: 18,
+          child: customIcon != null
+              ? SizedBox(
+                  height: 18,
+                  child: customIcon,
+                )
+              : Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
         ),
-        Flexible(
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 100,
           child: Text(
             value,
             style: TextStyle(
-              color: valueColor ?? Colors.grey[900],
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),

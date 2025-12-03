@@ -189,7 +189,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
     });
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: Stack(
         children: [
           // Main content
@@ -482,15 +482,19 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
   }
 
   Widget _buildTierCard(BuildContext context, UserMode mode, RewardStats stats) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -528,7 +532,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                     ? AppLocalizations.of(context).earnPointsPerDropCollected(_getPointsPerDrop(stats.currentTier))
                     : AppLocalizations.of(context).earnPointsWhenDropsCollected((_getPointsPerDrop(stats.currentTier) * 0.5).round()),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -540,12 +544,12 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: theme.colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.info_outline,
-                color: Colors.grey,
+                color: theme.colorScheme.onSurfaceVariant,
                 size: 20,
               ),
             ),
@@ -709,9 +713,11 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
   }
 
   void _showTiersInfoDialog(BuildContext context, UserMode mode, RewardStats stats) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.colorScheme.surface,
         title: Row(
           children: [
             const Icon(Icons.emoji_events, color: Color(0xFF00695C)),
@@ -761,17 +767,17 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isCurrentTier 
-                        ? const Color(0xFF00695C).withOpacity(0.1)
+                        ? theme.colorScheme.primaryContainer
                         : isUnlocked 
-                            ? Colors.green[50]
-                            : Colors.grey[100],
+                            ? theme.colorScheme.tertiaryContainer
+                            : theme.colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isCurrentTier 
-                          ? const Color(0xFF00695C)
+                          ? theme.colorScheme.primary
                           : isUnlocked 
-                              ? Colors.green
-                              : Colors.grey[300]!,
+                              ? theme.colorScheme.tertiary
+                              : theme.colorScheme.outline.withOpacity(0.3),
                     ),
                   ),
                   child: Row(
@@ -783,10 +789,10 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                                 ? Icons.check_circle
                                 : Icons.lock,
                         color: isCurrentTier 
-                            ? const Color(0xFF00695C)
+                            ? theme.colorScheme.primary
                             : isUnlocked 
-                                ? Colors.green
-                                : Colors.grey,
+                                ? theme.colorScheme.tertiary
+                                : theme.colorScheme.onSurfaceVariant,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -799,10 +805,10 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: isCurrentTier 
-                                    ? const Color(0xFF00695C)
+                                    ? theme.colorScheme.onPrimaryContainer
                                     : isUnlocked 
-                                        ? Colors.green[700]
-                                        : Colors.grey[600],
+                                        ? theme.colorScheme.onTertiaryContainer
+                                        : theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -812,7 +818,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                                 : '${AppLocalizations.of(context).earnPointsPerDrop((pointsPerDrop * 0.5).round())} • ${dropsRequired == 0 ? AppLocalizations.of(context).start : AppLocalizations.of(context).dropsRequired(dropsRequired)}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],

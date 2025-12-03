@@ -33,7 +33,10 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
 
   @override
   Widget build(BuildContext context) {
-    if (widget.drops.isEmpty) {
+    // Check if there are any drops that match the time range
+    final hasDataForRange = widget.drops.any((drop) => _isWithinRange(drop.createdAt));
+    
+    if (!hasDataForRange) {
       return _buildEmptyState();
     }
 
@@ -58,27 +61,38 @@ class _HouseholdStatsChartCarouselState extends State<HouseholdStatsChartCarouse
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
+            Icon(
+              Icons.inbox_outlined,
+              size: 40,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 8),
             Text(
               'No data for this range yet',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Create new drops to see your progress',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

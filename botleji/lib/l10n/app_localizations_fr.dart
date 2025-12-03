@@ -92,6 +92,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signInToContinue => 'Connectez-vous pour continuer';
 
   @override
+  String get signInWithPhone => 'Sign in with Phone';
+
+  @override
+  String get enterPhoneNumberToReceiveOTP =>
+      'Enter your phone number to receive an OTP code';
+
+  @override
+  String get or => 'OR';
+
+  @override
+  String get sendOTP => 'Send OTP';
+
+  @override
+  String get resendOTP => 'Resend OTP';
+
+  @override
+  String get resendOTPIn => 'Resend OTP in';
+
+  @override
+  String get pleaseEnterOTP => 'Please enter the OTP code';
+
+  @override
+  String get invalidOTP => 'Invalid OTP code';
+
+  @override
+  String get enterOTP => 'Enter OTP Code';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'Please enter your phone number';
+
+  @override
   String get dontHaveAccount => 'Vous n\'avez pas de compte ?';
 
   @override
@@ -546,7 +577,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get setCollectionRadiusDescription =>
-      'Set the radius (in kilometers) within which you want to collect bottles.';
+      'Définir le rayon (en kilomètres) dans lequel vous souhaitez collecter des bouteilles.';
+
+  @override
+  String get advancedFeatures => 'Fonctionnalités avancées';
+
+  @override
+  String get advancedFeaturesDescription =>
+      'Fonctionnalités exclusives pour les collecteurs Pro';
+
+  @override
+  String get setCollectorRadius => 'Définir le rayon du collecteur';
+
+  @override
+  String get proFeatureRequired => 'Fonctionnalité Pro requise';
+
+  @override
+  String get proFeatureRequiredMessage =>
+      'Cette fonctionnalité est exclusive aux collecteurs Pro. Passez à Pro pour accéder aux fonctionnalités avancées comme la définition du rayon de collecte et plus encore.';
+
+  @override
+  String get upgradeToPro => 'Passer à Pro';
 
   @override
   String get kilometers => 'km';
@@ -772,10 +823,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bottleType => 'Type de bouteille';
 
   @override
-  String get numberOfPlasticBottles => 'Nombre de bouteilles en plastique';
+  String get numberOfPlasticBottles => 'Bouteilles en plastique';
 
   @override
-  String get numberOfCans => 'Nombre de canettes';
+  String get numberOfCans => 'Canettes';
 
   @override
   String get notesOptional => 'Notes (optionnel)';
@@ -985,6 +1036,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veuillez entrer un numéro de téléphone valide avec l\'indicatif du pays (ex: +49 123456789)';
 
   @override
+  String get enterYourPhoneNumber => 'Enter your phone number';
+
+  @override
   String get locationPermissionRequired =>
       'L\'autorisation de localisation est requise pour les fonctionnalités d\'adresse';
 
@@ -1142,6 +1196,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get thisMonth => 'Ce mois';
+
+  @override
+  String get earningsOverview => 'Earnings Overview';
 
   @override
   String get thisYear => 'Cette année';
@@ -1887,6 +1944,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get remaining => 'remaining';
 
   @override
+  String get walking => 'Marcher';
+
+  @override
+  String get driving => 'Conduire';
+
+  @override
+  String get bicycling => 'Vélo';
+
+  @override
+  String get transportationModeLocked =>
+      'Le mode de transport est verrouillé pour ce dépôt. Il ne peut pas être modifié une fois sélectionné.';
+
+  @override
   String get completeCollectionIn => 'Complete collection in:';
 
   @override
@@ -1986,6 +2056,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get cancelCollectionMessage =>
       'Are you sure you want to cancel this collection? Please select a reason:';
+
+  @override
+  String get dropNotFound => 'Point de collecte introuvable ?';
 
   @override
   String get noAccess => 'Pas d\'accès';
@@ -2217,9 +2290,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gettingStarted => 'Pour commencer';
-
-  @override
-  String get advancedFeatures => 'Fonctionnalités avancées';
 
   @override
   String get troubleshooting => 'Dépannage';

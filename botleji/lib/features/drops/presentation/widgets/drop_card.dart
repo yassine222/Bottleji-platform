@@ -61,8 +61,8 @@ class DropCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: isAcceptedDrop
-                ? const Color(0xFF00695C).withOpacity(0.3)
-                : Colors.grey.withOpacity(0.1),
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                : Theme.of(context).colorScheme.outline.withOpacity(0.1),
             width: isAcceptedDrop ? 2 : 1,
           ),
         ),
@@ -75,12 +75,12 @@ class DropCard extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: drop.status == DropStatus.accepted
                     ? [
-                        Colors.white,
-                        const Color(0xFF00695C).withOpacity(0.03),
+                        Theme.of(context).colorScheme.surface,
+                        Theme.of(context).colorScheme.primary.withOpacity(0.03),
                       ]
                     : [
-                        Colors.white,
-                        Colors.grey.shade50,
+                        Theme.of(context).colorScheme.surface,
+                        Theme.of(context).colorScheme.surfaceVariant,
                       ],
               ),
             ),
@@ -108,10 +108,10 @@ class DropCard extends StatelessWidget {
                         color: const Color(0xFF00695C),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.directions_walk,
                         size: 16,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -197,14 +197,14 @@ class DropCard extends StatelessWidget {
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                       colors: [
-                                        Colors.grey.shade100,
-                                        Colors.grey.shade200,
+                                        Theme.of(context).colorScheme.surfaceVariant,
+                                        Theme.of(context).colorScheme.surface,
                                       ],
                                     ),
                                   ),
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: Colors.grey.shade400,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     size: 32,
                                   ),
                                 );
@@ -226,10 +226,10 @@ class DropCard extends StatelessWidget {
                                   color: Colors.purple.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'CENSORED',
                                   style: TextStyle(
-                                    color: Colors.white, 
+                                    color: Theme.of(context).colorScheme.onPrimary, 
                                     fontWeight: FontWeight.bold, 
                                     fontSize: 10,
                                   ),
@@ -304,7 +304,10 @@ class DropCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF00695C),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    width: 2,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.2),
@@ -313,10 +316,10 @@ class DropCard extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Icon(
                                     Icons.location_on,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                     size: 12,
                                   ),
                                 ),
@@ -340,13 +343,13 @@ class DropCard extends StatelessWidget {
                                     Icon(
                                       Icons.location_on,
                                       size: 12,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       _formatDistance(drop.location, context),
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -369,10 +372,10 @@ class DropCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.grey.shade200,
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -677,7 +680,7 @@ class DropCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -686,14 +689,14 @@ class DropCard extends StatelessWidget {
                         Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _formatDate(drop.createdAt, context),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -729,9 +732,11 @@ class DropCard extends StatelessWidget {
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: hasActiveCollection
-                            ? Colors.grey
+                            ? Theme.of(context).colorScheme.surfaceVariant
                             : Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: hasActiveCollection
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ),
@@ -1100,8 +1105,9 @@ class DropCard extends StatelessWidget {
                 children: [
                   // Created step
                   _buildTimelineStep(
+                    context,
                     icon: Icons.add_circle,
-                    iconColor: const Color(0xFF00695C),
+                    iconColor: Theme.of(context).colorScheme.primary,
                     title: l10n.created,
                     subtitle: _formatDate(drop.createdAt, context),
                     isCompleted: true,
@@ -1109,13 +1115,16 @@ class DropCard extends StatelessWidget {
                   // Arrow
                   Icon(
                     Icons.arrow_forward,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 12,
                   ),
                   // Accepted step (shows as "On the way" for household)
                   _buildTimelineStep(
+                    context,
                     icon: drop.status == DropStatus.accepted ? Icons.directions_walk : Icons.assignment_turned_in,
-                    iconColor: drop.status == DropStatus.accepted ? const Color(0xFF00695C) : Colors.grey,
+                    iconColor: drop.status == DropStatus.accepted 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     title: drop.status == DropStatus.accepted ? l10n.onTheWay : l10n.acceptedStatus,
                     subtitle: drop.status == DropStatus.accepted 
                         ? l10n.collectorOnHisWay
@@ -1125,13 +1134,14 @@ class DropCard extends StatelessWidget {
                   // Arrow
                   Icon(
                     Icons.arrow_forward,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 12,
                   ),
                   // Collected step
                   _buildTimelineStep(
+                    context,
                     icon: Icons.recycling,
-                    iconColor: Colors.grey,
+                    iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     title: l10n.collectedStatus,
                     subtitle: l10n.notYetCollected,
                     isCompleted: false,
@@ -1145,13 +1155,15 @@ class DropCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineStep({
+  Widget _buildTimelineStep(
+    BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String title,
     required String subtitle,
     required bool isCompleted,
   }) {
+    final theme = Theme.of(context);
     return Flexible(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1160,7 +1172,9 @@ class DropCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: isCompleted ? iconColor.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+              color: isCompleted 
+                  ? iconColor.withOpacity(0.1) 
+                  : theme.colorScheme.surfaceVariant.withOpacity(0.5),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -1174,7 +1188,9 @@ class DropCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: isCompleted ? const Color(0xFF00695C) : Colors.grey[600],
+              color: isCompleted 
+                  ? theme.colorScheme.primary 
+                  : theme.colorScheme.onSurfaceVariant,
               fontSize: 10,
             ),
             textAlign: TextAlign.center,
@@ -1183,7 +1199,9 @@ class DropCard extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: isCompleted ? const Color(0xFF00695C).withOpacity(0.8) : Colors.grey[600],
+              color: isCompleted 
+                  ? theme.colorScheme.primary.withOpacity(0.8) 
+                  : theme.colorScheme.onSurfaceVariant,
               fontSize: 8,
               fontWeight: isCompleted ? FontWeight.w500 : FontWeight.normal,
             ),

@@ -90,6 +90,37 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signInToContinue => 'قم بتسجيل الدخول للمتابعة';
 
   @override
+  String get signInWithPhone => 'Sign in with Phone';
+
+  @override
+  String get enterPhoneNumberToReceiveOTP =>
+      'Enter your phone number to receive an OTP code';
+
+  @override
+  String get or => 'OR';
+
+  @override
+  String get sendOTP => 'Send OTP';
+
+  @override
+  String get resendOTP => 'Resend OTP';
+
+  @override
+  String get resendOTPIn => 'Resend OTP in';
+
+  @override
+  String get pleaseEnterOTP => 'Please enter the OTP code';
+
+  @override
+  String get invalidOTP => 'Invalid OTP code';
+
+  @override
+  String get enterOTP => 'Enter OTP Code';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'Please enter your phone number';
+
+  @override
   String get dontHaveAccount => 'ليس لديك حساب؟';
 
   @override
@@ -541,6 +572,26 @@ class AppLocalizationsAr extends AppLocalizations {
       'قم بتعيين نصف القطر (بالكيلومترات) الذي تريد جمع الزجاجات ضمنه.';
 
   @override
+  String get advancedFeatures => 'الميزات المتقدمة';
+
+  @override
+  String get advancedFeaturesDescription =>
+      'ميزات حصرية لجامعي الزجاجات المحترفين';
+
+  @override
+  String get setCollectorRadius => 'تعيين نصف قطر الجامع';
+
+  @override
+  String get proFeatureRequired => 'ميزة Pro مطلوبة';
+
+  @override
+  String get proFeatureRequiredMessage =>
+      'هذه الميزة حصرية لجامعي الزجاجات المحترفين. قم بالترقية إلى Pro للوصول إلى الميزات المتقدمة مثل تعيين نصف قطر الجمع والمزيد.';
+
+  @override
+  String get upgradeToPro => 'الترقية إلى Pro';
+
+  @override
   String get kilometers => 'كم';
 
   @override
@@ -758,10 +809,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bottleType => 'نوع الزجاجة';
 
   @override
-  String get numberOfPlasticBottles => 'عدد زجاجات البلاستيك';
+  String get numberOfPlasticBottles => 'زجاجات البلاستيك';
 
   @override
-  String get numberOfCans => 'عدد العلب';
+  String get numberOfCans => 'العلب';
 
   @override
   String get notesOptional => 'ملاحظات (اختياري)';
@@ -964,6 +1015,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'يرجى إدخال رقم هاتف صحيح مع رمز البلد (مثل +49 123456789)';
 
   @override
+  String get enterYourPhoneNumber => 'Enter your phone number';
+
+  @override
   String get locationPermissionRequired => 'إذن الموقع مطلوب لميزات العنوان';
 
   @override
@@ -1116,6 +1170,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get thisMonth => 'هذا الشهر';
+
+  @override
+  String get earningsOverview => 'Earnings Overview';
 
   @override
   String get thisYear => 'هذا العام';
@@ -1850,6 +1907,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get remaining => 'متبقي';
 
   @override
+  String get walking => 'مشي';
+
+  @override
+  String get driving => 'قيادة';
+
+  @override
+  String get bicycling => 'دراجة';
+
+  @override
+  String get transportationModeLocked =>
+      'وضع النقل مقفل لهذه النقطة. لا يمكن تغييره بعد الاختيار.';
+
+  @override
   String get completeCollectionIn => 'أكمل الجمع في:';
 
   @override
@@ -1947,6 +2017,9 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get cancelCollectionMessage =>
       'هل أنت متأكد أنك تريد إلغاء هذا الجمع؟ يرجى اختيار سبب:';
+
+  @override
+  String get dropNotFound => 'النقطة غير موجودة؟';
 
   @override
   String get noAccess => 'لا يوجد وصول';
@@ -2173,9 +2246,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get gettingStarted => 'البدء';
-
-  @override
-  String get advancedFeatures => 'الميزات المتقدمة';
 
   @override
   String get troubleshooting => 'استكشاف الأخطاء وإصلاحها';

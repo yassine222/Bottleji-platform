@@ -264,6 +264,66 @@ abstract class AppLocalizations {
   /// **'Sign in to continue'**
   String get signInToContinue;
 
+  /// No description provided for @signInWithPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Phone'**
+  String get signInWithPhone;
+
+  /// No description provided for @enterPhoneNumberToReceiveOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number to receive an OTP code'**
+  String get enterPhoneNumberToReceiveOTP;
+
+  /// No description provided for @or.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get or;
+
+  /// No description provided for @sendOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Send OTP'**
+  String get sendOTP;
+
+  /// No description provided for @resendOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP'**
+  String get resendOTP;
+
+  /// No description provided for @resendOTPIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP in'**
+  String get resendOTPIn;
+
+  /// No description provided for @pleaseEnterOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the OTP code'**
+  String get pleaseEnterOTP;
+
+  /// No description provided for @invalidOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid OTP code'**
+  String get invalidOTP;
+
+  /// No description provided for @enterOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter OTP Code'**
+  String get enterOTP;
+
+  /// No description provided for @pleaseEnterPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your phone number'**
+  String get pleaseEnterPhoneNumber;
+
   /// No description provided for @dontHaveAccount.
   ///
   /// In en, this message translates to:
@@ -1092,6 +1152,42 @@ abstract class AppLocalizations {
   /// **'Set the radius (in kilometers) within which you want to collect bottles.'**
   String get setCollectionRadiusDescription;
 
+  /// No description provided for @advancedFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Features'**
+  String get advancedFeatures;
+
+  /// No description provided for @advancedFeaturesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Exclusive features for Pro collectors'**
+  String get advancedFeaturesDescription;
+
+  /// No description provided for @setCollectorRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Collector Radius'**
+  String get setCollectorRadius;
+
+  /// No description provided for @proFeatureRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro Feature Required'**
+  String get proFeatureRequired;
+
+  /// No description provided for @proFeatureRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is exclusive to Pro collectors. Upgrade to Pro to access advanced features like setting collection radius and more.'**
+  String get proFeatureRequiredMessage;
+
+  /// No description provided for @upgradeToPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Pro'**
+  String get upgradeToPro;
+
   /// No description provided for @kilometers.
   ///
   /// In en, this message translates to:
@@ -1497,13 +1593,13 @@ abstract class AppLocalizations {
   /// No description provided for @numberOfPlasticBottles.
   ///
   /// In en, this message translates to:
-  /// **'Number of Plastic Bottles'**
+  /// **'Plastic Bottles'**
   String get numberOfPlasticBottles;
 
   /// No description provided for @numberOfCans.
   ///
   /// In en, this message translates to:
-  /// **'Number of Cans'**
+  /// **'Cans'**
   String get numberOfCans;
 
   /// No description provided for @notesOptional.
@@ -1872,6 +1968,12 @@ abstract class AppLocalizations {
   /// **'Please enter a valid phone number with country code (e.g., +49 123456789)'**
   String get pleaseEnterValidPhoneNumber;
 
+  /// No description provided for @enterYourPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number'**
+  String get enterYourPhoneNumber;
+
   /// No description provided for @locationPermissionRequired.
   ///
   /// In en, this message translates to:
@@ -2153,6 +2255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This month'**
   String get thisMonth;
+
+  /// No description provided for @earningsOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings Overview'**
+  String get earningsOverview;
 
   /// No description provided for @thisYear.
   ///
@@ -3492,6 +3600,30 @@ abstract class AppLocalizations {
   /// **'remaining'**
   String get remaining;
 
+  /// No description provided for @walking.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get walking;
+
+  /// No description provided for @driving.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive'**
+  String get driving;
+
+  /// No description provided for @bicycling.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get bicycling;
+
+  /// No description provided for @transportationModeLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Transportation mode is locked for this drop. It cannot be changed once selected.'**
+  String get transportationModeLocked;
+
   /// No description provided for @completeCollectionIn.
   ///
   /// In en, this message translates to:
@@ -3647,6 +3779,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to cancel this collection? Please select a reason:'**
   String get cancelCollectionMessage;
+
+  /// No description provided for @dropNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop not found?'**
+  String get dropNotFound;
 
   /// No description provided for @noAccess.
   ///
@@ -4031,12 +4169,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Getting Started'**
   String get gettingStarted;
-
-  /// No description provided for @advancedFeatures.
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced Features'**
-  String get advancedFeatures;
 
   /// No description provided for @troubleshooting.
   ///

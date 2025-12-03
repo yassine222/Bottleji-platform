@@ -90,6 +90,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInToContinue => 'Sign in to continue';
 
   @override
+  String get signInWithPhone => 'Sign in with Phone';
+
+  @override
+  String get enterPhoneNumberToReceiveOTP =>
+      'Enter your phone number to receive an OTP code';
+
+  @override
+  String get or => 'OR';
+
+  @override
+  String get sendOTP => 'Send OTP';
+
+  @override
+  String get resendOTP => 'Resend OTP';
+
+  @override
+  String get resendOTPIn => 'Resend OTP in';
+
+  @override
+  String get pleaseEnterOTP => 'Please enter the OTP code';
+
+  @override
+  String get invalidOTP => 'Invalid OTP code';
+
+  @override
+  String get enterOTP => 'Enter OTP Code';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'Please enter your phone number';
+
+  @override
   String get dontHaveAccount => 'Don\'t have an account?';
 
   @override
@@ -541,6 +572,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set the radius (in kilometers) within which you want to collect bottles.';
 
   @override
+  String get advancedFeatures => 'Advanced Features';
+
+  @override
+  String get advancedFeaturesDescription =>
+      'Exclusive features for Pro collectors';
+
+  @override
+  String get setCollectorRadius => 'Set Collector Radius';
+
+  @override
+  String get proFeatureRequired => 'Pro Feature Required';
+
+  @override
+  String get proFeatureRequiredMessage =>
+      'This feature is exclusive to Pro collectors. Upgrade to Pro to access advanced features like setting collection radius and more.';
+
+  @override
+  String get upgradeToPro => 'Upgrade to Pro';
+
+  @override
   String get kilometers => 'km';
 
   @override
@@ -761,10 +812,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bottleType => 'Bottle Type';
 
   @override
-  String get numberOfPlasticBottles => 'Number of Plastic Bottles';
+  String get numberOfPlasticBottles => 'Plastic Bottles';
 
   @override
-  String get numberOfCans => 'Number of Cans';
+  String get numberOfCans => 'Cans';
 
   @override
   String get notesOptional => 'Notes (Optional)';
@@ -967,6 +1018,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please enter a valid phone number with country code (e.g., +49 123456789)';
 
   @override
+  String get enterYourPhoneNumber => 'Enter your phone number';
+
+  @override
   String get locationPermissionRequired =>
       'Location permission is required for address features';
 
@@ -1122,6 +1176,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisMonth => 'This month';
+
+  @override
+  String get earningsOverview => 'Earnings Overview';
 
   @override
   String get thisYear => 'This Year';
@@ -1863,6 +1920,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get remaining => 'remaining';
 
   @override
+  String get walking => 'Walk';
+
+  @override
+  String get driving => 'Drive';
+
+  @override
+  String get bicycling => 'Bike';
+
+  @override
+  String get transportationModeLocked =>
+      'Transportation mode is locked for this drop. It cannot be changed once selected.';
+
+  @override
   String get completeCollectionIn => 'Complete collection in:';
 
   @override
@@ -1962,6 +2032,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cancelCollectionMessage =>
       'Are you sure you want to cancel this collection? Please select a reason:';
+
+  @override
+  String get dropNotFound => 'Drop not found?';
 
   @override
   String get noAccess => 'No Access';
@@ -2193,9 +2266,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gettingStarted => 'Getting Started';
-
-  @override
-  String get advancedFeatures => 'Advanced Features';
 
   @override
   String get troubleshooting => 'Troubleshooting';
