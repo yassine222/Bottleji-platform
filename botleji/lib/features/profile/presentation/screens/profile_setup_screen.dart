@@ -1109,10 +1109,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         }
         
         if (!mounted) return;
+        
+        String errorMessage = 'Failed to update profile: $e';
+        // Check if error is about email already taken
+        if (e.toString().contains('Email already registered') || 
+            e.toString().contains('already associated with another account')) {
+          errorMessage = 'This email is already associated with another account. Please use a different email address.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update profile: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -2243,8 +2252,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   }
                 } catch (e) {
                   if (context.mounted) {
+                    String errorMessage = 'Verification failed: $e';
+                    // Check if error is about email already associated with another account
+                    if (e.toString().contains('already verified and associated with another account') || 
+                        e.toString().contains('Email already registered')) {
+                      errorMessage = 'This email is already associated with another account. Please use a different email address in your profile.';
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Verification failed: $e')),
+                      SnackBar(
+                        content: Text(errorMessage),
+                        duration: const Duration(seconds: 5),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   }
                 } finally {

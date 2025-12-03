@@ -910,6 +910,12 @@ export class AuthService {
       throw new BadRequestException('No email address to verify');
     }
 
+    // Check if email is already verified by another account
+    const existingUserWithEmail = await this.usersService.findByEmail(user.email);
+    if (existingUserWithEmail && existingUserWithEmail.id !== userId && existingUserWithEmail.isEmailVerified) {
+      throw new BadRequestException('This email is already verified and associated with another account. Please use a different email address.');
+    }
+
     if (user.isEmailVerified) {
       return {
         message: 'Email is already verified',
