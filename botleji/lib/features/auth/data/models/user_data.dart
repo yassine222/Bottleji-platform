@@ -59,6 +59,7 @@ class UserData {
   final String? name;
   final String? phoneNumber;
   final bool? isPhoneVerified;
+  final bool? isEmailVerified; // Track if email is verified (for phone users who add email)
   final String? address;
   final String? profilePhoto;
   final List<String> roles;
@@ -103,6 +104,7 @@ class UserData {
     required this.name,
     this.phoneNumber,
     this.isPhoneVerified,
+    this.isEmailVerified,
     this.address,
     this.profilePhoto,
     required this.roles,
@@ -175,6 +177,8 @@ class UserData {
 
     // Handle backward compatibility with old field names
     final phoneNumber = json['phoneNumber'] ?? json['phone'];
+    final isPhoneVerified = json['isPhoneVerified'] as bool?;
+    final isEmailVerified = json['isEmailVerified'] as bool?;
     final address = json['address'];
     final profilePhoto = json['profilePhoto'];
     final collectorSubscriptionType = json['collectorSubscriptionType'] ?? 'basic';
@@ -317,6 +321,8 @@ class UserData {
       ...json,
       'roles': roles,
       'phoneNumber': phoneNumber,
+      'isPhoneVerified': isPhoneVerified ?? false,
+      'isEmailVerified': isEmailVerified ?? false,
       'address': address,
       'profilePhoto': profilePhoto,
       'collectorSubscriptionType': collectorSubscriptionType,
@@ -342,6 +348,7 @@ class UserData {
       name: userData.name,
       phoneNumber: userData.phoneNumber,
       isPhoneVerified: userData.isPhoneVerified,
+      isEmailVerified: userData.isEmailVerified,
       address: userData.address,
       profilePhoto: userData.profilePhoto,
       roles: userData.roles,
@@ -530,6 +537,7 @@ class UserData {
         'name': name,
         'phoneNumber': phoneNumber,
         'isPhoneVerified': isPhoneVerified,
+        'isEmailVerified': isEmailVerified,
         'address': address,
         'profilePhoto': profilePhoto,
         'roles': roles,
@@ -562,6 +570,7 @@ class UserData {
     String? email,
     String? name,
     String? phoneNumber,
+    bool? isEmailVerified,
     String? address,
     String? profilePhoto,
     List<String>? roles,
@@ -579,6 +588,7 @@ class UserData {
       email: email ?? this.email,
       name: name ?? this.name,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       address: address ?? this.address,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       roles: roles ?? this.roles,

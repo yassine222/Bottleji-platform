@@ -167,4 +167,27 @@ class AuthApiClient {
     );
     return response.data;
   }
+
+  Future<Map<String, dynamic>> verifyEmail(String otp, String token) async {
+    final response = await _dio.post(
+      '$baseUrl/auth/verify-email',
+      data: {'otp': otp},
+      options: Options(headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> resendEmailVerification(String token) async {
+    final response = await _dio.post(
+      '$baseUrl/auth/resend-email-verification',
+      options: Options(headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }),
+    );
+    return response.data;
+  }
 } 

@@ -138,4 +138,16 @@ export class AuthController {
     return this.authService.invalidateSession(req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-email')
+  async verifyEmail(@Request() req, @Body() body: { otp: string }) {
+    return this.authService.verifyEmail(req.user.id, body.otp);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('resend-email-verification')
+  async resendEmailVerification(@Request() req) {
+    return this.authService.resendEmailVerification(req.user.id);
+  }
+
 }

@@ -960,4 +960,34 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> verifyEmail(String otp) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await _apiClient.verifyEmail(otp, 'Bearer $token');
+      return response;
+    } catch (e) {
+      print('verifyEmail: Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> resendEmailVerification() async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await _apiClient.resendEmailVerification('Bearer $token');
+      return response;
+    } catch (e) {
+      print('resendEmailVerification: Error: $e');
+      rethrow;
+    }
+  }
 } 

@@ -104,6 +104,19 @@ export class User extends Document {
   @Prop({ default: false })
   isVerified: boolean;
 
+  // Email verification fields (for phone users who add email later)
+  @Prop({ default: false })
+  isEmailVerified: boolean; // Track if email is verified (separate from account verification)
+
+  @Prop()
+  emailVerificationOTP?: string;
+
+  @Prop()
+  emailOtpExpiresAt?: Date;
+
+  @Prop({ default: 0 })
+  emailOtpAttempts: number;
+
   // Password reset fields
   @Prop()
   resetPasswordOtp?: string;

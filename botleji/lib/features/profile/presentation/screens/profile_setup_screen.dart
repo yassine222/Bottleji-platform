@@ -140,28 +140,24 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _initializeScreen() async {
     try {
-      // Detect country code from device locale
-      _detectPhoneCountryCode();
+      // Only detect country code from device locale if it's a new user setup
+      // For existing users, we'll extract it from their phone number in the build method
+      if (widget.isNewUserSetup) {
+        _detectPhoneCountryCode();
+      }
       
       // Initialize phone number if provided and already verified (from phone sign-in)
       if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty && widget.isPhoneVerified) {
         // Extract country code and local number from full phone number
         final fullPhone = widget.phoneNumber!;
-        // Try to extract country code (starts with +)
-        if (fullPhone.startsWith('+')) {
-          // Find where country code ends (usually 1-3 digits)
-          final match = RegExp(r'^\+(\d{1,3})(.+)').firstMatch(fullPhone);
-          if (match != null) {
-            _phoneCountryCode = '+${match.group(1)}';
-            final localNumber = match.group(2)!.replaceAll(RegExp(r'[^0-9]'), '');
-            _phoneController.text = localNumber;
-            // Try to determine country from country code
-            _initialPhoneCountryCode = _getCountryFromCode(_phoneCountryCode);
-          } else {
-            // Fallback: use as-is
-            _phoneController.text = fullPhone;
-          }
+        final components = _extractPhoneComponents(fullPhone);
+        if (components['countryCode']!.isNotEmpty) {
+          _phoneCountryCode = components['countryCode']!;
+          _phoneController.text = components['localNumber']!;
+          _initialPhoneCountryCode = _getCountryFromCode(_phoneCountryCode);
+          print('📱 ProfileSetupScreen: Extracted country code from phone: $_phoneCountryCode -> $_initialPhoneCountryCode, local: ${components['localNumber']}');
         } else {
+          // Fallback: use as-is
           _phoneController.text = fullPhone;
         }
         _isPhoneVerified = true;
@@ -230,11 +226,110 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     }
   }
 
+  /// Extract country code and local number from a full phone number
+  /// Returns a map with 'countryCode' and 'localNumber'
+  Map<String, String> _extractPhoneComponents(String phoneNumber) {
+    if (!phoneNumber.startsWith('+')) {
+      return {'countryCode': '', 'localNumber': phoneNumber};
+    }
+    
+    // List of known country codes (sorted by length, longest first to match correctly)
+    final countryCodes = [
+      '+1', '+7', '+20', '+27', '+30', '+31', '+32', '+33', '+34', '+36', '+39',
+      '+40', '+41', '+43', '+44', '+45', '+46', '+47', '+48', '+49', '+51', '+52',
+      '+53', '+54', '+55', '+56', '+57', '+58', '+60', '+61', '+62', '+63', '+64',
+      '+65', '+66', '+81', '+82', '+84', '+86', '+90', '+91', '+92', '+93', '+94',
+      '+95', '+98', '+212', '+213', '+216', '+218', '+220', '+221', '+222', '+223',
+      '+224', '+225', '+226', '+227', '+228', '+229', '+230', '+231', '+232', '+233',
+      '+234', '+235', '+236', '+237', '+238', '+239', '+240', '+241', '+242', '+243',
+      '+244', '+245', '+246', '+248', '+249', '+250', '+251', '+252', '+253', '+254',
+      '+255', '+256', '+257', '+258', '+260', '+261', '+262', '+263', '+264', '+265',
+      '+266', '+267', '+268', '+269', '+290', '+291', '+297', '+298', '+299', '+350',
+      '+351', '+352', '+353', '+354', '+355', '+356', '+357', '+358', '+359', '+370',
+      '+371', '+372', '+373', '+374', '+375', '+376', '+377', '+378', '+380', '+381',
+      '+382', '+383', '+385', '+386', '+387', '+389', '+420', '+421', '+423', '+500',
+      '+501', '+502', '+503', '+504', '+505', '+506', '+507', '+508', '+509', '+590',
+      '+591', '+592', '+593', '+594', '+595', '+596', '+597', '+598', '+599', '+670',
+      '+672', '+673', '+674', '+675', '+676', '+677', '+678', '+679', '+680', '+681',
+      '+682', '+683', '+685', '+686', '+687', '+688', '+689', '+690', '+691', '+692',
+      '+850', '+852', '+853', '+855', '+856', '+880', '+886', '+960', '+961', '+962',
+      '+963', '+964', '+965', '+966', '+967', '+968', '+970', '+971', '+972', '+973',
+      '+974', '+975', '+976', '+977', '+992', '+993', '+994', '+995', '+996', '+998',
+    ];
+    
+    // Try to match country codes from longest to shortest
+    for (final code in countryCodes) {
+      if (phoneNumber.startsWith(code)) {
+        final localNumber = phoneNumber.substring(code.length).replaceAll(RegExp(r'[^0-9]'), '');
+        return {'countryCode': code, 'localNumber': localNumber};
+      }
+    }
+    
+    // Fallback: try to extract 1-3 digits as country code
+    final match = RegExp(r'^\+(\d{1,3})(.+)').firstMatch(phoneNumber);
+    if (match != null) {
+      final countryCode = '+${match.group(1)}';
+      final localNumber = match.group(2)!.replaceAll(RegExp(r'[^0-9]'), '');
+      return {'countryCode': countryCode, 'localNumber': localNumber};
+    }
+    
+    return {'countryCode': '', 'localNumber': phoneNumber};
+  }
+
   String _getCountryFromCode(String code) {
     // Common country code mappings
     final codeMap = {
       '+1': 'US', '+216': 'TN', '+33': 'FR', '+49': 'DE', 
       '+44': 'GB', '+212': 'MA', '+213': 'DZ', '+966': 'SA',
+      '+20': 'EG', '+27': 'ZA', '+30': 'GR', '+31': 'NL',
+      '+32': 'BE', '+34': 'ES', '+39': 'IT', '+40': 'RO',
+      '+41': 'CH', '+43': 'AT', '+45': 'DK', '+46': 'SE',
+      '+47': 'NO', '+48': 'PL', '+51': 'PE', '+52': 'MX',
+      '+54': 'AR', '+55': 'BR', '+60': 'MY', '+61': 'AU',
+      '+62': 'ID', '+63': 'PH', '+64': 'NZ', '+65': 'SG',
+      '+66': 'TH', '+81': 'JP', '+82': 'KR', '+84': 'VN',
+      '+86': 'CN', '+90': 'TR', '+91': 'IN', '+92': 'PK',
+      '+93': 'AF', '+94': 'LK', '+95': 'MM', '+98': 'IR',
+      '+7': 'RU', '+36': 'HU', '+53': 'CU', '+56': 'CL',
+      '+57': 'CO', '+58': 'VE', '+218': 'LY', '+220': 'GM',
+      '+221': 'SN', '+222': 'MR', '+223': 'ML', '+224': 'GN',
+      '+225': 'CI', '+226': 'BF', '+227': 'NE', '+228': 'TG',
+      '+229': 'BJ', '+230': 'MU', '+231': 'LR', '+232': 'SL',
+      '+233': 'GH', '+234': 'NG', '+235': 'TD', '+236': 'CF',
+      '+237': 'CM', '+238': 'CV', '+239': 'ST', '+240': 'GQ',
+      '+241': 'GA', '+242': 'CG', '+243': 'CD', '+244': 'AO',
+      '+245': 'GW', '+246': 'IO', '+248': 'SC', '+249': 'SD',
+      '+250': 'RW', '+251': 'ET', '+252': 'SO', '+253': 'DJ',
+      '+254': 'KE', '+255': 'TZ', '+256': 'UG', '+257': 'BI',
+      '+258': 'MZ', '+260': 'ZM', '+261': 'MG', '+262': 'RE',
+      '+263': 'ZW', '+264': 'NA', '+265': 'MW', '+266': 'LS',
+      '+267': 'BW', '+268': 'SZ', '+269': 'KM', '+290': 'SH',
+      '+291': 'ER', '+297': 'AW', '+298': 'FO', '+299': 'GL',
+      '+350': 'GI', '+351': 'PT', '+352': 'LU', '+353': 'IE',
+      '+354': 'IS', '+355': 'AL', '+356': 'MT', '+357': 'CY',
+      '+358': 'FI', '+359': 'BG', '+370': 'LT', '+371': 'LV',
+      '+372': 'EE', '+373': 'MD', '+374': 'AM', '+375': 'BY',
+      '+376': 'AD', '+377': 'MC', '+378': 'SM', '+380': 'UA',
+      '+381': 'RS', '+382': 'ME', '+383': 'XK', '+385': 'HR',
+      '+386': 'SI', '+387': 'BA', '+389': 'MK', '+420': 'CZ',
+      '+421': 'SK', '+423': 'LI', '+500': 'FK', '+501': 'BZ',
+      '+502': 'GT', '+503': 'SV', '+504': 'HN', '+505': 'NI',
+      '+506': 'CR', '+507': 'PA', '+508': 'PM', '+509': 'HT',
+      '+590': 'BL', '+591': 'BO', '+592': 'GY', '+593': 'EC',
+      '+594': 'GF', '+595': 'PY', '+596': 'MQ', '+597': 'SR',
+      '+598': 'UY', '+599': 'CW', '+670': 'TL', '+672': 'AQ',
+      '+673': 'BN', '+674': 'NR', '+675': 'PG', '+676': 'TO',
+      '+677': 'SB', '+678': 'VU', '+679': 'FJ', '+680': 'PW',
+      '+681': 'WF', '+682': 'CK', '+683': 'NU', '+685': 'WS',
+      '+686': 'KI', '+687': 'NC', '+688': 'TV', '+689': 'PF',
+      '+690': 'TK', '+691': 'FM', '+692': 'MH', '+850': 'KP',
+      '+852': 'HK', '+853': 'MO', '+855': 'KH', '+856': 'LA',
+      '+880': 'BD', '+886': 'TW', '+960': 'MV', '+961': 'LB',
+      '+962': 'JO', '+963': 'SY', '+964': 'IQ', '+965': 'KW',
+      '+967': 'YE', '+968': 'OM', '+970': 'PS', '+971': 'AE',
+      '+972': 'IL', '+973': 'BH', '+974': 'QA', '+975': 'BT',
+      '+976': 'MN', '+977': 'NP', '+992': 'TJ', '+993': 'TM',
+      '+994': 'AZ', '+995': 'GE', '+996': 'KG', '+998': 'UZ',
     };
     return codeMap[code] ?? 'US';
   }
@@ -1155,21 +1250,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             if (_phoneController.text.isEmpty) {
               // Extract local number from full phone number (remove country code)
               String phoneNumber = user.phoneNumber ?? '';
-              if (phoneNumber.startsWith('+')) {
-                // Try to extract country code and local number
-                final match = RegExp(r'^\+(\d{1,3})(.+)').firstMatch(phoneNumber);
-                if (match != null) {
-                  final countryCode = '+${match.group(1)}';
-                  final localNumber = match.group(2)!.replaceAll(RegExp(r'[^0-9]'), '');
-                  _phoneCountryCode = countryCode;
-                  _phoneController.text = localNumber;
-                  _initialPhoneCountryCode = _getCountryFromCode(countryCode);
+              if (phoneNumber.isNotEmpty) {
+                final components = _extractPhoneComponents(phoneNumber);
+                if (components['countryCode']!.isNotEmpty) {
+                  _phoneCountryCode = components['countryCode']!;
+                  _phoneController.text = components['localNumber']!;
+                  // Extract country code from user's existing phone number (not device locale)
+                  _initialPhoneCountryCode = _getCountryFromCode(_phoneCountryCode);
+                  _completePhoneNumber = phoneNumber; // Store complete number
+                  print('📱 ProfileSetupScreen: Extracted country code from existing user phone: ${components['countryCode']} -> $_initialPhoneCountryCode, local: ${components['localNumber']}');
                 } else {
                   // Fallback: just use the number as-is
                   _phoneController.text = phoneNumber;
                 }
-              } else {
-                _phoneController.text = phoneNumber;
               }
               // Reset the cleared flag when phone number is loaded
               _hasPhoneBeenCleared = false;
@@ -1357,24 +1450,157 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               // Email Field
                               // For phone sign-in users: editable (can add email)
                               // For email sign-in users: read-only (can't change)
-                              _buildFormField(
-                                controller: _emailController,
-                                label: AppLocalizations.of(context).email,
-                                icon: Icons.email_outlined,
-                                readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')),
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (v) {
-                                  // Only validate if email is provided (optional for phone sign-in users)
-                                  if (v != null && v.isNotEmpty) {
-                                    if (!v.contains('@') || !v.contains('.')) {
-                                      return AppLocalizations.of(context).pleaseEnterValidEmail;
-                                    }
-                                  }
-                                  return null;
-                                },
-                                iconColor: (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp'))
-                                    ? appGreenColor
-                                    : AppColors.lightSecondary,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: appGreenColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          Icons.email_outlined,
+                                          color: appGreenColor,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        AppLocalizations.of(context).email,
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      // Email verification badge
+                                      if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_'))
+                                        Builder(
+                                          builder: (context) {
+                                            final isEmailVerified = (user!.isEmailVerified ?? false);
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: isEmailVerified
+                                                    ? Colors.green.withOpacity(0.1)
+                                                    : Colors.orange.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: isEmailVerified
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    isEmailVerified
+                                                        ? Icons.verified
+                                                        : Icons.warning_amber_rounded,
+                                                    size: 14,
+                                                    color: isEmailVerified
+                                                        ? Colors.green
+                                                        : Colors.orange,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    isEmailVerified
+                                                        ? 'Verified'
+                                                        : 'Unverified',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isEmailVerified
+                                                          ? Colors.green
+                                                          : Colors.orange,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _emailController,
+                                    readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')),
+                                    keyboardType: TextInputType.emailAddress,
+                                    style: TextStyle(color: theme.colorScheme.onSurface),
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(context).email,
+                                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: theme.colorScheme.outline),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: theme.colorScheme.outline),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: appGreenColor, width: 2),
+                                      ),
+                                      filled: true,
+                                      fillColor: theme.colorScheme.surface,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    ),
+                                    validator: (v) {
+                                      // Only validate if email is provided (optional for phone sign-in users)
+                                      if (v != null && v.isNotEmpty) {
+                                        if (!v.contains('@') || !v.contains('.')) {
+                                          return AppLocalizations.of(context).pleaseEnterValidEmail;
+                                        }
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  // Show verification message for unverified email
+                                  if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_') && !(user.isEmailVerified ?? false))
+                                    Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.info_outline,
+                                                size: 16,
+                                                color: Colors.orange,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'Please verify your email address to receive important notifications.',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.orange,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  // Navigate to email verification or show dialog
+                                                  if (user != null) {
+                                                    _showEmailVerificationDialog(context, user);
+                                                  }
+                                                },
+                                                child: Text('Verify'),
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  minimumSize: Size(0, 0),
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                ],
                               ),
                               const SizedBox(height: 20),
                               
@@ -1907,6 +2133,139 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     
   
 
+
+  void _showEmailVerificationDialog(BuildContext context, UserData user) {
+    final otpController = TextEditingController();
+    bool isVerifying = false;
+    bool isResending = false;
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            'Verify Email',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the verification code sent to ${user.email}',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                decoration: InputDecoration(
+                  labelText: 'Verification Code',
+                  hintText: 'Enter 6-digit code',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
+                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              const SizedBox(height: 12),
+              if (isResending)
+                Center(
+                  child: CircularProgressIndicator(),
+                )
+              else
+                TextButton(
+                  onPressed: () async {
+                    setDialogState(() {
+                      isResending = true;
+                    });
+                  try {
+                    final authRepo = ref.read(authRepositoryProvider);
+                    await authRepo.resendEmailVerification();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Verification code resent!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to resend code: $e')),
+                        );
+                      }
+                    } finally {
+                      setDialogState(() {
+                        isResending = false;
+                      });
+                    }
+                  },
+                  child: Text('Resend Code'),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isVerifying ? null : () async {
+                if (otpController.text.length != 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a 6-digit code')),
+                  );
+                  return;
+                }
+                
+                setDialogState(() {
+                  isVerifying = true;
+                });
+                
+                try {
+                  final authRepo = ref.read(authRepositoryProvider);
+                  await authRepo.verifyEmail(otpController.text);
+                  
+                  // Refresh user data
+                  await ref.read(authNotifierProvider.notifier).refreshUserData();
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Email verified successfully!')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Verification failed: $e')),
+                    );
+                  }
+                } finally {
+                  setDialogState(() {
+                    isVerifying = false;
+                  });
+                }
+              },
+              child: isVerifying
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text('Verify'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildAddressField(BuildContext context, ThemeData theme) {
     return Column(

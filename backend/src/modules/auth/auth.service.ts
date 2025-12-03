@@ -375,7 +375,36 @@ export class AuthService {
         if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
           throw new BadRequestException('Email already registered to another account');
         }
+        
+        const isNewEmail = !user.email || user.email !== setupProfileDto.email;
         updateData.email = setupProfileDto.email;
+        
+        // For phone users adding email: send verification email (soft verification)
+        // Don't require verification to complete profile, but send email for verification
+        if (isPhoneSignInUser && isNewEmail) {
+          const emailOtp = this.generateOTP();
+          const emailOtpExpiresAt = new Date();
+          emailOtpExpiresAt.setMinutes(emailOtpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
+          
+          updateData.isEmailVerified = false; // Mark as unverified
+          updateData.emailVerificationOTP = emailOtp;
+          updateData.emailOtpExpiresAt = emailOtpExpiresAt;
+          updateData.emailOtpAttempts = 0;
+          
+          // Send verification email in background (don't block profile completion)
+          this.emailService.sendOTPEmail(setupProfileDto.email, emailOtp).catch((error) => {
+            console.error('Failed to send email verification OTP:', error);
+            // Don't fail profile setup if email fails
+          });
+          
+          console.log(`📧 Email verification OTP sent to ${setupProfileDto.email} for phone user ${userId}`);
+        } else if (!isPhoneSignInUser && user.email === setupProfileDto.email) {
+          // Email/password user keeping same email - keep verification status
+          // Don't change isEmailVerified
+        } else {
+          // For email/password users, email is already verified during signup
+          updateData.isEmailVerified = true;
+        }
       } else {
         // Email/password user trying to change email - not allowed
         throw new BadRequestException('Email cannot be changed for email/password accounts');
@@ -480,6 +509,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
         roles: user.roles,
@@ -867,6 +897,90 @@ export class AuthService {
 
     return {
       message: 'Password reset successfully',
+    };
+  }
+
+  async verifyEmail(userId: string, otp: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (!user.email) {
+      throw new BadRequestException('No email address to verify');
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        message: 'Email is already verified',
+      };
+    }
+
+    // Check if OTP has expired
+    if (user.emailOtpExpiresAt && new Date() > user.emailOtpExpiresAt) {
+      throw new BadRequestException('Email verification code has expired. Please request a new one.');
+    }
+
+    // Check OTP attempts
+    if (user.emailOtpAttempts >= 3) {
+      throw new BadRequestException('Too many verification attempts. Please request a new code.');
+    }
+
+    // Verify OTP
+    if (user.emailVerificationOTP !== otp) {
+      // Increment OTP attempts
+      await this.usersService.update(userId, {
+        emailOtpAttempts: (user.emailOtpAttempts || 0) + 1,
+      });
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    // OTP is valid - mark email as verified
+    await this.usersService.update(userId, {
+      isEmailVerified: true,
+      emailVerificationOTP: undefined,
+      emailOtpExpiresAt: undefined,
+      emailOtpAttempts: 0,
+    });
+
+    return {
+      message: 'Email verified successfully',
+    };
+  }
+
+  async resendEmailVerification(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (!user.email) {
+      throw new BadRequestException('No email address to verify');
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        message: 'Email is already verified',
+      };
+    }
+
+    const emailOtp = this.generateOTP();
+    const emailOtpExpiresAt = new Date();
+    emailOtpExpiresAt.setMinutes(emailOtpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
+
+    // Update user with new OTP
+    await this.usersService.update(userId, {
+      emailVerificationOTP: emailOtp,
+      emailOtpExpiresAt: emailOtpExpiresAt,
+      emailOtpAttempts: 0,
+    });
+
+    // Send verification email
+    await this.emailService.sendOTPEmail(user.email, emailOtp);
+
+    return {
+      message: 'Email verification code sent successfully',
+      otp, // Remove this in production
     };
   }
 
