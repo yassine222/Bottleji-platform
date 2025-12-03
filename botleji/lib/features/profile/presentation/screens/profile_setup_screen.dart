@@ -649,8 +649,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           _emailValidationError = result['message'] ?? 'This email is already associated with another account. Please use a different email address.';
           _isValidatingEmail = false;
         });
-        // Trigger form validation to show the error
-        _formKey.currentState?.validate();
+        // Don't call validate() on the entire form - it will trigger validation for all fields
+        // The error will be shown automatically via the email field's validator when the field is focused/blurred
+        // or when the form is submitted
       } else {
         setState(() {
           _emailValidationError = null;
