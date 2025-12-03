@@ -2054,7 +2054,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                         children: [
                                           Icon(Icons.verified, color: Colors.green, size: 20),
                                           const SizedBox(width: 12),
-                                          Expanded(
+                                          Flexible(
                                             child: Text(
                                               widget.phoneNumber!,
                                               style: TextStyle(
@@ -2062,8 +2062,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
                                               ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
                                             ),
                                           ),
+                                          const SizedBox(width: 8),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
