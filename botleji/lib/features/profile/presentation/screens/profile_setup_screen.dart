@@ -2055,15 +2055,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                           Icon(Icons.verified, color: Colors.green, size: 20),
                                           const SizedBox(width: 12),
                                           Expanded(
-                                            child: Text(
-                                              widget.phoneNumber!,
-                                              style: TextStyle(
-                                                color: theme.colorScheme.onSurface,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                widget.phoneNumber!,
+                                                style: TextStyle(
+                                                  color: theme.colorScheme.onSurface,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
