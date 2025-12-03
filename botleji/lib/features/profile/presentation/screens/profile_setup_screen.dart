@@ -1278,6 +1278,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         final errorString = e.toString().toLowerCase();
         if (errorString.contains('email already registered') || 
             errorString.contains('already associated with another account')) {
+          // Reset auth state to prevent error screen from showing
+          final currentAuthState = ref.read(authNotifierProvider);
+          if (currentAuthState.hasError) {
+            // Reset to previous value if available
+            ref.invalidate(authNotifierProvider);
+            // Wait a bit for state to reset
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+          
           // Set validation error to show in email field
           setState(() {
             _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
@@ -1307,6 +1316,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       final errorString = e.toString().toLowerCase();
       if (errorString.contains('email already registered') || 
           errorString.contains('already associated with another account')) {
+        // Reset auth state to prevent error screen from showing
+        final currentAuthState = ref.read(authNotifierProvider);
+        if (currentAuthState.hasError) {
+          // Reset to previous value if available
+          ref.invalidate(authNotifierProvider);
+          // Wait a bit for state to reset
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+        
         // Set validation error to show in email field
         setState(() {
           _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
