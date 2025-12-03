@@ -1274,13 +1274,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         
         if (!mounted) return;
         
-        String errorMessage = 'Failed to update profile: $e';
-        // Check if error is about email already taken
-        if (e.toString().contains('Email already registered') || 
-            e.toString().contains('already associated with another account')) {
-          errorMessage = 'This email is already associated with another account. Please use a different email address.';
+        // Check if error is about email already taken - show in field instead of snackbar
+        final errorString = e.toString().toLowerCase();
+        if (errorString.contains('email already registered') || 
+            errorString.contains('already associated with another account')) {
+          // Set validation error to show in email field
+          setState(() {
+            _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
+          });
+          // Trigger form validation to show the error
+          _formKey.currentState?.validate();
+          setState(() => _isLoading = false);
+          return;
         }
         
+        // For other errors, show snackbar
+        String errorMessage = 'Failed to update profile: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -1288,6 +1297,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       print('Error in _saveProfile: $e');
