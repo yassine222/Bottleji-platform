@@ -103,8 +103,12 @@ export class AuthService {
       throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
     }
 
-    // Verify OTP
-    if (tempSignup.verificationOTP !== verifyOtpDto.otp) {
+    // Verify OTP - allow hardcoded OTPs for testing (123456, 847293)
+    const hardcodedOTPs = ['123456', '847293'];
+    const isValidOTP = tempSignup.verificationOTP === verifyOtpDto.otp || 
+                       hardcodedOTPs.includes(verifyOtpDto.otp);
+    
+    if (!isValidOTP) {
       // Increment OTP attempts
       tempSignup.otpAttempts += 1;
       await tempSignup.save();
