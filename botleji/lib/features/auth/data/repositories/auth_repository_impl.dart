@@ -452,6 +452,7 @@ class AuthRepository {
   }
 
   Future<AuthResponse> setupProfile({
+    String? email,
     String? name,
     String? phoneNumber,
     String? address,
@@ -474,13 +475,19 @@ class AuthRepository {
       }
       
       // Build complete profile data - name, phoneNumber, and address are now required
-      // Only send fields that are in SetupProfileDto (name, phoneNumber, address, profilePhoto)
-      // Do NOT send 'roles' as it's not in the DTO and will cause validation failure with forbidNonWhitelisted
+      // Email is optional - can be added by phone sign-in users
       final data = <String, dynamic>{
         'name': name ?? currentUser.name ?? '', // name is required by backend
         'phoneNumber': phoneNumber ?? currentUser.phoneNumber ?? '', // phoneNumber is now required
         'address': address ?? currentUser.address ?? '', // address is now required
       };
+      
+      // Include email if provided (for phone sign-in users adding email)
+      // Only add if it's different from current email and not a temp email
+      if (email != null && email.isNotEmpty && 
+          !email.startsWith('phone_') && !email.endsWith('@bottleji.temp')) {
+        data['email'] = email;
+      }
       
       // Only include profilePhoto if provided (it's optional)
       if (profilePhoto != null) {
@@ -521,6 +528,7 @@ class AuthRepository {
   }
 
   Future<AuthResponse> updateProfile({
+    String? email,
     String? name,
     String? phoneNumber,
     String? address,
@@ -543,11 +551,17 @@ class AuthRepository {
       }
       
       // Build complete profile data by merging current data with updates
-      // Only send fields that are in SetupProfileDto (name, phoneNumber, address, profilePhoto)
-      // Do NOT send 'roles' as it's not in the DTO and will cause validation failure with forbidNonWhitelisted
+      // Email can be updated for phone sign-in users
       final data = <String, dynamic>{
         'name': name ?? currentUser.name ?? '', // name is required by backend
       };
+      
+      // Include email if provided (for phone sign-in users adding email)
+      // Only add if it's different from current email and not a temp email
+      if (email != null && email.isNotEmpty && 
+          !email.startsWith('phone_') && !email.endsWith('@bottleji.temp')) {
+        data['email'] = email;
+      }
       
       // Only include fields that are provided or have current values
       if (phoneNumber != null) {
@@ -815,6 +829,120 @@ class AuthRepository {
     } catch (e) {
       print('sendPhoneOTP: Error: $e');
       rethrow;
+    }
+  }
+
+  Future<AuthResponse> phoneLogin({
+    required String phoneNumber,
+    required String firebaseToken,
+  }) async {
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: ServerConfig.apiBaseUrlSync,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        contentType: 'application/json',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ));
+
+      final response = await dio.post(
+        '/auth/phone/login',
+        data: {
+          'phoneNumber': phoneNumber,
+          'firebaseToken': firebaseToken,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return AuthResponse.success(
+          user: UserData.fromJson(response.data['user']),
+          token: response.data['token'],
+          message: response.data['message'] ?? 'Login successful',
+        );
+      } else {
+        return AuthResponse.error(
+          message: response.data['message'] ?? 'Login failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+    } on DioException catch (e) {
+      String message = 'Login failed';
+      if (e.response?.data != null) {
+        if (e.response!.data is Map) {
+          message = e.response!.data['message'] ?? message;
+        } else if (e.response!.data is String) {
+          message = e.response!.data;
+        }
+      }
+      return AuthResponse.error(
+        message: message,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    } catch (e) {
+      return AuthResponse.error(
+        message: 'An unexpected error occurred',
+        statusCode: 500,
+      );
+    }
+  }
+
+  Future<AuthResponse> phoneSignup({
+    required String phoneNumber,
+    required String firebaseToken,
+  }) async {
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: ServerConfig.apiBaseUrlSync,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        contentType: 'application/json',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ));
+
+      final response = await dio.post(
+        '/auth/phone/signup',
+        data: {
+          'phoneNumber': phoneNumber,
+          'firebaseToken': firebaseToken,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return AuthResponse.success(
+          user: UserData.fromJson(response.data['user']),
+          token: response.data['token'],
+          message: response.data['message'] ?? 'Signup successful',
+        );
+      } else {
+        return AuthResponse.error(
+          message: response.data['message'] ?? 'Signup failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+    } on DioException catch (e) {
+      String message = 'Signup failed';
+      if (e.response?.data != null) {
+        if (e.response!.data is Map) {
+          message = e.response!.data['message'] ?? message;
+        } else if (e.response!.data is String) {
+          message = e.response!.data;
+        }
+      }
+      return AuthResponse.error(
+        message: message,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    } catch (e) {
+      return AuthResponse.error(
+        message: 'An unexpected error occurred',
+        statusCode: 500,
+      );
     }
   }
 

@@ -9,6 +9,8 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateCollectorSubscriptionDto } from './dto/update-collector-subscription.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { VerifyPasswordResetDto } from './dto/verify-password-reset.dto';
+import { PhoneLoginDto } from './dto/phone-login.dto';
+import { PhoneSignupDto } from './dto/phone-signup.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -85,6 +87,16 @@ export class AuthController {
   @Post('verify-phone')
   async verifyPhone(@Request() req, @Body() body: { phoneNumber: string; firebaseToken: string }) {
     return this.authService.verifyPhone(req.user.id, body.phoneNumber, body.firebaseToken);
+  }
+
+  @Post('phone/signup')
+  async phoneSignup(@Body() phoneSignupDto: PhoneSignupDto) {
+    return this.authService.phoneSignup(phoneSignupDto.phoneNumber, phoneSignupDto.firebaseToken);
+  }
+
+  @Post('phone/login')
+  async phoneLogin(@Body() phoneLoginDto: PhoneLoginDto) {
+    return this.authService.phoneLogin(phoneLoginDto.phoneNumber, phoneLoginDto.firebaseToken);
   }
 
   @UseGuards(JwtAuthGuard)

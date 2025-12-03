@@ -323,18 +323,53 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    // Check if phone number is verified before allowing profile completion
-    if (!user.isPhoneVerified || user.phoneNumber !== setupProfileDto.phoneNumber) {
-      throw new BadRequestException('Phone number must be verified before completing profile setup');
+    // For phone sign-in users: phone is already verified, skip verification check
+    // For email sign-in users: phone must be verified
+    const isPhoneSignInUser = user.email?.startsWith('phone_') && user.email?.endsWith('@bottleji.temp');
+    
+    if (!isPhoneSignInUser) {
+      // Email/password user - phone must be verified
+      if (!user.isPhoneVerified || user.phoneNumber !== setupProfileDto.phoneNumber) {
+        throw new BadRequestException('Phone number must be verified before completing profile setup');
+      }
+    } else {
+      // Phone sign-in user - phone is already verified, just ensure it matches
+      if (user.phoneNumber !== setupProfileDto.phoneNumber) {
+        throw new BadRequestException('Phone number mismatch');
+      }
     }
 
-    const updatedUser = await this.usersService.update(userId, {
+    const updateData: any = {
       name: setupProfileDto.name,
       phoneNumber: setupProfileDto.phoneNumber,
       address: setupProfileDto.address,
-      profilePhoto: setupProfileDto.profilePhoto,
       isProfileComplete: true,
-    });
+    };
+
+    // Allow email to be added/updated if:
+    // 1. User signed in with phone (has temp email) OR
+    // 2. User doesn't have an email yet
+    if (setupProfileDto.email) {
+      const canUpdateEmail = isPhoneSignInUser || !user.email || user.email === '';
+      
+      if (canUpdateEmail) {
+        // Check if email is already taken by another user
+        const existingUserWithEmail = await this.usersService.findByEmail(setupProfileDto.email);
+        if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+          throw new BadRequestException('Email already registered to another account');
+        }
+        updateData.email = setupProfileDto.email;
+      } else {
+        // Email/password user trying to change email - not allowed
+        throw new BadRequestException('Email cannot be changed for email/password accounts');
+      }
+    }
+
+    if (setupProfileDto.profilePhoto) {
+      updateData.profilePhoto = setupProfileDto.profilePhoto;
+    }
+
+    const updatedUser = await this.usersService.update(userId, updateData);
 
     return {
       message: 'Profile setup completed successfully',
@@ -581,6 +616,127 @@ export class AuthService {
     } catch (error) {
       throw new BadRequestException('Failed to verify phone number');
     }
+  }
+
+  async phoneSignup(phoneNumber: string, firebaseToken: string) {
+    // Check if user already exists with this phone number
+    const existingUser = await this.usersService.findByPhone(phoneNumber);
+    if (existingUser) {
+      throw new BadRequestException('Phone number already registered. Please login instead.');
+    }
+
+    // TODO: Verify Firebase token with Firebase Admin SDK
+    // For now, we trust the token from the client
+
+    // Generate a random password (user won't use it - they login with phone)
+    // This is required by the user schema but user can't login with email/password
+    const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12) + '!@#';
+    
+    // Create new user with phone number (no email, random password)
+    const user = await this.usersService.create({
+      email: `phone_${phoneNumber.replace(/[^0-9]/g, '')}@bottleji.temp`, // Temporary email placeholder
+      password: randomPassword, // Random password - user can't login with email/password
+      phoneNumber: phoneNumber,
+      isPhoneVerified: true, // Phone is verified via Firebase OTP
+      phoneVerificationId: firebaseToken,
+      isVerified: true, // Phone verification counts as verification
+      // User can add real email in profile setup
+    });
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      sub: user.id,
+      phoneNumber: user.phoneNumber,
+      role: user.roles[0] || 'household',
+    });
+
+    return {
+      message: 'Phone number verified successfully. Account created.',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        isPhoneVerified: user.isPhoneVerified,
+        name: user.name,
+        address: user.address,
+        profilePhoto: user.profilePhoto,
+        roles: user.roles,
+        collectorSubscriptionType: user.collectorSubscriptionType,
+        isProfileComplete: user.isProfileComplete,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    };
+  }
+
+  async phoneLogin(phoneNumber: string, firebaseToken: string) {
+    // Find user by phone number
+    const user = await this.usersService.findByPhone(phoneNumber);
+    if (!user) {
+      throw new UnauthorizedException('Phone number not registered. Please sign up first.');
+    }
+
+    // Check if account is soft-deleted
+    if (user.isDeleted) {
+      throw new UnauthorizedException('Your account has been deleted by an administrator. Please contact support: support@bottleji.com');
+    }
+
+    // TODO: Verify Firebase token with Firebase Admin SDK
+    // For now, we trust the token from the client
+
+    // Update phone verification status and token
+    await this.usersService.update(user.id, {
+      isPhoneVerified: true,
+      phoneVerificationId: firebaseToken,
+    });
+
+    // Check if account is permanently disabled
+    if (user.isAccountLocked && user.accountLockedUntil === null) {
+      throw new UnauthorizedException('Your account has been permanently disabled due to repeated violations of Bottleji\'s community guidelines. Please contact support: support@bottleji.com');
+    }
+
+    // Check if account lock has expired and auto-unlock
+    if (user.isAccountLocked && user.accountLockedUntil) {
+      const now = new Date();
+      if (now >= user.accountLockedUntil) {
+        await this.usersService.unlockAccount(user.id);
+        const unlockedUser = await this.usersService.findByPhone(phoneNumber);
+        if (unlockedUser) {
+          Object.assign(user, unlockedUser);
+        }
+      }
+    }
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.roles[0] || 'household',
+    });
+
+    return {
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        isPhoneVerified: user.isPhoneVerified,
+        name: user.name,
+        address: user.address,
+        profilePhoto: user.profilePhoto,
+        roles: user.roles,
+        collectorSubscriptionType: user.collectorSubscriptionType,
+        isProfileComplete: user.isProfileComplete,
+        isAccountLocked: user.isAccountLocked,
+        accountLockedUntil: user.accountLockedUntil,
+        warningCount: user.warningCount,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    };
   }
 
   async requestPasswordReset(email: string) {

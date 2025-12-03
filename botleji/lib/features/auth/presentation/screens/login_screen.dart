@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:botleji/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:botleji/features/auth/presentation/screens/register_screen.dart';
+import 'package:botleji/features/auth/presentation/screens/phone_login_screen.dart';
 import 'package:botleji/features/home/presentation/screens/home_screen.dart';
 import '../providers/auth_provider.dart';
 import 'package:botleji/features/profile/presentation/screens/profile_setup_screen.dart';
@@ -664,6 +665,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Divider with "OR"
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              l10n.or,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone Login Button
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PhoneLoginScreen(),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: appGreenColor, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.phone_outlined, color: appGreenColor),
+                        label: Text(
+                          l10n.signInWithPhone,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: appGreenColor,
+                          ),
+                        ),
                       );
                     },
                   ),

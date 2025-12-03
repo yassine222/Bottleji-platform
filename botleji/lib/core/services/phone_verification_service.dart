@@ -8,8 +8,9 @@ import '../config/server_config.dart';
 class PhoneVerificationService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Debug mode flag - set to true to bypass Firebase Auth for testing
-  static const bool _debugMode = true; // Enable debug mode to bypass reCAPTCHA issues
+  // Debug mode flag - set to false to use Firebase Phone Auth for OTP delivery
+  // For iOS testing: hardcoded verification is enabled
+  static bool get _debugMode => Platform.isIOS; // iOS uses hardcoded verification for testing
   
   // Email verification mode flag - disabled for phone verification context
   static const bool _useEmailVerification = false;
@@ -47,14 +48,14 @@ class PhoneVerificationService {
       print('🔍 PhoneVerificationService: Sending SMS to $formattedPhone');
       print('🔍 PhoneVerificationService: Starting verification for: $formattedPhone');
       
-      // Debug mode - bypass Firebase Auth for testing
+      // Debug mode - bypass Firebase Auth for testing (iOS only)
       if (_debugMode) {
-        print('🔍 PhoneVerificationService: DEBUG MODE - Bypassing Firebase Auth');
-        print('🔍 PhoneVerificationService: DEBUG MODE - Bypassing Firebase verification');
+        print('🔍 PhoneVerificationService: DEBUG MODE (iOS) - Bypassing Firebase Auth');
+        print('🔍 PhoneVerificationService: iOS Debug - Use OTP: 123456 or 847293');
         
         // Simulate SMS sent
         await Future.delayed(const Duration(milliseconds: 1000));
-        onCodeSent('debug-verification-id');
+        onCodeSent('ios-debug-verification-id');
         return;
       }
 
@@ -147,16 +148,31 @@ class PhoneVerificationService {
     try {
       print('🔍 PhoneVerificationService: Verifying code: $smsCode for phone: $phoneNumber');
       
-      // Debug mode - bypass Firebase Auth for testing
+      // Debug mode - bypass Firebase Auth for testing (iOS only)
       if (_debugMode) {
-        print('🔍 PhoneVerificationService: DEBUG MODE - Bypassing Firebase verification');
+        print('🔍 PhoneVerificationService: DEBUG MODE (iOS) - Bypassing Firebase verification');
         print('🔍 PhoneVerificationService: Debug verification - Code: $smsCode');
         
-        if (smsCode == '847293') {
+        // Hardcoded OTP for iOS testing
+        if (smsCode == '123456' || smsCode == '847293') {
           print('🔍 PhoneVerificationService: Debug verification successful with code: $smsCode');
-          return await _verifyWithBackend(phoneNumber, 'debug-firebase-token');
+          
+          // Store a debug Firebase token for phone sign-in/signup
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('firebase_phone_auth_token', 'ios-debug-token-${DateTime.now().millisecondsSinceEpoch}');
+          
+          // For phone sign-in/signup (not logged in yet), just return true
+          final authToken = prefs.getString('auth_token');
+          if (authToken == null || authToken.isEmpty) {
+            print('🔍 PhoneVerificationService: iOS Debug - User not logged in, returning true for sign-in/signup');
+            return true;
+          }
+          
+          // For existing logged-in users updating phone, verify with backend
+          return await _verifyWithBackend(phoneNumber, 'ios-debug-token');
         } else {
           print('🔍 PhoneVerificationService: Debug verification failed - Invalid code: $smsCode');
+          print('🔍 PhoneVerificationService: iOS Debug - Use OTP: 123456 or 847293');
           return false;
         }
       }
@@ -195,16 +211,27 @@ class PhoneVerificationService {
             print('🔍 PhoneVerificationService: Auth token length: ${firebaseToken.length}');
             print('🔍 PhoneVerificationService: Auth token preview: ${firebaseToken.substring(0, 50)}...');
 
-            // Verify with backend
-            bool backendVerification = await _verifyWithBackend(phoneNumber, firebaseToken);
-            
-            if (backendVerification) {
-              // Clear stored verification data
-              await prefs.remove('firebase_verification_id');
-              await prefs.remove('firebase_resend_token');
+            // Store Firebase token for phone sign-in/signup
+            await prefs.setString('firebase_phone_auth_token', firebaseToken);
+
+            // Check if user is already logged in (has auth token)
+            final authToken = prefs.getString('auth_token');
+            if (authToken != null && authToken.isNotEmpty) {
+              // User is logged in - verify with backend (existing user updating phone)
+              bool backendVerification = await _verifyWithBackend(phoneNumber, firebaseToken);
+              
+              if (backendVerification) {
+                // Clear stored verification data
+                await prefs.remove('firebase_verification_id');
+                await prefs.remove('firebase_resend_token');
+              }
+              
+              return backendVerification;
+            } else {
+              // User is not logged in - this is for sign-in/signup
+              // Just return true, token is stored for phoneLogin/phoneSignup to use
+              return true;
             }
-            
-            return backendVerification;
           } else {
             print('🔍 PhoneVerificationService: Failed to get Firebase token');
             return false;

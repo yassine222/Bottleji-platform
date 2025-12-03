@@ -15,8 +15,7 @@ import '../../../../core/services/local_notification_service.dart';
 import '../../../../core/services/network_detection_service.dart';
 import '../../../../main.dart';
 import 'package:botleji/l10n/app_localizations.dart';
-// TODO: FCM is not yet implemented
-// import '../../../../core/services/fcm_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../controllers/collector_subscription_controller.dart';
 import '../../../collector/controllers/collector_application_controller.dart';
 import '../../data/models/user_data.dart' as auth_models;
@@ -336,25 +335,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
               // Don't fail login if WebSocket connection fails
             }
             
-            // TODO: Save FCM token to backend after login
-            // FCM is not yet implemented, so commenting out for now
-            // try {
-            //   final fcmService = FCMService();
-            //   await fcmService.saveTokenToBackend();
-            //   AppLogger.log('✅ FCM token saved to backend after login');
-            // } catch (e) {
-            //   AppLogger.log('❌ Error saving FCM token after login: $e');
-            //   // Don't fail login if FCM token save fails
-            // }
+            // Save FCM token to backend after login
+            try {
+              final fcmService = FCMService();
+              await fcmService.saveTokenToBackend();
+              AppLogger.log('✅ FCM token saved to backend after login');
+            } catch (e) {
+              AppLogger.log('❌ Error saving FCM token after login: $e');
+              // Don't fail login if FCM token save fails
+            }
             
             // Note: Skip syncing application status after login since we already have fresh user data
             // syncApplicationStatusFromDatabase().catchError((e) {
-            //   AppLogger.log('Error syncing application status after login: $e');
-            // });
             
             return user;
           } else {
-            AppLogger.log('Login failed - Missing user or token');
+            AppLogger.log('Login failed - no user or token');
             return null;
           }
         },
@@ -365,7 +361,126 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       );
     } catch (e, stack) {
       AppLogger.log('Login exception: $e');
-      // Re-throw the exception so the UI can handle it
+      rethrow;
+    }
+  }
+
+  Future<UserData?> phoneLogin(String phoneNumber, String firebaseToken, WidgetRef ref) async {
+    try {
+      AppLogger.log('Starting phone login process...');
+      
+      final response = await _authRepository.phoneLogin(
+        phoneNumber: phoneNumber,
+        firebaseToken: firebaseToken,
+      );
+      AppLogger.log('Phone login response: $response');
+      
+      return response.when(
+        success: (user, token, message) async {
+          AppLogger.log('Phone login success - User: $user, Token: $token, Message: $message');
+          
+          if (user != null && user.isAccountLocked && user.accountLockedUntil == null) {
+            AppLogger.log('🔒 User is permanently disabled - throwing error');
+            throw Exception('Your account has been permanently disabled due to repeated violations of Bottleji\'s community guidelines. Please contact support: support@bottleji.com');
+          }
+          
+          if (user != null && token != null) {
+            AppLogger.log('Saving user data and token');
+            _saveAuth(user);
+            _saveToken(token);
+            state = AsyncValue.data(user);
+            
+            try {
+              await _setUserModeFromRoles(user.roles);
+            } catch (e, stackTrace) {
+              AppLogger.log('❌ Error setting user mode: $e');
+              // Don't fail login if user mode setting fails
+            }
+            
+            try {
+              _connectToNotifications(token, ref);
+            } catch (e) {
+              AppLogger.log('❌ Error connecting to notifications: $e');
+            }
+            
+            try {
+              final fcmService = FCMService();
+              await fcmService.saveTokenToBackend();
+              AppLogger.log('✅ FCM token saved to backend after phone login');
+            } catch (e) {
+              AppLogger.log('❌ Error saving FCM token after phone login: $e');
+            }
+            
+            return user;
+          } else {
+            AppLogger.log('Phone login failed - no user or token');
+            return null;
+          }
+        },
+        error: (message, statusCode) {
+          AppLogger.log('Phone login error: $message (Status: $statusCode)');
+          throw Exception(message);
+        },
+      );
+    } catch (e) {
+      AppLogger.log('Phone login exception: $e');
+      rethrow;
+    }
+  }
+
+  Future<UserData?> phoneSignup(String phoneNumber, String firebaseToken, WidgetRef ref) async {
+    try {
+      AppLogger.log('Starting phone signup process...');
+      
+      final response = await _authRepository.phoneSignup(
+        phoneNumber: phoneNumber,
+        firebaseToken: firebaseToken,
+      );
+      AppLogger.log('Phone signup response: $response');
+      
+      return response.when(
+        success: (user, token, message) async {
+          AppLogger.log('Phone signup success - User: $user, Token: $token, Message: $message');
+          
+          if (user != null && token != null) {
+            AppLogger.log('Saving user data and token');
+            _saveAuth(user);
+            _saveToken(token);
+            state = AsyncValue.data(user);
+            
+            try {
+              await _setUserModeFromRoles(user.roles);
+            } catch (e, stackTrace) {
+              AppLogger.log('❌ Error setting user mode: $e');
+            }
+            
+            try {
+              _connectToNotifications(token, ref);
+            } catch (e) {
+              AppLogger.log('❌ Error connecting to notifications: $e');
+            }
+            
+            try {
+              final fcmService = FCMService();
+              await fcmService.saveTokenToBackend();
+              AppLogger.log('✅ FCM token saved to backend after phone signup');
+            } catch (e) {
+              AppLogger.log('❌ Error saving FCM token after phone signup: $e');
+            }
+            
+            return user;
+          } else {
+            AppLogger.log('Phone signup failed - no user or token');
+            return null;
+          }
+        },
+        error: (message, statusCode) {
+          AppLogger.log('Phone signup error: $message (Status: $statusCode)');
+          throw Exception(message);
+        },
+      );
+    } catch (e) {
+      AppLogger.log('Phone signup exception: $e');
       rethrow;
     }
   }
@@ -866,6 +981,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
   }
 
   Future<void> setupProfile({
+  String? email,
   String? name,
   String? phone,
   String? address,
@@ -878,12 +994,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
     }
 
     AppLogger.log('setupProfile: Sending data:');
+    AppLogger.log('  email: $email');
     AppLogger.log('  name: $name');
     AppLogger.log('  phone: $phone');
     AppLogger.log('  address: $address');
     AppLogger.log('  profilePhoto: $profilePhoto');
 
     final response = await _authRepository.setupProfile(
+      email: email,
       name: name,
       phoneNumber: phone,
       address: address,
@@ -941,6 +1059,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
 
 
   Future<void> updateProfile({
+    String? email,
     String? name,
     String? phone,
     String? address,
@@ -951,12 +1070,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       if (currentUser == null) throw Exception('No user logged in');
 
       AppLogger.log('updateProfile: Sending data:');
+      AppLogger.log('  email: $email');
       AppLogger.log('  name: $name');
       AppLogger.log('  phone: $phone');
       AppLogger.log('  address: $address');
       AppLogger.log('  profilePhoto: $profilePhoto');
 
       final response = await _authRepository.updateProfile(
+        email: email,
         name: name,
         phoneNumber: phone,
         address: address,

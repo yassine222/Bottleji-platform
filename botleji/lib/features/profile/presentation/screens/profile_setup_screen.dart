@@ -30,10 +30,14 @@ final GoogleMapsPlaces _globalPlaces = GoogleMapsPlaces(apiKey: kGoogleApiKey);
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   final String email;
   final bool isNewUserSetup;
+  final String? phoneNumber;
+  final bool isPhoneVerified;
   
   const ProfileSetupScreen({
     required this.email, 
     this.isNewUserSetup = false,
+    this.phoneNumber,
+    this.isPhoneVerified = false,
     Key? key,
   }) : super(key: key);
 
@@ -44,6 +48,7 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneFocusNode = FocusNode();
@@ -130,6 +135,23 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _initializeScreen() async {
     try {
+      // Initialize phone number if provided and already verified (from phone sign-in)
+      if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty && widget.isPhoneVerified) {
+        _phoneController.text = widget.phoneNumber!;
+        _isPhoneVerified = true;
+        _originalPhone = widget.phoneNumber!;
+        print('📱 ProfileSetupScreen: Phone number initialized from phone sign-in: ${widget.phoneNumber}');
+      }
+      
+      // Initialize email field
+      // For phone sign-in users, email might be empty or a temp email
+      // For email sign-in users, email is already set
+      _emailController.text = widget.email;
+      if (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) {
+        // Phone sign-in user - clear temp email, allow them to add real email
+        _emailController.clear();
+      }
+      
       // Don't initialize original values here - they will be set in the build method
       // based on whether it's a new user setup or existing user
       
@@ -172,6 +194,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     _resendTimer?.cancel();
     _addressSearchDebounce?.cancel();
     _phoneFocusNode.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -338,6 +361,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   // Helper method to determine if phone is verified
   bool _isPhoneVerifiedStatus(UserData? user) {
+    // If phone was already verified from phone sign-in, it's verified
+    if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+      if (_phoneController.text == widget.phoneNumber || _phoneController.text.isEmpty) {
+        return true; // Phone is verified from sign-in
+      }
+    }
+    
     // If user is actively editing the phone field, show as needs verification
     if (_isPhoneModified || (_hasPhoneBeenCleared && _originalPhone != null && _originalPhone!.isNotEmpty)) {
       return false; // Show as needs verification
@@ -367,6 +397,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   // Helper method to determine if verification UI should be shown
   bool _shouldShowVerificationUI(UserData? user) {
+    // Don't show verification UI if phone is already verified from phone sign-in
+    if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+      if (_phoneController.text == widget.phoneNumber || _phoneController.text.isEmpty) {
+        return false; // Phone already verified, don't show verification UI
+      }
+    }
+    
     // Show verification UI if:
     // 1. Phone has been modified (user is changing it)
     // 2. Phone is not verified and there's a phone number
@@ -753,7 +790,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     }
     
     // Check phone verification for new users or when phone is changed and not empty
-    if (widget.isNewUserSetup || (_isPhoneModified && _phoneController.text.isNotEmpty)) {
+    // Skip if phone is already verified from phone sign-in
+    if (!widget.isPhoneVerified && (widget.isNewUserSetup || (_isPhoneModified && _phoneController.text.isNotEmpty))) {
       if (!_isPhoneVerified) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -774,6 +812,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       if (_fullNameController.text != _originalName) {
         changedFields['name'] = _fullNameController.text;
         print('Name changed from "$_originalName" to "${_fullNameController.text}"');
+      }
+      
+      // Check if email changed (for phone sign-in users)
+      final isPhoneSignInUser = widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp');
+      if (isPhoneSignInUser && _emailController.text.isNotEmpty && _emailController.text != widget.email) {
+        changedFields['email'] = _emailController.text;
+        print('Email changed from "${widget.email}" to "${_emailController.text}"');
       }
       
       // Check if phone changed and is not empty
@@ -836,6 +881,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (widget.isNewUserSetup) {
           // For new users, use setupProfile which sets isProfileComplete to true
           await ref.read(authNotifierProvider.notifier).setupProfile(
+            email: changedFields['email'] ?? (isPhoneSignInUser ? _emailController.text : null),
             name: changedFields['name'] ?? _originalName,
             phone: changedFields['phone'] ?? _originalPhone,
             address: changedFields['address'] ?? _originalAddress,
@@ -844,6 +890,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         } else {
           // For existing users, use updateProfile
         await ref.read(authNotifierProvider.notifier).updateProfile(
+          email: changedFields['email'],
           name: changedFields['name'] ?? _originalName,
           phone: changedFields['phone'] ?? _originalPhone,
           address: changedFields['address'] ?? _originalAddress,
@@ -1231,13 +1278,27 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               ),
                               const SizedBox(height: 20),
                               
-                              // Email Field (Read-only)
+                              // Email Field
+                              // For phone sign-in users: editable (can add email)
+                              // For email sign-in users: read-only (can't change)
                               _buildFormField(
-                                controller: TextEditingController(text: widget.email),
+                                controller: _emailController,
                                 label: AppLocalizations.of(context).email,
                                 icon: Icons.email_outlined,
-                                readOnly: true,
-                                iconColor: AppColors.lightSecondary,
+                                readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')),
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) {
+                                  // Only validate if email is provided (optional for phone sign-in users)
+                                  if (v != null && v.isNotEmpty) {
+                                    if (!v.contains('@') || !v.contains('.')) {
+                                      return AppLocalizations.of(context).pleaseEnterValidEmail;
+                                    }
+                                  }
+                                  return null;
+                                },
+                                iconColor: (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp'))
+                                    ? appGreenColor
+                                    : AppColors.lightSecondary,
                               ),
                               const SizedBox(height: 20),
                               
