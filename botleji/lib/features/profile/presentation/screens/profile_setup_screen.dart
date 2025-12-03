@@ -559,30 +559,45 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // Phone-registered users can edit email (to correct it if wrong)
     // Email/password users cannot edit email (already verified during signup)
     
-    // Check registeredWithPhone flag
+    // Primary check: registeredWithPhone flag
     if (user?.registeredWithPhone == true) {
-      print('📧 _canEditEmail: User registered with phone - email is editable');
+      print('📧 _canEditEmail: User registered with phone (flag=true) - email is editable');
       return true;
     }
     
-    // Fallback: if registeredWithPhone is null/undefined, check if email is temp email format
-    // This handles cases where the flag might not be set correctly
-    if (user?.registeredWithPhone == null && 
-        (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp'))) {
-      print('📧 _canEditEmail: registeredWithPhone is null but email is temp format - allowing edit');
+    // Fallback 1: Check if email is temp email format (phone sign-in indicator)
+    if (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) {
+      print('📧 _canEditEmail: Email is temp format - phone user - allowing edit');
       return true;
     }
     
-    // Also check if user doesn't have email or has unverified email (likely phone user)
-    if (user?.registeredWithPhone == null && 
-        (user?.email == null || user!.email.isEmpty || (user.isEmailVerified == false && user.email.isNotEmpty))) {
-      // If email is not verified, likely a phone user who added email later
-      print('📧 _canEditEmail: Email not verified - likely phone user - allowing edit');
-      return true;
+    // Fallback 2: If registeredWithPhone is null/undefined, use heuristics
+    if (user?.registeredWithPhone == null) {
+      // Check if user has verified phone but unverified email (likely phone user)
+      if (user?.isPhoneVerified == true && (user?.isEmailVerified == false || user?.isEmailVerified == null)) {
+        print('📧 _canEditEmail: Phone verified but email not verified - likely phone user - allowing edit');
+        return true;
+      }
+      
+      // Check if user has phone number but email is unverified or null
+      if (user?.phoneNumber != null && 
+          user!.phoneNumber!.isNotEmpty && 
+          (user.isEmailVerified == false || user.isEmailVerified == null)) {
+        print('📧 _canEditEmail: Has phone number but email unverified - likely phone user - allowing edit');
+        return true;
+      }
+      
+      // If email is verified, it's likely an email/password user (don't allow edit)
+      if (user?.isEmailVerified == true) {
+        print('📧 _canEditEmail: Email is verified - email/password user - read-only');
+        return false;
+      }
     }
     
-    print('📧 _canEditEmail: Email/password user - email is read-only. registeredWithPhone=${user?.registeredWithPhone}, isEmailVerified=${user?.isEmailVerified}');
-    return false;
+    // Default: if we can't determine, be conservative and allow editing
+    // (Better to allow editing than block phone users)
+    print('📧 _canEditEmail: Cannot determine user type - defaulting to editable. registeredWithPhone=${user?.registeredWithPhone}, isEmailVerified=${user?.isEmailVerified}, isPhoneVerified=${user?.isPhoneVerified}');
+    return true; // Default to editable for safety
   }
 
   // Validate email availability with backend
