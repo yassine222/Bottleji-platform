@@ -544,6 +544,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return l10n.phoneNumberNotVerified;
   }
 
+  // Helper method to determine if email can be edited
+  bool _canEditEmail(UserData? user) {
+    // For new users: check if email is temp email (phone sign-in)
+    if (widget.isNewUserSetup) {
+      return widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp');
+    }
+    
+    // For existing users: check if user registered with phone
+    // Phone-registered users can edit email (to correct it if wrong)
+    // Email/password users cannot edit email (already verified during signup)
+    return user?.registeredWithPhone == true;
+  }
+
   // Helper method to determine if verification UI should be shown
   bool _shouldShowVerificationUI(UserData? user) {
     // Don't show verification UI if phone is already verified from phone sign-in
@@ -1575,8 +1588,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailController,
-                                    readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) && 
-                                              !(user?.registeredWithPhone == true),
+                                    readOnly: !_canEditEmail(user),
                                     keyboardType: TextInputType.emailAddress,
                                     style: TextStyle(color: theme.colorScheme.onSurface),
                                     decoration: InputDecoration(
