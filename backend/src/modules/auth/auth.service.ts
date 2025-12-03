@@ -330,25 +330,35 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
+    // Normalize phone number if provided
+    const normalizedPhone = setupProfileDto.phoneNumber 
+      ? this.normalizePhoneNumber(setupProfileDto.phoneNumber)
+      : null;
+    
+    // Normalize existing user phone for comparison
+    const normalizedUserPhone = user.phoneNumber 
+      ? this.normalizePhoneNumber(user.phoneNumber)
+      : null;
+
     // For phone sign-in users: phone is already verified, skip verification check
     // For email sign-in users: phone must be verified
     const isPhoneSignInUser = user.email?.startsWith('phone_') && user.email?.endsWith('@bottleji.temp');
     
     if (!isPhoneSignInUser) {
       // Email/password user - phone must be verified
-      if (!user.isPhoneVerified || user.phoneNumber !== setupProfileDto.phoneNumber) {
+      if (!user.isPhoneVerified || normalizedUserPhone !== normalizedPhone) {
         throw new BadRequestException('Phone number must be verified before completing profile setup');
       }
     } else {
-      // Phone sign-in user - phone is already verified, just ensure it matches
-      if (user.phoneNumber !== setupProfileDto.phoneNumber) {
+      // Phone sign-in user - phone is already verified, just ensure it matches (normalized)
+      if (normalizedUserPhone !== normalizedPhone) {
         throw new BadRequestException('Phone number mismatch');
       }
     }
 
     const updateData: any = {
       name: setupProfileDto.name,
-      phoneNumber: setupProfileDto.phoneNumber,
+      phoneNumber: normalizedPhone || setupProfileDto.phoneNumber, // Store normalized phone
       address: setupProfileDto.address,
       isProfileComplete: true,
     };
@@ -397,7 +407,8 @@ export class AuthService {
       updateData.name = updateProfileDto.name;
     }
     if (updateProfileDto.phoneNumber !== undefined) {
-      updateData.phoneNumber = updateProfileDto.phoneNumber;
+      // Normalize phone number before storing
+      updateData.phoneNumber = this.normalizePhoneNumber(updateProfileDto.phoneNumber);
     }
     if (updateProfileDto.address !== undefined) {
       updateData.address = updateProfileDto.address;
@@ -625,9 +636,23 @@ export class AuthService {
     }
   }
 
+  /**
+   * Normalize phone number by removing spaces, dashes, and keeping only digits and +
+   */
+  private normalizePhoneNumber(phoneNumber: string): string {
+    if (!phoneNumber) return phoneNumber;
+    // Keep + at the start if present, then keep only digits
+    const hasPlus = phoneNumber.trim().startsWith('+');
+    const digitsOnly = phoneNumber.replace(/[^\d]/g, '');
+    return hasPlus ? `+${digitsOnly}` : digitsOnly;
+  }
+
   async phoneSignup(phoneNumber: string, firebaseToken: string) {
-    // Check if user already exists with this phone number
-    const existingUser = await this.usersService.findByPhone(phoneNumber);
+    // Normalize phone number before checking/creating
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+    
+    // Check if user already exists with this phone number (normalized)
+    const existingUser = await this.usersService.findByPhone(normalizedPhone);
     if (existingUser) {
       throw new BadRequestException('Phone number already registered. Please login instead.');
     }
@@ -640,10 +665,11 @@ export class AuthService {
     const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12) + '!@#';
     
     // Create new user with phone number (no email, random password)
+    // Store normalized phone number for consistency
     const user = await this.usersService.create({
-      email: `phone_${phoneNumber.replace(/[^0-9]/g, '')}@bottleji.temp`, // Temporary email placeholder
+      email: `phone_${normalizedPhone.replace(/[^0-9]/g, '')}@bottleji.temp`, // Temporary email placeholder
       password: randomPassword, // Random password - user can't login with email/password
-      phoneNumber: phoneNumber,
+      phoneNumber: normalizedPhone, // Store normalized phone number
       isPhoneVerified: true, // Phone is verified via Firebase OTP
       phoneVerificationId: firebaseToken,
       isVerified: true, // Phone verification counts as verification
@@ -679,8 +705,11 @@ export class AuthService {
   }
 
   async phoneLogin(phoneNumber: string, firebaseToken: string) {
-    // Find user by phone number
-    const user = await this.usersService.findByPhone(phoneNumber);
+    // Normalize phone number before searching
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+    
+    // Find user by phone number (normalized)
+    const user = await this.usersService.findByPhone(normalizedPhone);
     if (!user) {
       throw new UnauthorizedException('Phone number not registered. Please sign up first.');
     }
@@ -709,7 +738,7 @@ export class AuthService {
       const now = new Date();
       if (now >= user.accountLockedUntil) {
         await this.usersService.unlockAccount(user.id);
-        const unlockedUser = await this.usersService.findByPhone(phoneNumber);
+        const unlockedUser = await this.usersService.findByPhone(normalizedPhone);
         if (unlockedUser) {
           Object.assign(user, unlockedUser);
         }

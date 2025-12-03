@@ -36,8 +36,46 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  /**
+   * Normalize phone number by removing spaces, dashes, and keeping only digits and +
+   * Examples: "+1 234 567 8900" -> "+12345678900", "123-456-7890" -> "1234567890"
+   */
+  private normalizePhoneNumber(phoneNumber: string): string {
+    if (!phoneNumber) return phoneNumber;
+    // Trim whitespace
+    const trimmed = phoneNumber.trim();
+    // Keep + at the start if present, then keep only digits
+    const hasPlus = trimmed.startsWith('+');
+    const digitsOnly = trimmed.replace(/[^\d]/g, '');
+    return hasPlus ? `+${digitsOnly}` : digitsOnly;
+  }
+
   async findByPhone(phoneNumber: string): Promise<User | null> {
-    return this.userModel.findOne({ phoneNumber: phoneNumber }).exec();
+    if (!phoneNumber) return null;
+    
+    const normalized = this.normalizePhoneNumber(phoneNumber);
+    
+    // First try exact match with normalized phone
+    let user = await this.userModel.findOne({ phoneNumber: normalized }).exec();
+    
+    // If not found, try with original (in case stored differently)
+    if (!user && phoneNumber !== normalized) {
+      user = await this.userModel.findOne({ phoneNumber: phoneNumber }).exec();
+    }
+    
+    // If still not found, try searching by digits only (ignore + and formatting)
+    if (!user) {
+      const digitsOnly = normalized.replace(/[^\d]/g, '');
+      // Search for phone numbers that match when we remove all non-digits
+      const allUsers = await this.userModel.find({ phoneNumber: { $exists: true, $ne: null } }).exec();
+      user = allUsers.find(u => {
+        if (!u.phoneNumber) return false;
+        const userDigits = u.phoneNumber.replace(/[^\d]/g, '');
+        return userDigits === digitsOnly;
+      }) || null;
+    }
+    
+    return user;
   }
 
   async findByVerificationToken(token: string): Promise<User | null> {
