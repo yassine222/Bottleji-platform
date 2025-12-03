@@ -352,8 +352,8 @@ class UserData {
       name: userData.name,
       phoneNumber: userData.phoneNumber,
       isPhoneVerified: userData.isPhoneVerified,
-      isEmailVerified: userData.isEmailVerified,
-      registeredWithPhone: userData.registeredWithPhone,
+      isEmailVerified: userData.isEmailVerified ?? false, // Ensure default if null
+      registeredWithPhone: userData.registeredWithPhone ?? false, // Ensure default if null
       address: userData.address,
       profilePhoto: userData.profilePhoto,
       roles: userData.roles,
