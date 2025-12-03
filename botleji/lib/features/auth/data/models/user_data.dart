@@ -60,6 +60,7 @@ class UserData {
   final String? phoneNumber;
   final bool? isPhoneVerified;
   final bool? isEmailVerified; // Track if email is verified (for phone users who add email)
+  final bool? registeredWithPhone; // Track if user originally registered with phone number
   final String? address;
   final String? profilePhoto;
   final List<String> roles;
@@ -105,6 +106,7 @@ class UserData {
     this.phoneNumber,
     this.isPhoneVerified,
     this.isEmailVerified,
+    this.registeredWithPhone,
     this.address,
     this.profilePhoto,
     required this.roles,
@@ -179,6 +181,7 @@ class UserData {
     final phoneNumber = json['phoneNumber'] ?? json['phone'];
     final isPhoneVerified = json['isPhoneVerified'] as bool?;
     final isEmailVerified = json['isEmailVerified'] as bool?;
+    final registeredWithPhone = json['registeredWithPhone'] as bool?;
     final address = json['address'];
     final profilePhoto = json['profilePhoto'];
     final collectorSubscriptionType = json['collectorSubscriptionType'] ?? 'basic';
@@ -323,6 +326,7 @@ class UserData {
       'phoneNumber': phoneNumber,
       'isPhoneVerified': isPhoneVerified ?? false,
       'isEmailVerified': isEmailVerified ?? false,
+      'registeredWithPhone': registeredWithPhone ?? false,
       'address': address,
       'profilePhoto': profilePhoto,
       'collectorSubscriptionType': collectorSubscriptionType,
@@ -349,6 +353,7 @@ class UserData {
       phoneNumber: userData.phoneNumber,
       isPhoneVerified: userData.isPhoneVerified,
       isEmailVerified: userData.isEmailVerified,
+      registeredWithPhone: userData.registeredWithPhone,
       address: userData.address,
       profilePhoto: userData.profilePhoto,
       roles: userData.roles,
@@ -538,6 +543,7 @@ class UserData {
         'phoneNumber': phoneNumber,
         'isPhoneVerified': isPhoneVerified,
         'isEmailVerified': isEmailVerified,
+        'registeredWithPhone': registeredWithPhone,
         'address': address,
         'profilePhoto': profilePhoto,
         'roles': roles,
@@ -589,6 +595,7 @@ class UserData {
       name: name ?? this.name,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      registeredWithPhone: registeredWithPhone ?? this.registeredWithPhone,
       address: address ?? this.address,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       roles: roles ?? this.roles,

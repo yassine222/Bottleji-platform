@@ -429,6 +429,9 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
+    // Check if user is phone-registered (can change email) or email-registered (cannot change email)
+    const isPhoneSignInUser = user.registeredWithPhone === true;
+
     // Only update fields that are provided (not null/undefined)
     const updateData: any = {};
     
@@ -444,6 +447,45 @@ export class AuthService {
     }
     if (updateProfileDto.profilePhoto !== undefined) {
       updateData.profilePhoto = updateProfileDto.profilePhoto;
+    }
+
+    // Handle email updates - only allow for phone-registered users
+    if (updateProfileDto.email !== undefined) {
+      const canUpdateEmail = isPhoneSignInUser || !user.email || user.email === '';
+      
+      if (canUpdateEmail) {
+        // Check if email is already taken by another user
+        const existingUserWithEmail = await this.usersService.findByEmail(updateProfileDto.email);
+        if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+          throw new BadRequestException('Email already registered to another account');
+        }
+        
+        const isNewEmail = !user.email || user.email !== updateProfileDto.email;
+        updateData.email = updateProfileDto.email;
+        
+        // For phone users adding/changing email: send verification email (soft verification)
+        if (isPhoneSignInUser && isNewEmail) {
+          const emailOtp = this.generateOTP();
+          const emailOtpExpiresAt = new Date();
+          emailOtpExpiresAt.setMinutes(emailOtpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
+          
+          updateData.isEmailVerified = false; // Mark as unverified
+          updateData.emailVerificationOTP = emailOtp;
+          updateData.emailOtpExpiresAt = emailOtpExpiresAt;
+          updateData.emailOtpAttempts = 0;
+          
+          // Send verification email in background (don't block profile update)
+          this.emailService.sendOTPEmail(updateProfileDto.email, emailOtp).catch((error) => {
+            console.error('Failed to send email verification OTP:', error);
+            // Don't fail profile update if email fails
+          });
+          
+          console.log(`📧 Email verification OTP sent to ${updateProfileDto.email} for phone user ${userId}`);
+        }
+      } else {
+        // Email/password user trying to change email - not allowed
+        throw new BadRequestException('Email cannot be changed for email/password accounts');
+      }
     }
 
     const updatedUser = await this.usersService.update(userId, updateData);

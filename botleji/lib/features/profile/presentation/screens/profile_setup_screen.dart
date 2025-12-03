@@ -939,6 +939,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
         return;
       }
+      
+      // Validate email if provided (for phone sign-in users)
+      final isPhoneSignInUser = widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp');
+      if (isPhoneSignInUser && _emailController.text.isNotEmpty) {
+        // Email validation will be done on backend, but we can do basic format check here
+        if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).pleaseEnterValidEmail),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
     }
     
     // Check phone verification for new users or when phone is changed and not empty
@@ -966,11 +981,27 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         print('Name changed from "$_originalName" to "${_fullNameController.text}"');
       }
       
-      // Check if email changed (for phone sign-in users)
-      final isPhoneSignInUser = widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp');
+      // Check if email changed (for phone sign-in users only)
+      // For email/password users, email cannot be changed
+      final isPhoneSignInUser = (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) || 
+                                 (user?.registeredWithPhone == true);
+      
+      // Only allow email changes for phone sign-in users
       if (isPhoneSignInUser && _emailController.text.isNotEmpty && _emailController.text != widget.email) {
         changedFields['email'] = _emailController.text;
         print('Email changed from "${widget.email}" to "${_emailController.text}"');
+      } else if (!isPhoneSignInUser && _emailController.text != widget.email && _emailController.text.isNotEmpty) {
+        // Email/password user trying to change email - show error
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email cannot be changed for email/password accounts'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
       }
       
       // Check if phone changed and is not empty, OR if phone is already verified from phone sign-in (need to include it)
@@ -1539,7 +1570,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailController,
-                                    readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')),
+                                    readOnly: !(widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) && 
+                                              !(user?.registeredWithPhone == true),
                                     keyboardType: TextInputType.emailAddress,
                                     style: TextStyle(color: theme.colorScheme.onSurface),
                                     decoration: InputDecoration(
