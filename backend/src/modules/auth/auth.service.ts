@@ -565,6 +565,7 @@ export class AuthService {
         rewardHistory: user.rewardHistory || [],
         totalEarnings: user.totalEarnings || 0,
         earningsHistory: user.earningsHistory || [],
+        registeredWithPhone: user.registeredWithPhone ?? false,
       },
     };
 
