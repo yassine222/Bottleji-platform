@@ -939,21 +939,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
         return;
       }
-      
-      // Validate email if provided (for phone sign-in users)
-      final isPhoneSignInUser = widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp');
-      if (isPhoneSignInUser && _emailController.text.isNotEmpty) {
-        // Email validation will be done on backend, but we can do basic format check here
-        if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context).pleaseEnterValidEmail),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
     }
     
     // Check phone verification for new users or when phone is changed and not empty
@@ -981,10 +966,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         print('Name changed from "$_originalName" to "${_fullNameController.text}"');
       }
       
+      // Get current user to check registration method
+      final userAsync = ref.read(authNotifierProvider);
+      final currentUser = userAsync.value;
+      
       // Check if email changed (for phone sign-in users only)
       // For email/password users, email cannot be changed
       final isPhoneSignInUser = (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp')) || 
-                                 (user?.registeredWithPhone == true);
+                                 (currentUser?.registeredWithPhone == true);
       
       // Only allow email changes for phone sign-in users
       if (isPhoneSignInUser && _emailController.text.isNotEmpty && _emailController.text != widget.email) {
@@ -1002,6 +991,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
         setState(() => _isLoading = false);
         return;
+      }
+      
+      // For new users (complete profile), validate email if provided
+      if (widget.isNewUserSetup && isPhoneSignInUser && _emailController.text.isNotEmpty) {
+        // Email validation will be done on backend, but we can do basic format check here
+        if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).pleaseEnterValidEmail),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
       }
       
       // Check if phone changed and is not empty, OR if phone is already verified from phone sign-in (need to include it)
