@@ -521,13 +521,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
     }
     
+    // For email/password users, only check widget.isPhoneVerified (not user.isPhoneVerified)
+    // because user.isPhoneVerified might be incorrectly set or default to false
+    // Only trust widget.isPhoneVerified which is explicitly passed from the auth flow
+    if (!widget.isPhoneVerified) {
+      // Email/password user - phone is not verified yet
+      return false;
+    }
+    
     // If user is actively editing the phone field, show as needs verification
     if (_isPhoneModified || (_hasPhoneBeenCleared && _originalPhone != null && _originalPhone!.isNotEmpty)) {
       return false; // Show as needs verification
     }
     
-    // Check if the user has a phone number and it's verified
-    if (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) {
+    // For phone sign-in users, check if the user has a phone number and it's verified
+    // Only check user.isPhoneVerified if widget.isPhoneVerified is true (phone sign-in user)
+    if (widget.isPhoneVerified && user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) {
       return user.isPhoneVerified == true;
     }
     return false;
