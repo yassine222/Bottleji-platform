@@ -980,7 +980,7 @@ export class AuthService {
 
     return {
       message: 'Email verification code sent successfully',
-      otp, // Remove this in production
+      otp: emailOtp, // Remove this in production
     };
   }
 
