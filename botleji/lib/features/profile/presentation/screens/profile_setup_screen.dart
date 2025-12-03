@@ -558,9 +558,31 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // For existing users: check if user registered with phone
     // Phone-registered users can edit email (to correct it if wrong)
     // Email/password users cannot edit email (already verified during signup)
-    final canEdit = user?.registeredWithPhone == true;
-    print('📧 _canEditEmail: registeredWithPhone=${user?.registeredWithPhone}, canEdit=$canEdit, email=${user?.email}');
-    return canEdit;
+    
+    // Check registeredWithPhone flag
+    if (user?.registeredWithPhone == true) {
+      print('📧 _canEditEmail: User registered with phone - email is editable');
+      return true;
+    }
+    
+    // Fallback: if registeredWithPhone is null/undefined, check if email is temp email format
+    // This handles cases where the flag might not be set correctly
+    if (user?.registeredWithPhone == null && 
+        (widget.email.startsWith('phone_') && widget.email.endsWith('@bottleji.temp'))) {
+      print('📧 _canEditEmail: registeredWithPhone is null but email is temp format - allowing edit');
+      return true;
+    }
+    
+    // Also check if user doesn't have email or has unverified email (likely phone user)
+    if (user?.registeredWithPhone == null && 
+        (user?.email == null || user!.email.isEmpty || (user.isEmailVerified == false && user.email.isNotEmpty))) {
+      // If email is not verified, likely a phone user who added email later
+      print('📧 _canEditEmail: Email not verified - likely phone user - allowing edit');
+      return true;
+    }
+    
+    print('📧 _canEditEmail: Email/password user - email is read-only. registeredWithPhone=${user?.registeredWithPhone}, isEmailVerified=${user?.isEmailVerified}');
+    return false;
   }
 
   // Validate email availability with backend
