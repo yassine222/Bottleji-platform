@@ -2629,6 +2629,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
       /// Address field
         FormField<String>(
+          autovalidateMode: AutovalidateMode.disabled,
           validator: (value) {
           // Validate only if new user or address changed
           final l10n = AppLocalizations.of(context);
