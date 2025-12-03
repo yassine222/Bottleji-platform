@@ -1667,6 +1667,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                   TextFormField(
                                     controller: _emailController,
                                     readOnly: !_canEditEmail(user),
+                                    enabled: _canEditEmail(user),
                                     keyboardType: TextInputType.emailAddress,
                                     style: TextStyle(color: theme.colorScheme.onSurface),
                                     decoration: InputDecoration(
