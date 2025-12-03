@@ -2054,7 +2054,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                         children: [
                                           Icon(Icons.verified, color: Colors.green, size: 20),
                                           const SizedBox(width: 12),
-                                          Flexible(
+                                          Expanded(
                                             child: Text(
                                               widget.phoneNumber!,
                                               style: TextStyle(
@@ -2073,9 +2073,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               color: Colors.green,
                                               borderRadius: BorderRadius.circular(8),
                                             ),
-                                            child: Text(
-                                              AppLocalizations.of(context).phoneNumberVerified,
-                                              style: const TextStyle(
+                                            child: const Text(
+                                              'Verified',
+                                              style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
