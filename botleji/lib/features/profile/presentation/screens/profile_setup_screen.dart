@@ -558,7 +558,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // For existing users: check if user registered with phone
     // Phone-registered users can edit email (to correct it if wrong)
     // Email/password users cannot edit email (already verified during signup)
-    return user?.registeredWithPhone == true;
+    final canEdit = user?.registeredWithPhone == true;
+    print('📧 _canEditEmail: registeredWithPhone=${user?.registeredWithPhone}, canEdit=$canEdit, email=${user?.email}');
+    return canEdit;
   }
 
   // Validate email availability with backend
