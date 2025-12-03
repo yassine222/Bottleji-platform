@@ -1177,15 +1177,27 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             );
           } catch (e) {
             // Check if error is about email already taken
-            if (e.toString().contains('Email already registered') || 
-                e.toString().contains('already associated with another account')) {
+            final errorString = e.toString().toLowerCase();
+            if (errorString.contains('email already registered') || 
+                errorString.contains('already associated with another account')) {
+              // Reset auth state to prevent error screen from showing
+              final currentAuthState = ref.read(authNotifierProvider);
+              if (currentAuthState.hasError) {
+                // Reset to previous value if available
+                ref.invalidate(authNotifierProvider);
+                // Wait a bit for state to reset
+                await Future.delayed(const Duration(milliseconds: 100));
+              }
+              
               // Set validation error to show in email field
-              setState(() {
-                _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
-              });
-              // Trigger form validation to show the error
-              _formKey.currentState?.validate();
-              setState(() => _isLoading = false);
+              if (mounted) {
+                setState(() {
+                  _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
+                });
+                // Trigger form validation to show the error
+                _formKey.currentState?.validate();
+                setState(() => _isLoading = false);
+              }
               return;
             }
             // Re-throw other errors
@@ -1203,15 +1215,27 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             );
           } catch (e) {
             // Check if error is about email already taken
-            if (e.toString().contains('Email already registered') || 
-                e.toString().contains('already associated with another account')) {
+            final errorString = e.toString().toLowerCase();
+            if (errorString.contains('email already registered') || 
+                errorString.contains('already associated with another account')) {
+              // Reset auth state to prevent error screen from showing
+              final currentAuthState = ref.read(authNotifierProvider);
+              if (currentAuthState.hasError) {
+                // Reset to previous value if available
+                ref.invalidate(authNotifierProvider);
+                // Wait a bit for state to reset
+                await Future.delayed(const Duration(milliseconds: 100));
+              }
+              
               // Set validation error to show in email field
-              setState(() {
-                _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
-              });
-              // Trigger form validation to show the error
-              _formKey.currentState?.validate();
-              setState(() => _isLoading = false);
+              if (mounted) {
+                setState(() {
+                  _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
+                });
+                // Trigger form validation to show the error
+                _formKey.currentState?.validate();
+                setState(() => _isLoading = false);
+              }
               return;
             }
             // Re-throw other errors
