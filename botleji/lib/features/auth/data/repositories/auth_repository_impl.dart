@@ -990,4 +990,19 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> checkEmailAvailability(String email) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await _apiClient.checkEmailAvailability(email, 'Bearer $token');
+      return response;
+    } catch (e) {
+      print('checkEmailAvailability: Error: $e');
+      rethrow;
+    }
+  }
 } 
