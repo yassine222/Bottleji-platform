@@ -1302,12 +1302,29 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     } catch (e) {
       print('Error in _saveProfile: $e');
       if (!mounted) return;
+      
+      // Check if error is about email already taken - show in field instead of snackbar
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('email already registered') || 
+          errorString.contains('already associated with another account')) {
+        // Set validation error to show in email field
+        setState(() {
+          _emailValidationError = 'This email is already associated with another account. Please use a different email address.';
+        });
+        // Trigger form validation to show the error
+        _formKey.currentState?.validate();
+        setState(() => _isLoading = false);
+        return;
+      }
+      
+      // For other errors, show snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error saving profile: $e'),
           backgroundColor: Colors.red,
         ),
       );
+      setState(() => _isLoading = false);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
