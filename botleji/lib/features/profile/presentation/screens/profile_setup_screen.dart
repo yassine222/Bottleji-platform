@@ -1308,14 +1308,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         
         // For new users, navigate to the main app after profile setup
         if (widget.isNewUserSetup) {
-          // Navigate to home screen and clear the navigation stack
+          // Navigate to main app screen (which contains tabs) and clear the navigation stack
           Navigator.of(context).pushNamedAndRemoveUntil(
-            '/',
+            '/main',
             (route) => false,
           );
         } else {
           // For existing users, navigate back to the previous screen (Account screen)
-        Navigator.pop(context);
+          Navigator.pop(context);
         }
       } catch (e) {
         print('Error updating profile via provider: $e');
