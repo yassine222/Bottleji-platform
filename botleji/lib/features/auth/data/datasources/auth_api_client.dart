@@ -190,4 +190,16 @@ class AuthApiClient {
     );
     return response.data;
   }
+
+  Future<Map<String, dynamic>> checkEmailAvailability(String email, String token) async {
+    final response = await _dio.get(
+      '$baseUrl/auth/check-email',
+      queryParameters: {'email': email},
+      options: Options(headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
 } 

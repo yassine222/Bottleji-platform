@@ -602,8 +602,30 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   // Validate email availability with backend
   Future<void> _validateEmailAvailability(String email) async {
+    // Skip validation if email is empty or same as original
+    if (email.isEmpty || email == widget.email) {
+      if (mounted) {
+        setState(() {
+          _emailValidationError = null;
+          _isValidatingEmail = false;
+        });
+      }
+      return;
+    }
+    
+    // Basic email format validation
+    if (!email.contains('@') || !email.contains('.')) {
+      if (mounted) {
+        setState(() {
+          _emailValidationError = null; // Don't show error for invalid format, let validator handle it
+          _isValidatingEmail = false;
+        });
+      }
+      return;
+    }
+    
     // Debounce validation to avoid too many API calls
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 800));
     
     if (!mounted || _emailController.text != email) {
       return; // User continued typing, ignore this validation
@@ -615,26 +637,35 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     });
     
     try {
-      // Try to update profile with this email to check if it's available
-      // We'll catch the error if email is already taken
-      final userAsync = ref.read(authNotifierProvider);
-      final currentUser = userAsync.value;
+      final authRepo = ref.read(authRepositoryProvider);
+      final result = await authRepo.checkEmailAvailability(email);
       
-      if (currentUser == null) return;
+      if (!mounted || _emailController.text != email) {
+        return; // User continued typing, ignore this result
+      }
       
-      // Check if email is already taken by trying a test update
-      // We'll use a temporary approach: try to save and catch the error
-      // Actually, better approach: check if email changed and validate before saving
-      // For now, we'll validate on save and show error in the field
-      
-    } catch (e) {
-      // Error will be handled in _saveProfile
-    } finally {
-      if (mounted) {
+      if (result['available'] == false) {
         setState(() {
+          _emailValidationError = result['message'] ?? 'This email is already associated with another account. Please use a different email address.';
+          _isValidatingEmail = false;
+        });
+        // Trigger form validation to show the error
+        _formKey.currentState?.validate();
+      } else {
+        setState(() {
+          _emailValidationError = null;
           _isValidatingEmail = false;
         });
       }
+    } catch (e) {
+      if (!mounted || _emailController.text != email) {
+        return;
+      }
+      // Don't show error for network issues, just stop validating
+      setState(() {
+        _isValidatingEmail = false;
+        // Don't set error here - let the user try to save and see the error then
+      });
     }
   }
 

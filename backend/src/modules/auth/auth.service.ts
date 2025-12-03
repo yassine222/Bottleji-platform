@@ -531,6 +531,24 @@ export class AuthService {
     };
   }
 
+  async checkEmailAvailability(email: string, currentUserId?: string): Promise<{ available: boolean; message?: string }> {
+    // Check if email is already registered to another user
+    const existingUser = await this.usersService.findByEmail(email);
+    
+    if (existingUser) {
+      // If checking for current user's own email, it's available
+      if (currentUserId && existingUser.id.toString() === currentUserId) {
+        return { available: true };
+      }
+      return { 
+        available: false, 
+        message: 'This email is already associated with another account. Please use a different email address.' 
+      };
+    }
+    
+    return { available: true };
+  }
+
   async getProfile(userId: string) {
     const user = await this.usersService.findOne(userId);
     if (!user) {

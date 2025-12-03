@@ -72,6 +72,12 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('check-email')
+  async checkEmail(@Request() req, @Query('email') email: string) {
+    return this.authService.checkEmailAvailability(email, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('send-phone-otp')
   async sendPhoneOTP(@Request() req, @Body() body: { phoneNumber: string }) {
     return this.authService.sendPhoneOTP(req.user.id, body.phoneNumber);
