@@ -171,11 +171,19 @@ struct LiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 16, height: 16)
-                    .cornerRadius(3)
+                Group {
+                    if let image = UIImage(named: "AppLogo") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                            .font(.caption)
+                    }
+                }
+                .frame(width: 16, height: 16)
+                .cornerRadius(3)
             } compactTrailing: {
                 // Compact trailing - ETA countdown
                 Text(context.state.eta)
@@ -184,11 +192,19 @@ struct LiveActivityWidget: Widget {
                     .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
             } minimal: {
                 // Minimal view - Custom app logo
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 12, height: 12)
-                    .cornerRadius(2)
+                Group {
+                    if let image = UIImage(named: "AppLogo") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                            .font(.caption2)
+                    }
+                }
+                .frame(width: 12, height: 12)
+                .cornerRadius(2)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
@@ -226,7 +242,7 @@ struct DropTimelineWidget: Widget {
                                     .resizable()
                                     .scaledToFit()
                             } else {
-                                Image(systemName: "mappin.circle.fill")
+                    Image(systemName: "mappin.circle.fill")
                                     .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
                                     .font(.title3)
                             }
@@ -339,11 +355,19 @@ struct DropTimelineWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 16, height: 16)
-                    .cornerRadius(3)
+                Group {
+                    if let image = UIImage(named: "AppLogo") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                            .font(.caption)
+                    }
+                }
+                .frame(width: 16, height: 16)
+                .cornerRadius(3)
             } compactTrailing: {
                 // Compact trailing - Status text
                 Text(context.state.statusText)
@@ -353,11 +377,19 @@ struct DropTimelineWidget: Widget {
                     .lineLimit(1)
             } minimal: {
                 // Minimal view - Custom app logo
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 12, height: 12)
-                    .cornerRadius(2)
+                Group {
+                    if let image = UIImage(named: "AppLogo") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                            .font(.caption2)
+                    }
+                }
+                .frame(width: 12, height: 12)
+                .cornerRadius(2)
             }
         }
     }
