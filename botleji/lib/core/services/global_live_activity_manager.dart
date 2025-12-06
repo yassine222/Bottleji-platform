@@ -122,13 +122,22 @@ class GlobalLiveActivityManager {
 
     try {
       // Update distance
+      final previousDistance = _currentDistance;
       await _updateDistance();
+      
+      debugPrint('📍 Live Activity Update:');
+      debugPrint('   Previous distance: ${previousDistance.toStringAsFixed(2)}m');
+      debugPrint('   New distance: ${_currentDistance.toStringAsFixed(2)}m');
+      debugPrint('   Distance change: ${(_currentDistance - previousDistance).toStringAsFixed(2)}m');
 
       // Calculate elapsed time
       final elapsedTime = DateTime.now().difference(collection.acceptedAt);
       
       // Calculate countdown ETA
       final eta = _calculateCountdownETA(collection);
+      
+      debugPrint('   Elapsed time: ${elapsedTime.inMinutes}m ${elapsedTime.inSeconds % 60}s');
+      debugPrint('   Countdown ETA: $eta');
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -140,6 +149,7 @@ class GlobalLiveActivityManager {
       );
 
       await _liveActivityService.updateCollectionActivity(data);
+      debugPrint('✅ Live Activity updated successfully');
     } catch (e) {
       debugPrint('❌ Error updating global Live Activity: $e');
     }
@@ -148,7 +158,9 @@ class GlobalLiveActivityManager {
   /// Start periodic update timer
   void _startUpdateTimer(ActiveCollection collection) {
     _updateTimer?.cancel();
+    debugPrint('⏰ Starting Live Activity update timer (every 5 seconds)');
     _updateTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      debugPrint('⏰ Timer tick - updating Live Activity...');
       final currentCollection = _ref?.read(navigationControllerProvider);
       if (currentCollection == null || currentCollection.dropId != collection.dropId) {
         debugPrint('🛑 Collection ended or changed - stopping update timer');
@@ -201,13 +213,20 @@ class GlobalLiveActivityManager {
 
   /// Update distance to destination
   Future<void> _updateDistance() async {
-    if (_currentDestination == null) return;
+    if (_currentDestination == null) {
+      debugPrint('⚠️ Cannot update distance: destination is null');
+      return;
+    }
 
     try {
+      debugPrint('🗺️ Getting current position for distance calculation...');
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       final currentLocation = LatLng(position.latitude, position.longitude);
+      
+      debugPrint('   Current location: ${currentLocation.latitude.toStringAsFixed(6)}, ${currentLocation.longitude.toStringAsFixed(6)}');
+      debugPrint('   Destination: ${_currentDestination!.latitude.toStringAsFixed(6)}, ${_currentDestination!.longitude.toStringAsFixed(6)}');
       
       _currentDistance = Geolocator.distanceBetween(
         currentLocation.latitude,
@@ -215,8 +234,11 @@ class GlobalLiveActivityManager {
         _currentDestination!.latitude,
         _currentDestination!.longitude,
       );
+      
+      debugPrint('   Calculated distance: ${_currentDistance.toStringAsFixed(2)}m (${(_currentDistance / 1000).toStringAsFixed(2)}km)');
     } catch (e) {
       debugPrint('⚠️ Error updating distance: $e');
+      debugPrint('   Stack trace: ${StackTrace.current}');
     }
   }
 
