@@ -3,12 +3,45 @@ import SwiftUI
 import ActivityKit
 import UIKit
 
-// Helper function to load app logo from bundle
+// Enum for Live Activity view types
+enum LiveActivityViewType {
+    case compact
+    case expanded
+    case minimal
+    case default
+}
+
+// Helper function to load app logo from bundle with view-specific images
 @ViewBuilder
-func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4) -> some View {
+func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivityViewType = .default) -> some View {
     Group {
-        // Try loading from main bundle first
-        if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
+        // Try loading view-specific image first
+        let imageName: String? = {
+            switch viewType {
+            case .compact:
+                return "live_activity_icon_compact"
+            case .expanded:
+                return "live_activity_icon_expanded"
+            case .minimal:
+                return "live_activity_icon_minimal"
+            case .default:
+                return "AppLogo"
+            }
+        }()
+        
+        if let name = imageName,
+           let image = UIImage(named: name, in: Bundle.main, compatibleWith: nil) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else if let name = imageName,
+                  let image = UIImage(named: name) {
+            // Fallback to default bundle
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
+            // Fallback to default AppLogo
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
@@ -109,20 +142,8 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo with fallback
-                            Group {
-                                if let image = UIImage(named: "AppLogo") {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFit()
-                                } else {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                                        .font(.caption)
-                                }
-                            }
-                            .frame(width: 16, height: 16)
-                            .cornerRadius(4)
+                            // Custom app logo (expanded view)
+                            AppLogoView(size: 16, cornerRadius: 4, viewType: .expanded)
                             Text("Active Collection")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -190,7 +211,7 @@ struct LiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                AppLogoView(size: 16, cornerRadius: 3)
+                AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
                 // Compact trailing - ETA countdown
                 Text(context.state.eta)
@@ -199,7 +220,7 @@ struct LiveActivityWidget: Widget {
                     .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
             } minimal: {
                 // Minimal view - Custom app logo
-                AppLogoView(size: 12, cornerRadius: 2)
+                AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
@@ -230,8 +251,8 @@ struct DropTimelineWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo
-                        AppLogoView(size: 24, cornerRadius: 6)
+                        // Custom app logo (lock screen - default)
+                        AppLogoView(size: 24, cornerRadius: 6, viewType: .default)
                         Text("Drop Status")
                         .font(.headline)
                             .fontWeight(.semibold)
@@ -278,8 +299,8 @@ struct DropTimelineWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo
-                            AppLogoView(size: 16, cornerRadius: 4)
+                            // Custom app logo (expanded view)
+                            AppLogoView(size: 16, cornerRadius: 4, viewType: .expanded)
                             Text("Drop Status")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -324,7 +345,7 @@ struct DropTimelineWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                AppLogoView(size: 16, cornerRadius: 3)
+                AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
                 // Compact trailing - Status text
                 Text(context.state.statusText)
@@ -334,7 +355,7 @@ struct DropTimelineWidget: Widget {
                     .lineLimit(1)
             } minimal: {
                 // Minimal view - Custom app logo
-                AppLogoView(size: 12, cornerRadius: 2)
+                AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
         }
     }
