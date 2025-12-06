@@ -1821,7 +1821,21 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       
       Map<String, dynamic> data;
       try {
-        final response = await dio.get(url.toString());
+        // Add timeout to route calculation (20 seconds)
+        final response = await dio.get(
+          url.toString(),
+          options: Options(
+            receiveTimeout: const Duration(seconds: 20),
+            sendTimeout: const Duration(seconds: 20),
+          ),
+        ).timeout(
+          const Duration(seconds: 20),
+          onTimeout: () {
+            debugPrint('⏱️ Route calculation timeout after 20 seconds');
+            throw TimeoutException('Route calculation timed out after 20 seconds');
+          },
+        );
+        
         debugPrint('API call completed. Status code: ${response.statusCode}');
         debugPrint('Response data type: ${response.data.runtimeType}');
         
@@ -1834,6 +1848,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           debugPrint('Response data already decoded');
         } else {
           debugPrint('❌ Unexpected response data type: ${response.data.runtimeType}');
+          // Fallback to straight-line route
+          _createFallbackRoute(origin, destination, straightLineDistance);
           return;
         }
         
@@ -1851,6 +1867,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           debugPrint('❌ Dio response status: ${apiError.response?.statusCode}');
           debugPrint('❌ Dio response data: ${apiError.response?.data}');
         }
+        
+        // Fallback to straight-line route if API fails
+        debugPrint('🔄 Creating fallback straight-line route due to API failure');
+        _createFallbackRoute(origin, destination, straightLineDistance);
         return;
       }
 
@@ -2009,11 +2029,98 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           debugPrint('❌ 5. Check if there are any restrictions (HTTP referrers, IP addresses)');
           debugPrint('❌ 6. Make sure the API key is not hidden/disabled');
         }
+        
+        // Fallback to straight-line route if API returns error
+        debugPrint('🔄 Creating fallback straight-line route due to API error');
+        _createFallbackRoute(origin, destination, straightLineDistance);
       }
     } catch (e) {
-      debugPrint('Error calculating route: $e');
-      debugPrint('Error stack trace: ${StackTrace.current}');
+      debugPrint('❌ Error calculating route: $e');
+      debugPrint('❌ Error stack trace: ${StackTrace.current}');
+      
+      // Fallback to straight-line route on any error
+      debugPrint('🔄 Creating fallback straight-line route due to exception');
+      try {
+        final fallbackDistance = Geolocator.distanceBetween(
+          origin.latitude,
+          origin.longitude,
+          destination.latitude,
+          destination.longitude,
+        );
+        _createFallbackRoute(origin, destination, fallbackDistance);
+      } catch (fallbackError) {
+        debugPrint('❌ Even fallback route creation failed: $fallbackError');
+        // Still clear loading state and initialize timer with default values
+        setState(() {
+          _isLoading = false;
+        });
+        _initializeTimer(); // Initialize timer even without route
+      }
     }
+  }
+  
+  /// Create fallback route when API fails or times out
+  void _createFallbackRoute(LatLng origin, LatLng destination, double distance) {
+    debugPrint('🔄 Creating fallback route: ${distance.toStringAsFixed(2)}m');
+    
+    // Estimate duration based on distance and transportation mode
+    String estimatedDuration;
+    int estimatedMinutes;
+    
+    switch (_transportationMode) {
+      case TransportationMode.walking:
+        estimatedMinutes = (distance / 80).round(); // ~80m per minute walking
+        estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
+        estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
+        break;
+      case TransportationMode.cycling:
+        estimatedMinutes = (distance / 250).round(); // ~250m per minute cycling
+        estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
+        estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
+        break;
+      case TransportationMode.driving:
+      default:
+        estimatedMinutes = (distance / 500).round(); // ~500m per minute driving (city speed)
+        estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
+        estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
+        break;
+    }
+    
+    // Create straight-line polyline
+    final points = <LatLng>[origin, destination];
+    
+    setState(() {
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('fallback_route'),
+          points: points,
+          color: const Color(0xFF00695C),
+          width: _transportationMode.polylineWidth,
+          patterns: _transportationMode.polylinePattern,
+          geodesic: true,
+        ),
+      };
+      _navigationSteps = [];
+      _currentStepIndex = 0;
+      _nextTurnInstruction = AppLocalizations.of(context).walkStraightToDestination;
+      _nextTurnDistance = distance < 1000 
+          ? '${distance.toStringAsFixed(0)}m'
+          : '${(distance / 1000).toStringAsFixed(1)} km';
+      _nextStreetName = AppLocalizations.of(context).directRoute;
+      _routeDistance = distance < 1000 
+          ? '${distance.toStringAsFixed(0)}m'
+          : '${(distance / 1000).toStringAsFixed(1)} km';
+      _routeDuration = estimatedDuration;
+      _isLoading = false; // Ensure loading state is cleared
+    });
+    
+    // Update active collection with route information
+    _updateActiveCollectionWithRouteInfo();
+    
+    // Initialize timer even with fallback route
+    _initializeTimer();
+    
+    debugPrint('✅ Fallback route created: ${distance.toStringAsFixed(2)}m, $estimatedDuration');
   }
 
   String? _extractStreetName(String htmlInstructions) {
