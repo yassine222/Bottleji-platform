@@ -89,5 +89,9 @@
 		<string>remote-notification</string>
 		<string>background-fetch</string>
 	</array>
+	
+	<!-- Live Activities Support -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>
