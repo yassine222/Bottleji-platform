@@ -36,7 +36,7 @@ struct LiveActivityWidget: Widget {
                             .foregroundColor(.primary)
                     }
                     Spacer()
-                    // Show ETA countdown instead of elapsed time
+                    // Show collection completion countdown
                     Text(context.state.eta)
                         .font(.title2)
                         .fontWeight(.bold)
@@ -72,7 +72,7 @@ struct LiveActivityWidget: Widget {
                         Image(systemName: "clock.fill")
                             .font(.caption)
                             .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
-                        Text("Arrives in \(context.state.eta)")
+                        Text(context.state.eta)
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.primary)
@@ -96,6 +96,7 @@ struct LiveActivityWidget: Widget {
                             Text("Active Collection")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .lineLimit(1)
                         }
                         Text(context.attributes.dropAddress)
                             .font(.headline)
@@ -107,10 +108,10 @@ struct LiveActivityWidget: Widget {
                 
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 6) {
-                        Text("Arrives in")
+                        Text("Time left")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        // Show ETA countdown instead of elapsed time
+                        // Show collection completion countdown
                         Text(context.state.eta)
                             .font(.title2)
                             .fontWeight(.bold)
@@ -149,7 +150,7 @@ struct LiveActivityWidget: Widget {
                                 Image(systemName: "clock.fill")
                                     .font(.caption2)
                                     .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
-                                Text(context.state.eta)
+                                Text("\(context.state.eta) left")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                     .foregroundColor(.primary)
@@ -214,9 +215,9 @@ struct DropTimelineWidget: Widget {
                             .frame(width: 24, height: 24)
                             .cornerRadius(6)
                         Text("Drop Status")
-                            .font(.headline)
+                        .font(.headline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.primary)
+                        .foregroundColor(.primary)
                     }
                     Spacer()
                     Text(context.attributes.estimatedValue)
@@ -266,8 +267,8 @@ struct DropTimelineWidget: Widget {
                                 .frame(width: 16, height: 16)
                                 .cornerRadius(4)
                             Text("Drop Status")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         }
                         Text(context.attributes.dropAddress)
                             .font(.headline)

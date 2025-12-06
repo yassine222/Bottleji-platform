@@ -218,36 +218,77 @@ class GlobalLiveActivityManager {
     }
   }
 
-  /// Calculate countdown ETA
+  /// Calculate collection completion countdown timer
+  /// This shows the time remaining to complete the collection before it expires
   String _calculateCountdownETA(ActiveCollection collection) {
-    if (_currentRouteDuration == null || _currentRouteDuration!.isEmpty || _currentRouteDuration == 'N/A') {
-      return 'N/A';
-    }
-
     try {
-      // Parse route duration to get total minutes
-      int totalMinutes = 0;
-      final durationParts = _currentRouteDuration!.split(' ');
-      if (durationParts.length >= 2) {
-        if (durationParts[1].contains('hour')) {
-          totalMinutes = int.parse(durationParts[0]) * 60;
-          if (durationParts.length >= 4) {
-            totalMinutes += int.parse(durationParts[2]);
+      // Parse route duration from the active collection's route info
+      int routeDurationMinutes = 15; // Default fallback - 15 minutes
+      
+      if (collection.routeDuration != null && collection.routeDuration!.isNotEmpty && collection.routeDuration != 'N/A') {
+        final durationText = collection.routeDuration!;
+        
+        // Parse duration like "15 mins" or "1 hour 30 mins"
+        final durationParts = durationText.split(' ');
+        if (durationParts.length >= 2) {
+          try {
+            if (durationParts[1].contains('hour')) {
+              // Format: "1 hour 30 mins" or "1 hour"
+              routeDurationMinutes = int.parse(durationParts[0]) * 60;
+              if (durationParts.length >= 4 && durationParts[3].contains('mins')) {
+                routeDurationMinutes += int.parse(durationParts[2]);
+              }
+            } else {
+              // Parse minutes from duration text like "15 mins"
+              routeDurationMinutes = int.parse(durationParts[0]);
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error parsing route duration: $e, using default 15 minutes');
+            routeDurationMinutes = 15;
           }
+        }
+      } else {
+        // When routeDuration is null, use a conservative default
+        final elapsed = DateTime.now().difference(collection.acceptedAt);
+        final elapsedMinutes = elapsed.inMinutes;
+        
+        if (elapsedMinutes > 10) {
+          routeDurationMinutes = 10;
         } else {
-          totalMinutes = int.parse(durationParts[0]);
+          routeDurationMinutes = 15;
         }
       }
-
-      // Calculate elapsed time
-      final elapsedTime = DateTime.now().difference(collection.acceptedAt);
-      final elapsedMinutes = elapsedTime.inMinutes;
-
+      
+      // Fixed buffer based on route duration (same as navigation screen)
+      int bufferMinutes;
+      if (routeDurationMinutes <= 5) {
+        bufferMinutes = 10; // Short routes: +10 minutes
+      } else if (routeDurationMinutes <= 15) {
+        bufferMinutes = 15; // Medium routes: +15 minutes
+      } else {
+        bufferMinutes = 20; // Long routes: +20 minutes
+      }
+      
+      // Calculate total timeout based on route duration + buffer
+      var totalTimeoutMinutes = routeDurationMinutes + bufferMinutes;
+      
+      // Calculate how much time has already passed since collection was accepted
+      final timeElapsed = DateTime.now().difference(collection.acceptedAt);
+      final elapsedMinutes = timeElapsed.inMinutes;
+      
+      // If routeDuration was null, ensure we don't extend the timeout too much
+      if (collection.routeDuration == null || collection.routeDuration!.isEmpty || collection.routeDuration == 'N/A') {
+        final maxReasonableTimeout = elapsedMinutes + 20;
+        if (totalTimeoutMinutes > maxReasonableTimeout) {
+          totalTimeoutMinutes = maxReasonableTimeout;
+        }
+      }
+      
       // Calculate remaining time
-      final remainingMinutes = totalMinutes - elapsedMinutes;
+      final remainingMinutes = totalTimeoutMinutes - elapsedMinutes;
       
       if (remainingMinutes <= 0) {
-        return 'Arriving';
+        return 'Expired';
       } else if (remainingMinutes < 60) {
         return '$remainingMinutes min';
       } else {
@@ -260,8 +301,8 @@ class GlobalLiveActivityManager {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Error calculating countdown ETA: $e');
-      return _currentRouteDuration ?? 'N/A';
+      debugPrint('⚠️ Error calculating collection countdown: $e');
+      return 'N/A';
     }
   }
 
