@@ -2079,7 +2079,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
         break;
       case TransportationMode.driving:
-      default:
         estimatedMinutes = (distance / 500).round(); // ~500m per minute driving (city speed)
         estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
         estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
