@@ -18,7 +18,6 @@ class GlobalLiveActivityManager {
 
   final LiveActivityService _liveActivityService = LiveActivityService();
   Timer? _updateTimer;
-  ProviderSubscription<ActiveCollection?>? _collectionSubscription;
   Ref? _ref;
   bool _isInitialized = false;
   String? _currentDropId;
@@ -46,8 +45,7 @@ class GlobalLiveActivityManager {
     if (_ref == null) return;
 
     // Listen to active collection changes
-    _collectionSubscription?.cancel();
-    _collectionSubscription = _ref!.listen(
+    _ref!.listen(
       navigationControllerProvider,
       (previous, next) {
         if (next == null) {
@@ -270,7 +268,6 @@ class GlobalLiveActivityManager {
   /// Dispose resources
   void dispose() {
     _updateTimer?.cancel();
-    _collectionSubscription?.cancel();
     _isInitialized = false;
   }
 }
