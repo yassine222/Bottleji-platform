@@ -307,59 +307,19 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   }
 
   /// Initialize live activity service
+  /// NOTE: Live Activity is now managed globally by GlobalLiveActivityManager
+  /// This method is kept for compatibility but does nothing
   Future<void> _initializeLiveActivity() async {
-    try {
-      await _liveActivityService.initialize();
-      if (_liveActivityService.isSupported()) {
-        debugPrint('✅ Live Activity service initialized and supported');
-      } else {
-        debugPrint('⚠️ Live Activity not supported on this device');
-      }
-    } catch (e) {
-      debugPrint('❌ Error initializing Live Activity: $e');
-    }
+    // Live Activity is now managed globally - no need to initialize here
+    debugPrint('ℹ️ Live Activity managed globally by GlobalLiveActivityManager');
   }
 
   /// Start live activity when route is calculated
+  /// NOTE: Live Activity is now managed globally by GlobalLiveActivityManager
+  /// This method is kept for compatibility but does nothing
   Future<void> _startLiveActivity() async {
-    if (!_liveActivityService.isSupported()) {
-      return;
-    }
-
-    try {
-      // Get drop address from active collection or use dropId as fallback
-      final activeCollection = ref.read(navigationControllerProvider);
-      _dropAddress = 'Drop ${widget.dropId.substring(0, 8)}...';
-
-      // Calculate elapsed time from collection start
-      final elapsedTime = _collectionStartTime != null
-          ? DateTime.now().difference(_collectionStartTime!)
-          : Duration.zero;
-
-      // Calculate countdown ETA (remaining time)
-      // For initial start, use route duration, countdown will be calculated in updates
-      final eta = _routeDuration ?? 'N/A';
-
-      final data = CollectionActivityData(
-        dropId: widget.dropId,
-        dropAddress: _dropAddress!,
-        elapsedTime: elapsedTime,
-        distanceToDestination: _distanceToDestination,
-        eta: eta,
-        transportMode: _transportationMode.apiValue,
-      );
-
-      await _liveActivityService.startCollectionActivity(data);
-      debugPrint('✅ Live Activity started');
-
-      // Start periodic updates (every 5 seconds)
-      _liveActivityUpdateTimer?.cancel();
-      _liveActivityUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-        _updateLiveActivity();
-      });
-    } catch (e) {
-      debugPrint('❌ Error starting Live Activity: $e');
-    }
+    // Live Activity is now managed globally - no need to start here
+    debugPrint('ℹ️ Live Activity managed globally by GlobalLiveActivityManager');
   }
 
   /// Calculate countdown ETA from route duration and elapsed time
@@ -413,44 +373,20 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   }
 
   /// Update live activity with current data
+  /// NOTE: Live Activity is now managed globally by GlobalLiveActivityManager
+  /// This method is kept for compatibility but does nothing
   Future<void> _updateLiveActivity() async {
-    if (!_liveActivityService.isSupported()) {
-      return;
-    }
-
-    try {
-      // Calculate elapsed time from collection start
-      final elapsedTime = _collectionStartTime != null
-          ? DateTime.now().difference(_collectionStartTime!)
-          : Duration.zero;
-
-      // Calculate countdown ETA (remaining time)
-      final eta = _calculateCountdownETA();
-
-      final data = CollectionActivityData(
-        dropId: widget.dropId,
-        dropAddress: _dropAddress ?? 'Drop ${widget.dropId.substring(0, 8)}...',
-        elapsedTime: elapsedTime,
-        distanceToDestination: _distanceToDestination,
-        eta: eta,
-        transportMode: _transportationMode.apiValue,
-      );
-
-      await _liveActivityService.updateCollectionActivity(data);
-    } catch (e) {
-      debugPrint('❌ Error updating Live Activity: $e');
-    }
+    // Live Activity is now managed globally - no need to update here
+    // The global manager will update automatically
   }
 
   /// Stop live activity
+  /// NOTE: Live Activity is now managed globally by GlobalLiveActivityManager
+  /// This method is kept for compatibility but does nothing
   Future<void> _stopLiveActivity() async {
-    try {
-      _liveActivityUpdateTimer?.cancel();
-      await _liveActivityService.endCollectionActivity();
-      debugPrint('✅ Live Activity stopped');
-    } catch (e) {
-      debugPrint('❌ Error stopping Live Activity: $e');
-    }
+    // Live Activity is now managed globally - no need to stop here
+    // The global manager will stop automatically when collection ends
+    _liveActivityUpdateTimer?.cancel();
   }
 
   Future<void> _loadTransportationMode() async {

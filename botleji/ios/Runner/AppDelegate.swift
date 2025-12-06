@@ -23,4 +23,28 @@ import GoogleMaps
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+  
+  // Handle URL schemes (for deep linking from Live Activity)
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    // Handle botleji://navigation?dropId=xxx URLs from Live Activity
+    if url.scheme == "botleji" && url.host == "navigation" {
+      let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+      if let dropId = components?.queryItems?.first(where: { $0.name == "dropId" })?.value {
+        // Send to Flutter via method channel
+        if let controller = window?.rootViewController as? FlutterViewController {
+          let channel = FlutterMethodChannel(
+            name: "com.botleji/deep_link",
+            binaryMessenger: controller.engine.binaryMessenger
+          )
+          channel.invokeMethod("navigateToNavigation", arguments: ["dropId": dropId])
+        }
+        return true
+      }
+    }
+    return super.application(app, open: url, options: options)
+  }
 }

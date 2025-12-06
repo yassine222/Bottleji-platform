@@ -25,6 +25,10 @@ import 'package:botleji/features/onboarding/presentation/screens/permissions_scr
 import 'package:botleji/features/rewards/presentation/providers/collection_success_provider.dart';
 import 'package:botleji/features/rewards/presentation/widgets/collection_success_popup.dart';
 import 'package:botleji/features/notifications/data/services/notification_service.dart';
+import 'package:botleji/core/services/global_live_activity_manager.dart';
+import 'package:botleji/features/navigation/presentation/screens/navigation_screen.dart';
+import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
+import 'package:flutter/services.dart';
 // Network initialization is deferred to splash to avoid early iOS prompts
 // import 'package:botleji/core/services/network_initialization_service.dart';
 // import 'package:botleji/core/config/server_config.dart';
@@ -135,6 +139,34 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _setupDeepLinkHandler();
+  }
+  
+  /// Set up deep link handler for Live Activity navigation
+  void _setupDeepLinkHandler() {
+    const channel = MethodChannel('com.botleji/deep_link');
+    channel.setMethodCallHandler((call) async {
+      if (call.method == 'navigateToNavigation') {
+        final args = call.arguments as Map<String, dynamic>?;
+        final dropId = args?['dropId'] as String?;
+        
+        if (dropId != null && MyApp.navigatorKey.currentContext != null) {
+          final context = MyApp.navigatorKey.currentContext!;
+          final activeCollection = ref.read(navigationControllerProvider);
+          
+          if (activeCollection != null && activeCollection.dropId == dropId) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NavigationScreen(
+                  destination: activeCollection.destination,
+                  dropId: activeCollection.dropId,
+                ),
+              ),
+            );
+          }
+        }
+      }
+    });
   }
   
   void _setupAccountDisabledCallback(WidgetRef ref) {
@@ -436,6 +468,45 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           email: (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?)?['email'] ?? '',
         ),
         '/history': (context) => const HistoryScreen(),
+        '/navigation': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final dropId = args?['dropId'] as String?;
+          final activeCollection = ref.read(navigationControllerProvider);
+          
+          if (activeCollection != null) {
+            return NavigationScreen(
+              destination: activeCollection.destination,
+              dropId: activeCollection.dropId,
+            );
+          } else if (dropId != null) {
+            // Try to restore collection from backend
+            // For now, navigate to home if collection not found
+            return const HomeScreen();
+          }
+          return const HomeScreen();
+        },
+      },
+      onGenerateRoute: (settings) {
+        // Handle deep links from Live Activity (botleji://navigation?dropId=xxx)
+        if (settings.name?.startsWith('botleji://') == true) {
+          final uri = Uri.parse(settings.name!);
+          if (uri.host == 'navigation') {
+            final dropId = uri.queryParameters['dropId'];
+            
+            if (dropId != null) {
+              final activeCollection = ref.read(navigationControllerProvider);
+              if (activeCollection != null && activeCollection.dropId == dropId) {
+                return MaterialPageRoute(
+                  builder: (context) => NavigationScreen(
+                    destination: activeCollection.destination,
+                    dropId: activeCollection.dropId,
+                  ),
+                );
+              }
+            }
+          }
+        }
+        return null;
       },
     );
   }
@@ -857,6 +928,11 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
 
         // All conditions met, return HomeScreen
         AppLogger.log('🏠 MainAppScreen: All providers ready!');
+        
+        // Initialize global Live Activity manager
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(globalLiveActivityManagerProvider);
+        });
         
         // Only create HomeScreen once
         if (!_hasCreatedHomeScreen) {

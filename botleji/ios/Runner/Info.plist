@@ -32,6 +32,14 @@
 				<string>app-1-414913880297-ios-4621c0674928dcfb8a9078</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>botleji</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>botleji</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>

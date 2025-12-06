@@ -288,6 +288,8 @@ class NavigationController extends StateNotifier<ActiveCollection?> {
       await prefs.setString(_activeCollectionKey, jsonData);
       state = activeCollection;
       print('✅ Started collection: $dropId');
+      // Note: GlobalLiveActivityManager will automatically start Live Activity
+      // when it detects the state change
     } catch (e) {
       print('❌ Error saving active collection: $e');
     }
