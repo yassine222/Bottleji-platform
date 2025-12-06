@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
 import 'package:botleji/core/services/live_activity_service.dart';
-import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 
 /// Global manager for Live Activity that monitors active collection state
 /// This ensures Live Activity is always shown when there's an active collection,
@@ -19,7 +18,7 @@ class GlobalLiveActivityManager {
 
   final LiveActivityService _liveActivityService = LiveActivityService();
   Timer? _updateTimer;
-  StreamSubscription<ActiveCollection?>? _collectionSubscription;
+  ProviderSubscription<ActiveCollection?>? _collectionSubscription;
   Ref? _ref;
   bool _isInitialized = false;
   String? _currentDropId;
