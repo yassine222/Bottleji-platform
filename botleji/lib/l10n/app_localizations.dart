@@ -564,6 +564,24 @@ abstract class AppLocalizations {
   /// **'Please enter the OTP sent to your email'**
   String get pleaseEnterOtpSentToEmail;
 
+  /// No description provided for @verifyYourPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Phone Number'**
+  String get verifyYourPhoneNumber;
+
+  /// No description provided for @pleaseEnterOtpSentToPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the OTP sent to your phone'**
+  String get pleaseEnterOtpSentToPhone;
+
+  /// No description provided for @seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get seconds;
+
   /// No description provided for @verifyOtp.
   ///
   /// In en, this message translates to:
@@ -3887,12 +3905,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'second'**
   String get second;
-
-  /// No description provided for @seconds.
-  ///
-  /// In en, this message translates to:
-  /// **'seconds'**
-  String get seconds;
 
   /// No description provided for @availableAgainAt.
   ///

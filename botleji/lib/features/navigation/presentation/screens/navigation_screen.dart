@@ -27,6 +27,7 @@ import 'package:botleji/core/services/notification_service.dart';
 import 'package:botleji/features/auth/presentation/providers/auth_provider.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:botleji/core/services/live_activity_service.dart';
 
 // Transportation mode enum
 enum TransportationMode {
@@ -281,6 +282,11 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
   static const Duration _locationBroadcastInterval = Duration(seconds: 5); // Time-based fallback: broadcast every 5 seconds
   static const double _locationBroadcastDistanceThreshold = 5.0; // Distance-based: broadcast when moved 5 meters
 
+  // Live Activity variables
+  final LiveActivityService _liveActivityService = LiveActivityService();
+  Timer? _liveActivityUpdateTimer;
+  String? _dropAddress; // Store drop address for live activity
+
   @override
   void initState() {
     super.initState();
@@ -297,6 +303,103 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     );
     _loadTransportationMode();
     _initializeLocation();
+    _initializeLiveActivity();
+  }
+
+  /// Initialize live activity service
+  Future<void> _initializeLiveActivity() async {
+    try {
+      await _liveActivityService.initialize();
+      if (_liveActivityService.isSupported()) {
+        debugPrint('✅ Live Activity service initialized and supported');
+      } else {
+        debugPrint('⚠️ Live Activity not supported on this device');
+      }
+    } catch (e) {
+      debugPrint('❌ Error initializing Live Activity: $e');
+    }
+  }
+
+  /// Start live activity when route is calculated
+  Future<void> _startLiveActivity() async {
+    if (!_liveActivityService.isSupported()) {
+      return;
+    }
+
+    try {
+      // Get drop address from active collection or use dropId as fallback
+      final activeCollection = ref.read(navigationControllerProvider);
+      _dropAddress = 'Drop ${widget.dropId.substring(0, 8)}...';
+
+      // Calculate elapsed time from collection start
+      final elapsedTime = _collectionStartTime != null
+          ? DateTime.now().difference(_collectionStartTime!)
+          : Duration.zero;
+
+      // Get ETA from route duration
+      final eta = _routeDuration ?? 'N/A';
+
+      final data = CollectionActivityData(
+        dropId: widget.dropId,
+        dropAddress: _dropAddress!,
+        elapsedTime: elapsedTime,
+        distanceToDestination: _distanceToDestination,
+        eta: eta,
+        transportMode: _transportationMode.apiValue,
+      );
+
+      await _liveActivityService.startCollectionActivity(data);
+      debugPrint('✅ Live Activity started');
+
+      // Start periodic updates (every 5 seconds)
+      _liveActivityUpdateTimer?.cancel();
+      _liveActivityUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        _updateLiveActivity();
+      });
+    } catch (e) {
+      debugPrint('❌ Error starting Live Activity: $e');
+    }
+  }
+
+  /// Update live activity with current data
+  Future<void> _updateLiveActivity() async {
+    if (!_liveActivityService.isSupported()) {
+      return;
+    }
+
+    try {
+      // Calculate elapsed time from collection start
+      final elapsedTime = _collectionStartTime != null
+          ? DateTime.now().difference(_collectionStartTime!)
+          : Duration.zero;
+
+      // Get ETA from route duration
+      final eta = _routeDuration ?? 'N/A';
+
+      final data = CollectionActivityData(
+        dropId: widget.dropId,
+        dropAddress: _dropAddress ?? 'Drop ${widget.dropId.substring(0, 8)}...',
+        elapsedTime: elapsedTime,
+        distanceToDestination: _distanceToDestination,
+        eta: eta,
+        transportMode: _transportationMode.apiValue,
+      );
+
+      await _liveActivityService.updateCollectionActivity(data);
+    } catch (e) {
+      debugPrint('❌ Error updating Live Activity: $e');
+    }
+  }
+
+  /// Stop live activity
+  Future<void> _stopLiveActivity() async {
+    try {
+      _liveActivityUpdateTimer?.cancel();
+      await _liveActivityService.endCollectionActivity();
+      debugPrint('✅ Live Activity stopped');
+    } catch (e) {
+      debugPrint('❌ Error stopping Live Activity: $e');
+    }
   }
 
   Future<void> _loadTransportationMode() async {
@@ -1628,6 +1731,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     // Center camera on the beginning of the route with high zoom
     _centerCameraOnRouteStart();
     _initializeTimer(); // Initialize timer after route is calculated
+    
+    // Start live activity after route is calculated
+    _startLiveActivity();
   }
 
   // Clean up old cache entries (keep only last 10)
@@ -3398,6 +3504,9 @@ void _showWarningNotification() async {
       // Stop location broadcasting
       _stopLocationBroadcasting();
       
+      // Stop live activity
+      _stopLiveActivity();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3928,6 +4037,9 @@ void _showWarningNotification() async {
     // Cancel timers
     _timer?.cancel();
     _locationTimer?.cancel();
+    
+    // Stop live activity
+    _stopLiveActivity();
     
     // Reset timeout flag
     _hasTimedOut = false;

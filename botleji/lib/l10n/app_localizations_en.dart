@@ -255,6 +255,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please enter the OTP sent to your email';
 
   @override
+  String get verifyYourPhoneNumber => 'Verify Your Phone Number';
+
+  @override
+  String get pleaseEnterOtpSentToPhone =>
+      'Please enter the OTP sent to your phone';
+
+  @override
+  String get seconds => 'seconds';
+
+  @override
   String get verifyOtp => 'Verify OTP';
 
   @override
@@ -2089,9 +2099,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get second => 'second';
-
-  @override
-  String get seconds => 'seconds';
 
   @override
   String availableAgainAt(String time) {

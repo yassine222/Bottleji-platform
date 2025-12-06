@@ -256,6 +256,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'يرجى إدخال رمز OTP المرسل إلى بريدك الإلكتروني';
 
   @override
+  String get verifyYourPhoneNumber => 'تحقق من رقم هاتفك';
+
+  @override
+  String get pleaseEnterOtpSentToPhone => 'يرجى إدخال رمز OTP المرسل إلى هاتفك';
+
+  @override
+  String get seconds => 'ثواني';
+
+  @override
   String get verifyOtp => 'تحقق من OTP';
 
   @override
@@ -2074,9 +2083,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get second => 'ثانية';
-
-  @override
-  String get seconds => 'ثواني';
 
   @override
   String availableAgainAt(String time) {
