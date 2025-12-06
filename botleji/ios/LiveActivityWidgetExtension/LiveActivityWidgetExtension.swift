@@ -92,7 +92,7 @@ struct LiveActivityWidget: Widget {
                     HStack(spacing: 8) {
                         // Custom app logo (lock screen - default)
                         AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
-                        Text("Active Collection")
+                        Text("Botleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -151,12 +151,12 @@ struct LiveActivityWidget: Widget {
                         HStack(spacing: 6) {
                             // Custom app logo (expanded view)
                             AppLogoView(size: 16, cornerRadius: 4, viewType: .expanded)
-                            Text("Active Collection")
+                            Text("Botleji")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
-                        Text("Active Collection")
+                        Text("Botleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -312,7 +312,7 @@ struct DropTimelineWidget: Widget {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         }
-                        Text("Active Collection")
+                        Text("Botleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
