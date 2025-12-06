@@ -25,12 +25,20 @@ struct LiveActivityWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo
-                        (UIImage(named: "AppLogo") != nil ? Image(uiImage: UIImage(named: "AppLogo")!) : Image(systemName: "mappin.circle.fill").foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)))
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .cornerRadius(6)
+                        // Custom app logo with fallback
+                        Group {
+                            if let image = UIImage(named: "AppLogo") {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                            } else {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                                    .font(.title3)
+                            }
+                        }
+                        .frame(width: 24, height: 24)
+                        .cornerRadius(6)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
@@ -88,7 +96,7 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo
+                            // Custom app logo with fallback
                             Group {
                                 if let image = UIImage(named: "AppLogo") {
                                     Image(uiImage: image)
@@ -100,10 +108,8 @@ struct LiveActivityWidget: Widget {
                                         .font(.caption)
                                 }
                             }
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .cornerRadius(4)
+                            .frame(width: 16, height: 16)
+                            .cornerRadius(4)
                             Text("Active Collection")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -295,7 +301,7 @@ struct DropTimelineWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo
+                            // Custom app logo with fallback
                             Group {
                                 if let image = UIImage(named: "AppLogo") {
                                     Image(uiImage: image)
@@ -307,10 +313,8 @@ struct DropTimelineWidget: Widget {
                                         .font(.caption)
                                 }
                             }
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .cornerRadius(4)
+                            .frame(width: 16, height: 16)
+                            .cornerRadius(4)
                             Text("Drop Status")
                             .font(.caption)
                             .foregroundColor(.secondary)
