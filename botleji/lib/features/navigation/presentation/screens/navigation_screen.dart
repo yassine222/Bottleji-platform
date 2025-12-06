@@ -1832,7 +1832,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           const Duration(seconds: 20),
           onTimeout: () {
             debugPrint('⏱️ Route calculation timeout after 20 seconds');
-            throw TimeoutException('Route calculation timed out after 20 seconds');
+            throw Exception('Route calculation timed out after 20 seconds');
           },
         );
         
@@ -2073,7 +2073,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
         estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
         estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
         break;
-      case TransportationMode.cycling:
+      case TransportationMode.bicycling:
         estimatedMinutes = (distance / 250).round(); // ~250m per minute cycling
         estimatedMinutes = estimatedMinutes < 1 ? 1 : estimatedMinutes;
         estimatedDuration = estimatedMinutes == 1 ? '1 min' : '$estimatedMinutes mins';
