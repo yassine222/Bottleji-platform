@@ -27,11 +27,14 @@ class LiveActivityManager {
         if #available(iOS 16.1, *) {
             let authInfo = ActivityAuthorizationInfo()
             let isEnabled = authInfo.areActivitiesEnabled
-            let isFrequentPushesEnabled = authInfo.frequentPushesEnabled
             
             print("🔵 ActivityKit Authorization Info:")
             print("   - Activities enabled: \(isEnabled)")
-            print("   - Frequent pushes enabled: \(isFrequentPushesEnabled)")
+            
+            if #available(iOS 16.2, *) {
+                let isFrequentPushesEnabled = authInfo.frequentPushesEnabled
+                print("   - Frequent pushes enabled: \(isFrequentPushesEnabled)")
+            }
             
             if !isEnabled {
                 print("⚠️ Live Activities are disabled in Settings")
@@ -91,11 +94,7 @@ class LiveActivityManager {
         } catch {
             print("❌ Error starting Live Activity: \(error)")
             print("❌ Error details: \(error.localizedDescription)")
-            
-            // Check for specific error types
-            if let activityError = error as? ActivityKit.ActivityKitError {
-                print("❌ ActivityKit Error: \(activityError)")
-            }
+            print("❌ Error type: \(type(of: error))")
         }
     }
     
