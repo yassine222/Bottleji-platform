@@ -8,12 +8,12 @@ enum LiveActivityViewType {
     case compact
     case expanded
     case minimal
-    case default
+    case standard  // For lock screen and default views
 }
 
 // Helper function to load app logo from bundle with view-specific images
 @ViewBuilder
-func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivityViewType = .default) -> some View {
+func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivityViewType = .standard) -> some View {
     Group {
         // Try loading view-specific image first
         let imageName: String? = {
@@ -24,7 +24,7 @@ func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivit
                 return "live_activity_icon_expanded"
             case .minimal:
                 return "live_activity_icon_minimal"
-            case .default:
+            case .standard:
                 return "AppLogo"
             }
         }()
@@ -84,7 +84,7 @@ struct LiveActivityWidget: Widget {
                 HStack {
                     HStack(spacing: 8) {
                         // Custom app logo (lock screen - default)
-                        AppLogoView(size: 24, cornerRadius: 6, viewType: .default)
+                        AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
@@ -252,7 +252,7 @@ struct DropTimelineWidget: Widget {
                 HStack {
                     HStack(spacing: 8) {
                         // Custom app logo (lock screen - default)
-                        AppLogoView(size: 24, cornerRadius: 6, viewType: .default)
+                        AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
                         Text("Drop Status")
                         .font(.headline)
                             .fontWeight(.semibold)
