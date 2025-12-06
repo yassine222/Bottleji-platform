@@ -146,8 +146,6 @@ struct LiveActivityWidget: Widget {
                         }
                     }
                 }
-            }
-            .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
             } compactLeading: {
                 // Compact leading - Collection icon
                 Image(systemName: "arrow.triangle.2.circlepath")
@@ -165,6 +163,7 @@ struct LiveActivityWidget: Widget {
                     .foregroundColor(.green)
                     .font(.caption2)
             }
+            .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
     }
 }
