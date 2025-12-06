@@ -49,10 +49,12 @@ class GlobalLiveActivityManager {
       navigationControllerProvider,
       (previous, next) {
         if (next == null) {
-          // Collection ended
+          // Collection ended (collected, expired, or cancelled)
+          debugPrint('🛑 Collection ended - stopping Live Activity');
           _stopLiveActivity();
         } else if (previous == null || previous.dropId != next.dropId) {
           // New collection started
+          debugPrint('▶️ New collection started - starting Live Activity');
           _startLiveActivity(next);
         } else {
           // Collection updated (route info, etc.)
@@ -149,7 +151,12 @@ class GlobalLiveActivityManager {
     _updateTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       final currentCollection = _ref?.read(navigationControllerProvider);
       if (currentCollection == null || currentCollection.dropId != collection.dropId) {
+        debugPrint('🛑 Collection ended or changed - stopping update timer');
         timer.cancel();
+        // Explicitly stop Live Activity if collection is null
+        if (currentCollection == null) {
+          await _stopLiveActivity();
+        }
         return;
       }
       await _updateLiveActivity(currentCollection);
@@ -158,16 +165,38 @@ class GlobalLiveActivityManager {
 
   /// Stop Live Activity
   Future<void> _stopLiveActivity() async {
+    if (_currentDropId == null) {
+      // Already stopped or never started
+      debugPrint('⚠️ Live Activity already stopped or never started');
+      return;
+    }
+    
+    debugPrint('🛑 Stopping Live Activity for drop: $_currentDropId');
+    
+    // Cancel update timer first
     _updateTimer?.cancel();
     _updateTimer = null;
+    
+    // Clear state
+    final dropId = _currentDropId;
     _currentDropId = null;
     _currentDropAddress = null;
     _currentRouteDuration = null;
     _currentDistance = 0.0;
     _currentDestination = null;
     
-    await _liveActivityService.endCollectionActivity();
-    debugPrint('✅ Global Live Activity stopped');
+    // End the Live Activity
+    try {
+      await _liveActivityService.endCollectionActivity();
+      debugPrint('✅ Live Activity stopped successfully for drop: $dropId');
+    } catch (e) {
+      debugPrint('❌ Error stopping Live Activity: $e');
+    }
+  }
+  
+  /// Public method to stop Live Activity (can be called explicitly if needed)
+  Future<void> stopLiveActivity() async {
+    await _stopLiveActivity();
   }
 
   /// Update distance to destination
