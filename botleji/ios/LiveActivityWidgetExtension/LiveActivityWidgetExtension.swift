@@ -284,7 +284,7 @@ struct DropTimelineWidget: Widget {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         }
-                        Text(context.attributes.dropAddress)
+                        Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
