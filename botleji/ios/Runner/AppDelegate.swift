@@ -14,8 +14,8 @@ import GoogleMaps
     // Register Live Activity plugin
     if #available(iOS 16.1, *) {
       if let controller = window?.rootViewController as? FlutterViewController {
-        let registrar = controller.engine!.registrar(forPlugin: "LiveActivityPlugin")
-        LiveActivityPlugin.register(with: registrar!)
+        let registrar = controller.engine.registrar(forPlugin: "LiveActivityPlugin")
+        LiveActivityPlugin.register(with: registrar)
       }
     }
     
