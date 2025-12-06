@@ -11,11 +11,13 @@ import GoogleMaps
     GMSServices.provideAPIKey("AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E")
     GeneratedPluginRegistrant.register(with: self)
     
-    // Register Live Activity plugin
+    // Register Live Activity plugin after launch
     if #available(iOS 16.1, *) {
-      if let controller = window?.rootViewController as? FlutterViewController,
-         let registrar = controller.engine.registrar(forPlugin: "LiveActivityPlugin") {
-        LiveActivityPlugin.register(with: registrar)
+      DispatchQueue.main.async {
+        if let controller = self.window?.rootViewController as? FlutterViewController,
+           let registrar = controller.engine.registrar(forPlugin: "LiveActivityPlugin") {
+          LiveActivityPlugin.register(with: registrar)
+        }
       }
     }
     

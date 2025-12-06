@@ -1,6 +1,5 @@
 import Foundation
 import ActivityKit
-import WidgetKit
 
 /// Activity attributes for collection live activity
 struct CollectionActivityAttributes: ActivityAttributes {

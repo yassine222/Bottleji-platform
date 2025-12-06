@@ -58,14 +58,26 @@ class LiveActivityService {
 
   /// Start live activity for collection
   Future<void> startCollectionActivity(CollectionActivityData data) async {
+    debugPrint('🔵 LiveActivityService: Starting collection activity...');
+    debugPrint('🔵 Platform: ${Platform.isIOS ? 'iOS' : Platform.isAndroid ? 'Android' : 'Unknown'}');
+    
     if (!_isInitialized) {
+      debugPrint('🔵 Service not initialized, initializing now...');
       await initialize();
     }
 
+    debugPrint('🔵 isSupported(): ${isSupported()}');
+    
     if (Platform.isIOS && _iosService != null) {
+      debugPrint('🔵 Calling iOS service...');
       await _iosService!.startCollectionActivity(data);
     } else if (Platform.isAndroid && _androidService != null) {
+      debugPrint('🔵 Calling Android service...');
       await _androidService!.showCollectionActivity(data);
+    } else {
+      debugPrint('⚠️ No service available for this platform');
+      debugPrint('⚠️ iOS service: ${_iosService != null}');
+      debugPrint('⚠️ Android service: ${_androidService != null}');
     }
   }
 

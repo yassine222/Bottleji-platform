@@ -13,35 +13,57 @@ class IOSActivityService {
 
   /// Initialize the service
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      debugPrint('✅ iOS ActivityKit already initialized');
+      return;
+    }
 
     try {
       if (Platform.isIOS) {
+        debugPrint('🔵 iOS: Checking ActivityKit availability...');
         // Check if ActivityKit is available
         final bool isAvailable = await _channel.invokeMethod('isActivityKitAvailable') ?? false;
+        debugPrint('🔵 iOS: ActivityKit available: $isAvailable');
+        
         if (isAvailable) {
           _isInitialized = true;
-          debugPrint('✅ iOS ActivityKit initialized');
+          debugPrint('✅ iOS ActivityKit initialized successfully');
         } else {
           debugPrint('⚠️ iOS ActivityKit not available on this device');
+          debugPrint('⚠️ This might be because:');
+          debugPrint('   - Device is not iPhone 14 Pro or later');
+          debugPrint('   - iOS version is below 16.1');
+          debugPrint('   - Live Activities are disabled in Settings');
         }
+      } else {
+        debugPrint('⚠️ Not iOS platform, skipping ActivityKit initialization');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error initializing iOS ActivityKit: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       _isInitialized = false;
     }
   }
 
   /// Check if Dynamic Island is supported
   bool isSupported() {
-    if (!Platform.isIOS) return false;
-    // Dynamic Island is available on iPhone 14 Pro, iPhone 14 Pro Max, iPhone 15 series, iPhone 16 series
-    // iOS 16.1+ required
-    return _isInitialized;
+    if (!Platform.isIOS) {
+      debugPrint('⚠️ Not iOS platform');
+      return false;
+    }
+    if (!_isInitialized) {
+      debugPrint('⚠️ iOS ActivityKit not initialized');
+      return false;
+    }
+    debugPrint('✅ iOS ActivityKit is supported');
+    return true;
   }
 
   /// Start Dynamic Island activity
   Future<void> startCollectionActivity(CollectionActivityData data) async {
+    debugPrint('🔵 iOS: Attempting to start live activity...');
+    debugPrint('🔵 iOS: isSupported() = ${isSupported()}');
+    
     if (!isSupported()) {
       debugPrint('⚠️ Dynamic Island not supported, skipping start');
       return;
@@ -51,7 +73,12 @@ class IOSActivityService {
       final elapsedTimeStr = LiveActivityService.formatElapsedTime(data.elapsedTime);
       final distanceStr = LiveActivityService.formatDistance(data.distanceToDestination);
 
-      await _channel.invokeMethod('startActivity', {
+      debugPrint('🔵 iOS: Calling native startActivity with:');
+      debugPrint('   - elapsedTime: $elapsedTimeStr');
+      debugPrint('   - distance: $distanceStr');
+      debugPrint('   - eta: ${data.eta ?? 'N/A'}');
+
+      final result = await _channel.invokeMethod('startActivity', {
         'dropId': data.dropId,
         'dropAddress': data.dropAddress,
         'elapsedTime': elapsedTimeStr, // "12:34"
@@ -61,9 +88,11 @@ class IOSActivityService {
       });
 
       _isActivityActive = true;
-      debugPrint('✅ Dynamic Island activity started');
-    } catch (e) {
+      debugPrint('✅ Dynamic Island activity started successfully');
+      debugPrint('🔵 iOS: Native method result: $result');
+    } catch (e, stackTrace) {
       debugPrint('❌ Error starting Dynamic Island activity: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       _isActivityActive = false;
     }
   }
