@@ -1,6 +1,7 @@
 import WidgetKit
 import SwiftUI
 import ActivityKit
+import UIKit
 
 // MARK: - Collection Navigation Activity (Improved UI)
 struct CollectionActivityAttributes: ActivityAttributes {
@@ -25,7 +26,7 @@ struct LiveActivityWidget: Widget {
                 HStack {
                     HStack(spacing: 8) {
                         // Custom app logo
-                        Image("AppLogo")
+                        (UIImage(named: "AppLogo") != nil ? Image(uiImage: UIImage(named: "AppLogo")!) : Image(systemName: "mappin.circle.fill").foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)))
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
@@ -88,7 +89,17 @@ struct LiveActivityWidget: Widget {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
                             // Custom app logo
-                            Image("AppLogo")
+                            Group {
+                                if let image = UIImage(named: "AppLogo") {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFit()
+                                } else {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                                        .font(.caption)
+                                }
+                            }
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 16, height: 16)
@@ -208,12 +219,20 @@ struct DropTimelineWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo
-                        Image("AppLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .cornerRadius(6)
+                        // Custom app logo with fallback
+                        Group {
+                            if let image = UIImage(named: "AppLogo") {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                            } else {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                                    .font(.title3)
+                            }
+                        }
+                        .frame(width: 24, height: 24)
+                        .cornerRadius(6)
                         Text("Drop Status")
                         .font(.headline)
                             .fontWeight(.semibold)
@@ -261,7 +280,17 @@ struct DropTimelineWidget: Widget {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
                             // Custom app logo
-                            Image("AppLogo")
+                            Group {
+                                if let image = UIImage(named: "AppLogo") {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFit()
+                                } else {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                                        .font(.caption)
+                                }
+                            }
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 16, height: 16)
