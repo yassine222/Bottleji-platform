@@ -364,10 +364,8 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
   /// Update drop timeline Live Activity
   Future<void> _updateDropTimelineActivity(Drop drop, Map<String, dynamic>? notificationData) async {
     try {
-      final userMode = ref.read(userModeControllerProvider).value;
-      if (userMode != UserMode.household) {
-        return; // Only for household mode
-      }
+      // Note: We can't access ref here, so we'll check user mode in the caller
+      // For now, we'll update the activity regardless and let the service handle platform checks
       
       final liveActivityService = LiveActivityService();
       await liveActivityService.initialize();
