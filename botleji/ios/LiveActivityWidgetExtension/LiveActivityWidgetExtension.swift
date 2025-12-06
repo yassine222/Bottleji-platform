@@ -3,6 +3,31 @@ import SwiftUI
 import ActivityKit
 import UIKit
 
+// Helper function to load app logo from bundle
+@ViewBuilder
+func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4) -> some View {
+    Group {
+        // Try loading from main bundle first
+        if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else if let image = UIImage(named: "AppLogo") {
+            // Fallback to default bundle
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else {
+            // Fallback to system icon
+            Image(systemName: "mappin.circle.fill")
+                .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                .font(size > 20 ? .title3 : (size > 15 ? .caption : .caption2))
+        }
+    }
+    .frame(width: size, height: size)
+    .cornerRadius(cornerRadius)
+}
+
 // MARK: - Collection Navigation Activity (Improved UI)
 struct CollectionActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
@@ -25,20 +50,8 @@ struct LiveActivityWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo with fallback
-                        Group {
-                            if let image = UIImage(named: "AppLogo") {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFit()
-                            } else {
-                                Image(systemName: "mappin.circle.fill")
-                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                                    .font(.title3)
-                            }
-                        }
-                        .frame(width: 24, height: 24)
-                        .cornerRadius(6)
+                        // Custom app logo
+                        AppLogoView(size: 24, cornerRadius: 6)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
@@ -115,7 +128,7 @@ struct LiveActivityWidget: Widget {
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
-                        Text(context.attributes.dropAddress)
+                        Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -177,19 +190,7 @@ struct LiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                Group {
-                    if let image = UIImage(named: "AppLogo") {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            .font(.caption)
-                    }
-                }
-                .frame(width: 16, height: 16)
-                .cornerRadius(3)
+                AppLogoView(size: 16, cornerRadius: 3)
             } compactTrailing: {
                 // Compact trailing - ETA countdown
                 Text(context.state.eta)
@@ -198,19 +199,7 @@ struct LiveActivityWidget: Widget {
                     .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
             } minimal: {
                 // Minimal view - Custom app logo
-                Group {
-                    if let image = UIImage(named: "AppLogo") {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            .font(.caption2)
-                    }
-                }
-                .frame(width: 12, height: 12)
-                .cornerRadius(2)
+                AppLogoView(size: 12, cornerRadius: 2)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
@@ -241,20 +230,8 @@ struct DropTimelineWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo with fallback
-                        Group {
-                            if let image = UIImage(named: "AppLogo") {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFit()
-                            } else {
-                    Image(systemName: "mappin.circle.fill")
-                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                                    .font(.title3)
-                            }
-                        }
-                        .frame(width: 24, height: 24)
-                        .cornerRadius(6)
+                        // Custom app logo
+                        AppLogoView(size: 24, cornerRadius: 6)
                         Text("Drop Status")
                         .font(.headline)
                             .fontWeight(.semibold)
@@ -301,20 +278,8 @@ struct DropTimelineWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo with fallback
-                            Group {
-                                if let image = UIImage(named: "AppLogo") {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFit()
-                                } else {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                                        .font(.caption)
-                                }
-                            }
-                            .frame(width: 16, height: 16)
-                            .cornerRadius(4)
+                            // Custom app logo
+                            AppLogoView(size: 16, cornerRadius: 4)
                             Text("Drop Status")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -359,19 +324,7 @@ struct DropTimelineWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Custom app logo
-                Group {
-                    if let image = UIImage(named: "AppLogo") {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            .font(.caption)
-                    }
-                }
-                .frame(width: 16, height: 16)
-                .cornerRadius(3)
+                AppLogoView(size: 16, cornerRadius: 3)
             } compactTrailing: {
                 // Compact trailing - Status text
                 Text(context.state.statusText)
@@ -381,19 +334,7 @@ struct DropTimelineWidget: Widget {
                     .lineLimit(1)
             } minimal: {
                 // Minimal view - Custom app logo
-                Group {
-                    if let image = UIImage(named: "AppLogo") {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            .font(.caption2)
-                    }
-                }
-                .frame(width: 12, height: 12)
-                .cornerRadius(2)
+                AppLogoView(size: 12, cornerRadius: 2)
             }
         }
     }
