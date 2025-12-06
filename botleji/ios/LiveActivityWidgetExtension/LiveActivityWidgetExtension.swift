@@ -19,34 +19,35 @@ struct CollectionActivityAttributes: ActivityAttributes {
 struct LiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CollectionActivityAttributes.self) { context in
-            // Lock screen/banner UI - Improved design
+            // Lock screen/banner UI - Improved design with theme support
             VStack(alignment: .leading, spacing: 12) {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
                         Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary color #00695C
                             .font(.title3)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                     }
                     Spacer()
                     // Show ETA countdown instead of elapsed time
                     Text(context.state.eta)
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.orange)
+                        .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange #FF9800
                 }
                 
                 // Progress indicator
                 HStack(spacing: 0) {
                     Rectangle()
-                        .fill(Color.green)
+                        .fill(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary color
                         .frame(height: 4)
                         .frame(maxWidth: .infinity)
                     Rectangle()
-                        .fill(Color.green.opacity(0.3))
+                        .fill(Color(red: 0.0, green: 0.412, blue: 0.361).opacity(0.3))
                         .frame(height: 4)
                         .frame(maxWidth: .infinity)
                 }
@@ -61,15 +62,17 @@ struct LiveActivityWidget: Widget {
                         Text(context.state.distance)
                             .font(.subheadline)
                             .fontWeight(.medium)
+                            .foregroundColor(.primary)
                     }
                     
                     HStack(spacing: 6) {
                         Image(systemName: "clock.fill")
                             .font(.caption)
-                            .foregroundColor(.orange)
+                            .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
                         Text("Arrives in \(context.state.eta)")
                             .font(.subheadline)
                             .fontWeight(.medium)
+                            .foregroundColor(.primary)
                     }
                 }
             }
@@ -81,9 +84,9 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Collection icon
+                            // Collection icon - App primary color
                             Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
                                 .font(.caption)
                             Text("Active Collection")
                                 .font(.caption)
@@ -92,6 +95,7 @@ struct LiveActivityWidget: Widget {
                         Text(context.attributes.dropAddress)
                             .font(.headline)
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .lineLimit(2)
                     }
                 }
@@ -105,20 +109,20 @@ struct LiveActivityWidget: Widget {
                         Text(context.state.eta)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(.orange)
+                            .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange #FF9800
                     }
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(spacing: 8) {
-                        // Progress bar
+                        // Progress bar - App primary color
                         HStack(spacing: 0) {
                             Rectangle()
-                                .fill(Color.green)
+                                .fill(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
                                 .frame(height: 3)
                                 .frame(maxWidth: .infinity)
                             Rectangle()
-                                .fill(Color.green.opacity(0.2))
+                                .fill(Color(red: 0.0, green: 0.412, blue: 0.361).opacity(0.2))
                                 .frame(height: 3)
                                 .frame(maxWidth: .infinity)
                         }
@@ -133,15 +137,17 @@ struct LiveActivityWidget: Widget {
                                 Text(context.state.distance)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
+                                    .foregroundColor(.primary)
                             }
                             
                             HStack(spacing: 4) {
                                 Image(systemName: "clock.fill")
                                     .font(.caption2)
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
                                 Text(context.state.eta)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
+                                    .foregroundColor(.primary)
                             }
                         }
                     }
@@ -149,18 +155,18 @@ struct LiveActivityWidget: Widget {
             } compactLeading: {
                 // Compact leading - Collection icon
                 Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
                     .font(.caption)
             } compactTrailing: {
                 // Compact trailing - ETA countdown
                 Text(context.state.eta)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
             } minimal: {
                 // Minimal view - Collection icon
                 Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
                     .font(.caption2)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
@@ -187,7 +193,7 @@ struct DropTimelineActivityAttributes: ActivityAttributes {
 struct DropTimelineWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DropTimelineActivityAttributes.self) { context in
-            // Lock screen/banner UI
+            // Lock screen/banner UI with theme support
             VStack(alignment: .leading, spacing: 12) {
                 // Header
                 HStack {
@@ -198,12 +204,13 @@ struct DropTimelineWidget: Widget {
                         Text("Drop Status")
                             .font(.headline)
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                     }
                     Spacer()
                     Text(context.attributes.estimatedValue)
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary #00695C
                 }
                 
                 // Status text
@@ -250,6 +257,7 @@ struct DropTimelineWidget: Widget {
                         Text(context.attributes.dropAddress)
                             .font(.headline)
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .lineLimit(1)
                     }
                 }
@@ -279,7 +287,7 @@ struct DropTimelineWidget: Widget {
                                     .foregroundColor(.secondary)
                                 Text(collectorName)
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.primary)
                             }
                         }
                     }
@@ -305,19 +313,19 @@ struct DropTimelineWidget: Widget {
         }
     }
     
-    // Helper function for status color
+    // Helper function for status color - uses app theme colors
     private func statusColor(_ status: String) -> Color {
         switch status {
         case "pending":
-            return .blue
+            return Color(red: 0.0, green: 0.478, blue: 1.0) // System blue
         case "accepted", "on_way":
-            return .orange
+            return Color(red: 1.0, green: 0.596, blue: 0.0) // Orange #FF9800
         case "collected":
-            return .green
+            return Color(red: 0.0, green: 0.412, blue: 0.361) // App primary #00695C
         case "expired", "cancelled":
-            return .red
+            return Color(red: 0.827, green: 0.184, blue: 0.184) // Red #D32F2F
         default:
-            return .gray
+            return Color(.systemGray)
         }
     }
     
@@ -346,27 +354,27 @@ struct DropTimelineWidget: Widget {
     private func timelineProgressView(status: String) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
         
-        HStack(spacing: 8) {
-            ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
-                let isActive = isStageActive(status: status, stageIndex: index)
-                let isCompleted = isStageCompleted(status: status, stageIndex: index)
-                
-                HStack(spacing: 4) {
-                    // Circle indicator
-                    Circle()
-                        .fill(isCompleted ? statusColor(status) : (isActive ? statusColor(status) : Color.gray.opacity(0.3)))
-                        .frame(width: 8, height: 8)
-                    
-                    if index < stages.count - 1 {
-                        // Connector line
-                        Rectangle()
-                            .fill(isCompleted ? statusColor(status) : Color.gray.opacity(0.3))
-                            .frame(height: 2)
-                            .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
+                        let isActive = isStageActive(status: status, stageIndex: index)
+                        let isCompleted = isStageCompleted(status: status, stageIndex: index)
+                        
+                        HStack(spacing: 4) {
+                            // Circle indicator - uses theme-aware colors
+                            Circle()
+                                .fill(isCompleted ? statusColor(status) : (isActive ? statusColor(status) : Color(.systemGray4)))
+                                .frame(width: 8, height: 8)
+                            
+                            if index < stages.count - 1 {
+                                // Connector line - uses theme-aware colors
+                                Rectangle()
+                                    .fill(isCompleted ? statusColor(status) : Color(.systemGray4))
+                                    .frame(height: 2)
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
                     }
                 }
-            }
-        }
     }
     
     private func isStageActive(status: String, stageIndex: Int) -> Bool {
