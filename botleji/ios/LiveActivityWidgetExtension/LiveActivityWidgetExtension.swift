@@ -308,22 +308,26 @@ struct DropTimelineWidget: Widget {
                     }
                 }
             } compactLeading: {
-                // Compact leading - Status icon
-                Image(systemName: statusIcon(context.state.status))
-                    .foregroundColor(statusColor(context.state.status))
-                    .font(.caption)
+                // Compact leading - Custom app logo
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .cornerRadius(3)
             } compactTrailing: {
                 // Compact trailing - Status text
                 Text(context.state.statusText)
                     .font(.caption2)
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(statusColor(context.state.status))
                     .lineLimit(1)
             } minimal: {
-                // Minimal view
-                Image(systemName: statusIcon(context.state.status))
-                    .foregroundColor(statusColor(context.state.status))
-                    .font(.caption2)
+                // Minimal view - Custom app logo
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12, height: 12)
+                    .cornerRadius(2)
             }
         }
     }
