@@ -336,7 +336,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           ? DateTime.now().difference(_collectionStartTime!)
           : Duration.zero;
 
-      // Get ETA from route duration
+      // Calculate countdown ETA (remaining time)
+      // For initial start, use route duration, countdown will be calculated in updates
       final eta = _routeDuration ?? 'N/A';
 
       final data = CollectionActivityData(
@@ -361,6 +362,56 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
     }
   }
 
+  /// Calculate countdown ETA from route duration and elapsed time
+  String _calculateCountdownETA() {
+    if (_routeDuration == null || _routeDuration!.isEmpty || _routeDuration == 'N/A') {
+      return 'N/A';
+    }
+
+    try {
+      // Parse route duration to get total minutes
+      int totalMinutes = 0;
+      final durationParts = _routeDuration!.split(' ');
+      if (durationParts.length >= 2) {
+        if (durationParts[1].contains('hour')) {
+          totalMinutes = int.parse(durationParts[0]) * 60;
+          if (durationParts.length >= 4) {
+            totalMinutes += int.parse(durationParts[2]);
+          }
+        } else {
+          // Parse minutes from duration text like "15 mins"
+          totalMinutes = int.parse(durationParts[0]);
+        }
+      }
+
+      // Calculate elapsed time
+      final elapsedTime = _collectionStartTime != null
+          ? DateTime.now().difference(_collectionStartTime!)
+          : Duration.zero;
+      final elapsedMinutes = elapsedTime.inMinutes;
+
+      // Calculate remaining time
+      final remainingMinutes = totalMinutes - elapsedMinutes;
+      
+      if (remainingMinutes <= 0) {
+        return 'Arriving';
+      } else if (remainingMinutes < 60) {
+        return '$remainingMinutes min';
+      } else {
+        final hours = remainingMinutes ~/ 60;
+        final minutes = remainingMinutes % 60;
+        if (minutes == 0) {
+          return '$hours hour${hours > 1 ? 's' : ''}';
+        } else {
+          return '$hours h $minutes min';
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error calculating countdown ETA: $e');
+      return _routeDuration ?? 'N/A';
+    }
+  }
+
   /// Update live activity with current data
   Future<void> _updateLiveActivity() async {
     if (!_liveActivityService.isSupported()) {
@@ -373,8 +424,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           ? DateTime.now().difference(_collectionStartTime!)
           : Duration.zero;
 
-      // Get ETA from route duration
-      final eta = _routeDuration ?? 'N/A';
+      // Calculate countdown ETA (remaining time)
+      final eta = _calculateCountdownETA();
 
       final data = CollectionActivityData(
         dropId: widget.dropId,

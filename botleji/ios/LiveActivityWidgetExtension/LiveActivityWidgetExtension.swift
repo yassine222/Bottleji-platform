@@ -27,15 +27,16 @@ struct LiveActivityWidget: Widget {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundColor(.green)
                             .font(.title3)
-                        Text("Collection in Progress")
+                        Text("Collecting Drop")
                             .font(.headline)
                             .fontWeight(.semibold)
                     }
                     Spacer()
-                    Text(context.state.elapsedTime)
+                    // Show ETA countdown instead of elapsed time
+                    Text(context.state.eta)
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .foregroundColor(.orange)
                 }
                 
                 // Progress indicator
@@ -66,7 +67,7 @@ struct LiveActivityWidget: Widget {
                         Image(systemName: "clock.fill")
                             .font(.caption)
                             .foregroundColor(.orange)
-                        Text("ETA \(context.state.eta)")
+                        Text("Arrives in \(context.state.eta)")
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
@@ -76,14 +77,15 @@ struct LiveActivityWidget: Widget {
             .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI - Improved design
+                // Expanded UI - Improved design with app logo
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            Image(systemName: "mappin.circle.fill")
+                            // App icon - using system icon that represents collection
+                            Image(systemName: "arrow.triangle.2.circlepath")
                                 .foregroundColor(.green)
                                 .font(.caption)
-                            Text("Collection")
+                            Text("Collecting Drop")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -96,13 +98,14 @@ struct LiveActivityWidget: Widget {
                 
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 6) {
-                        Text("Timer")
+                        Text("Arrives in")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text(context.state.elapsedTime)
+                        // Show ETA countdown instead of elapsed time
+                        Text(context.state.eta)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(.green)
+                            .foregroundColor(.orange)
                     }
                 }
                 
@@ -144,24 +147,19 @@ struct LiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                // Compact leading - Icon with pulse animation
-                ZStack {
-                    Circle()
-                        .fill(Color.green.opacity(0.2))
-                        .frame(width: 24, height: 24)
-                    Image(systemName: "mappin.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.caption)
-                }
+                // Compact leading - Collection icon
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundColor(.green)
+                    .font(.caption)
             } compactTrailing: {
-                // Compact trailing - Timer
-                Text(context.state.elapsedTime)
+                // Compact trailing - ETA countdown
+                Text(context.state.eta)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.orange)
             } minimal: {
-                // Minimal view
-                Image(systemName: "mappin.circle.fill")
+                // Minimal view - Collection icon
+                Image(systemName: "arrow.triangle.2.circlepath")
                     .foregroundColor(.green)
                     .font(.caption2)
             }
@@ -244,7 +242,7 @@ struct DropTimelineWidget: Widget {
                             Image(systemName: "tray.and.arrow.down.fill")
                                 .foregroundColor(statusColor(context.state.status))
                                 .font(.caption)
-                            Text("Drop")
+                            Text("Drop Status")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
