@@ -221,7 +221,7 @@ struct DropTimelineWidget: Widget {
                 }
                 
                 // Timeline progress
-                timelineProgressView(context: context)
+                timelineProgressView(status: context.state.status)
                 
                 // Time ago
                 HStack {
@@ -270,7 +270,7 @@ struct DropTimelineWidget: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(spacing: 8) {
                         // Timeline progress
-                        timelineProgressView(context: context)
+                        timelineProgressView(status: context.state.status)
                         
                         // Collector info if available
                         if let collectorName = context.state.collectorName {
@@ -344,8 +344,7 @@ struct DropTimelineWidget: Widget {
     
     // Timeline progress view
     @ViewBuilder
-    private func timelineProgressView(context: Activity<DropTimelineActivityAttributes>.Context) -> some View {
-        let status = context.state.status
+    private func timelineProgressView(status: String) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
         
         HStack(spacing: 8) {
