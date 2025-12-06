@@ -97,6 +97,92 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                 ))
             }
             
+        // Drop Timeline Activity methods
+        case "startDropTimelineActivity":
+            guard let args = call.arguments as? [String: Any],
+                  let dropId = args["dropId"] as? String,
+                  let dropAddress = args["dropAddress"] as? String,
+                  let estimatedValue = args["estimatedValue"] as? String,
+                  let status = args["status"] as? String,
+                  let statusText = args["statusText"] as? String,
+                  let timeAgo = args["timeAgo"] as? String,
+                  let createdAt = args["createdAt"] as? String else {
+                result(FlutterError(
+                    code: "INVALID_ARGUMENTS",
+                    message: "Missing required arguments",
+                    details: nil
+                ))
+                return
+            }
+            
+            if #available(iOS 16.1, *) {
+                let collectorName = args["collectorName"] as? String
+                liveActivityManager.startDropTimelineActivity(
+                    dropId: dropId,
+                    dropAddress: dropAddress,
+                    estimatedValue: estimatedValue,
+                    status: status,
+                    statusText: statusText,
+                    collectorName: collectorName,
+                    timeAgo: timeAgo,
+                    createdAt: createdAt
+                )
+                result(nil)
+            } else {
+                result(FlutterError(
+                    code: "NOT_SUPPORTED",
+                    message: "iOS 16.1+ required",
+                    details: nil
+                ))
+            }
+            
+        case "updateDropTimelineActivity":
+            guard let args = call.arguments as? [String: Any],
+                  let status = args["status"] as? String,
+                  let statusText = args["statusText"] as? String,
+                  let timeAgo = args["timeAgo"] as? String else {
+                result(FlutterError(
+                    code: "INVALID_ARGUMENTS",
+                    message: "Missing required arguments",
+                    details: nil
+                ))
+                return
+            }
+            
+            if #available(iOS 16.1, *) {
+                let collectorName = args["collectorName"] as? String
+                liveActivityManager.updateDropTimelineActivity(
+                    status: status,
+                    statusText: statusText,
+                    collectorName: collectorName,
+                    timeAgo: timeAgo
+                )
+                result(nil)
+            } else {
+                result(FlutterError(
+                    code: "NOT_SUPPORTED",
+                    message: "iOS 16.1+ required",
+                    details: nil
+                ))
+            }
+            
+        case "endDropTimelineActivity":
+            if #available(iOS 16.1, *) {
+                if let args = call.arguments as? [String: Any],
+                   let dropId = args["dropId"] as? String {
+                    liveActivityManager.endDropTimelineActivity(dropId: dropId)
+                } else {
+                    liveActivityManager.endDropTimelineActivity()
+                }
+                result(nil)
+            } else {
+                result(FlutterError(
+                    code: "NOT_SUPPORTED",
+                    message: "iOS 16.1+ required",
+                    details: nil
+                ))
+            }
+            
         default:
             result(FlutterMethodNotImplemented)
         }

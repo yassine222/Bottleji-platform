@@ -4,6 +4,8 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/data/repositories/drop_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
+import 'package:botleji/core/services/live_activity_service.dart';
+import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 final dropsControllerProvider = StateNotifierProvider<DropsController, AsyncValue<List<Drop>>>((ref) {
   return DropsController(ref.watch(dropRepositoryProvider));
@@ -320,7 +322,7 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
   void handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) {
     debugPrint('🔄 DropsController: Handling drop status update - $status for drop $dropId');
     
-    state.whenData((drops) {
+    state.whenData((drops) async {
       final updatedDrops = drops.map((drop) {
         if (drop.id == dropId) {
           // Update drop status based on notification
@@ -345,6 +347,10 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
           // Create updated drop with new status
           final updatedDrop = drop.copyWith(status: newStatus);
           debugPrint('🔄 DropsController: Updated drop $dropId status to ${newStatus.name}');
+          
+          // Update drop timeline Live Activity (household mode only)
+          _updateDropTimelineActivity(updatedDrop, data);
+          
           return updatedDrop;
         }
         return drop;
@@ -353,6 +359,54 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
       state = AsyncValue.data(updatedDrops);
       debugPrint('🔄 DropsController: Drop list updated with new status');
     });
+  }
+  
+  /// Update drop timeline Live Activity
+  Future<void> _updateDropTimelineActivity(Drop drop, Map<String, dynamic>? notificationData) async {
+    try {
+      final userMode = ref.read(userModeControllerProvider).value;
+      if (userMode != UserMode.household) {
+        return; // Only for household mode
+      }
+      
+      final liveActivityService = LiveActivityService();
+      await liveActivityService.initialize();
+      
+      // Determine status and status text
+      String statusKey = drop.status.name;
+      String statusText = LiveActivityService.getStatusText(statusKey);
+      
+      // Get collector name if available (for accepted/on_way status)
+      String? collectorName;
+      if (drop.status == DropStatus.accepted || statusKey == 'on_way') {
+        // Try to get collector name from notification data or drop
+        if (notificationData != null && notificationData['collectorName'] != null) {
+          collectorName = notificationData['collectorName'] as String;
+        } else if (notificationData != null && notificationData['collectorId'] != null) {
+          // Fetch collector name by ID
+          final collectorInfo = await getUserInfo(notificationData['collectorId'] as String);
+          collectorName = collectorInfo?['name'] as String?;
+        }
+      }
+      
+      // Update or end activity based on status
+      if (drop.status == DropStatus.collected || 
+          drop.status == DropStatus.expired || 
+          drop.status == DropStatus.cancelled) {
+        // End activity for final states
+        await liveActivityService.endDropTimelineActivity(dropId: drop.id);
+      } else {
+        // Update activity for intermediate states
+        await liveActivityService.updateDropTimelineActivity(
+          status: statusKey,
+          statusText: statusText,
+          collectorName: collectorName,
+          timeAgo: LiveActivityService.formatTimeAgo(drop.modifiedAt),
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error updating drop timeline Live Activity: $e');
+    }
   }
 
   Future<void> cancelAcceptedDrop(String dropId, String reason, String cancelledByCollectorId) async {

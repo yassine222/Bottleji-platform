@@ -51,6 +51,7 @@ import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/features/stats/presentation/widgets/session_value_card.dart';
 import 'package:botleji/features/auth/controllers/collector_subscription_controller.dart';
 import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
+import 'package:botleji/core/services/live_activity_service.dart';
 
 
 // Navigation step model
@@ -1464,7 +1465,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
       debugPrint('Drop created successfully');
       
-      // Activity tracking removed
+      // Start drop timeline Live Activity (household mode only)
+      final userMode = ref.read(userModeControllerProvider).value;
+      if (userMode == UserMode.household && createdDrop != null) {
+        try {
+          final liveActivityService = LiveActivityService();
+          await liveActivityService.initialize();
+          
+          // Get address for the drop
+          final dropAddress = _selectedLocationAddress ?? 
+              await _getAddressFromCoordinates(dropLocation) ?? 
+              '${dropLocation.latitude.toStringAsFixed(6)}, ${dropLocation.longitude.toStringAsFixed(6)}';
+          
+          // Format estimated value
+          final estimatedValue = DropValueCalculator.formatEstimatedValue(createdDrop.estimatedValue);
+          
+          // Start drop timeline activity
+          await liveActivityService.startDropTimelineActivity(
+            dropId: createdDrop.id,
+            dropAddress: dropAddress,
+            estimatedValue: estimatedValue,
+            status: 'pending',
+            statusText: LiveActivityService.getStatusText('pending'),
+            collectorName: null,
+            timeAgo: LiveActivityService.formatTimeAgo(createdDrop.createdAt),
+            createdAt: createdDrop.createdAt.toIso8601String(),
+          );
+          debugPrint('✅ Drop Timeline Live Activity started');
+        } catch (e) {
+          debugPrint('⚠️ Error starting Drop Timeline Live Activity: $e');
+        }
+      }
       
       return true; // Return success
     } catch (e) {

@@ -14,11 +14,27 @@ struct CollectionActivityAttributes: ActivityAttributes {
     var transportMode: String
 }
 
+/// Activity attributes for drop timeline (household mode)
+struct DropTimelineActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var status: String  // "pending", "accepted", "on_way", "collected", "expired", "cancelled"
+        var statusText: String  // "Created", "Accepted", "On his way", etc.
+        var collectorName: String?  // Collector name if accepted
+        var timeAgo: String  // "2 min ago", "Just now"
+    }
+    
+    var dropId: String
+    var dropAddress: String
+    var estimatedValue: String  // "2.50 TND"
+    var createdAt: String  // Timestamp
+}
+
 /// Manager for Dynamic Island and Live Activities
 @available(iOS 16.1, *)
 class LiveActivityManager {
     static let shared = LiveActivityManager()
     private var currentActivity: Activity<CollectionActivityAttributes>?
+    private var currentDropTimelineActivity: Activity<DropTimelineActivityAttributes>?
     
     private init() {}
     
@@ -132,6 +148,106 @@ class LiveActivityManager {
             currentActivity = nil
             print("✅ Live Activity ended")
         }
+    }
+    
+    // MARK: - Drop Timeline Activity (Household Mode)
+    
+    /// Start drop timeline activity
+    func startDropTimelineActivity(
+        dropId: String,
+        dropAddress: String,
+        estimatedValue: String,
+        status: String,
+        statusText: String,
+        collectorName: String?,
+        timeAgo: String,
+        createdAt: String
+    ) {
+        guard isActivityKitAvailable() else {
+            print("⚠️ ActivityKit not available or not enabled")
+            return
+        }
+        
+        // End any existing drop timeline activity for this drop
+        if let existing = currentDropTimelineActivity, existing.attributes.dropId == dropId {
+            endDropTimelineActivity()
+        }
+        
+        let attributes = DropTimelineActivityAttributes(
+            dropId: dropId,
+            dropAddress: dropAddress,
+            estimatedValue: estimatedValue,
+            createdAt: createdAt
+        )
+        
+        let contentState = DropTimelineActivityAttributes.ContentState(
+            status: status,
+            statusText: statusText,
+            collectorName: collectorName,
+            timeAgo: timeAgo
+        )
+        
+        do {
+            let activity = try Activity<DropTimelineActivityAttributes>.request(
+                attributes: attributes,
+                contentState: contentState,
+                pushType: nil
+            )
+            
+            currentDropTimelineActivity = activity
+            print("✅ Drop Timeline Activity started: \(dropId)")
+            print("✅ Status: \(statusText)")
+        } catch {
+            print("❌ Error starting Drop Timeline Activity: \(error)")
+        }
+    }
+    
+    /// Update drop timeline activity
+    func updateDropTimelineActivity(
+        status: String,
+        statusText: String,
+        collectorName: String?,
+        timeAgo: String
+    ) {
+        guard let activity = currentDropTimelineActivity else {
+            print("⚠️ No active drop timeline activity to update")
+            return
+        }
+        
+        let contentState = DropTimelineActivityAttributes.ContentState(
+            status: status,
+            statusText: statusText,
+            collectorName: collectorName,
+            timeAgo: timeAgo
+        )
+        
+        Task {
+            await activity.update(using: contentState)
+            print("✅ Drop Timeline Activity updated: \(statusText)")
+        }
+    }
+    
+    /// End drop timeline activity
+    func endDropTimelineActivity() {
+        guard let activity = currentDropTimelineActivity else {
+            return
+        }
+        
+        Task {
+            await activity.end(dismissalPolicy: .immediate)
+            currentDropTimelineActivity = nil
+            print("✅ Drop Timeline Activity ended")
+        }
+    }
+    
+    /// End drop timeline activity for specific drop
+    func endDropTimelineActivity(dropId: String) {
+        guard let activity = currentDropTimelineActivity,
+              activity.attributes.dropId == dropId else {
+            return
+        }
+        
+        endDropTimelineActivity()
     }
 }
 

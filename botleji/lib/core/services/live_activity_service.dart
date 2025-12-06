@@ -121,5 +121,104 @@ class LiveActivityService {
       return '${km.toStringAsFixed(1)} km';
     }
   }
+  
+  // MARK: - Drop Timeline Activity (Household Mode)
+  
+  /// Start drop timeline activity
+  Future<void> startDropTimelineActivity({
+    required String dropId,
+    required String dropAddress,
+    required String estimatedValue,
+    required String status,
+    required String statusText,
+    String? collectorName,
+    required String timeAgo,
+    required String createdAt,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (Platform.isIOS && _iosService != null) {
+      await _iosService!.startDropTimelineActivity(
+        dropId: dropId,
+        dropAddress: dropAddress,
+        estimatedValue: estimatedValue,
+        status: status,
+        statusText: statusText,
+        collectorName: collectorName,
+        timeAgo: timeAgo,
+        createdAt: createdAt,
+      );
+    } else if (Platform.isAndroid && _androidService != null) {
+      // Android implementation can use persistent notification
+      // For now, we'll skip Android for drop timeline
+      debugPrint('⚠️ Drop Timeline not yet implemented for Android');
+    }
+  }
+  
+  /// Update drop timeline activity
+  Future<void> updateDropTimelineActivity({
+    required String status,
+    required String statusText,
+    String? collectorName,
+    required String timeAgo,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (Platform.isIOS && _iosService != null) {
+      await _iosService!.updateDropTimelineActivity(
+        status: status,
+        statusText: statusText,
+        collectorName: collectorName,
+        timeAgo: timeAgo,
+      );
+    }
+  }
+  
+  /// End drop timeline activity
+  Future<void> endDropTimelineActivity({String? dropId}) async {
+    if (Platform.isIOS && _iosService != null) {
+      await _iosService!.endDropTimelineActivity(dropId: dropId);
+    }
+  }
+  
+  /// Format time ago string
+  static String formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    }
+  }
+  
+  /// Get status text from DropStatus
+  static String getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Created';
+      case 'accepted':
+        return 'Accepted';
+      case 'on_way':
+        return 'On his way';
+      case 'collected':
+        return 'Collected';
+      case 'expired':
+        return 'Expired';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
 }
 

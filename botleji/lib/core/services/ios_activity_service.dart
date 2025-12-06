@@ -134,5 +134,81 @@ class IOSActivityService {
       _isActivityActive = false;
     }
   }
+  
+  // MARK: - Drop Timeline Activity (Household Mode)
+  
+  /// Start drop timeline activity
+  Future<void> startDropTimelineActivity({
+    required String dropId,
+    required String dropAddress,
+    required String estimatedValue,
+    required String status,
+    required String statusText,
+    String? collectorName,
+    required String timeAgo,
+    required String createdAt,
+  }) async {
+    if (!isSupported()) {
+      return;
+    }
+
+    try {
+      await _channel.invokeMethod('startDropTimelineActivity', {
+        'dropId': dropId,
+        'dropAddress': dropAddress,
+        'estimatedValue': estimatedValue,
+        'status': status,
+        'statusText': statusText,
+        'collectorName': collectorName,
+        'timeAgo': timeAgo,
+        'createdAt': createdAt,
+      });
+      debugPrint('✅ Drop Timeline activity started');
+    } catch (e) {
+      debugPrint('❌ Error starting Drop Timeline activity: $e');
+    }
+  }
+  
+  /// Update drop timeline activity
+  Future<void> updateDropTimelineActivity({
+    required String status,
+    required String statusText,
+    String? collectorName,
+    required String timeAgo,
+  }) async {
+    if (!isSupported()) {
+      return;
+    }
+
+    try {
+      await _channel.invokeMethod('updateDropTimelineActivity', {
+        'status': status,
+        'statusText': statusText,
+        'collectorName': collectorName,
+        'timeAgo': timeAgo,
+      });
+      debugPrint('✅ Drop Timeline activity updated');
+    } catch (e) {
+      debugPrint('❌ Error updating Drop Timeline activity: $e');
+    }
+  }
+  
+  /// End drop timeline activity
+  Future<void> endDropTimelineActivity({String? dropId}) async {
+    if (!isSupported()) {
+      return;
+    }
+
+    try {
+      if (dropId != null) {
+        await _channel.invokeMethod('endDropTimelineActivity', {'dropId': dropId});
+      } else {
+        await _channel.invokeMethod('endDropTimelineActivity');
+      }
+      debugPrint('✅ Drop Timeline activity ended');
+    } catch (e) {
+      debugPrint('❌ Error ending Drop Timeline activity: $e');
+    }
+  }
 }
 
