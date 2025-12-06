@@ -24,9 +24,12 @@ struct LiveActivityWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary color #00695C
-                            .font(.title3)
+                        // Custom app logo
+                        Image("AppLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .cornerRadius(6)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
@@ -84,10 +87,12 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Collection icon - App primary color
-                            Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
-                                .font(.caption)
+                            // Custom app logo
+                            Image("AppLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .cornerRadius(4)
                             Text("Active Collection")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -153,10 +158,12 @@ struct LiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                // Compact leading - Collection icon
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
-                    .font(.caption)
+                // Compact leading - Custom app logo
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .cornerRadius(3)
             } compactTrailing: {
                 // Compact trailing - ETA countdown
                 Text(context.state.eta)
@@ -164,10 +171,12 @@ struct LiveActivityWidget: Widget {
                     .fontWeight(.semibold)
                     .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
             } minimal: {
-                // Minimal view - Collection icon
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // #00695C
-                    .font(.caption2)
+                // Minimal view - Custom app logo
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12, height: 12)
+                    .cornerRadius(2)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
@@ -198,9 +207,12 @@ struct DropTimelineWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        Image(systemName: "tray.and.arrow.down.fill")
-                            .foregroundColor(statusColor(context.state.status))
-                            .font(.title3)
+                        // Custom app logo
+                        Image("AppLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .cornerRadius(6)
                         Text("Drop Status")
                             .font(.headline)
                             .fontWeight(.semibold)
@@ -235,8 +247,8 @@ struct DropTimelineWidget: Widget {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(context.state.timeAgo)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                .font(.caption)
+                .foregroundColor(.secondary)
                 }
             }
             .padding()
@@ -247,9 +259,12 @@ struct DropTimelineWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            Image(systemName: "tray.and.arrow.down.fill")
-                                .foregroundColor(statusColor(context.state.status))
-                                .font(.caption)
+                            // Custom app logo
+                            Image("AppLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .cornerRadius(4)
                             Text("Drop Status")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -286,7 +301,7 @@ struct DropTimelineWidget: Widget {
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                                 Text(collectorName)
-                                    .font(.subheadline)
+                                .font(.subheadline)
                                     .foregroundColor(.primary)
                             }
                         }
