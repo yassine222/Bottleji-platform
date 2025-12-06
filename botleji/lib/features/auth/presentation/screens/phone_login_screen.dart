@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import '../providers/auth_provider.dart';
 import 'package:botleji/core/services/phone_verification_service.dart';
 import 'package:botleji/features/profile/presentation/screens/profile_setup_screen.dart';
@@ -23,16 +24,15 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   final _phoneController = TextEditingController();
   final _smsCodeController = TextEditingController();
   
-  String? _verificationId;
   String _countryCode = '+1'; // Default country code
   String _completePhoneNumber = '';
   String _initialCountryCode = 'US'; // Will be set from device locale
   bool _isCodeSent = false;
-  bool _isLoading = false;
   bool _isSendingSMS = false;
   bool _isVerifyingCode = false;
   Timer? _resendTimer;
   int _resendCountdown = 0;
+  bool _canResend = false;
 
   @override
   void initState() {
@@ -97,10 +97,8 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
         phoneNumber: phoneNumber,
         onCodeSent: (verificationId) {
           setState(() {
-            _verificationId = verificationId;
             _isCodeSent = true;
             _isSendingSMS = false;
-            _resendCountdown = 60;
           });
           _startResendTimer();
         },
@@ -140,19 +138,26 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
 
   void _startResendTimer() {
     _resendTimer?.cancel();
+    setState(() {
+      _resendCountdown = 60;
+      _canResend = false;
+    });
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendCountdown > 0) {
         setState(() {
           _resendCountdown--;
         });
       } else {
+        setState(() {
+          _canResend = true;
+        });
         timer.cancel();
       }
     });
   }
 
   Future<void> _verifyCode() async {
-    if (_smsCodeController.text.isEmpty) {
+    if (_smsCodeController.text.isEmpty || _smsCodeController.text.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).pleaseEnterOTP),
@@ -208,7 +213,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ProfileSetupScreen(
-                    email: user.email ?? '',
+                    email: user.email,
                     isNewUserSetup: true,
                     phoneNumber: phoneNumber,
                     isPhoneVerified: true,
@@ -248,7 +253,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ProfileSetupScreen(
-                    email: newUser.email ?? '',
+                    email: newUser.email,
                     isNewUserSetup: true,
                     phoneNumber: phoneNumber,
                     isPhoneVerified: true,
@@ -307,244 +312,281 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
         ),
       ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo
-                  Image.asset(
-                    'assets/images/logo_v2-no-background.png',
-                    height: 200,
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  Text(
-                    l10n.signInWithPhone,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: appGreenColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.enterPhoneNumberToReceiveOTP,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: appGreenColor.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Phone Number Field with Country Code
-                  IntlPhoneField(
-                    controller: _phoneController,
-                    enabled: !_isCodeSent,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      labelText: l10n.phoneNumber,
-                      labelStyle: const TextStyle(color: appGreenColor),
-                      hintText: l10n.enterYourPhoneNumber,
-                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: appGreenColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: appGreenColor, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    initialCountryCode: _initialCountryCode, // Auto-detected from device locale
-                    onChanged: (phone) {
-                      _countryCode = phone.countryCode;
-                      _completePhoneNumber = phone.completeNumber;
-                    },
-                    validator: (phone) {
-                      if (phone == null || phone.number.isEmpty) {
-                        return l10n.pleaseEnterPhoneNumber;
-                      }
-                      if (!PhoneVerificationService.isValidPhoneNumber(phone.completeNumber)) {
-                        return l10n.pleaseEnterValidPhoneNumber;
-                      }
-                      return null;
-                    },
-                    dropdownIcon: Icon(
-                      Icons.arrow_drop_down,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    flagsButtonPadding: const EdgeInsets.only(left: 12),
-                    dropdownTextStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (!_isCodeSent)
-                    // Send SMS Button
-                    ElevatedButton(
-                      onPressed: _isSendingSMS ? null : _sendSMS,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: appGreenColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isSendingSMS
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              l10n.sendOTP,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-
-                  if (_isCodeSent) ...[
-                    // iOS Debug Mode Hint
-                    if (Platform.isIOS)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'iOS Debug Mode: Use OTP 123456 or 847293',
-                                style: TextStyle(
-                                  color: Colors.blue.shade700,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    
-                    // OTP Code Field
-                    TextFormField(
-                      controller: _smsCodeController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 24,
-                        letterSpacing: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: l10n.enterOTP,
-                        labelStyle: const TextStyle(color: appGreenColor),
-                        hintText: Platform.isIOS ? '123456' : '000000',
-                        hintStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                          fontSize: 24,
-                          letterSpacing: 8,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: appGreenColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: appGreenColor, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surface,
-                      ),
-                      maxLength: 6,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Verify Button
-                    ElevatedButton(
-                      onPressed: _isVerifyingCode ? null : _verifyCode,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: appGreenColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isVerifyingCode
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              l10n.verify,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Resend OTP
-                    if (_resendCountdown > 0)
-                      Center(
-                        child: Text(
-                          '${l10n.resendOTPIn} $_resendCountdown ${l10n.seconds}',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                        ),
-                      )
-                    else
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isCodeSent = false;
-                            _smsCodeController.clear();
-                            _verificationId = null;
-                          });
-                        },
-                        child: Text(l10n.resendOTP),
-                      ),
-                  ],
-                ],
+        child: Column(
+          children: [
+            // Back button
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: appGreenColor, size: 28),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ),
-          ),
+            // Main content
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Logo
+                        Image.asset(
+                          'assets/images/logo_v2-no-background.png',
+                          height: 200,
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        if (!_isCodeSent) ...[
+                          // Phone Number Input Section
+                          Text(
+                            l10n.signInWithPhone,
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: appGreenColor,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.enterPhoneNumberToReceiveOTP,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: appGreenColor.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Phone Number Field with Country Code
+                          IntlPhoneField(
+                            controller: _phoneController,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                            decoration: InputDecoration(
+                              labelText: l10n.phoneNumber,
+                              labelStyle: const TextStyle(color: appGreenColor),
+                              hintText: l10n.enterYourPhoneNumber,
+                              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: appGreenColor),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: appGreenColor.withOpacity(0.5)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: appGreenColor, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surface,
+                            ),
+                            initialCountryCode: _initialCountryCode,
+                            onChanged: (phone) {
+                              _countryCode = phone.countryCode;
+                              _completePhoneNumber = phone.completeNumber;
+                            },
+                            validator: (phone) {
+                              if (phone == null || phone.number.isEmpty) {
+                                return l10n.pleaseEnterPhoneNumber;
+                              }
+                              if (!PhoneVerificationService.isValidPhoneNumber(phone.completeNumber)) {
+                                return l10n.pleaseEnterValidPhoneNumber;
+                              }
+                              return null;
+                            },
+                            dropdownIcon: Icon(
+                              Icons.arrow_drop_down,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            flagsButtonPadding: const EdgeInsets.only(left: 12),
+                            dropdownTextStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Send SMS Button
+                          ElevatedButton(
+                            onPressed: _isSendingSMS ? null : _sendSMS,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: appGreenColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isSendingSMS
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    l10n.sendOTP,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ] else ...[
+                          // OTP Verification Section (matching email OTP screen)
+                          Text(
+                            AppLocalizations.of(context).verifyYourPhoneNumber,
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: appGreenColor,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context).pleaseEnterOtpSentToPhone,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: appGreenColor.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          
+                          // iOS Debug Mode Hint
+                          if (Platform.isIOS)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'iOS Debug Mode: Use OTP 123456 or 847293',
+                                      style: TextStyle(
+                                        color: Colors.blue.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          
+                          // OTP Code Field (PinCodeTextField like email OTP)
+                          Directionality(
+                            textDirection: TextDirection.ltr, // Force LTR for OTP codes
+                            child: PinCodeTextField(
+                              appContext: context,
+                              length: 6,
+                              controller: _smsCodeController,
+                              keyboardType: TextInputType.number,
+                              cursorColor: appGreenColor,
+                              textStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              pinTheme: PinTheme(
+                                shape: PinCodeFieldShape.box,
+                                borderRadius: BorderRadius.circular(12),
+                                fieldHeight: 50,
+                                fieldWidth: 40,
+                                activeFillColor: Theme.of(context).colorScheme.surface,
+                                selectedFillColor: appGreenColor.withOpacity(0.1),
+                                inactiveFillColor: Theme.of(context).colorScheme.surface,
+                                activeColor: appGreenColor,
+                                selectedColor: appGreenColor,
+                                inactiveColor: appGreenColor.withOpacity(0.5),
+                                borderWidth: 1,
+                              ),
+                              enableActiveFill: true,
+                              onChanged: (value) {},
+                              onCompleted: (value) {
+                                // Auto-verify when 6 digits are entered
+                                if (!_isVerifyingCode) {
+                                  _verifyCode();
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Verify Button
+                          ElevatedButton(
+                            onPressed: _isVerifyingCode ? null : _verifyCode,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: appGreenColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isVerifyingCode
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    AppLocalizations.of(context).verifyOtp,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Resend OTP Button
+                          TextButton(
+                            onPressed: _canResend ? () {
+                              setState(() {
+                                _isCodeSent = false;
+                                _smsCodeController.clear();
+                                _canResend = false;
+                              });
+                              _sendSMS();
+                            } : null,
+                            child: Text(
+                              _canResend
+                                  ? AppLocalizations.of(context).resendOtp
+                                  : AppLocalizations.of(context).resendOtpIn(_resendCountdown),
+                              style: TextStyle(
+                                color: _canResend ? appGreenColor : Colors.grey,
+                                fontWeight: _canResend ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
