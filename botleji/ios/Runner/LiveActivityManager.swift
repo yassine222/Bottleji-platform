@@ -25,8 +25,22 @@ class LiveActivityManager {
     /// Check if ActivityKit is available
     func isActivityKitAvailable() -> Bool {
         if #available(iOS 16.1, *) {
-            return ActivityAuthorizationInfo().areActivitiesEnabled
+            let authInfo = ActivityAuthorizationInfo()
+            let isEnabled = authInfo.areActivitiesEnabled
+            let isFrequentPushesEnabled = authInfo.frequentPushesEnabled
+            
+            print("🔵 ActivityKit Authorization Info:")
+            print("   - Activities enabled: \(isEnabled)")
+            print("   - Frequent pushes enabled: \(isFrequentPushesEnabled)")
+            
+            if !isEnabled {
+                print("⚠️ Live Activities are disabled in Settings")
+                print("⚠️ Go to Settings → Face ID & Passcode → Allow Live Activities")
+            }
+            
+            return isEnabled
         }
+        print("⚠️ iOS version is below 16.1")
         return false
     }
     
@@ -68,8 +82,20 @@ class LiveActivityManager {
             
             currentActivity = activity
             print("✅ Live Activity started: \(dropId)")
+            print("✅ Activity ID: \(activity.id)")
+            print("✅ Activity state: \(activity.activityState)")
+            
+            // Important: Widget Extension is required for UI to display
+            print("⚠️ NOTE: Widget Extension must be set up for activity to display")
+            print("⚠️ Without Widget Extension, activity exists but won't show UI")
         } catch {
             print("❌ Error starting Live Activity: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
+            
+            // Check for specific error types
+            if let activityError = error as? ActivityKit.ActivityKitError {
+                print("❌ ActivityKit Error: \(activityError)")
+            }
         }
     }
     
