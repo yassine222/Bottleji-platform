@@ -156,7 +156,7 @@ struct LiveActivityWidget: Widget {
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
-                        Text("Botleji")
+                        Text("Live Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
