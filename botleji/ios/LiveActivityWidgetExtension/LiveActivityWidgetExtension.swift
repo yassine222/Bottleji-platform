@@ -83,8 +83,8 @@ struct LiveActivityWidget: Widget {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        // Custom app logo
-                        AppLogoView(size: 24, cornerRadius: 6)
+                        // Custom app logo (lock screen - default)
+                        AppLogoView(size: 24, cornerRadius: 6, viewType: .default)
                         Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
