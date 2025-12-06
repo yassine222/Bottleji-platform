@@ -27,7 +27,7 @@ struct LiveActivityWidget: Widget {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundColor(.green)
                             .font(.title3)
-                        Text("Collecting Drop")
+                        Text("Active Collection")
                             .font(.headline)
                             .fontWeight(.semibold)
                     }
@@ -81,11 +81,11 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // App icon - using system icon that represents collection
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            // Collection icon
+                            Image(systemName: "mappin.circle.fill")
                                 .foregroundColor(.green)
                                 .font(.caption)
-                            Text("Collecting Drop")
+                            Text("Active Collection")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -148,7 +148,7 @@ struct LiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 // Compact leading - Collection icon
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Image(systemName: "mappin.circle.fill")
                     .foregroundColor(.green)
                     .font(.caption)
             } compactTrailing: {
@@ -159,7 +159,7 @@ struct LiveActivityWidget: Widget {
                     .foregroundColor(.orange)
             } minimal: {
                 // Minimal view - Collection icon
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Image(systemName: "mappin.circle.fill")
                     .foregroundColor(.green)
                     .font(.caption2)
             }
