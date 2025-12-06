@@ -29,29 +29,36 @@ func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivit
             }
         }()
         
-        if let name = imageName,
-           let image = UIImage(named: name, in: Bundle.main, compatibleWith: nil) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else if let name = imageName,
-                  let image = UIImage(named: name) {
-            // Fallback to default bundle
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
-            // Fallback to default AppLogo
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else if let image = UIImage(named: "AppLogo") {
-            // Fallback to default bundle
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
+        // Try loading image - Widget Extensions use Bundle.main for their own assets
+        if let name = imageName {
+            // Try loading from Widget Extension bundle (Bundle.main in Widget Extension context)
+            if let image = UIImage(named: name, in: Bundle.main, compatibleWith: nil) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else if let image = UIImage(named: name) {
+                // Fallback to default bundle lookup
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
+                // Fallback to default AppLogo
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else if let image = UIImage(named: "AppLogo") {
+                // Fallback to default bundle
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                // Fallback to system icon
+                Image(systemName: "mappin.circle.fill")
+                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                    .font(size > 20 ? .title3 : (size > 15 ? .caption : .caption2))
+            }
         } else {
-            // Fallback to system icon
+            // Fallback to system icon if no image name
             Image(systemName: "mappin.circle.fill")
                 .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
                 .font(size > 20 ? .title3 : (size > 15 ? .caption : .caption2))
