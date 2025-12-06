@@ -121,16 +121,25 @@ class IOSActivityService {
 
   /// End Dynamic Island activity
   Future<void> endCollectionActivity() async {
+    if (!isSupported()) {
+      debugPrint('⚠️ ActivityKit not supported, skipping end activity');
+      return;
+    }
+
     if (!_isActivityActive) {
+      debugPrint('⚠️ No active activity to end');
       return;
     }
 
     try {
+      debugPrint('🛑 Ending Dynamic Island activity...');
       await _channel.invokeMethod('endActivity');
       _isActivityActive = false;
-      debugPrint('✅ Dynamic Island activity ended');
-    } catch (e) {
+      debugPrint('✅ Dynamic Island activity ended successfully');
+    } catch (e, stackTrace) {
       debugPrint('❌ Error ending Dynamic Island activity: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      // Still mark as inactive even if there was an error
       _isActivityActive = false;
     }
   }
