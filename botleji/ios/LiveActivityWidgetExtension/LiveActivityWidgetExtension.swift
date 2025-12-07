@@ -255,15 +255,15 @@ struct LiveActivityWidget: Widget {
     @ViewBuilder
     private func expandedBottomView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
         VStack(spacing: 10) {
-            // Status - Right aligned
+            // Status - Left aligned
             HStack {
-                Spacer()
                 Text("Active Collection")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                    .padding(.trailing, 8)
+                    .padding(.leading, 8)
+                Spacer()
             }
             
             // Info Row
