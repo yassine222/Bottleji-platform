@@ -79,6 +79,7 @@ struct CollectionActivityAttributes: ActivityAttributes {
     var dropId: String
     var dropAddress: String
     var transportMode: String
+    var estimatedValue: String  // "2.50 TND"
 }
 
 @available(iOS 16.1, *)
