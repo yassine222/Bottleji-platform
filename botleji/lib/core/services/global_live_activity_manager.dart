@@ -104,9 +104,6 @@ class GlobalLiveActivityManager {
       }
       
       debugPrint('📍 Initial distance for progress: ${_initialDistance.toStringAsFixed(2)}m');
-
-      // Calculate elapsed time
-      final elapsedTime = DateTime.now().difference(collection.acceptedAt);
       
       // Calculate countdown ETA (for display)
       final eta = _calculateCountdownETA(collection);
