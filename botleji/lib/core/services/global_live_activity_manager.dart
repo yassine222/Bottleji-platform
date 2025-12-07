@@ -25,6 +25,7 @@ class GlobalLiveActivityManager {
   String? _currentDropAddress;
   String? _currentRouteDuration;
   double _currentDistance = 0.0;
+  double _initialDistance = 0.0; // Store initial distance for progress calculation
   LatLng? _currentDestination;
 
   /// Initialize the manager with a Riverpod ref
@@ -89,6 +90,20 @@ class GlobalLiveActivityManager {
       
       // Calculate initial distance
       await _updateDistance();
+      
+      // Store initial distance for progress calculation
+      _initialDistance = _currentDistance;
+      
+      // Try to get route distance from collection, otherwise use initial distance
+      if (collection.routeDistance != null && collection.routeDistance!.isNotEmpty) {
+        final routeDistanceMeters = _parseRouteDistance(collection.routeDistance!);
+        if (routeDistanceMeters > 0) {
+          _initialDistance = routeDistanceMeters;
+          debugPrint('📍 Using route distance: ${_initialDistance.toStringAsFixed(2)}m');
+        }
+      }
+      
+      debugPrint('📍 Initial distance for progress: ${_initialDistance.toStringAsFixed(2)}m');
 
       // Calculate elapsed time
       final elapsedTime = DateTime.now().difference(collection.acceptedAt);
@@ -102,8 +117,8 @@ class GlobalLiveActivityManager {
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
       
-      // Calculate progress percentage (based on time elapsed vs total estimated time)
-      final progressPercentage = _calculateProgressPercentage(collection, elapsedTime);
+      // Calculate progress percentage (based on distance traveled)
+      final progressPercentage = _calculateProgressPercentage();
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -154,8 +169,8 @@ class GlobalLiveActivityManager {
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
       
-      // Calculate progress percentage
-      final progressPercentage = _calculateProgressPercentage(collection, elapsedTime);
+      // Calculate progress percentage (based on distance traveled)
+      final progressPercentage = _calculateProgressPercentage();
       
       debugPrint('   Elapsed time: ${elapsedTime.inMinutes}m ${elapsedTime.inSeconds % 60}s');
       debugPrint('   Remaining time: ${remainingTime.inMinutes}m ${remainingTime.inSeconds % 60}s');
@@ -221,6 +236,7 @@ class GlobalLiveActivityManager {
     _currentDropAddress = null;
     _currentRouteDuration = null;
     _currentDistance = 0.0;
+    _initialDistance = 0.0;
     _currentDestination = null;
     
     // End the Live Activity
@@ -478,46 +494,65 @@ class GlobalLiveActivityManager {
     }
   }
 
-  /// Calculate progress percentage based on elapsed time vs total estimated time
-  int _calculateProgressPercentage(ActiveCollection collection, Duration elapsedTime) {
+  /// Parse route distance string to meters
+  /// Handles formats like "2.5 km", "1500 m", "1.2 mi", etc.
+  double _parseRouteDistance(String routeDistance) {
     try {
-      // Parse route duration to get total minutes
-      int routeDurationMinutes = 15; // Default fallback
+      final distanceText = routeDistance.trim().toLowerCase();
       
-      if (collection.routeDuration != null && collection.routeDuration!.isNotEmpty && collection.routeDuration != 'N/A') {
-        final durationText = collection.routeDuration!;
-        final durationParts = durationText.split(' ');
-        if (durationParts.length >= 2) {
-          try {
-            if (durationParts[1].contains('hour')) {
-              routeDurationMinutes = int.parse(durationParts[0]) * 60;
-              if (durationParts.length >= 4 && durationParts[3].contains('mins')) {
-                routeDurationMinutes += int.parse(durationParts[2]);
-              }
-            } else {
-              routeDurationMinutes = int.parse(durationParts[0]);
-            }
-          } catch (e) {
-            routeDurationMinutes = 15;
-          }
-        }
-      }
+      // Remove commas and extra spaces
+      final cleaned = distanceText.replaceAll(',', '').replaceAll(RegExp(r'\s+'), ' ');
       
-      // Add buffer (same as timeout calculation)
-      int bufferMinutes;
-      if (routeDurationMinutes <= 5) {
-        bufferMinutes = 10;
-      } else if (routeDurationMinutes <= 15) {
-        bufferMinutes = 15;
+      if (cleaned.contains('km')) {
+        // Format: "2.5 km" or "2 km"
+        final parts = cleaned.split('km');
+        final value = double.tryParse(parts[0].trim()) ?? 0.0;
+        return value * 1000; // Convert km to meters
+      } else if (cleaned.contains('m') && !cleaned.contains('km')) {
+        // Format: "1500 m" or "1500m"
+        final parts = cleaned.split('m');
+        return double.tryParse(parts[0].trim()) ?? 0.0;
+      } else if (cleaned.contains('mi')) {
+        // Format: "1.2 mi" or "1 mi"
+        final parts = cleaned.split('mi');
+        final value = double.tryParse(parts[0].trim()) ?? 0.0;
+        return value * 1609.34; // Convert miles to meters
       } else {
-        bufferMinutes = 20;
+        // Try to parse as plain number (assume meters)
+        return double.tryParse(cleaned) ?? 0.0;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing route distance "$routeDistance": $e');
+      return 0.0;
+    }
+  }
+
+  /// Calculate progress percentage based on distance traveled
+  /// Progress = ((Initial Distance - Current Distance) / Initial Distance) × 100
+  int _calculateProgressPercentage() {
+    try {
+      // If initial distance is 0 or invalid, return 0
+      if (_initialDistance <= 0) {
+        debugPrint('⚠️ Initial distance is 0 or invalid, cannot calculate progress');
+        return 0;
       }
       
-      final totalEstimatedMinutes = routeDurationMinutes + bufferMinutes;
-      final elapsedMinutes = elapsedTime.inMinutes;
+      // If current distance is greater than initial (moved away), return 0
+      if (_currentDistance >= _initialDistance) {
+        return 0;
+      }
       
-      // Calculate percentage (capped at 100%)
-      final percentage = ((elapsedMinutes / totalEstimatedMinutes) * 100).round().clamp(0, 100);
+      // Calculate distance traveled
+      final distanceTraveled = _initialDistance - _currentDistance;
+      
+      // Calculate percentage: (distance traveled / initial distance) × 100
+      final percentage = ((distanceTraveled / _initialDistance) * 100).round().clamp(0, 100);
+      
+      debugPrint('📍 Progress calculation:');
+      debugPrint('   Initial distance: ${_initialDistance.toStringAsFixed(2)}m');
+      debugPrint('   Current distance: ${_currentDistance.toStringAsFixed(2)}m');
+      debugPrint('   Distance traveled: ${distanceTraveled.toStringAsFixed(2)}m');
+      debugPrint('   Progress: $percentage%');
       
       return percentage;
     } catch (e) {
