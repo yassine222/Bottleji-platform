@@ -13,6 +13,7 @@ class CollectionActivityData {
   final String? eta; // "5 min" or null
   final String transportMode; // "walking", "driving", "bicycling"
   final String estimatedValue; // "2.50 TND"
+  final int progressPercentage; // 0-100
 
   CollectionActivityData({
     required this.dropId,
@@ -22,6 +23,7 @@ class CollectionActivityData {
     this.eta,
     required this.transportMode,
     required this.estimatedValue,
+    required this.progressPercentage,
   });
 }
 

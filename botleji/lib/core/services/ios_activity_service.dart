@@ -81,11 +81,12 @@ class IOSActivityService {
       final result = await _channel.invokeMethod('startActivity', {
         'dropId': data.dropId,
         'dropAddress': data.dropAddress,
-        'elapsedTime': elapsedTimeStr, // "12:34"
-        'distance': distanceStr, // "1.2 km"
+        'elapsedTime': elapsedTimeStr, // "03:12" (MM:SS format)
+        'distance': distanceStr, // "2.5 km"
         'eta': data.eta ?? 'N/A', // "5 min"
         'transportMode': data.transportMode,
         'estimatedValue': data.estimatedValue, // "2.50 TND"
+        'progressPercentage': data.progressPercentage, // 65 (0-100)
       });
 
       _isActivityActive = true;
@@ -109,9 +110,10 @@ class IOSActivityService {
       final distanceStr = LiveActivityService.formatDistance(data.distanceToDestination);
 
       await _channel.invokeMethod('updateActivity', {
-        'elapsedTime': elapsedTimeStr, // "12:34"
-        'distance': distanceStr, // "1.2 km"
+        'elapsedTime': elapsedTimeStr, // "03:12" (MM:SS format)
+        'distance': distanceStr, // "2.5 km"
         'eta': data.eta ?? 'N/A', // "5 min"
+        'progressPercentage': data.progressPercentage, // 65 (0-100)
       });
 
       debugPrint('✅ Dynamic Island activity updated');

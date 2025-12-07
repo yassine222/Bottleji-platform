@@ -31,7 +31,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                   let distance = args["distance"] as? String,
                   let eta = args["eta"] as? String,
                   let transportMode = args["transportMode"] as? String,
-                  let estimatedValue = args["estimatedValue"] as? String else {
+                  let estimatedValue = args["estimatedValue"] as? String,
+                  let progressPercentage = args["progressPercentage"] as? Int else {
                 result(FlutterError(
                     code: "INVALID_ARGUMENTS",
                     message: "Missing required arguments",
@@ -48,7 +49,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                     distance: distance,
                     eta: eta,
                     transportMode: transportMode,
-                    estimatedValue: estimatedValue
+                    estimatedValue: estimatedValue,
+                    progressPercentage: progressPercentage
                 )
                 result(nil)
             } else {
@@ -63,7 +65,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
             guard let args = call.arguments as? [String: Any],
                   let elapsedTime = args["elapsedTime"] as? String,
                   let distance = args["distance"] as? String,
-                  let eta = args["eta"] as? String else {
+                  let eta = args["eta"] as? String,
+                  let progressPercentage = args["progressPercentage"] as? Int else {
                 result(FlutterError(
                     code: "INVALID_ARGUMENTS",
                     message: "Missing required arguments",
@@ -76,7 +79,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                 liveActivityManager.updateActivity(
                     elapsedTime: elapsedTime,
                     distance: distance,
-                    eta: eta
+                    eta: eta,
+                    progressPercentage: progressPercentage
                 )
                 result(nil)
             } else {

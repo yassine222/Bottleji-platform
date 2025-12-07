@@ -4,9 +4,10 @@ import ActivityKit
 /// Activity attributes for collection live activity
 struct CollectionActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        var elapsedTime: String  // "12:34"
-        var distance: String     // "1.2 km"
+        var elapsedTime: String  // "03:12" (MM:SS format)
+        var distance: String     // "2.5 km"
         var eta: String          // "5 min"
+        var progressPercentage: Int  // 65 (0-100)
     }
     
     var dropId: String
@@ -72,7 +73,8 @@ class LiveActivityManager {
         distance: String,
         eta: String,
         transportMode: String,
-        estimatedValue: String
+        estimatedValue: String,
+        progressPercentage: Int
     ) {
         guard isActivityKitAvailable() else {
             print("⚠️ ActivityKit not available or not enabled")
@@ -92,7 +94,8 @@ class LiveActivityManager {
         let contentState = CollectionActivityAttributes.ContentState(
             elapsedTime: elapsedTime,
             distance: distance,
-            eta: eta
+            eta: eta,
+            progressPercentage: progressPercentage
         )
         
         do {
@@ -121,7 +124,8 @@ class LiveActivityManager {
     func updateActivity(
         elapsedTime: String,
         distance: String,
-        eta: String
+        eta: String,
+        progressPercentage: Int
     ) {
         guard let activity = currentActivity else {
             print("⚠️ No active activity to update")
@@ -131,7 +135,8 @@ class LiveActivityManager {
         let contentState = CollectionActivityAttributes.ContentState(
             elapsedTime: elapsedTime,
             distance: distance,
-            eta: eta
+            eta: eta,
+            progressPercentage: progressPercentage
         )
         
         Task {

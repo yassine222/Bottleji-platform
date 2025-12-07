@@ -98,6 +98,9 @@ class GlobalLiveActivityManager {
       
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
+      
+      // Calculate progress percentage (based on time elapsed vs total estimated time)
+      final progressPercentage = _calculateProgressPercentage(collection, elapsedTime);
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -107,6 +110,7 @@ class GlobalLiveActivityManager {
         eta: eta,
         transportMode: 'driving', // Default, can be updated if stored
         estimatedValue: estimatedValue,
+        progressPercentage: progressPercentage,
       );
 
       await _liveActivityService.startCollectionActivity(data);
@@ -144,9 +148,13 @@ class GlobalLiveActivityManager {
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
       
+      // Calculate progress percentage
+      final progressPercentage = _calculateProgressPercentage(collection, elapsedTime);
+      
       debugPrint('   Elapsed time: ${elapsedTime.inMinutes}m ${elapsedTime.inSeconds % 60}s');
       debugPrint('   Countdown ETA: $eta');
       debugPrint('   Estimated value: $estimatedValue');
+      debugPrint('   Progress: $progressPercentage%');
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -156,6 +164,7 @@ class GlobalLiveActivityManager {
         eta: eta,
         transportMode: 'driving',
         estimatedValue: estimatedValue,
+        progressPercentage: progressPercentage,
       );
 
       await _liveActivityService.updateCollectionActivity(data);
@@ -378,6 +387,54 @@ class GlobalLiveActivityManager {
     } catch (e) {
       debugPrint('⚠️ Error calculating estimated value: $e');
       return '0.00 TND';
+    }
+  }
+
+  /// Calculate progress percentage based on elapsed time vs total estimated time
+  int _calculateProgressPercentage(ActiveCollection collection, Duration elapsedTime) {
+    try {
+      // Parse route duration to get total minutes
+      int routeDurationMinutes = 15; // Default fallback
+      
+      if (collection.routeDuration != null && collection.routeDuration!.isNotEmpty && collection.routeDuration != 'N/A') {
+        final durationText = collection.routeDuration!;
+        final durationParts = durationText.split(' ');
+        if (durationParts.length >= 2) {
+          try {
+            if (durationParts[1].contains('hour')) {
+              routeDurationMinutes = int.parse(durationParts[0]) * 60;
+              if (durationParts.length >= 4 && durationParts[3].contains('mins')) {
+                routeDurationMinutes += int.parse(durationParts[2]);
+              }
+            } else {
+              routeDurationMinutes = int.parse(durationParts[0]);
+            }
+          } catch (e) {
+            routeDurationMinutes = 15;
+          }
+        }
+      }
+      
+      // Add buffer (same as timeout calculation)
+      int bufferMinutes;
+      if (routeDurationMinutes <= 5) {
+        bufferMinutes = 10;
+      } else if (routeDurationMinutes <= 15) {
+        bufferMinutes = 15;
+      } else {
+        bufferMinutes = 20;
+      }
+      
+      final totalEstimatedMinutes = routeDurationMinutes + bufferMinutes;
+      final elapsedMinutes = elapsedTime.inMinutes;
+      
+      // Calculate percentage (capped at 100%)
+      final percentage = ((elapsedMinutes / totalEstimatedMinutes) * 100).round().clamp(0, 100);
+      
+      return percentage;
+    } catch (e) {
+      debugPrint('⚠️ Error calculating progress percentage: $e');
+      return 0;
     }
   }
 
