@@ -235,11 +235,13 @@ struct LiveActivityWidget: Widget {
                     .lineLimit(1)
             }
             
-            // Status
+            // Status - Allow full text to display
             Text("Active Collection")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85) // Allow slight scaling if needed
+                .fixedSize(horizontal: false, vertical: true) // Allow text to expand horizontally
         }
         .padding(.leading, 4)
     }
