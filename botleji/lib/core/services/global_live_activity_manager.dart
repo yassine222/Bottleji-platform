@@ -367,6 +367,20 @@ class GlobalLiveActivityManager {
     }
   }
 
+  /// Calculate estimated value from collection data
+  String _calculateEstimatedValue(ActiveCollection collection) {
+    try {
+      final value = DropValueCalculator.calculateEstimatedValue(
+        plasticBottleCount: collection.numberOfBottles,
+        cansCount: collection.numberOfCans,
+      );
+      return DropValueCalculator.formatEstimatedValue(value);
+    } catch (e) {
+      debugPrint('⚠️ Error calculating estimated value: $e');
+      return '0.00 TND';
+    }
+  }
+
   /// Dispose resources
   void dispose() {
     _updateTimer?.cancel();
