@@ -87,169 +87,177 @@ struct CollectionActivityAttributes: ActivityAttributes {
 struct LiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CollectionActivityAttributes.self) { context in
-            // Lock screen/banner UI - Improved design with theme support
-            VStack(alignment: .leading, spacing: 12) {
-                // Header
-                HStack {
+            // Lock screen/banner UI - Optimized per Apple's HIG
+            VStack(alignment: .leading, spacing: 10) {
+                // Header with clear hierarchy
+                HStack(alignment: .center, spacing: 8) {
+                    // App branding
                     HStack(spacing: 8) {
-                        // Custom app logo (lock screen - default)
                         AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
                         Text("Bottleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                     }
+                    
                     Spacer()
-                    // Show collection completion countdown
-                    Text(context.state.eta)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange #FF9800
+                    
+                    // Primary info: Countdown timer (most important)
+                    Text(context.state.elapsedTime)
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
                 }
                 
-                // Progress indicator
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary color
-                        .frame(height: 4)
-                        .frame(maxWidth: .infinity)
-                    Rectangle()
-                        .fill(Color(red: 0.0, green: 0.412, blue: 0.361).opacity(0.3))
-                        .frame(height: 4)
-                        .frame(maxWidth: .infinity)
+                // Progress bar - functional and visible
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Background
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(.systemGray5))
+                            .frame(height: 3)
+                        
+                        // Progress fill
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(red: 0.0, green: 0.412, blue: 0.361))
+                            .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
+                    }
                 }
-                .cornerRadius(2)
+                .frame(height: 3)
                 
-                // Info row
-                HStack(spacing: 20) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "location.fill")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                // Secondary info row - scannable at a glance
+                HStack(spacing: 16) {
+                    // Distance
+                    Label {
                         Text(context.state.distance)
                             .font(.subheadline)
-                            .fontWeight(.medium)
                             .foregroundColor(.primary)
+                    } icon: {
+                        Image(systemName: "location.fill")
+                            .font(.caption)
+                            .foregroundColor(.systemBlue)
                     }
                     
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock.fill")
-                            .font(.caption)
-                            .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
-                        Text(context.state.eta)
+                    // Value
+                    Label {
+                        Text(context.attributes.estimatedValue)
                             .font(.subheadline)
-                            .fontWeight(.medium)
                             .foregroundColor(.primary)
+                    } icon: {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
                     }
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI - Matching the reference design
+                // Expanded UI - Optimized per Apple's HIG
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        // Logo with Bottleji text
+                    VStack(alignment: .leading, spacing: 3) {
+                        // App branding
                         HStack(spacing: 6) {
-                            // Custom app logo (expanded view) - Add padding to prevent cropping
                             AppLogoView(size: 20, cornerRadius: 4, viewType: .expanded)
-                                .padding(.leading, 2) // Prevent left edge cropping
                         }
-                        // Bottleji text
+                        
+                        // Primary title
                         Text("Bottleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
-                        // Status text
+                            .lineLimit(1)
+                        
+                        // Secondary status
                         Text("Drop in progress")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
-                    .padding(.leading, 4) // Additional padding to prevent cropping
+                    .padding(.leading, 4)
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    // Elapsed time timer (MM:SS format)
+                    // Primary metric: Countdown timer
                     Text(context.state.elapsedTime)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
-                        .monospacedDigit() // Ensures consistent width for numbers
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(1)
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 8) {
-                        // Bottom info row - Distance and Value on left, Progress on right
-                        HStack(spacing: 16) {
-                            // Left side: Distance and Value
-                            HStack(spacing: 12) {
-                                // Distance
-                                HStack(spacing: 4) {
-                                    Image(systemName: "location.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                    Text(context.state.distance)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.primary)
-                                }
-                                
-                                // Value
-                                HStack(spacing: 4) {
-                                    Image(systemName: "dollarsign.circle.fill")
-                                        .font(.caption)
-                                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary green
-                                    Text(context.attributes.estimatedValue)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.primary)
-                                }
+                    VStack(spacing: 6) {
+                        // Info row with proper spacing
+                        HStack(spacing: 12) {
+                            // Distance
+                            Label {
+                                Text(context.state.distance)
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                            } icon: {
+                                Image(systemName: "location.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(.systemBlue)
+                            }
+                            
+                            // Value
+                            Label {
+                                Text(context.attributes.estimatedValue)
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                            } icon: {
+                                Image(systemName: "dollarsign.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
                             }
                             
                             Spacer()
                             
-                            // Right side: Progress percentage
+                            // Progress indicator
                             HStack(spacing: 4) {
                                 Circle()
-                                    .stroke(Color.primary, lineWidth: 1.5)
-                                    .frame(width: 16, height: 16)
+                                    .stroke(Color.primary.opacity(0.3), lineWidth: 1.5)
+                                    .frame(width: 14, height: 14)
                                 Text("\(context.state.progressPercentage)%")
-                                    .font(.subheadline)
+                                    .font(.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.primary)
                             }
                         }
                         
-                        // Functional progress bar
+                        // Progress bar - optimized height and styling
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
-                                // Background
-                                Rectangle()
-                                    .fill(Color(.systemGray4))
-                                    .frame(height: 4)
-                                    .cornerRadius(2)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 3)
                                 
-                                // Progress fill
-                                Rectangle()
-                                    .fill(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary green
-                                    .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 4)
-                                    .cornerRadius(2)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(Color(red: 0.0, green: 0.412, blue: 0.361))
+                                    .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
                             }
                         }
-                        .frame(height: 4)
+                        .frame(height: 3)
                     }
                 }
             } compactLeading: {
-                // Compact leading - Custom app logo
+                // Compact leading - App logo (16x16 per HIG)
                 AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
-                // Compact trailing - ETA countdown
-                Text(context.state.eta)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange
+                // Compact trailing - Countdown timer (most important info)
+                Text(context.state.elapsedTime)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                    .monospacedDigit()
+                    .lineLimit(1)
             } minimal: {
-                // Minimal view - Custom app logo
+                // Minimal view - App logo only (12x12 per HIG)
                 AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
@@ -276,35 +284,40 @@ struct DropTimelineActivityAttributes: ActivityAttributes {
 struct DropTimelineWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DropTimelineActivityAttributes.self) { context in
-            // Lock screen/banner UI with theme support
-            VStack(alignment: .leading, spacing: 12) {
-                // Header
-                HStack {
+            // Lock screen/banner UI - Optimized per Apple's HIG
+            VStack(alignment: .leading, spacing: 10) {
+                // Header with clear hierarchy
+                HStack(alignment: .center, spacing: 8) {
                     HStack(spacing: 8) {
-                        // Custom app logo (lock screen - default)
                         AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
                         Text("Drop Status")
-                        .font(.headline)
+                            .font(.headline)
                             .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                            .foregroundColor(.primary)
                     }
+                    
                     Spacer()
+                    
+                    // Primary metric: Estimated value
                     Text(context.attributes.estimatedValue)
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary #00695C
+                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
                 }
                 
-                // Status text
-                HStack {
+                // Status with collector info
+                HStack(spacing: 6) {
                     Text(context.state.statusText)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(statusColor(context.state.status))
+                        .lineLimit(1)
+                    
                     if let collectorName = context.state.collectorName {
                         Text("• \(collectorName)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
                 }
                 
@@ -312,79 +325,90 @@ struct DropTimelineWidget: Widget {
                 timelineProgressView(status: context.state.status)
                 
                 // Time ago
-                HStack {
-                    Image(systemName: "clock")
+                Label {
+                    Text(context.state.timeAgo)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(context.state.timeAgo)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                } icon: {
+                    Image(systemName: "clock")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI
+                // Expanded UI - Optimized per Apple's HIG
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            // Custom app logo (expanded view)
-                            AppLogoView(size: 16, cornerRadius: 4, viewType: .expanded)
-                            Text("Drop Status")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            AppLogoView(size: 20, cornerRadius: 4, viewType: .expanded)
                         }
+                        
                         Text("Bottleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                             .lineLimit(1)
+                        
+                        Text("Drop Status")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
+                    .padding(.leading, 4)
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 6) {
+                    VStack(alignment: .trailing, spacing: 4) {
                         Text(context.attributes.estimatedValue)
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
+                        
                         Text(context.state.statusText)
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(statusColor(context.state.status))
+                            .lineLimit(1)
                     }
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         // Timeline progress
                         timelineProgressView(status: context.state.status)
                         
                         // Collector info if available
                         if let collectorName = context.state.collectorName {
-                            HStack {
+                            Label {
+                                Text(collectorName)
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                            } icon: {
                                 Image(systemName: "person.fill")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
-                                Text(collectorName)
-                                .font(.subheadline)
-                                    .foregroundColor(.primary)
                             }
                         }
                     }
                 }
             } compactLeading: {
-                // Compact leading - Custom app logo
+                // Compact leading - App logo (16x16 per HIG)
                 AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
-                // Compact trailing - Status text
+                // Compact trailing - Status text (most important info)
                 Text(context.state.statusText)
-                    .font(.caption2)
+                    .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(statusColor(context.state.status))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             } minimal: {
-                // Minimal view - Custom app logo
+                // Minimal view - App logo only (12x12 per HIG)
                 AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
         }
