@@ -225,16 +225,15 @@ struct LiveActivityWidget: Widget {
     @ViewBuilder
     private func expandedLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            // App Logo
-            AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
-                .padding(.leading, 2)
-            
-            // App Name
-            Text("Bottleji")
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-                .lineLimit(1)
+            // App Logo and Name - Horizontally aligned
+            HStack(alignment: .center, spacing: 6) {
+                AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+                Text("Bottleji")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
             
             // Status
             Text("Active Collection")
@@ -466,14 +465,15 @@ struct DropTimelineWidget: Widget {
     @ViewBuilder
     private func dropTimelineExpandedLeadingView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
-                .padding(.leading, 2)
-            
-            Text("Bottleji")
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-                .lineLimit(1)
+            // App Logo and Name - Horizontally aligned
+            HStack(alignment: .center, spacing: 6) {
+                AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+                Text("Bottleji")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
             
             Text("Drop Status")
                 .font(.subheadline)
