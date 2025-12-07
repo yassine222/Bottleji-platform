@@ -154,7 +154,7 @@ struct LiveActivityWidget: Widget {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(
                             LinearGradient(
-                                colors: [.appPrimary, .appPrimary.opacity(0.8)],
+                                colors: [Color.appPrimary, Color.appPrimary.opacity(0.8)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -293,7 +293,7 @@ struct LiveActivityWidget: Widget {
                 // Progress
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(.appPrimary.opacity(0.2))
+                        .fill(Color.appPrimary.opacity(0.2))
                         .frame(width: 12, height: 12)
                     Text("\(context.state.progressPercentage)%")
                         .font(.caption)
@@ -312,7 +312,7 @@ struct LiveActivityWidget: Widget {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(
                             LinearGradient(
-                                colors: [.appPrimary, .appPrimary.opacity(0.8)],
+                                colors: [Color.appPrimary, Color.appPrimary.opacity(0.8)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
