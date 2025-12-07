@@ -116,6 +116,16 @@ class LiveActivityService {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  /// Format countdown time (remaining time) as "MM:SS"
+  static String formatCountdownTime(Duration remainingTime) {
+    if (remainingTime.isNegative || remainingTime.inSeconds <= 0) {
+      return '00:00';
+    }
+    final minutes = remainingTime.inMinutes;
+    final seconds = remainingTime.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
   /// Format distance in meters to readable string
   static String formatDistance(double distanceInMeters) {
     if (distanceInMeters < 1000) {

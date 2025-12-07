@@ -93,8 +93,11 @@ class GlobalLiveActivityManager {
       // Calculate elapsed time
       final elapsedTime = DateTime.now().difference(collection.acceptedAt);
       
-      // Calculate countdown ETA
+      // Calculate countdown ETA (for display)
       final eta = _calculateCountdownETA(collection);
+      
+      // Calculate remaining time until expiration (for countdown timer)
+      final remainingTime = _calculateRemainingTime(collection);
       
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
@@ -105,7 +108,7 @@ class GlobalLiveActivityManager {
       final data = CollectionActivityData(
         dropId: collection.dropId,
         dropAddress: _currentDropAddress ?? 'Drop ${collection.dropId.substring(0, 8)}...',
-        elapsedTime: elapsedTime,
+        elapsedTime: remainingTime, // Use remaining time for countdown timer
         distanceToDestination: _currentDistance,
         eta: eta,
         transportMode: 'driving', // Default, can be updated if stored
@@ -142,8 +145,11 @@ class GlobalLiveActivityManager {
       // Calculate elapsed time
       final elapsedTime = DateTime.now().difference(collection.acceptedAt);
       
-      // Calculate countdown ETA
+      // Calculate countdown ETA (for display)
       final eta = _calculateCountdownETA(collection);
+      
+      // Calculate remaining time until expiration (for countdown timer)
+      final remainingTime = _calculateRemainingTime(collection);
       
       // Calculate estimated value
       final estimatedValue = _calculateEstimatedValue(collection);
@@ -152,6 +158,7 @@ class GlobalLiveActivityManager {
       final progressPercentage = _calculateProgressPercentage(collection, elapsedTime);
       
       debugPrint('   Elapsed time: ${elapsedTime.inMinutes}m ${elapsedTime.inSeconds % 60}s');
+      debugPrint('   Remaining time: ${remainingTime.inMinutes}m ${remainingTime.inSeconds % 60}s');
       debugPrint('   Countdown ETA: $eta');
       debugPrint('   Estimated value: $estimatedValue');
       debugPrint('   Progress: $progressPercentage%');
@@ -159,7 +166,7 @@ class GlobalLiveActivityManager {
       final data = CollectionActivityData(
         dropId: collection.dropId,
         dropAddress: _currentDropAddress ?? 'Drop ${collection.dropId.substring(0, 8)}...',
-        elapsedTime: elapsedTime,
+        elapsedTime: remainingTime, // Use remaining time for countdown timer
         distanceToDestination: _currentDistance,
         eta: eta,
         transportMode: 'driving',
@@ -285,6 +292,87 @@ class GlobalLiveActivityManager {
     } catch (e) {
       debugPrint('⚠️ Error getting address: $e');
       return '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+    }
+  }
+
+  /// Calculate remaining time until expiration as Duration
+  /// This is used for the countdown timer display (MM:SS format)
+  Duration _calculateRemainingTime(ActiveCollection collection) {
+    try {
+      // Parse route duration from the active collection's route info
+      int routeDurationMinutes = 15; // Default fallback - 15 minutes
+      
+      if (collection.routeDuration != null && collection.routeDuration!.isNotEmpty && collection.routeDuration != 'N/A') {
+        final durationText = collection.routeDuration!;
+        
+        // Parse duration like "15 mins" or "1 hour 30 mins"
+        final durationParts = durationText.split(' ');
+        if (durationParts.length >= 2) {
+          try {
+            if (durationParts[1].contains('hour')) {
+              // Format: "1 hour 30 mins" or "1 hour"
+              routeDurationMinutes = int.parse(durationParts[0]) * 60;
+              if (durationParts.length >= 4 && durationParts[3].contains('mins')) {
+                routeDurationMinutes += int.parse(durationParts[2]);
+              }
+            } else {
+              // Parse minutes from duration text like "15 mins"
+              routeDurationMinutes = int.parse(durationParts[0]);
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error parsing route duration: $e, using default 15 minutes');
+            routeDurationMinutes = 15;
+          }
+        }
+      } else {
+        // When routeDuration is null, use a conservative default
+        final elapsed = DateTime.now().difference(collection.acceptedAt);
+        final elapsedMinutes = elapsed.inMinutes;
+        
+        if (elapsedMinutes > 10) {
+          routeDurationMinutes = 10;
+        } else {
+          routeDurationMinutes = 15;
+        }
+      }
+      
+      // Fixed buffer based on route duration (same as navigation screen)
+      int bufferMinutes;
+      if (routeDurationMinutes <= 5) {
+        bufferMinutes = 10; // Short routes: +10 minutes
+      } else if (routeDurationMinutes <= 15) {
+        bufferMinutes = 15; // Medium routes: +15 minutes
+      } else {
+        bufferMinutes = 20; // Long routes: +20 minutes
+      }
+      
+      // Calculate total timeout based on route duration + buffer
+      var totalTimeoutMinutes = routeDurationMinutes + bufferMinutes;
+      
+      // Calculate how much time has already passed since collection was accepted
+      final timeElapsed = DateTime.now().difference(collection.acceptedAt);
+      final elapsedSeconds = timeElapsed.inSeconds;
+      
+      // If routeDuration was null, ensure we don't extend the timeout too much
+      if (collection.routeDuration == null || collection.routeDuration!.isEmpty || collection.routeDuration == 'N/A') {
+        final maxReasonableTimeout = (elapsedSeconds / 60).round() + 20;
+        if (totalTimeoutMinutes > maxReasonableTimeout) {
+          totalTimeoutMinutes = maxReasonableTimeout;
+        }
+      }
+      
+      // Calculate remaining time in seconds
+      final totalTimeoutSeconds = totalTimeoutMinutes * 60;
+      final remainingSeconds = totalTimeoutSeconds - elapsedSeconds;
+      
+      // Return Duration, clamped to non-negative
+      if (remainingSeconds <= 0) {
+        return Duration.zero;
+      }
+      return Duration(seconds: remainingSeconds);
+    } catch (e) {
+      debugPrint('⚠️ Error calculating remaining time: $e');
+      return Duration.zero;
     }
   }
 
