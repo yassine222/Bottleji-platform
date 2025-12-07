@@ -3,19 +3,22 @@ import SwiftUI
 import ActivityKit
 import UIKit
 
-// Enum for Live Activity view types
-enum LiveActivityViewType {
-    case compact
-    case expanded
-    case minimal
-    case standard  // For lock screen and default views
+// MARK: - App Theme Colors
+extension Color {
+    // App Primary Green
+    static let appPrimary = Color(red: 0.0, green: 0.412, blue: 0.361) // #00695C
+    // App Orange
+    static let appOrange = Color(red: 1.0, green: 0.596, blue: 0.0) // #FF9800
+    // App Secondary Blue
+    static let appSecondary = Color(red: 0.0, green: 0.6, blue: 1.0) // #0099FF
 }
 
-// Helper function to load app logo from bundle with view-specific images
+// MARK: - Helper Functions
+
+// Helper function to load app logo from bundle
 @ViewBuilder
 func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivityViewType = .standard) -> some View {
     Group {
-        // Try loading view-specific image first
         let imageName: String? = {
             switch viewType {
             case .compact:
@@ -29,38 +32,18 @@ func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivit
             }
         }()
         
-        // Try loading image - Widget Extensions use Bundle.main for their own assets
-        if let name = imageName {
-            // Try loading from Widget Extension bundle (Bundle.main in Widget Extension context)
-            if let image = UIImage(named: name, in: Bundle.main, compatibleWith: nil) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-            } else if let image = UIImage(named: name) {
-                // Fallback to default bundle lookup
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-            } else if let image = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) {
-                // Fallback to default AppLogo
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-            } else if let image = UIImage(named: "AppLogo") {
-                // Fallback to default bundle
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                // Fallback to system icon
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                    .font(size > 20 ? .title3 : (size > 15 ? .caption : .caption2))
-            }
+        if let name = imageName,
+           let image = UIImage(named: name, in: Bundle.main, compatibleWith: nil) ?? UIImage(named: name) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else if let fallbackImage = UIImage(named: "AppLogo", in: Bundle.main, compatibleWith: nil) ?? UIImage(named: "AppLogo") {
+            Image(uiImage: fallbackImage)
+                .resizable()
+                .scaledToFit()
         } else {
-            // Fallback to system icon if no image name
             Image(systemName: "mappin.circle.fill")
-                .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
+                .foregroundColor(.appPrimary)
                 .font(size > 20 ? .title3 : (size > 15 ? .caption : .caption2))
         }
     }
@@ -68,10 +51,19 @@ func AppLogoView(size: CGFloat, cornerRadius: CGFloat = 4, viewType: LiveActivit
     .cornerRadius(cornerRadius)
 }
 
-// MARK: - Collection Navigation Activity (Improved UI)
+// Enum for Live Activity view types
+enum LiveActivityViewType {
+    case compact
+    case expanded
+    case minimal
+    case standard
+}
+
+// MARK: - Collection Navigation Activity (Collector Mode)
+
 struct CollectionActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        var elapsedTime: String  // "03:12" (MM:SS format)
+        var elapsedTime: String  // "12:48" (MM:SS countdown format)
         var distance: String     // "2.5 km"
         var eta: String          // "5 min"
         var progressPercentage: Int  // 65 (0-100)
@@ -87,185 +79,276 @@ struct CollectionActivityAttributes: ActivityAttributes {
 struct LiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CollectionActivityAttributes.self) { context in
-            // Lock screen/banner UI - Optimized per Apple's HIG
-            VStack(alignment: .leading, spacing: 10) {
-                // Header with clear hierarchy
-                HStack(alignment: .center, spacing: 8) {
-                    // App branding
-                    HStack(spacing: 8) {
-                        AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
-                        Text("Bottleji")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Primary info: Countdown timer (most important)
-                    Text(context.state.elapsedTime)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-                        .monospacedDigit()
-                }
-                
-                // Progress bar - functional and visible
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        // Background
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color(.systemGray5))
-                            .frame(height: 3)
-                        
-                        // Progress fill
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
-                    }
-                }
-                .frame(height: 3)
-                
-                // Secondary info row - scannable at a glance
-                HStack(spacing: 16) {
-                    // Distance
-                    Label {
-                        Text(context.state.distance)
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                    } icon: {
-                        Image(systemName: "location.fill")
-                            .font(.caption)
-                            .foregroundColor(Color(.systemBlue))
-                    }
-                    
-                    // Value
-                    Label {
-                        Text(context.attributes.estimatedValue)
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                    } icon: {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .activityBackgroundTint(Color(.systemBackground))
+            // MARK: - Lock Screen View
+            lockScreenView(context: context)
+                .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI - Optimized per Apple's HIG
+                // MARK: - Expanded Presentation
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        // App branding
-                        HStack(spacing: 6) {
-                            AppLogoView(size: 20, cornerRadius: 4, viewType: .expanded)
-                        }
-                        
-                        // Primary title
-                        Text("Bottleji")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        // Secondary status
-                        Text("Drop in progress")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                    .padding(.leading, 4)
+                    expandedLeadingView(context: context)
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    // Primary metric: Countdown timer
-                    Text(context.state.elapsedTime)
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.8)
-                        .lineLimit(1)
+                    expandedTrailingView(context: context)
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 6) {
-                        // Info row with proper spacing
-                        HStack(spacing: 12) {
-                            // Distance
-                            Label {
-                                Text(context.state.distance)
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                            } icon: {
-                                Image(systemName: "location.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(Color(.systemBlue))
-                            }
-                            
-                            // Value
-                            Label {
-                                Text(context.attributes.estimatedValue)
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                            } icon: {
-                                Image(systemName: "dollarsign.circle.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                            }
-                            
-                            Spacer()
-                            
-                            // Progress indicator
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .stroke(Color.primary.opacity(0.3), lineWidth: 1.5)
-                                    .frame(width: 14, height: 14)
-                                Text("\(context.state.progressPercentage)%")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                            }
-                        }
-                        
-                        // Progress bar - optimized height and styling
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(Color(.systemGray5))
-                                    .frame(height: 3)
-                                
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(Color(red: 0.0, green: 0.412, blue: 0.361))
-                                    .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
-                            }
-                        }
-                        .frame(height: 3)
-                    }
+                    expandedBottomView(context: context)
                 }
             } compactLeading: {
-                // Compact leading - App logo (16x16 per HIG)
-                AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
+                // MARK: - Compact Presentation (Leading)
+                compactLeadingView(context: context)
             } compactTrailing: {
-                // Compact trailing - Countdown timer (most important info)
-                Text(context.state.elapsedTime)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .monospacedDigit()
-                    .lineLimit(1)
+                // MARK: - Compact Presentation (Trailing)
+                compactTrailingView(context: context)
             } minimal: {
-                // Minimal view - App logo only (12x12 per HIG)
-                AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
+                // MARK: - Minimal Presentation
+                minimalView(context: context)
             }
             .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
         }
     }
+    
+    // MARK: - Lock Screen View
+    @ViewBuilder
+    private func lockScreenView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header Row
+            HStack(alignment: .center, spacing: 10) {
+                // App Branding
+                HStack(spacing: 8) {
+                    AppLogoView(size: 28, cornerRadius: 7, viewType: .standard)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bottleji")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        Text("Active Collection")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                // Countdown Timer (Primary Metric)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(context.state.elapsedTime)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(.appOrange)
+                        .monospacedDigit()
+                    Text("remaining")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Progress Bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 4)
+                    
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [.appPrimary, .appPrimary.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 4)
+                }
+            }
+            .frame(height: 4)
+            
+            // Info Row
+            HStack(spacing: 20) {
+                // Distance
+                HStack(spacing: 6) {
+                    Image(systemName: "location.fill")
+                        .font(.caption)
+                        .foregroundColor(.appSecondary)
+                        .frame(width: 16)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Distance")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(context.state.distance)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                    }
+                }
+                
+                // Value
+                HStack(spacing: 6) {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.appPrimary)
+                        .frame(width: 16)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Value")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(context.attributes.estimatedValue)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                    }
+                }
+                
+                Spacer()
+                
+                // Progress
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("Progress")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text("\(context.state.progressPercentage)%")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.appPrimary)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+    
+    // MARK: - StandBy View (Same as Lock Screen)
+    // Note: StandBy uses the same view as Lock Screen in ActivityKit
+    
+    // MARK: - Expanded Presentation Views
+    @ViewBuilder
+    private func expandedLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // App Logo
+            AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+                .padding(.leading, 2)
+            
+            // App Name
+            Text("Bottleji")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+                .lineLimit(1)
+            
+            // Status
+            Text("Active Collection")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.leading, 4)
+    }
+    
+    @ViewBuilder
+    private func expandedTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        VStack(alignment: .trailing, spacing: 3) {
+            // Countdown Timer
+            Text(context.state.elapsedTime)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(.appOrange)
+                .monospacedDigit()
+                .lineLimit(1)
+            
+            Text("remaining")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    @ViewBuilder
+    private func expandedBottomView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        VStack(spacing: 8) {
+            // Info Row
+            HStack(spacing: 16) {
+                // Distance
+                HStack(spacing: 5) {
+                    Image(systemName: "location.fill")
+                        .font(.caption2)
+                        .foregroundColor(.appSecondary)
+                    Text(context.state.distance)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
+                
+                // Value
+                HStack(spacing: 5) {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.appPrimary)
+                    Text(context.attributes.estimatedValue)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                // Progress
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(.appPrimary.opacity(0.2))
+                        .frame(width: 12, height: 12)
+                    Text("\(context.state.progressPercentage)%")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            // Progress Bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 3)
+                    
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(
+                            LinearGradient(
+                                colors: [.appPrimary, .appPrimary.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
+                }
+            }
+            .frame(height: 3)
+        }
+    }
+    
+    // MARK: - Compact Presentation Views
+    @ViewBuilder
+    private func compactLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
+    }
+    
+    @ViewBuilder
+    private func compactTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        Text(context.state.elapsedTime)
+            .font(.system(size: 14, weight: .bold, design: .rounded))
+            .foregroundColor(.appOrange)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
+    
+    // MARK: - Minimal Presentation View
+    @ViewBuilder
+    private func minimalView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+        AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
+    }
 }
 
 // MARK: - Drop Timeline Activity (Household Mode)
+
 struct DropTimelineActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var status: String  // "pending", "accepted", "on_way", "collected", "expired", "cancelled"
@@ -284,198 +367,196 @@ struct DropTimelineActivityAttributes: ActivityAttributes {
 struct DropTimelineWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DropTimelineActivityAttributes.self) { context in
-            // Lock screen/banner UI - Optimized per Apple's HIG
-            VStack(alignment: .leading, spacing: 10) {
-                // Header with clear hierarchy
-                HStack(alignment: .center, spacing: 8) {
-                    HStack(spacing: 8) {
-                        AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
-                        Text("Drop Status")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Primary metric: Estimated value
-                    Text(context.attributes.estimatedValue)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361))
-                }
-                
-                // Status with collector info
-                HStack(spacing: 6) {
-                    Text(context.state.statusText)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(statusColor(context.state.status))
-                        .lineLimit(1)
-                    
-                    if let collectorName = context.state.collectorName {
-                        Text("• \(collectorName)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                
-                // Timeline progress
-                timelineProgressView(status: context.state.status)
-                
-                // Time ago
-                Label {
-                    Text(context.state.timeAgo)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } icon: {
-                    Image(systemName: "clock")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .activityBackgroundTint(Color(.systemBackground))
+            // MARK: - Lock Screen View (Household)
+            dropTimelineLockScreenView(context: context)
+                .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI - Optimized per Apple's HIG
+                // MARK: - Expanded Presentation (Household)
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            AppLogoView(size: 20, cornerRadius: 4, viewType: .expanded)
-                        }
-                        
-                        Text("Bottleji")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        Text("Drop Status")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                    .padding(.leading, 4)
+                    dropTimelineExpandedLeadingView(context: context)
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(context.attributes.estimatedValue)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                        
-                        Text(context.state.statusText)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(statusColor(context.state.status))
-                            .lineLimit(1)
-                    }
+                    dropTimelineExpandedTrailingView(context: context)
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 6) {
-                        // Timeline progress
-                        timelineProgressView(status: context.state.status)
-                        
-                        // Collector info if available
-                        if let collectorName = context.state.collectorName {
-                            Label {
-                                Text(collectorName)
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                            } icon: {
-                                Image(systemName: "person.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
+                    dropTimelineExpandedBottomView(context: context)
                 }
             } compactLeading: {
-                // Compact leading - App logo (16x16 per HIG)
+                // MARK: - Compact Presentation (Household)
                 AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
-                // Compact trailing - Status text (most important info)
+                // MARK: - Compact Trailing (Household)
                 Text(context.state.statusText)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(statusColor(context.state.status))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
             } minimal: {
-                // Minimal view - App logo only (12x12 per HIG)
+                // MARK: - Minimal Presentation (Household)
                 AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
         }
     }
     
-    // Helper function for status color - uses app theme colors
+    // MARK: - Drop Timeline Lock Screen View
+    @ViewBuilder
+    private func dropTimelineLockScreenView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(alignment: .center, spacing: 10) {
+                HStack(spacing: 8) {
+                    AppLogoView(size: 28, cornerRadius: 7, viewType: .standard)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bottleji")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        Text("Drop Status")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                Text(context.attributes.estimatedValue)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.appPrimary)
+            }
+            
+            // Status
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(statusColor(context.state.status))
+                    .frame(width: 10, height: 10)
+                Text(context.state.statusText)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(statusColor(context.state.status))
+                
+                if let collectorName = context.state.collectorName {
+                    Text("• \(collectorName)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Timeline Progress
+            timelineProgressView(status: context.state.status)
+            
+            // Time Ago
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Text(context.state.timeAgo)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+    
+    // MARK: - Drop Timeline Expanded Views
+    @ViewBuilder
+    private func dropTimelineExpandedLeadingView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+                .padding(.leading, 2)
+            
+            Text("Bottleji")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+                .lineLimit(1)
+            
+            Text("Drop Status")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.leading, 4)
+    }
+    
+    @ViewBuilder
+    private func dropTimelineExpandedTrailingView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(context.attributes.estimatedValue)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            
+            Text(context.state.statusText)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(statusColor(context.state.status))
+                .lineLimit(1)
+        }
+    }
+    
+    @ViewBuilder
+    private func dropTimelineExpandedBottomView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
+        VStack(spacing: 6) {
+            timelineProgressView(status: context.state.status)
+            
+            if let collectorName = context.state.collectorName {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.fill")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(collectorName)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
     private func statusColor(_ status: String) -> Color {
         switch status {
         case "pending":
-            return Color(red: 0.0, green: 0.478, blue: 1.0) // System blue
+            return .appSecondary
         case "accepted", "on_way":
-            return Color(red: 1.0, green: 0.596, blue: 0.0) // Orange #FF9800
+            return .appOrange
         case "collected":
-            return Color(red: 0.0, green: 0.412, blue: 0.361) // App primary #00695C
+            return .appPrimary
         case "expired", "cancelled":
-            return Color(red: 0.827, green: 0.184, blue: 0.184) // Red #D32F2F
+            return Color(.systemRed)
         default:
             return Color(.systemGray)
         }
     }
     
-    // Helper function for status icon
-    private func statusIcon(_ status: String) -> String {
-        switch status {
-        case "pending":
-            return "clock.fill"
-        case "accepted":
-            return "checkmark.circle.fill"
-        case "on_way":
-            return "car.fill"
-        case "collected":
-            return "checkmark.circle.fill"
-        case "expired":
-            return "exclamationmark.triangle.fill"
-        case "cancelled":
-            return "xmark.circle.fill"
-        default:
-            return "circle.fill"
-        }
-    }
-    
-    // Timeline progress view
     @ViewBuilder
     private func timelineProgressView(status: String) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
         
-                HStack(spacing: 8) {
-                    ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
-                        let isActive = isStageActive(status: status, stageIndex: index)
-                        let isCompleted = isStageCompleted(status: status, stageIndex: index)
-                        
-                        HStack(spacing: 4) {
-                            // Circle indicator - uses theme-aware colors
-                            Circle()
-                                .fill(isCompleted ? statusColor(status) : (isActive ? statusColor(status) : Color(.systemGray4)))
-                                .frame(width: 8, height: 8)
-                            
-                            if index < stages.count - 1 {
-                                // Connector line - uses theme-aware colors
-                                Rectangle()
-                                    .fill(isCompleted ? statusColor(status) : Color(.systemGray4))
-                                    .frame(height: 2)
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
+        HStack(spacing: 8) {
+            ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
+                let isActive = isStageActive(status: status, stageIndex: index)
+                let isCompleted = isStageCompleted(status: status, stageIndex: index)
+                
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isCompleted ? statusColor(status) : (isActive ? statusColor(status) : Color(.systemGray4)))
+                        .frame(width: 8, height: 8)
+                    
+                    if index < stages.count - 1 {
+                        Rectangle()
+                            .fill(isCompleted ? statusColor(status) : Color(.systemGray4))
+                            .frame(height: 2)
+                            .frame(maxWidth: .infinity)
                     }
                 }
+            }
+        }
     }
     
     private func isStageActive(status: String, stageIndex: Int) -> Bool {
