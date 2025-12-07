@@ -70,18 +70,19 @@ class IOSActivityService {
     }
 
     try {
-      final elapsedTimeStr = LiveActivityService.formatElapsedTime(data.elapsedTime);
+      // Format remaining time as countdown timer (MM:SS)
+      final elapsedTimeStr = LiveActivityService.formatCountdownTime(data.elapsedTime);
       final distanceStr = LiveActivityService.formatDistance(data.distanceToDestination);
 
       debugPrint('🔵 iOS: Calling native startActivity with:');
-      debugPrint('   - elapsedTime: $elapsedTimeStr');
+      debugPrint('   - remainingTime: $elapsedTimeStr (countdown)');
       debugPrint('   - distance: $distanceStr');
       debugPrint('   - eta: ${data.eta ?? 'N/A'}');
 
       final result = await _channel.invokeMethod('startActivity', {
         'dropId': data.dropId,
         'dropAddress': data.dropAddress,
-        'elapsedTime': elapsedTimeStr, // "03:12" (MM:SS format)
+        'elapsedTime': elapsedTimeStr, // "12:48" (MM:SS countdown format)
         'distance': distanceStr, // "2.5 km"
         'eta': data.eta ?? 'N/A', // "5 min"
         'transportMode': data.transportMode,
@@ -106,11 +107,12 @@ class IOSActivityService {
     }
 
     try {
-      final elapsedTimeStr = LiveActivityService.formatElapsedTime(data.elapsedTime);
+      // Format remaining time as countdown timer (MM:SS)
+      final elapsedTimeStr = LiveActivityService.formatCountdownTime(data.elapsedTime);
       final distanceStr = LiveActivityService.formatDistance(data.distanceToDestination);
 
       await _channel.invokeMethod('updateActivity', {
-        'elapsedTime': elapsedTimeStr, // "03:12" (MM:SS format)
+        'elapsedTime': elapsedTimeStr, // "12:48" (MM:SS countdown format)
         'distance': distanceStr, // "2.5 km"
         'eta': data.eta ?? 'N/A', // "5 min"
         'progressPercentage': data.progressPercentage, // 65 (0-100)
