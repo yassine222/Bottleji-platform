@@ -135,7 +135,7 @@ struct LiveActivityWidget: Widget {
                     } icon: {
                         Image(systemName: "location.fill")
                             .font(.caption)
-                            .foregroundColor(.systemBlue)
+                            .foregroundColor(Color(.systemBlue))
                     }
                     
                     // Value
@@ -202,7 +202,7 @@ struct LiveActivityWidget: Widget {
                             } icon: {
                                 Image(systemName: "location.fill")
                                     .font(.caption2)
-                                    .foregroundColor(.systemBlue)
+                                    .foregroundColor(Color(.systemBlue))
                             }
                             
                             // Value
