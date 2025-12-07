@@ -248,18 +248,12 @@ struct LiveActivityWidget: Widget {
     
     @ViewBuilder
     private func expandedTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
-            // Countdown Timer
-            Text(context.state.elapsedTime)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.appOrange)
-                .monospacedDigit()
-                .lineLimit(1)
-            
-            Text("remaining")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
+        // Countdown Timer
+        Text(context.state.elapsedTime)
+            .font(.system(size: 28, weight: .bold, design: .rounded))
+            .foregroundColor(.appOrange)
+            .monospacedDigit()
+            .lineLimit(1)
     }
     
     @ViewBuilder
