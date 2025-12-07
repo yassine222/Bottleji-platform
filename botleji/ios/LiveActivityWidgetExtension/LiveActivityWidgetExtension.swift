@@ -263,7 +263,7 @@ struct LiveActivityWidget: Widget {
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                    .padding(.trailing, 4)
+                    .padding(.leading, 4)
             }
             
             // Info Row
