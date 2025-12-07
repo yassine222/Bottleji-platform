@@ -254,7 +254,7 @@ struct LiveActivityWidget: Widget {
     
     @ViewBuilder
     private func expandedBottomView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             // Status - Right aligned
             HStack {
                 Spacer()
@@ -263,7 +263,7 @@ struct LiveActivityWidget: Widget {
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                    .padding(.leading, 4)
+                    .padding(.trailing, 8)
             }
             
             // Info Row
@@ -278,6 +278,7 @@ struct LiveActivityWidget: Widget {
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                 }
+                .padding(.leading, 8)
                 
                 // Value
                 HStack(spacing: 5) {
@@ -302,16 +303,19 @@ struct LiveActivityWidget: Widget {
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                 }
+                .padding(.trailing, 8)
             }
             
-            // Progress Bar
+            // Progress Bar - More pronounced (thicker)
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
+                    // Background
+                    RoundedRectangle(cornerRadius: 4)
                         .fill(Color(.systemGray5))
-                        .frame(height: 3)
+                        .frame(height: 6)
                     
-                    RoundedRectangle(cornerRadius: 2)
+                    // Progress Fill
+                    RoundedRectangle(cornerRadius: 4)
                         .fill(
                             LinearGradient(
                                 colors: [Color.appPrimary, Color.appPrimary.opacity(0.8)],
@@ -319,11 +323,13 @@ struct LiveActivityWidget: Widget {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 3)
+                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 6)
                 }
             }
-            .frame(height: 3)
+            .frame(height: 6)
+            .padding(.horizontal, 8)
         }
+        .padding(.vertical, 4)
     }
     
     // MARK: - Compact Presentation Views
