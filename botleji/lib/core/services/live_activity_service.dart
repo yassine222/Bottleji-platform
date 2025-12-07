@@ -12,6 +12,7 @@ class CollectionActivityData {
   final double distanceToDestination; // in meters
   final String? eta; // "5 min" or null
   final String transportMode; // "walking", "driving", "bicycling"
+  final String estimatedValue; // "2.50 TND"
 
   CollectionActivityData({
     required this.dropId,
@@ -20,6 +21,7 @@ class CollectionActivityData {
     required this.distanceToDestination,
     this.eta,
     required this.transportMode,
+    required this.estimatedValue,
   });
 }
 

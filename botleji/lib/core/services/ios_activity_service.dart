@@ -85,6 +85,7 @@ class IOSActivityService {
         'distance': distanceStr, // "1.2 km"
         'eta': data.eta ?? 'N/A', // "5 min"
         'transportMode': data.transportMode,
+        'estimatedValue': data.estimatedValue, // "2.50 TND"
       });
 
       _isActivityActive = true;

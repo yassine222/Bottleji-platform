@@ -92,7 +92,7 @@ struct LiveActivityWidget: Widget {
                     HStack(spacing: 8) {
                         // Custom app logo (lock screen - default)
                         AppLogoView(size: 24, cornerRadius: 6, viewType: .standard)
-                        Text("Botleji")
+                        Text("Bottleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -149,9 +149,10 @@ struct LiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            // Custom app logo (expanded view)
+                            // Custom app logo (expanded view) - Add padding to prevent cropping
                             AppLogoView(size: 16, cornerRadius: 4, viewType: .expanded)
-                            Text("Botleji")
+                                .padding(.leading, 2) // Prevent left edge cropping
+                            Text("Bottleji")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
@@ -160,20 +161,36 @@ struct LiveActivityWidget: Widget {
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
-                            .lineLimit(2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8) // Allow slight scaling to fit on one line
                     }
+                    .padding(.leading, 4) // Additional padding to prevent cropping
                 }
                 
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text("Time left")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        // Show collection completion countdown
-                        Text(context.state.eta)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange #FF9800
+                    HStack(spacing: 12) {
+                        // Timer section
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Time left")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            // Show collection completion countdown
+                            Text(context.state.eta)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(Color(red: 1.0, green: 0.596, blue: 0.0)) // Orange #FF9800
+                        }
+                        
+                        // Drop value section
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Value")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(context.attributes.estimatedValue)
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(Color(red: 0.0, green: 0.412, blue: 0.361)) // App primary green
+                        }
                     }
                 }
                 
@@ -312,7 +329,7 @@ struct DropTimelineWidget: Widget {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         }
-                        Text("Botleji")
+                        Text("Bottleji")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)

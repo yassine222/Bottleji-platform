@@ -12,6 +12,7 @@ struct CollectionActivityAttributes: ActivityAttributes {
     var dropId: String
     var dropAddress: String
     var transportMode: String
+    var estimatedValue: String  // "2.50 TND"
 }
 
 /// Activity attributes for drop timeline (household mode)
@@ -70,7 +71,8 @@ class LiveActivityManager {
         elapsedTime: String,
         distance: String,
         eta: String,
-        transportMode: String
+        transportMode: String,
+        estimatedValue: String
     ) {
         guard isActivityKitAvailable() else {
             print("⚠️ ActivityKit not available or not enabled")
@@ -83,7 +85,8 @@ class LiveActivityManager {
         let attributes = CollectionActivityAttributes(
             dropId: dropId,
             dropAddress: dropAddress,
-            transportMode: transportMode
+            transportMode: transportMode,
+            estimatedValue: estimatedValue
         )
         
         let contentState = CollectionActivityAttributes.ContentState(

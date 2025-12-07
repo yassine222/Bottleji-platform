@@ -94,6 +94,9 @@ class GlobalLiveActivityManager {
       
       // Calculate countdown ETA
       final eta = _calculateCountdownETA(collection);
+      
+      // Calculate estimated value
+      final estimatedValue = _calculateEstimatedValue(collection);
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -102,6 +105,7 @@ class GlobalLiveActivityManager {
         distanceToDestination: _currentDistance,
         eta: eta,
         transportMode: 'driving', // Default, can be updated if stored
+        estimatedValue: estimatedValue,
       );
 
       await _liveActivityService.startCollectionActivity(data);
@@ -136,8 +140,12 @@ class GlobalLiveActivityManager {
       // Calculate countdown ETA
       final eta = _calculateCountdownETA(collection);
       
+      // Calculate estimated value
+      final estimatedValue = _calculateEstimatedValue(collection);
+      
       debugPrint('   Elapsed time: ${elapsedTime.inMinutes}m ${elapsedTime.inSeconds % 60}s');
       debugPrint('   Countdown ETA: $eta');
+      debugPrint('   Estimated value: $estimatedValue');
 
       final data = CollectionActivityData(
         dropId: collection.dropId,
@@ -146,6 +154,7 @@ class GlobalLiveActivityManager {
         distanceToDestination: _currentDistance,
         eta: eta,
         transportMode: 'driving',
+        estimatedValue: estimatedValue,
       );
 
       await _liveActivityService.updateCollectionActivity(data);

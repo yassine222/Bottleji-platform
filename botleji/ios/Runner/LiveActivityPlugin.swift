@@ -30,7 +30,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                   let elapsedTime = args["elapsedTime"] as? String,
                   let distance = args["distance"] as? String,
                   let eta = args["eta"] as? String,
-                  let transportMode = args["transportMode"] as? String else {
+                  let transportMode = args["transportMode"] as? String,
+                  let estimatedValue = args["estimatedValue"] as? String else {
                 result(FlutterError(
                     code: "INVALID_ARGUMENTS",
                     message: "Missing required arguments",
@@ -46,7 +47,8 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
                     elapsedTime: elapsedTime,
                     distance: distance,
                     eta: eta,
-                    transportMode: transportMode
+                    transportMode: transportMode,
+                    estimatedValue: estimatedValue
                 )
                 result(nil)
             } else {

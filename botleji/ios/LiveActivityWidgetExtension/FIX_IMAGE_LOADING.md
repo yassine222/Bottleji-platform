@@ -116,3 +116,4 @@ If still not working, we can add debug logging to see what's happening. The code
 4. Check that images are not corrupted
 5. Verify image sizes are reasonable (not too large)
 
+
