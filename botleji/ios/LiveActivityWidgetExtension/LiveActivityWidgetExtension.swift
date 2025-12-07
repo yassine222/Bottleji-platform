@@ -236,12 +236,7 @@ struct LiveActivityWidget: Widget {
             }
             
             // Status - Positioned below the logo/text row with proper spacing
-            Text("Active Collection")
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .padding(.leading, 0) // Ensure no extra leading padding
+             // Ensure no extra leading padding
         }
         .padding(.leading, 2)
         .frame(maxWidth: .infinity, alignment: .leading) // Ensure proper alignment
@@ -251,7 +246,7 @@ struct LiveActivityWidget: Widget {
     private func expandedTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
         // Countdown Timer
         Text(context.state.elapsedTime)
-            .font(.system(size: 28, weight: .bold, design: .rounded))
+            .font(.system(size: 18, weight: .bold, design: .rounded))
             .foregroundColor(.appOrange)
             .monospacedDigit()
             .lineLimit(1)
@@ -260,6 +255,17 @@ struct LiveActivityWidget: Widget {
     @ViewBuilder
     private func expandedBottomView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
         VStack(spacing: 8) {
+            // Status - Right aligned
+            HStack {
+                Spacer()
+                Text("Active Collection")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .padding(.trailing, 4)
+            }
+            
             // Info Row
             HStack(spacing: 16) {
                 // Distance
