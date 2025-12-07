@@ -224,25 +224,25 @@ struct LiveActivityWidget: Widget {
     // MARK: - Expanded Presentation Views
     @ViewBuilder
     private func expandedLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // App Logo and Name - Horizontally aligned
-            HStack(alignment: .center, spacing: 6) {
-                AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+        VStack(alignment: .leading, spacing: 3) {
+            // App Logo and Name - Horizontally aligned (smaller to free space)
+            HStack(alignment: .center, spacing: 4) {
+                AppLogoView(size: 18, cornerRadius: 4, viewType: .expanded)
                 Text("Bottleji")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                     .lineLimit(1)
             }
             
-            // Status - Smaller font to ensure full text display
+            // Status - Now has more space to display fully
             Text("Active Collection")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
         }
-        .padding(.leading, 4)
+        .padding(.leading, 2)
     }
     
     @ViewBuilder
