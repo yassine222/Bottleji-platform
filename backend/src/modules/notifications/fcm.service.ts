@@ -30,11 +30,24 @@ export class FCMService implements OnModuleInit {
         // Option 1: Try environment variable first
         if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
           this.logger.log('🔔 FCMService: Found FIREBASE_SERVICE_ACCOUNT_KEY in environment');
+          this.logger.log(`🔔 FCMService: Key length: ${process.env.FIREBASE_SERVICE_ACCOUNT_KEY.length} characters`);
           try {
             serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-            this.logger.log('✅ Using FIREBASE_SERVICE_ACCOUNT_KEY from environment variable');
+            // Validate service account has required fields
+            if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+              this.logger.error('❌ FIREBASE_SERVICE_ACCOUNT_KEY is missing required fields!');
+              this.logger.error(`❌ Has project_id: ${!!serviceAccount.project_id}`);
+              this.logger.error(`❌ Has private_key: ${!!serviceAccount.private_key}`);
+              this.logger.error(`❌ Has client_email: ${!!serviceAccount.client_email}`);
+              serviceAccount = null; // Reset to try file
+            } else {
+              this.logger.log('✅ Using FIREBASE_SERVICE_ACCOUNT_KEY from environment variable');
+              this.logger.log(`✅ Project ID: ${serviceAccount.project_id}`);
+              this.logger.log(`✅ Client Email: ${serviceAccount.client_email}`);
+            }
           } catch (error) {
-            this.logger.warn('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY from environment variable:', error);
+            this.logger.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY from environment variable:', error);
+            serviceAccount = null; // Reset to try file
           }
         } else {
           this.logger.log('ℹ️ FCMService: No FIREBASE_SERVICE_ACCOUNT_KEY in environment, trying file...');
@@ -67,30 +80,57 @@ export class FCMService implements OnModuleInit {
           try {
             this.logger.log('🔔 FCMService: Initializing Firebase Admin SDK with service account...');
             this.logger.log(`🔔 FCMService: Project ID: ${serviceAccount.project_id}`);
+            this.logger.log(`🔔 FCMService: Client Email: ${serviceAccount.client_email}`);
+            
+            // Create credential first to validate it
+            const credential = admin.credential.cert(serviceAccount);
+            this.logger.log('✅ Credential created successfully');
+            
+            // Initialize Firebase with explicit project ID
             this.firebaseApp = admin.initializeApp({
-              credential: admin.credential.cert(serviceAccount),
+              credential: credential,
               projectId: serviceAccount.project_id, // Explicitly set project ID
             });
+            
             this.logger.log('✅ Firebase Admin SDK initialized successfully with service account');
             this.logger.log(`✅ Firebase App Name: ${this.firebaseApp.name}`);
             this.logger.log(`✅ Firebase Project ID: ${this.firebaseApp.options.projectId}`);
+            
+            // Verify project ID is actually set
+            if (!this.firebaseApp.options.projectId) {
+              this.logger.error('❌ CRITICAL: Firebase app initialized but project ID is still missing!');
+              this.logger.error('❌ Firebase options:', JSON.stringify(this.firebaseApp.options, null, 2));
+            }
           } catch (error) {
             this.logger.error('❌ FCMService: Error initializing Firebase Admin SDK:', error);
+            if (error instanceof Error) {
+              this.logger.error('❌ Error message:', error.message);
+              this.logger.error('❌ Error stack:', error.stack);
+            }
             throw error;
           }
         } else {
           // Option 3: Try default credentials (for Google Cloud environments)
+          // NOTE: This usually doesn't work on Render unless Google Cloud credentials are configured
           this.logger.log('ℹ️ FCMService: No service account found, trying default credentials...');
+          this.logger.warn('⚠️ WARNING: Default credentials may not work on Render!');
+          this.logger.warn('⚠️ FCM notifications will likely fail without proper service account.');
           try {
             this.firebaseApp = admin.initializeApp({
               credential: admin.credential.applicationDefault(),
             });
             this.logger.log('✅ Firebase Admin SDK initialized with default credentials');
+            // Verify project ID is set
+            if (!this.firebaseApp.options.projectId) {
+              this.logger.error('❌ CRITICAL: Default credentials initialized but project ID is missing!');
+              this.logger.error('❌ This usually means FIREBASE_SERVICE_ACCOUNT_KEY is not set in Render environment variables');
+              this.logger.error('❌ FCM notifications will NOT work until service account is configured');
+            }
           } catch (error) {
-            this.logger.warn('❌ Firebase Admin SDK not initialized. FCM notifications will not work.');
-            this.logger.warn('To enable FCM:');
-            this.logger.warn('  1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable, OR');
-            this.logger.warn('  2. Place firebase-service-account.json in the backend root directory');
+            this.logger.error('❌ Firebase Admin SDK not initialized. FCM notifications will not work.');
+            this.logger.error('To enable FCM:');
+            this.logger.error('  1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable in Render dashboard, OR');
+            this.logger.error('  2. Place firebase-service-account.json in the backend root directory');
             this.logger.error('Error details:', error);
           }
         }
