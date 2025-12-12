@@ -935,14 +935,31 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
         });
         
         // Ensure FCM token is saved when user is logged in (in case token changed)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        // This runs on app start AND app restart
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
             final fcmService = FCMService();
-            // If FCM is initialized, save the current token to backend
+            
+            // If FCM is not initialized yet, try to initialize it
+            // (user might have already granted permissions before)
+            if (!fcmService.initialized) {
+              AppLogger.log('🔔 FCM not initialized yet, initializing on app start...');
+              try {
+                await fcmService.initialize();
+                AppLogger.log('✅ FCM initialized on app start');
+              } catch (e) {
+                AppLogger.log('⚠️ Could not initialize FCM on app start: $e');
+                // Continue anyway - FCM might not be available
+              }
+            }
+            
+            // If FCM is now initialized, save the current token to backend
             if (fcmService.initialized) {
-              fcmService.saveTokenToBackend().catchError((e) {
-                AppLogger.log('⚠️ Error saving FCM token on app start: $e');
-              });
+              AppLogger.log('🔔 Saving FCM token to backend on app start/restart...');
+              await fcmService.saveTokenToBackend();
+              AppLogger.log('✅ FCM token saved to backend');
+            } else {
+              AppLogger.log('ℹ️ FCM not initialized - token will be saved when FCM initializes');
             }
           } catch (e) {
             AppLogger.log('⚠️ Error ensuring FCM token is saved: $e');
