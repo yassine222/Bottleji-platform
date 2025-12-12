@@ -86,12 +86,10 @@
 
 #### 1.7 `drop_near_expiring`
 - **When:** Drop collection time is running low (warning notification)
-- **Sent to:** Both household user AND collector
+- **Sent to:** Collector only
 - **Priority:** Medium
-- **Location:** `backend/src/modules/dropoffs/dropoffs.service.ts` (line 946, 970)
-- **Message:** 
-  - Household: "The collector has X minutes remaining to collect your drop"
-  - Collector: "You have X minutes remaining to collect this drop"
+- **Location:** `backend/src/modules/dropoffs/dropoffs.service.ts` (line 970)
+- **Message:** "You have X minutes remaining to collect this drop"
 - **Data includes:**
   - `dropId`
   - `collectorId`

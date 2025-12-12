@@ -911,24 +911,11 @@ export class DropoffsService {
       const nearExpiringThreshold = totalTimeoutMinutes * 0.7; // 70% of total time
       
       if (timeElapsedMinutes >= nearExpiringThreshold && timeRemainingMinutes > 0) {
-        // Check if near-expiring notification was already sent for this drop (for household user)
-        const existingNearExpiringNotificationHousehold = await this.notificationsService.getUserNotifications(
-          dropoff.userId.toString(),
-          { type: 'drop_near_expiring' as any, limit: 1 }
-        );
-        
-        // Check if near-expiring notification was already sent for this drop (for collector)
+        // Check if near-expiring notification was already sent for this drop (for collector only)
         const existingNearExpiringNotificationCollector = await this.notificationsService.getUserNotifications(
           interaction.collectorId.toString(),
           { type: 'drop_near_expiring' as any, limit: 1 }
         );
-        
-        // Check if there's a recent near-expiring notification for this drop (within last hour) for household user
-        const recentNearExpiringHousehold = existingNearExpiringNotificationHousehold.notifications.find((n: any) => {
-          const notificationData = n.data || {};
-          return notificationData.dropId === (dropoff._id as any).toString() &&
-                 new Date(n.createdAt).getTime() > (now.getTime() - 60 * 60 * 1000); // Within last hour
-        });
         
         // Check if there's a recent near-expiring notification for this drop (within last hour) for collector
         const recentNearExpiringCollector = existingNearExpiringNotificationCollector.notifications.find((n: any) => {
@@ -937,34 +924,10 @@ export class DropoffsService {
                  new Date(n.createdAt).getTime() > (now.getTime() - 60 * 60 * 1000); // Within last hour
         });
         
-        if (!recentNearExpiringHousehold) {
+        if (!recentNearExpiringCollector) {
           console.log(`⚠️ Drop ${dropoff._id} is near expiring (${timeElapsedPercent.toFixed(1)}% elapsed, ${timeRemainingMinutes}min remaining)`);
           
-          // Send near-expiring notification to household user
-          try {
-            const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
-            await this.notificationsGateway.sendNotificationToUser(householdUserId, {
-              type: 'drop_near_expiring',
-              title: 'Drop Collection Running Low on Time',
-              message: `The collector has ${timeRemainingMinutes} minute${timeRemainingMinutes !== 1 ? 's' : ''} remaining to collect your drop.`,
-              data: { 
-                dropId: (dropoff._id as any).toString(),
-                collectorId: interaction.collectorId,
-                dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`,
-                timeRemainingMinutes: timeRemainingMinutes,
-              },
-              timestamp: new Date(),
-            });
-            console.log(`📱 Near-expiring notification sent to household user ${dropoff.userId}`);
-          } catch (error) {
-            console.error(`❌ Error sending near-expiring notification to household user: ${error}`);
-          }
-        } else {
-          console.log(`ℹ️ Near-expiring notification already sent to household user for drop ${dropoff._id} recently, skipping`);
-        }
-        
-        if (!recentNearExpiringCollector) {
-          // Send near-expiring notification to collector
+          // Send near-expiring notification to collector only
           try {
             const collectorUserId = String(interaction.collectorId);
             await this.notificationsGateway.sendNotificationToUser(collectorUserId, {
