@@ -615,7 +615,11 @@ class AccountScreen extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProfileSetupScreen(email: user.email),
+                          builder: (context) => ProfileSetupScreen(
+                            email: user.email,
+                            phoneNumber: user.phoneNumber,
+                            isPhoneVerified: user.isPhoneVerified ?? false,
+                          ),
                         ),
                       );
                     },

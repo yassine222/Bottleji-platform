@@ -514,31 +514,26 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   // Helper method to determine if phone is verified
   bool _isPhoneVerifiedStatus(UserData? user) {
-    // If phone was already verified from phone sign-in, it's verified
-    if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
-      if (_phoneController.text == widget.phoneNumber || _phoneController.text.isEmpty) {
-        return true; // Phone is verified from sign-in
-      }
-    }
-    
-    // For email/password users, only check widget.isPhoneVerified (not user.isPhoneVerified)
-    // because user.isPhoneVerified might be incorrectly set or default to false
-    // Only trust widget.isPhoneVerified which is explicitly passed from the auth flow
-    if (!widget.isPhoneVerified) {
-      // Email/password user - phone is not verified yet
-      return false;
-    }
-    
     // If user is actively editing the phone field, show as needs verification
     if (_isPhoneModified || (_hasPhoneBeenCleared && _originalPhone != null && _originalPhone!.isNotEmpty)) {
       return false; // Show as needs verification
     }
     
-    // For phone sign-in users, check if the user has a phone number and it's verified
-    // Only check user.isPhoneVerified if widget.isPhoneVerified is true (phone sign-in user)
-    if (widget.isPhoneVerified && user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) {
+    // If phone was already verified from phone sign-in (widget flag), it's verified
+    if (widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+      // If phone hasn't been modified, it's still verified
+      if (_phoneController.text.isEmpty || _phoneController.text == widget.phoneNumber || (_originalPhone != null && _phoneController.text == _originalPhone)) {
+        return true; // Phone is verified from sign-in
+      }
+    }
+    
+    // Check user's phone verification status from database
+    // For phone sign-in users, user.isPhoneVerified should be true
+    // For email/password users, check if they've verified their phone
+    if (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) {
       return user.isPhoneVerified == true;
     }
+    
     return false;
   }
 
@@ -1955,6 +1950,55 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                             color: theme.colorScheme.onSurface,
                                           ),
                                         ),
+                                        const Spacer(),
+                                        // Phone verification badge
+                                        Builder(
+                                          builder: (context) {
+                                            final isPhoneVerified = _isPhoneVerifiedStatus(user) || (user?.isPhoneVerified ?? false);
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: isPhoneVerified
+                                                    ? Colors.green.withOpacity(0.1)
+                                                    : Colors.orange.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: isPhoneVerified
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    isPhoneVerified
+                                                        ? Icons.verified
+                                                        : Icons.warning_amber_rounded,
+                                                    size: 14,
+                                                    color: isPhoneVerified
+                                                        ? Colors.green
+                                                        : Colors.orange,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    isPhoneVerified
+                                                        ? 'Verified'
+                                                        : 'Unverified',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isPhoneVerified
+                                                          ? Colors.green
+                                                          : Colors.orange,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
@@ -2048,6 +2092,38 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                           style: theme.textTheme.bodyMedium?.copyWith(
                                             fontWeight: FontWeight.w600,
                                             color: theme.colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        // Phone verification badge (always verified for phone sign-in users)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.green,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.verified,
+                                                size: 14,
+                                                color: Colors.green,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Verified',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
