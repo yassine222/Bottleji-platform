@@ -66,10 +66,14 @@ export class FCMService implements OnModuleInit {
         if (serviceAccount) {
           try {
             this.logger.log('🔔 FCMService: Initializing Firebase Admin SDK with service account...');
+            this.logger.log(`🔔 FCMService: Project ID: ${serviceAccount.project_id}`);
             this.firebaseApp = admin.initializeApp({
               credential: admin.credential.cert(serviceAccount),
+              projectId: serviceAccount.project_id, // Explicitly set project ID
             });
             this.logger.log('✅ Firebase Admin SDK initialized successfully with service account');
+            this.logger.log(`✅ Firebase App Name: ${this.firebaseApp.name}`);
+            this.logger.log(`✅ Firebase Project ID: ${this.firebaseApp.options.projectId}`);
           } catch (error) {
             this.logger.error('❌ FCMService: Error initializing Firebase Admin SDK:', error);
             throw error;
@@ -114,6 +118,13 @@ export class FCMService implements OnModuleInit {
       return false;
     }
 
+    // Verify Firebase app has project ID
+    if (!this.firebaseApp.options.projectId) {
+      this.logger.error('Firebase Admin SDK initialized but project ID is missing!');
+      this.logger.error('Firebase options:', JSON.stringify(this.firebaseApp.options, null, 2));
+      return false;
+    }
+
     try {
       // Get user's FCM token
       const user = await this.usersService.findOne(userId);
@@ -151,7 +162,8 @@ export class FCMService implements OnModuleInit {
         },
       };
 
-      const response = await admin.messaging().send(message);
+      // Use the initialized Firebase app (not the default app)
+      const response = await this.firebaseApp.messaging().send(message);
       this.logger.log(`FCM notification sent successfully to user ${userId}: ${response}`);
       return true;
     } catch (error) {
