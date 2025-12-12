@@ -141,6 +141,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
@@ -261,6 +262,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
@@ -318,6 +320,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
@@ -576,6 +579,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
@@ -792,6 +796,7 @@ export class AuthService {
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         name: user.name,
         address: user.address,
@@ -868,6 +873,7 @@ export class AuthService {
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isVerified: user.isVerified, // Include isVerified for email verification status
         isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         name: user.name,
         address: user.address,

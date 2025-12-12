@@ -570,8 +570,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     
     // If email is verified AND user didn't register with phone, it's an email/password user
     // Email/password users cannot edit email (it was verified during signup)
-    if (user?.isEmailVerified == true && user?.registeredWithPhone != true) {
-      print('📧 _canEditEmail: Email is verified and user did not register with phone - email/password user - read-only');
+    // Check both isVerified (for old users) and isEmailVerified
+    final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+    if (emailIsVerified && user?.registeredWithPhone != true) {
+      print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) and user did not register with phone - email/password user - read-only');
       return false;
     }
     
@@ -590,8 +592,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
       
       // If email is verified, it's likely an email/password user (don't allow edit)
-      if (user?.isEmailVerified == true) {
-        print('📧 _canEditEmail: Email is verified - email/password user - read-only');
+      final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+      if (emailIsVerified) {
+        print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) - email/password user - read-only');
         return false;
       }
       
@@ -607,8 +610,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // Default: if we can't determine, be conservative
     // If email is verified, don't allow edit (likely email/password user)
     // Otherwise, allow edit (might be phone user)
-    if (user?.isEmailVerified == true) {
-      print('📧 _canEditEmail: Email is verified - defaulting to read-only');
+    final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+    if (emailIsVerified) {
+      print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) - defaulting to read-only');
       return false;
     }
     
@@ -1770,7 +1774,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                       if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_'))
                                         Builder(
                                           builder: (context) {
-                                            final isEmailVerified = (user!.isEmailVerified ?? false);
+                                            // For email/password users, isVerified = true means email is verified
+                                            // For phone users, check isEmailVerified
+                                            // Use isVerified first, fallback to isEmailVerified
+                                            final isEmailVerified = (user!.isVerified ?? false) || (user!.isEmailVerified ?? false);
                                             return Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                               decoration: BoxDecoration(
@@ -1894,7 +1901,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                     },
                                   ),
                                   // Show verification message for unverified email
-                                  if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_') && !(user.isEmailVerified ?? false))
+                                  // Show verification message for unverified email
+                                  // Check both isVerified (for old users) and isEmailVerified
+                                  final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+                                  if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_') && !emailIsVerified)
                                     Padding(
                                           padding: const EdgeInsets.only(top: 8.0),
                                           child: Row(
@@ -2188,29 +2198,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                   ],
                                 ),
                               
-                              // Phone verification status - only show for email sign-in users who need to verify
-                              if (!(widget.isPhoneVerified && widget.phoneNumber != null) && user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      _isPhoneVerifiedStatus(user) ? Icons.verified : Icons.warning,
-                                      size: 16,
-                                      color: _isPhoneVerifiedStatus(user) ? Colors.green : Colors.orange,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _getPhoneVerificationMessage(user),
-                                      style: TextStyle(
-                                        color: _isPhoneVerifiedStatus(user) ? Colors.green.shade800 : Colors.orange.shade800,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                                  
                               // Phone verification UI - show only when needed (not for phone sign-in users)
                               if (!(widget.isPhoneVerified && widget.phoneNumber != null) && _shouldShowVerificationUI(user)) ...[
                                 // Verification buttons

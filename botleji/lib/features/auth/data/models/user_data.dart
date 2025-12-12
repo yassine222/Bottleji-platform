@@ -59,6 +59,7 @@ class UserData {
   final String? name;
   final String? phoneNumber;
   final bool? isPhoneVerified;
+  final bool? isVerified; // Track if account is verified (for email/password users, this means email is verified)
   final bool? isEmailVerified; // Track if email is verified (for phone users who add email)
   final bool? registeredWithPhone; // Track if user originally registered with phone number
   final String? address;
@@ -103,10 +104,11 @@ class UserData {
     required this.id,
     required this.email,
     required this.name,
-    this.phoneNumber,
-    this.isPhoneVerified,
-    this.isEmailVerified,
-    this.registeredWithPhone,
+      this.phoneNumber,
+      this.isPhoneVerified,
+      this.isVerified,
+      this.isEmailVerified,
+      this.registeredWithPhone,
     this.address,
     this.profilePhoto,
     required this.roles,
@@ -180,6 +182,7 @@ class UserData {
     // Handle backward compatibility with old field names
     final phoneNumber = json['phoneNumber'] ?? json['phone'];
     final isPhoneVerified = json['isPhoneVerified'] as bool?;
+    final isVerified = json['isVerified'] as bool?;
     final isEmailVerified = json['isEmailVerified'] as bool?;
     final registeredWithPhone = json['registeredWithPhone'] as bool?;
     final address = json['address'];
@@ -325,6 +328,7 @@ class UserData {
       'roles': roles,
       'phoneNumber': phoneNumber,
       'isPhoneVerified': isPhoneVerified ?? false,
+      'isVerified': isVerified ?? false,
       'isEmailVerified': isEmailVerified ?? false,
       'registeredWithPhone': registeredWithPhone ?? false,
       'address': address,
@@ -352,6 +356,7 @@ class UserData {
       name: userData.name,
       phoneNumber: userData.phoneNumber,
       isPhoneVerified: userData.isPhoneVerified,
+      isVerified: userData.isVerified ?? false, // Ensure default if null
       isEmailVerified: userData.isEmailVerified ?? false, // Ensure default if null
       registeredWithPhone: userData.registeredWithPhone ?? false, // Ensure default if null
       address: userData.address,
@@ -542,6 +547,7 @@ class UserData {
         'name': name,
         'phoneNumber': phoneNumber,
         'isPhoneVerified': isPhoneVerified,
+        'isVerified': isVerified,
         'isEmailVerified': isEmailVerified,
         'registeredWithPhone': registeredWithPhone,
         'address': address,
