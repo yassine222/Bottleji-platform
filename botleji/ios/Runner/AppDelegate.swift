@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
 import GoogleMaps
-import FirebaseAuth
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -25,18 +24,14 @@ import FirebaseAuth
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
-  // Handle URL schemes (for deep linking from Live Activity and Firebase Phone Auth reCAPTCHA)
+  // Handle URL schemes (for deep linking from Live Activity)
+  // Note: Firebase Phone Auth reCAPTCHA URLs are now handled automatically by Firebase
+  // since FirebaseAppDelegateProxyEnabled is set to true
   override func application(
     _ app: UIApplication,
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
-    // Handle Firebase Phone Auth reCAPTCHA redirect - MUST be checked first
-    if Auth.auth().canHandle(url) {
-      // Let Firebase Auth handle the URL (reCAPTCHA redirect)
-      return true
-    }
-    
     // Handle botleji://navigation?dropId=xxx URLs from Live Activity
     if url.scheme == "botleji" && url.host == "navigation" {
       let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -53,48 +48,7 @@ import FirebaseAuth
       }
     }
     
-    // Let parent class handle other URLs
+    // Let parent class handle other URLs (including Firebase Auth reCAPTCHA)
     return super.application(app, open: url, options: options)
-  }
-  
-  // Also handle URL opening via scene delegate (for iOS 13+)
-  @available(iOS 13.0, *)
-  override func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-    for urlContext in URLContexts {
-      let url = urlContext.url
-      // Handle Firebase Phone Auth reCAPTCHA redirect
-      if Auth.auth().canHandle(url) {
-        return
-      }
-    }
-    super.scene(scene, openURLContexts: URLContexts)
-  }
-  
-  // Pass APNs device token to Firebase Auth (required for Phone Auth silent push notifications)
-  override func application(
-    _ application: UIApplication,
-    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-  ) {
-    // Pass device token to Firebase Auth for Phone Authentication
-    Auth.auth().setAPNSToken(deviceToken, type: .unknown)
-    
-    // Also pass to Flutter (for FCM)
-    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
-  }
-  
-  // Handle push notifications (required for Firebase Phone Auth silent notifications)
-  override func application(
-    _ application: UIApplication,
-    didReceiveRemoteNotification notification: [AnyHashable : Any],
-    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
-  ) {
-    // Check if this is a Firebase Auth notification (for Phone Auth)
-    if Auth.auth().canHandleNotification(notification) {
-      completionHandler(.noData)
-      return
-    }
-    
-    // This notification is not auth related; handle it normally (for FCM)
-    super.application(application, didReceiveRemoteNotification: notification, fetchCompletionHandler: completionHandler)
   }
 }
