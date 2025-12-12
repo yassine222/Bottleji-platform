@@ -119,6 +119,7 @@ export class AuthService {
       email: tempSignup.email,
       password: tempSignup.password, // Already hashed
       isVerified: true, // Account is verified since OTP was correct
+      isEmailVerified: true, // Email is verified since OTP was correct (for email/password signup)
     });
 
     // Delete temporary signup after successful account creation
@@ -140,6 +141,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
         roles: user.roles,
@@ -259,6 +261,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
         roles: user.roles,
@@ -315,6 +318,7 @@ export class AuthService {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         address: user.address,
         profilePhoto: user.profilePhoto,
         roles: user.roles,
@@ -788,6 +792,7 @@ export class AuthService {
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         name: user.name,
         address: user.address,
         profilePhoto: user.profilePhoto,
@@ -863,6 +868,7 @@ export class AuthService {
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified ?? false, // Include email verification status
         name: user.name,
         address: user.address,
         profilePhoto: user.profilePhoto,
