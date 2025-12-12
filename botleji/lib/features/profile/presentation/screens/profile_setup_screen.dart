@@ -144,11 +144,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _initializeScreen() async {
     try {
-      // Only detect country code from device locale if it's a new user setup
-      // For existing users, we'll extract it from their phone number in the build method
-      if (widget.isNewUserSetup) {
-        _detectPhoneCountryCode();
-      }
+      // Detect country code from device locale
+      // This is useful for both new user setup and existing users adding/editing phone
+      _detectPhoneCountryCode();
       
       // Initialize phone number if provided and already verified (from phone sign-in)
       if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty && widget.isPhoneVerified) {
@@ -564,9 +562,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // Email/password users cannot edit email (already verified during signup)
     
     // Primary check: registeredWithPhone flag
+    // If user registered with phone, email is editable
     if (user?.registeredWithPhone == true) {
       print('📧 _canEditEmail: User registered with phone (flag=true) - email is editable');
       return true;
+    }
+    
+    // If email is verified AND user didn't register with phone, it's an email/password user
+    // Email/password users cannot edit email (it was verified during signup)
+    if (user?.isEmailVerified == true && user?.registeredWithPhone != true) {
+      print('📧 _canEditEmail: Email is verified and user did not register with phone - email/password user - read-only');
+      return false;
     }
     
     // Fallback 1: Check if email is temp email format (phone sign-in indicator)
@@ -583,6 +589,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         return true;
       }
       
+      // If email is verified, it's likely an email/password user (don't allow edit)
+      if (user?.isEmailVerified == true) {
+        print('📧 _canEditEmail: Email is verified - email/password user - read-only');
+        return false;
+      }
+      
       // Check if user has phone number but email is unverified or null
       if (user?.phoneNumber != null && 
           user!.phoneNumber!.isNotEmpty && 
@@ -590,18 +602,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         print('📧 _canEditEmail: Has phone number but email unverified - likely phone user - allowing edit');
         return true;
       }
-      
-      // If email is verified, it's likely an email/password user (don't allow edit)
-      if (user?.isEmailVerified == true) {
-        print('📧 _canEditEmail: Email is verified - email/password user - read-only');
-        return false;
-      }
     }
     
-    // Default: if we can't determine, be conservative and allow editing
-    // (Better to allow editing than block phone users)
+    // Default: if we can't determine, be conservative
+    // If email is verified, don't allow edit (likely email/password user)
+    // Otherwise, allow edit (might be phone user)
+    if (user?.isEmailVerified == true) {
+      print('📧 _canEditEmail: Email is verified - defaulting to read-only');
+      return false;
+    }
+    
     print('📧 _canEditEmail: Cannot determine user type - defaulting to editable. registeredWithPhone=${user?.registeredWithPhone}, isEmailVerified=${user?.isEmailVerified}, isPhoneVerified=${user?.isPhoneVerified}');
-    return true; // Default to editable for safety
+    return true; // Default to editable for safety (likely phone user)
   }
 
   // Validate email availability with backend
