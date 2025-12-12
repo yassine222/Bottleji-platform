@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import GoogleMaps
+import FirebaseAuth
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -24,12 +25,17 @@ import GoogleMaps
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
-  // Handle URL schemes (for deep linking from Live Activity)
+  // Handle URL schemes (for deep linking from Live Activity and Firebase Phone Auth reCAPTCHA)
   override func application(
     _ app: UIApplication,
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
+    // Handle Firebase Phone Auth reCAPTCHA redirect
+    if Auth.auth().canHandle(url) {
+      return true
+    }
+    
     // Handle botleji://navigation?dropId=xxx URLs from Live Activity
     if url.scheme == "botleji" && url.host == "navigation" {
       let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -46,5 +52,33 @@ import GoogleMaps
       }
     }
     return super.application(app, open: url, options: options)
+  }
+  
+  // Pass APNs device token to Firebase Auth (required for Phone Auth silent push notifications)
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    // Pass device token to Firebase Auth for Phone Authentication
+    Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+    
+    // Also pass to Flutter (for FCM)
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+  }
+  
+  // Handle push notifications (required for Firebase Phone Auth silent notifications)
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification notification: [AnyHashable : Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    // Check if this is a Firebase Auth notification (for Phone Auth)
+    if Auth.auth().canHandleNotification(notification) {
+      completionHandler(.noData)
+      return
+    }
+    
+    // This notification is not auth related; handle it normally (for FCM)
+    super.application(application, didReceiveRemoteNotification: notification, fetchCompletionHandler: completionHandler)
   }
 }
