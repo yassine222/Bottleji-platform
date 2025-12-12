@@ -34,6 +34,9 @@ target 'Runner' do
   
   # Let CocoaPods resolve Firebase versions automatically based on Flutter plugin requirements
   
+  # Add reCAPTCHA Enterprise SDK for Firebase Phone Auth
+  pod 'RecaptchaEnterprise', '~> 18.8'
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
