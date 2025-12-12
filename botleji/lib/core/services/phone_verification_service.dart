@@ -42,7 +42,9 @@ class PhoneVerificationService {
       // Format phone number to international format
       String formattedPhone = _formatPhoneNumber(phoneNumber);
       
-      print('🔍 PhoneVerificationService: Sending SMS to $formattedPhone');
+      print('🔍 PhoneVerificationService: Original phone number: $phoneNumber');
+      print('🔍 PhoneVerificationService: Formatted phone number: $formattedPhone');
+      print('🔍 PhoneVerificationService: Phone number length: ${formattedPhone.length}');
       print('🔍 PhoneVerificationService: Starting verification for: $formattedPhone');
       
       // Debug mode - bypass Firebase Auth for testing (iOS only)

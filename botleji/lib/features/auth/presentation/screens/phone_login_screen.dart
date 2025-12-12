@@ -93,6 +93,12 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           ? _completePhoneNumber 
           : '$_countryCode${_phoneController.text.trim()}';
       
+      print('📱 PhoneLoginScreen: Country code: $_countryCode');
+      print('📱 PhoneLoginScreen: Local number: ${_phoneController.text.trim()}');
+      print('📱 PhoneLoginScreen: Complete number: $_completePhoneNumber');
+      print('📱 PhoneLoginScreen: Final phone number being sent: $phoneNumber');
+      print('📱 PhoneLoginScreen: Phone number length: ${phoneNumber.length}');
+      
       await PhoneVerificationService.sendSMSVerification(
         phoneNumber: phoneNumber,
         onCodeSent: (verificationId) {
