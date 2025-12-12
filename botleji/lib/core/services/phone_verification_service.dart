@@ -93,29 +93,46 @@ class PhoneVerificationService {
           }
         },
         verificationFailed: (FirebaseAuthException e) {
-          print('🔍 PhoneVerificationService: Verification failed: ${e.message}');
+          print('❌ PhoneVerificationService: Verification failed!');
+          print('❌ PhoneVerificationService: Error code: ${e.code}');
+          print('❌ PhoneVerificationService: Error message: ${e.message}');
+          print('❌ PhoneVerificationService: Full error: $e');
           String errorMessage = 'SMS verification failed';
           
           switch (e.code) {
             case 'invalid-phone-number':
-              errorMessage = 'Invalid phone number format';
+              errorMessage = 'Invalid phone number format. Please check the number and try again.';
+              print('❌ PhoneVerificationService: Phone number format is invalid');
               break;
             case 'too-many-requests':
               errorMessage = 'Too many SMS requests. Please try again later.';
+              print('❌ PhoneVerificationService: Rate limit exceeded - too many requests');
               break;
             case 'quota-exceeded':
-              errorMessage = 'SMS quota exceeded. Please contact support.';
+              errorMessage = 'SMS quota exceeded. Please contact support or check Firebase Console billing.';
+              print('❌ PhoneVerificationService: SMS quota exceeded - check Firebase Console');
+              break;
+            case 'missing-phone-number':
+              errorMessage = 'Phone number is required.';
+              print('❌ PhoneVerificationService: Phone number is missing');
               break;
             default:
               errorMessage = 'SMS verification failed: ${e.message ?? 'Unknown error'}';
+              print('❌ PhoneVerificationService: Unknown error code: ${e.code}');
           }
           
           onError(errorMessage);
         },
         codeSent: (String verificationId, int? resendToken) async {
-          print('🔍 PhoneVerificationService: SMS code sent successfully!');
-          print('🔍 PhoneVerificationService: VerificationId: $verificationId');
-          print('🔍 PhoneVerificationService: ResendToken: $resendToken');
+          print('✅ PhoneVerificationService: SMS code sent successfully!');
+          print('✅ PhoneVerificationService: VerificationId: $verificationId');
+          print('✅ PhoneVerificationService: ResendToken: $resendToken');
+          print('✅ PhoneVerificationService: SMS should arrive shortly on: $formattedPhone');
+          print('✅ PhoneVerificationService: If SMS doesn\'t arrive, check:');
+          print('   1. Phone number is correct: $formattedPhone');
+          print('   2. Carrier/SMS service is working');
+          print('   3. Firebase Console → Authentication → Users for delivery status');
+          print('   4. Firebase Console → Usage and Billing for SMS quota');
           
           // Store verification ID for later use
           final prefs = await SharedPreferences.getInstance();
