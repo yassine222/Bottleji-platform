@@ -2,8 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.developer.usernotifications.live-activities</key>
-	<true/>
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Temporarily removed Live Activities to fix provisioning profile issue -->
+	<!-- Will add back after APNS is working -->
+	<!-- <key>com.apple.developer.usernotifications.live-activities</key>
+	<true/> -->
 </dict>
 </plist>
-

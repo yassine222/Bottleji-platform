@@ -14,6 +14,7 @@ import { UpdateCollectorSubscriptionDto } from './dto/update-collector-subscript
 import { UserRole } from '../users/schemas/user.schema';
 import { TemporarySignup, TemporarySignupDocument } from './schemas/temporary-signup.schema';
 import * as bcrypt from 'bcrypt';
+import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -103,10 +104,8 @@ export class AuthService {
       throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
     }
 
-    // Verify OTP - allow hardcoded OTPs for testing (123456, 847293)
-    const hardcodedOTPs = ['123456', '847293'];
-    const isValidOTP = tempSignup.verificationOTP === verifyOtpDto.otp || 
-                       hardcodedOTPs.includes(verifyOtpDto.otp);
+    // Verify OTP - only accept the generated OTP (no hardcoded values)
+    const isValidOTP = tempSignup.verificationOTP === verifyOtpDto.otp;
     
     if (!isValidOTP) {
       // Increment OTP attempts
@@ -633,101 +632,55 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    // Generate OTP (hardcoded for now until Trello implementation)
-    const otp = '123456'; // Hardcoded OTP for testing
-    const otpExpiresAt = new Date();
-    otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 15); // OTP expires in 15 minutes
-
-    // Store OTP in user record
-    await this.usersService.update(userId, {
-      phoneNumber: phoneNumber,
-      phoneVerificationOtp: otp,
-      phoneOtpExpiresAt: otpExpiresAt,
-      phoneOtpAttempts: 0,
-      isPhoneVerified: false, // Reset verification status when sending new OTP
-    });
-
-    // TODO: Send OTP via SMS service (Trello implementation)
-    // For now, just return the OTP in the response (remove in production)
-    console.log(`📱 Phone OTP for ${phoneNumber}: ${otp}`);
-
-    return {
-      message: 'Phone OTP sent successfully',
-      phoneNumber: phoneNumber,
-      otp: otp, // Remove this in production - only for testing with hardcoded OTP
-    };
+    // Note: This method is for updating phone numbers of existing users
+    // For new signups/logins, use Firebase Phone Auth directly (phoneSignup/phoneLogin)
+    // This endpoint should use Firebase Phone Auth on the frontend, not backend-generated OTPs
+    
+    throw new BadRequestException('Phone OTP should be sent via Firebase Phone Auth. Please use the phone verification flow in the app.');
   }
 
   async verifyPhoneOTP(userId: string, phoneNumber: string, otp: string) {
-    const user = await this.usersService.findOne(userId);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    // Check if phone number matches
-    if (user.phoneNumber !== phoneNumber) {
-      throw new BadRequestException('Phone number does not match');
-    }
-
-    // Check if OTP has expired
-    if (!user.phoneOtpExpiresAt || new Date() > user.phoneOtpExpiresAt) {
-      throw new BadRequestException('Phone OTP has expired. Please request a new OTP.');
-    }
-
-    // Check OTP attempts
-    if (user.phoneOtpAttempts >= 3) {
-      throw new BadRequestException('Too many OTP attempts. Please request a new OTP.');
-    }
-
-    // Verify OTP (hardcoded for now)
-    if (user.phoneVerificationOtp !== otp) {
-      // Increment OTP attempts
-      await this.usersService.update(userId, {
-        phoneOtpAttempts: (user.phoneOtpAttempts || 0) + 1,
-      });
-      throw new BadRequestException('Invalid phone OTP');
-    }
-
-    // OTP is valid - mark phone as verified
-    await this.usersService.update(userId, {
-      isPhoneVerified: true,
-      phoneVerificationOtp: undefined, // Clear OTP after successful verification
-      phoneOtpExpiresAt: undefined,
-      phoneOtpAttempts: 0,
-    });
-
-    return {
-      message: 'Phone number verified successfully',
-      phoneNumber: phoneNumber,
-      isPhoneVerified: true,
-    };
+    // Note: This method is deprecated - phone verification should use Firebase Phone Auth
+    // Frontend should verify OTP with Firebase, then call verifyPhone() with Firebase token
+    throw new BadRequestException('Phone OTP verification should be done via Firebase Phone Auth. Please use the phone verification flow in the app.');
   }
 
   async verifyPhone(userId: string, phoneNumber: string, firebaseToken: string) {
     try {
-      // In a real implementation, you would verify the Firebase token here
-      // For now, we'll just update the user's phone number and mark it as verified
-      // You can add Firebase Admin SDK verification later
-      
       const user = await this.usersService.findOne(userId);
       if (!user) {
         throw new BadRequestException('User not found');
       }
 
+      // Verify Firebase token and extract phone number
+      const verifiedPhoneNumber = await this.verifyFirebaseToken(firebaseToken);
+      
+      // Normalize both phone numbers for comparison
+      const normalizedVerifiedPhone = this.normalizePhoneNumber(verifiedPhoneNumber);
+      const normalizedProvidedPhone = this.normalizePhoneNumber(phoneNumber);
+      
+      // Ensure phone number from token matches provided phone number
+      if (normalizedVerifiedPhone !== normalizedProvidedPhone) {
+        throw new BadRequestException('Phone number in token does not match provided phone number');
+      }
+
       // Update user with verified phone number
       await this.usersService.update(userId, {
-        phoneNumber: phoneNumber,
+        phoneNumber: normalizedVerifiedPhone,
         isPhoneVerified: true,
         phoneVerificationId: firebaseToken, // Store the Firebase token for reference
       });
 
       return {
         message: 'Phone number verified successfully',
-        phoneNumber: phoneNumber,
+        phoneNumber: normalizedVerifiedPhone,
         isPhoneVerified: true,
       };
     } catch (error) {
-      throw new BadRequestException('Failed to verify phone number');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to verify phone number: ' + error.message);
     }
   }
 
@@ -742,6 +695,48 @@ export class AuthService {
     return hasPlus ? `+${digitsOnly}` : digitsOnly;
   }
 
+  /**
+   * Verify Firebase ID token and extract phone number
+   * @param firebaseToken - Firebase ID token from client
+   * @returns Phone number from the verified token
+   * @throws BadRequestException if token is invalid or doesn't contain phone number
+   */
+  private async verifyFirebaseToken(firebaseToken: string): Promise<string> {
+    try {
+      // Get Firebase Admin app (should be initialized by FCMService)
+      const firebaseApp = admin.apps.length > 0 ? admin.app() : null;
+      
+      if (!firebaseApp) {
+        throw new BadRequestException('Firebase Admin SDK not initialized. Cannot verify phone token.');
+      }
+
+      // Verify the ID token
+      const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+      
+      // Extract phone number from token
+      const phoneNumber = decodedToken.phone_number;
+      
+      if (!phoneNumber) {
+        throw new BadRequestException('Firebase token does not contain phone number');
+      }
+
+      console.log(`✅ Firebase token verified for phone: ${phoneNumber}`);
+      return phoneNumber;
+    } catch (error) {
+      console.error(`❌ Firebase token verification failed:`, error);
+      
+      if (error.code === 'auth/id-token-expired') {
+        throw new BadRequestException('Firebase token has expired. Please verify your phone number again.');
+      } else if (error.code === 'auth/argument-error') {
+        throw new BadRequestException('Invalid Firebase token format.');
+      } else if (error.code === 'auth/id-token-revoked') {
+        throw new BadRequestException('Firebase token has been revoked. Please verify your phone number again.');
+      }
+      
+      throw new BadRequestException('Failed to verify Firebase token: ' + (error.message || 'Unknown error'));
+    }
+  }
+
   async phoneSignup(phoneNumber: string, firebaseToken: string) {
     // Normalize phone number before checking/creating
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
@@ -752,8 +747,14 @@ export class AuthService {
       throw new BadRequestException('Phone number already registered. Please login instead.');
     }
 
-    // TODO: Verify Firebase token with Firebase Admin SDK
-    // For now, we trust the token from the client
+    // Verify Firebase token and extract phone number
+    const verifiedPhoneNumber = await this.verifyFirebaseToken(firebaseToken);
+    const normalizedVerifiedPhone = this.normalizePhoneNumber(verifiedPhoneNumber);
+    
+    // Ensure phone number from token matches provided phone number
+    if (normalizedVerifiedPhone !== normalizedPhone) {
+      throw new BadRequestException('Phone number in token does not match provided phone number');
+    }
 
     // Generate a random password (user won't use it - they login with phone)
     // This is required by the user schema but user can't login with email/password
@@ -814,8 +815,14 @@ export class AuthService {
       throw new UnauthorizedException('Your account has been deleted by an administrator. Please contact support: support@bottleji.com');
     }
 
-    // TODO: Verify Firebase token with Firebase Admin SDK
-    // For now, we trust the token from the client
+    // Verify Firebase token and extract phone number
+    const verifiedPhoneNumber = await this.verifyFirebaseToken(firebaseToken);
+    const normalizedVerifiedPhone = this.normalizePhoneNumber(verifiedPhoneNumber);
+    
+    // Ensure phone number from token matches provided phone number
+    if (normalizedVerifiedPhone !== normalizedPhone) {
+      throw new UnauthorizedException('Phone number in token does not match provided phone number');
+    }
 
     // Update phone verification status and token
     await this.usersService.update(user.id, {

@@ -8,12 +8,9 @@ import '../config/server_config.dart';
 class PhoneVerificationService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Debug mode flag - set to false to use Firebase Phone Auth for OTP delivery
-  // For iOS testing: hardcoded verification is enabled
-  static bool get _debugMode => Platform.isIOS; // iOS uses hardcoded verification for testing
-  
-  // Email verification mode flag - disabled for phone verification context
-  static const bool _useEmailVerification = false;
+  // Debug mode flag - DISABLED: Now using real Firebase Phone Auth for SMS delivery
+  // Set to false to always use Firebase Phone Auth (production mode)
+  static bool get _debugMode => false; // Disabled - always use real Firebase Phone Auth
   
   // Send SMS verification code
   static Future<void> sendSMSVerification({

@@ -181,7 +181,15 @@ class NotificationService extends ChangeNotifier {
 
       // Notification events
       _socket!.on('notification', (data) {
-        debugPrint('🔔 ===== NOTIFICATION EVENT RECEIVED =====');
+        debugPrint('🔔 ===== NOTIFICATION EVENT RECEIVED (from WebSocket) =====');
+        // Route to shared handler (same logic as FCM)
+        handleNotificationFromFCM(data);
+      });
+      
+      // Legacy handler logic (kept for reference, but now using shared method above)
+      // The _handleNotificationFromFCM method handles all notification types
+      _socket!.on('notification_legacy', (data) {
+        debugPrint('🔔 ===== NOTIFICATION EVENT RECEIVED (LEGACY) =====');
         debugPrint('🔔 Notification type: ${data['type']}');
         debugPrint('🔔 Notification title: ${data['title']}');
         debugPrint('🔔 Notification message: ${data['message']}');
@@ -257,14 +265,19 @@ class NotificationService extends ChangeNotifier {
           debugPrint('🔒 Is permanently disabled: $isPermanentlyDisabled');
           
           // Show push notification
-          debugPrint('🔒 Attempting to show local notification...');
+          // Use different notification IDs for lock vs unlock to ensure both show up
+          final notificationId = isLocked ? 9000 : 9001;
+          final payload = isLocked ? 'account_locked' : 'account_unlocked';
+          
+          debugPrint('🔒 Attempting to show local notification for ${isLocked ? "LOCK" : "UNLOCK"}...');
+          debugPrint('🔒 Notification ID: $notificationId');
           _localNotificationService.showNotification(
             title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
             body: data['message'] ?? '',
-            id: 9000, // Unique ID for lock notifications
-            payload: 'account_lock:$isLocked',
+            id: notificationId,
+            payload: payload,
           );
-          debugPrint('🔒 Local notification service called');
+          debugPrint('🔒 Local notification service called - ${isLocked ? "LOCK" : "UNLOCK"} notification should now be visible');
           
           // Call the callback to update user state
           if (onAccountLockStatusUpdate != null) {
@@ -689,6 +702,266 @@ class NotificationService extends ChangeNotifier {
 
   /// Setup WebSocket event listeners
   // Removed unused _setupEventListeners (legacy)
+
+  /// Handle notification from FCM (can also be called from WebSocket)
+  /// This method processes notification data in the same format as WebSocket notifications
+  /// Made public so FCMService can call it
+  void handleNotificationFromFCM(Map<String, dynamic> data) {
+    debugPrint('🔔 ===== NOTIFICATION EVENT RECEIVED (from FCM) =====');
+    debugPrint('🔔 Notification type: ${data['type']}');
+    debugPrint('🔔 Notification title: ${data['title']}');
+    debugPrint('🔔 Notification message: ${data['message']}');
+    debugPrint('🔔 Full notification data: $data');
+    debugPrint('🔔 ========================================');
+
+    // De-dup: ignore if same type+timestamp+id seen in last 10s
+    // For ticket messages and account lock/unlock, bypass de-duplication entirely to ensure all messages are shown
+    final type = (data['type'] ?? '').toString();
+    
+    // Skip de-duplication for ticket messages and account lock/unlock - they should always be shown
+    if (type != 'ticket_message' && type != 'account_locked' && type != 'account_unlocked') {
+      try {
+        final ts = (data['timestamp'] ?? '').toString();
+        final idHint = (data['data']?['ticketId'] ?? data['data']?['dropId'] ?? data['userId'] ?? '').toString();
+        final key = '$type|$ts|$idHint';
+        
+        // Clean old entries
+        _recentNotificationKeys.removeWhere((_, t) => DateTime.now().difference(t) > const Duration(seconds: 20));
+        
+        if (_recentNotificationKeys.containsKey(key)) {
+          debugPrint('🔁 Duplicate notification suppressed: $key');
+          debugPrint('🔁 This notification was already shown in the last 20 seconds');
+          return;
+        }
+        _recentNotificationKeys[key] = DateTime.now();
+        debugPrint('🔔 Notification key: $key (not a duplicate, proceeding)');
+      } catch (e) {
+        debugPrint('⚠️ Error in de-duplication logic: $e');
+      }
+    } else {
+      if (type == 'ticket_message') {
+        debugPrint('🔔 Ticket message notification - bypassing de-duplication to ensure delivery');
+      } else if (type == 'account_locked' || type == 'account_unlocked') {
+        debugPrint('🔔 Account lock/unlock notification - bypassing de-duplication to ensure delivery');
+      }
+    }
+    
+    // Handle account lock/unlock notifications (same logic as WebSocket handler)
+    if (data['type'] == 'account_locked' || data['type'] == 'account_unlocked') {
+      debugPrint('🔒 ===== ACCOUNT LOCK/UNLOCK NOTIFICATION RECEIVED =====');
+      debugPrint('🔒 Notification type: ${data['type']}');
+      debugPrint('🔒 Title: ${data['title']}');
+      debugPrint('🔒 Message: ${data['message']}');
+      debugPrint('🔒 Full data: $data');
+      
+      final isLocked = data['data']?['isAccountLocked'] ?? false;
+      final lockedUntilValue = data['data']?['accountLockedUntil'];
+      final warningCount = data['data']?['warningCount'] ?? 0;
+      
+      debugPrint('🔒 Raw lockedUntil value: $lockedUntilValue (type: ${lockedUntilValue.runtimeType})');
+      
+      DateTime? lockedUntil;
+      if (lockedUntilValue != null && 
+          lockedUntilValue.toString().isNotEmpty && 
+          lockedUntilValue.toString().toLowerCase() != 'null') {
+        try {
+          lockedUntil = DateTime.parse(lockedUntilValue.toString());
+        } catch (e) {
+          debugPrint('❌ Error parsing lockedUntil date: $e');
+        }
+      } else {
+        debugPrint('🔒 lockedUntil is null/empty - this is a PERMANENT lock');
+        lockedUntil = null;
+      }
+      
+      final isPermanentlyDisabled = isLocked && lockedUntil == null;
+      debugPrint('🔒 Is permanently disabled: $isPermanentlyDisabled');
+      
+      // Use different notification IDs for lock vs unlock to ensure both show up
+      final notificationId = isLocked ? 9000 : 9001;
+      final payload = isLocked ? 'account_locked' : 'account_unlocked';
+      
+      // Create NotificationPayload and add to notifications list
+      try {
+        final notification = NotificationPayload(
+          type: data['type'] ?? (isLocked ? 'account_locked' : 'account_unlocked'),
+          title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
+          message: data['message'] ?? '',
+          data: data['data'],
+          timestamp: DateTime.tryParse(data['timestamp']?.toString() ?? '') ?? DateTime.now(),
+        );
+        _notifications.insert(0, notification);
+        if (_notifications.length > 50) {
+          _notifications.removeRange(50, _notifications.length);
+        }
+        debugPrint('🔒 Notification added to notifications list (${isLocked ? "LOCK" : "UNLOCK"})');
+      } catch (e) {
+        debugPrint('⚠️ Error adding notification to list: $e');
+      }
+      
+      debugPrint('🔒 Showing ${isLocked ? "LOCK" : "UNLOCK"} push notification with ID: $notificationId');
+      debugPrint('🔒 Notification title: ${data['title']}');
+      debugPrint('🔒 Notification body: ${data['message']}');
+      _localNotificationService.showNotification(
+        title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
+        body: data['message'] ?? '',
+        id: notificationId,
+        payload: payload,
+      );
+      debugPrint('🔒 Local notification service called - ${isLocked ? "LOCK" : "UNLOCK"} should now be visible as push notification');
+      
+      // Update badge count
+      final currentUnreadCount = unreadCount;
+      _localNotificationService.updateBadgeCount(currentUnreadCount);
+      debugPrint('🔒 Badge count updated: $currentUnreadCount');
+      
+      // Call callback to update user state
+      if (onAccountLockStatusUpdate != null) {
+        debugPrint('🔒 Calling account lock status update callback');
+        onAccountLockStatusUpdate!.call(isLocked, lockedUntil, warningCount);
+      } else {
+        debugPrint('⚠️ onAccountLockStatusUpdate callback is null');
+      }
+      
+      // If permanently disabled, trigger the permanent disable callback to show dialog
+      if (isPermanentlyDisabled && onAccountPermanentlyDisabled != null) {
+        debugPrint('🔒 Calling permanent disable callback');
+        onAccountPermanentlyDisabled!.call();
+      }
+      
+      // Call notification received callback
+      try {
+        final notification = NotificationPayload(
+          type: data['type'] ?? (isLocked ? 'account_locked' : 'account_unlocked'),
+          title: data['title'] ?? (isLocked ? 'Account Locked' : 'Account Unlocked'),
+          message: data['message'] ?? '',
+          data: data['data'],
+          timestamp: DateTime.tryParse(data['timestamp']?.toString() ?? '') ?? DateTime.now(),
+        );
+        onNotificationReceived?.call(notification);
+        debugPrint('🔒 Notification received callback called');
+      } catch (e) {
+        debugPrint('⚠️ Error calling notification received callback: $e');
+      }
+      
+      notifyListeners();
+      debugPrint('🔒 ====================================================');
+      return;
+    }
+    
+    // Handle all other notification types using the existing WebSocket handler logic
+    // We'll delegate to the WebSocket notification handler by simulating the same data structure
+    if (data['type'] == 'account_restored') {
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'Account Restored',
+        body: data['message'] ?? 'Your account has been restored. You can now log in again!',
+        id: 9500,
+        payload: 'account_restored',
+      );
+      return;
+    }
+    
+    if (data['type'] == 'user_deleted') {
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'Account Deleted',
+        body: data['message'] ?? 'Your account has been deleted by an administrator.',
+        id: 9200,
+        payload: 'user_deleted',
+      );
+      if (onAccountDeleted != null) {
+        onAccountDeleted!.call();
+      }
+      return;
+    }
+    
+    if (data['type'] == 'drop_censored') {
+      final dropId = data['data']?['dropId']?.toString();
+      final reason = data['data']?['reason']?.toString() ?? data['message']?.toString() ?? 'Censored image';
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'Drop Image Censored',
+        body: data['message'] ?? 'Your drop image was censored',
+        id: 9100,
+        payload: 'drop_censored:${dropId ?? ''}',
+      );
+      if (dropId != null) {
+        onDropCensored?.call(dropId, reason);
+      }
+      return;
+    }
+    
+    if (data['type'] == 'ticket_message') {
+      final ticketId = data['data']?['ticketId'] ?? '';
+      final message = data['message'] ?? 'You have a new message on your support ticket';
+      final messageData = data['data']?['message'];
+      final sentAt = messageData?['sentAt']?.toString() ?? DateTime.now().toIso8601String();
+      final messageHash = message.hashCode;
+      final uniqueNotificationId = 5000 + (ticketId.hashCode + messageHash + sentAt.hashCode) % 100000;
+      
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'New Support Message',
+        body: message,
+        id: uniqueNotificationId,
+        payload: 'ticket:$ticketId',
+      );
+      
+      if (onTicketMessageReceived != null && data['data'] != null) {
+        onTicketMessageReceived!(ticketId, data['data']);
+      }
+      return;
+    }
+    
+    if (data['type'] == 'order_approved') {
+      final orderId = data['data']?['orderId']?.toString() ?? '';
+      final trackingNumber = data['data']?['trackingNumber']?.toString() ?? '';
+      final itemName = data['data']?['rewardItemName']?.toString() ?? 'Your order';
+      
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'Order Approved! 🎉',
+        body: data['message'] ?? 'Your order has been approved and is being prepared for shipment',
+        id: 9300,
+        payload: 'order_approved:$orderId',
+      );
+      
+      if (onOrderApproved != null) {
+        onOrderApproved!(orderId, itemName, trackingNumber);
+      }
+      return;
+    }
+    
+    if (data['type'] == 'order_rejected') {
+      final orderId = data['data']?['orderId']?.toString() ?? '';
+      final rejectionReason = data['data']?['rejectionReason']?.toString() ?? '';
+      final pointsAmount = data['data']?['pointsAmount']?.toString() ?? '';
+      final itemName = data['data']?['rewardItemName']?.toString() ?? 'Your order';
+      final pointsRefunded = int.tryParse(pointsAmount) ?? 0;
+      
+      _localNotificationService.showNotification(
+        title: data['title'] ?? 'Order Rejected',
+        body: data['message'] ?? 'Your order was rejected and points have been refunded',
+        id: 9400,
+        payload: 'order_rejected:$orderId',
+      );
+      
+      if (onOrderRejected != null) {
+        onOrderRejected!(orderId, itemName, rejectionReason.isEmpty ? 'No reason provided' : rejectionReason, pointsRefunded);
+      }
+      return;
+    }
+
+    // Fallback: for other notification types, use the generic handler
+    try {
+      final notification = NotificationPayload(
+        type: data['type'] ?? 'unknown',
+        title: data['title'] ?? 'Notification',
+        message: data['message'] ?? '',
+        data: data['data'],
+        timestamp: DateTime.tryParse(data['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      );
+      _handleNotification(notification);
+    } catch (e) {
+      debugPrint('❌ Error parsing notification: $e');
+    }
+  }
 
   /// Handle incoming notifications
   void _handleNotification(NotificationPayload notification) {

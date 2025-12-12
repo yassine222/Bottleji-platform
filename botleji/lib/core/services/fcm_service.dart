@@ -2,10 +2,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
-import 'local_notification_service.dart';
-import '../config/server_config.dart';
 import '../api/api_client.dart' as api;
+import 'local_notification_service.dart';
+import 'notification_service.dart';
 
 /// Top-level function to handle background messages
 /// Must be a top-level function, not a class method
@@ -38,6 +37,7 @@ class FCMService extends ChangeNotifier {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   String? _fcmToken;
   bool _initialized = false;
+  String? _pendingToken; // Store token that needs to be saved when user logs in
 
   String? get fcmToken => _fcmToken;
   bool get initialized => _initialized;
@@ -82,7 +82,15 @@ class FCMService extends ChangeNotifier {
         _firebaseMessaging.onTokenRefresh.listen((newToken) {
           debugPrint('🔔 FCMService: Token refreshed: $newToken');
           _fcmToken = newToken;
+          
+          // Save token to backend (will save if logged in, or queue for later if not)
           _saveTokenToBackend(newToken);
+          
+          // Also save locally for later use (async, don't await to avoid blocking)
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('fcm_token', newToken);
+          });
+          
           notifyListeners();
         });
       } else {
@@ -108,25 +116,40 @@ class FCMService extends ChangeNotifier {
       // On iOS, we need to get APNS token first
       if (Platform.isIOS) {
         debugPrint('🔔 FCMService: iOS detected - getting APNS token first...');
-        try {
-          final apnsToken = await _firebaseMessaging.getAPNSToken();
-          if (apnsToken != null) {
-            debugPrint('🔔 FCMService: APNS Token: $apnsToken');
-          } else {
-            debugPrint('⚠️ FCMService: APNS token is null - notifications may not work on iOS');
-            debugPrint('⚠️ FCMService: This is normal if running on simulator or if APNs is not configured');
-            // Wait a bit and try again
-            await Future.delayed(const Duration(seconds: 2));
-            final retryApnsToken = await _firebaseMessaging.getAPNSToken();
-            if (retryApnsToken != null) {
-              debugPrint('🔔 FCMService: APNS Token (retry): $retryApnsToken');
+        debugPrint('🔔 FCMService: Checking APNS configuration...');
+        
+        // Try multiple times with increasing delays (iOS can be slow to generate token)
+        String? apnsToken;
+        for (int attempt = 1; attempt <= 5; attempt++) {
+          try {
+            debugPrint('🔔 FCMService: APNS token attempt $attempt/5...');
+            apnsToken = await _firebaseMessaging.getAPNSToken();
+            if (apnsToken != null) {
+              debugPrint('✅ FCMService: APNS Token received: $apnsToken');
+              break;
             } else {
-              debugPrint('⚠️ FCMService: APNS token still null after retry');
+              if (attempt < 5) {
+                debugPrint('⚠️ FCMService: APNS token null, waiting ${attempt * 2} seconds before retry...');
+                await Future.delayed(Duration(seconds: attempt * 2));
+              }
+            }
+          } catch (e) {
+            debugPrint('⚠️ FCMService: Error getting APNS token (attempt $attempt): $e');
+            if (attempt < 5) {
+              await Future.delayed(Duration(seconds: attempt * 2));
             }
           }
-        } catch (e) {
-          debugPrint('⚠️ FCMService: Error getting APNS token: $e');
-          debugPrint('⚠️ FCMService: This is normal if running on simulator or if APNs is not configured');
+        }
+        
+        if (apnsToken == null) {
+          debugPrint('❌ FCMService: APNS token is still null after 5 attempts');
+          debugPrint('🔍 FCMService: Diagnostic checklist:');
+          debugPrint('   1. Is app running on PHYSICAL device? (Simulator won\'t work)');
+          debugPrint('   2. Is Push Notifications enabled in App ID? (Apple Developer Portal)');
+          debugPrint('   3. Does provisioning profile include Push Notifications?');
+          debugPrint('   4. Is APNs key uploaded to Firebase Console?');
+          debugPrint('   5. Did you rebuild app after adding Push Notifications capability?');
+          debugPrint('   6. Check Xcode → Signing & Capabilities for any errors');
         }
       }
 
@@ -164,7 +187,11 @@ class FCMService extends ChangeNotifier {
       final authToken = prefs.getString('auth_token');
       
       if (authToken == null || authToken.isEmpty) {
-        debugPrint('🔔 FCMService: No auth token, skipping token save to backend');
+        debugPrint('🔔 FCMService: No auth token, token will be saved when user logs in');
+        debugPrint('🔔 FCMService: Storing token locally for later save: $token');
+        // Store token locally - will be saved when user logs in
+        _pendingToken = token;
+        await prefs.setString('fcm_token', token);
         return;
       }
 
@@ -177,8 +204,12 @@ class FCMService extends ChangeNotifier {
           data: {'fcmToken': token},
         );
         debugPrint('🔔 FCMService: FCM token saved to backend successfully');
+        // Clear pending token since it's now saved
+        _pendingToken = null;
       } catch (e) {
         debugPrint('❌ FCMService: Error saving FCM token to backend: $e');
+        // Keep as pending token to retry later
+        _pendingToken = token;
       }
     } catch (e) {
       debugPrint('❌ FCMService: Error in _saveTokenToBackend: $e');
@@ -194,7 +225,82 @@ class FCMService extends ChangeNotifier {
       debugPrint('🔔 Body: ${message.notification?.body}');
       debugPrint('🔔 Data: ${message.data}');
 
-      // Show local notification for foreground messages
+      // Convert FCM message to NotificationPayload and route to NotificationService
+      _handleFCMNotification(message);
+    });
+
+    // Handle notification taps (when app is opened from notification)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('🔔 FCMService: Notification tapped - app opened from notification');
+      debugPrint('🔔 Data: ${message.data}');
+      
+      // Convert and handle the notification
+      _handleFCMNotification(message);
+    });
+
+    // Check if app was opened from a notification (when app was terminated)
+    _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint('🔔 FCMService: App opened from terminated state via notification');
+        debugPrint('🔔 Data: ${message.data}');
+        _handleFCMNotification(message);
+      }
+    });
+  }
+
+  /// Handle FCM notification by converting it to NotificationPayload and routing to NotificationService
+  void _handleFCMNotification(RemoteMessage message) {
+    try {
+      // Extract notification type and data from FCM message
+      final type = message.data['type'] ?? '';
+      final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
+      final body = message.notification?.body ?? message.data['message'] ?? '';
+      
+      // Extract timestamp from data or use current time
+      DateTime timestamp;
+      if (message.data['timestamp'] != null) {
+        try {
+          timestamp = DateTime.parse(message.data['timestamp']);
+        } catch (e) {
+          timestamp = DateTime.now();
+        }
+      } else {
+        timestamp = DateTime.now();
+      }
+
+      // Extract data payload (excluding type, title, message, timestamp)
+      final Map<String, dynamic> data = Map<String, dynamic>.from(message.data);
+      data.remove('type');
+      data.remove('title');
+      data.remove('message');
+      data.remove('timestamp');
+
+      debugPrint('🔔 FCMService: Converting FCM message to NotificationPayload');
+      debugPrint('🔔 Type: $type');
+      debugPrint('🔔 Title: $title');
+      debugPrint('🔔 Message: $body');
+
+      // Route to NotificationService to handle it (it has all the callbacks and logic)
+      // We'll simulate a WebSocket notification event
+      final notificationService = NotificationService();
+      
+      // Convert to the format NotificationService expects from WebSocket
+      final wsNotificationData = {
+        'type': type,
+        'title': title,
+        'message': body,
+        'data': data.isEmpty ? null : data,
+        'timestamp': timestamp.toIso8601String(),
+      };
+
+      // Manually trigger the notification handler that WebSocket would normally trigger
+      // This reuses all existing notification handling logic
+      debugPrint('🔔 FCMService: Routing notification to NotificationService handlers');
+      notificationService.handleNotificationFromFCM(wsNotificationData);
+      
+    } catch (e) {
+      debugPrint('❌ FCMService: Error handling FCM notification: $e');
+      // Fallback: show basic local notification
       final localNotificationService = LocalNotificationService();
       if (message.notification != null) {
         localNotificationService.showNotification(
@@ -204,43 +310,18 @@ class FCMService extends ChangeNotifier {
           payload: message.data.toString(),
         );
       }
-    });
-
-    // Handle notification taps (when app is opened from notification)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('🔔 FCMService: Notification tapped - app opened from notification');
-      debugPrint('🔔 Data: ${message.data}');
-      
-      // Handle navigation based on notification data
-      _handleNotificationTap(message.data);
-    });
-
-    // Check if app was opened from a notification (when app was terminated)
-    _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        debugPrint('🔔 FCMService: App opened from terminated state via notification');
-        debugPrint('🔔 Data: ${message.data}');
-        _handleNotificationTap(message.data);
-      }
-    });
-  }
-
-  /// Handle notification tap
-  void _handleNotificationTap(Map<String, dynamic> data) {
-    // Handle different notification types
-    if (data['type'] == 'ticket_message') {
-      final ticketId = data['ticketId'];
-      debugPrint('🔔 FCMService: Navigate to ticket: $ticketId');
-      // Navigation will be handled by the app's routing
-    } else if (data['type'] == 'drop_status_update') {
-      final dropId = data['dropId'];
-      debugPrint('🔔 FCMService: Navigate to drop: $dropId');
-      // Navigation will be handled by the app's routing
     }
   }
 
   /// Save FCM token to backend (public method to call after login)
   Future<void> saveTokenToBackend() async {
+    // First, try to save any pending token (from token refresh while logged out)
+    if (_pendingToken != null) {
+      debugPrint('🔔 FCMService: Saving pending token that was queued: $_pendingToken');
+      await _saveTokenToBackend(_pendingToken!);
+    }
+    
+    // Also save current token if available
     if (_fcmToken != null) {
       await _saveTokenToBackend(_fcmToken!);
     } else {
@@ -267,6 +348,27 @@ class FCMService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ FCMService: Error deleting FCM token: $e');
+    }
+  }
+
+  /// Get current FCM token and log it (for debugging)
+  Future<String?> getCurrentToken() async {
+    try {
+      if (_fcmToken == null) {
+        // Try to get token if we don't have it
+        await _getFCMToken();
+      }
+      
+      if (_fcmToken != null) {
+        debugPrint('🔔 FCMService: Current FCM Token: $_fcmToken');
+        return _fcmToken;
+      } else {
+        debugPrint('⚠️ FCMService: No FCM token available');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ FCMService: Error getting current token: $e');
+      return null;
     }
   }
 }
