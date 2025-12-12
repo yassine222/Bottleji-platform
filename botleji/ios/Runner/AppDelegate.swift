@@ -31,8 +31,9 @@ import FirebaseAuth
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
-    // Handle Firebase Phone Auth reCAPTCHA redirect
+    // Handle Firebase Phone Auth reCAPTCHA redirect - MUST be checked first
     if Auth.auth().canHandle(url) {
+      // Let Firebase Auth handle the URL (reCAPTCHA redirect)
       return true
     }
     
@@ -51,7 +52,22 @@ import FirebaseAuth
         return true
       }
     }
+    
+    // Let parent class handle other URLs
     return super.application(app, open: url, options: options)
+  }
+  
+  // Also handle URL opening via scene delegate (for iOS 13+)
+  @available(iOS 13.0, *)
+  override func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    for urlContext in URLContexts {
+      let url = urlContext.url
+      // Handle Firebase Phone Auth reCAPTCHA redirect
+      if Auth.auth().canHandle(url) {
+        return
+      }
+    }
+    super.scene(scene, openURLContexts: URLContexts)
   }
   
   // Pass APNs device token to Firebase Auth (required for Phone Auth silent push notifications)
