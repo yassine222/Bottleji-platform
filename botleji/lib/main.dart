@@ -934,6 +934,21 @@ class _MainAppScreenState extends ConsumerState<MainAppScreen> {
           ref.read(globalLiveActivityManagerProvider);
         });
         
+        // Ensure FCM token is saved when user is logged in (in case token changed)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          try {
+            final fcmService = FCMService();
+            // If FCM is initialized, save the current token to backend
+            if (fcmService.initialized) {
+              fcmService.saveTokenToBackend().catchError((e) {
+                AppLogger.log('⚠️ Error saving FCM token on app start: $e');
+              });
+            }
+          } catch (e) {
+            AppLogger.log('⚠️ Error ensuring FCM token is saved: $e');
+          }
+        });
+        
         // Only create HomeScreen once
         if (!_hasCreatedHomeScreen) {
           AppLogger.log('🏠 MainAppScreen: Creating HomeScreen instance for the first time');
