@@ -345,29 +345,42 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     console.log(`📤 User ID: ${normalizedUserId} (original: ${userId})`);
     console.log(`📤 Notification type: ${notification.type}`);
     console.log(`📤 Notification title: ${notification.title}`);
-    console.log(`📤 Connected users: ${Array.from(this.connectedUsers.keys()).join(', ')}`);
     
-    // Try to find user socket - check both normalized and original format
-    let userSocket = this.connectedUsers.get(normalizedUserId);
-    if (!userSocket) {
-      // Try original format in case it's stored differently
-      userSocket = this.connectedUsers.get(userId);
-    }
+    // PRIMARY: Send via FCM (works even when app is closed)
+    console.log(`📱 Attempting to send notification via FCM to user ${normalizedUserId}...`);
+    const fcmSent = await this.fcmService.sendNotificationToUser(
+      normalizedUserId,
+      notification.title,
+      notification.message,
+      {
+        type: notification.type,
+        ...notification.data,
+        timestamp: notification.timestamp.toISOString(),
+      },
+    );
     
-    if (userSocket) {
-      console.log(`✅ User ${normalizedUserId} is connected, sending via WebSocket`);
-      userSocket.emit('notification', notification);
-      console.log(`✅ WebSocket notification sent to user ${normalizedUserId}`);
+    if (fcmSent) {
+      console.log(`✅ FCM notification sent successfully to user ${normalizedUserId}`);
     } else {
-      console.log(`⚠️ User ${normalizedUserId} is NOT connected to WebSocket`);
-      console.log(`⚠️ FCM is not configured/available - notification will be saved to database only`);
-      console.log(`⚠️ User will receive notification when they reconnect to WebSocket`);
-      // Note: Since FCM is not available, we only save to database
-      // The user will receive the notification when they reconnect via WebSocket
-      // or when they fetch notifications from the API
+      console.log(`⚠️ FCM notification failed for user ${normalizedUserId} (user may not have FCM token)`);
+      
+      // FALLBACK: If FCM fails and user is connected via WebSocket, send via WebSocket
+      let userSocket = this.connectedUsers.get(normalizedUserId);
+      if (!userSocket) {
+        userSocket = this.connectedUsers.get(userId);
+      }
+      
+      if (userSocket) {
+        console.log(`📡 Fallback: User ${normalizedUserId} is connected via WebSocket, sending via WebSocket`);
+        userSocket.emit('notification', notification);
+        console.log(`✅ WebSocket notification sent to user ${normalizedUserId} (fallback)`);
+      } else {
+        console.log(`⚠️ User ${normalizedUserId} is not connected via WebSocket either`);
+        console.log(`⚠️ Notification will be saved to database - user will see it when they open the app`);
+      }
     }
 
-    // Save notification to database
+    // Save notification to database (always save, regardless of delivery method)
     try {
       // Map notification type to database enum
       const dbType = this.mapNotificationTypeToEnum(notification.type);
@@ -386,7 +399,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       }
     } catch (error) {
       console.error(`❌ Error saving notification to database: ${error}`);
-      // Don't fail the WebSocket send if database save fails
+      // Don't fail if database save fails
     }
     console.log(`📤 =================================`);
   }

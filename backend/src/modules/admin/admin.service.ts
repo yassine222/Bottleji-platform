@@ -510,7 +510,7 @@ export class AdminService {
   }
 
   async banUser(userId: string, reason: string) {
-    return await this.userModel.findByIdAndUpdate(
+    const user = await this.userModel.findByIdAndUpdate(
       userId,
       { 
         isAccountLocked: true,
@@ -519,6 +519,44 @@ export class AdminService {
       },
       { new: true }
     ).select('-password');
+    
+    if (user) {
+      console.log(`🔒 Admin manually locked account: ${userId}`);
+      console.log(`🔒 User object ID: ${(user as any)._id}`);
+      console.log(`🔒 Lock reason: ${reason}`);
+      
+      // Normalize userId to ensure consistent format
+      const normalizedUserId = String((user as any)._id || userId);
+      
+      console.log(`🔒 Normalized userId: ${normalizedUserId} (original: ${userId})`);
+      
+      // Determine lock message
+      const lockMessage = reason 
+        ? `Your account has been locked by an administrator. Reason: ${reason}. Your account will be unlocked in 30 days.`
+        : 'Your account has been locked by an administrator for 30 days.';
+      
+      // Send notification via FCM (which we just migrated to)
+      try {
+        await this.notificationsGateway.sendNotificationToUser(normalizedUserId, {
+          type: 'account_locked',
+          title: 'Account Locked',
+          message: lockMessage,
+          data: {
+            isAccountLocked: true,
+            accountLockedUntil: user.accountLockedUntil?.toISOString() || null,
+            warningCount: user.warningCount || 0,
+            reason: reason,
+          },
+          timestamp: new Date(),
+        });
+        console.log(`✅ Lock notification sent to user ${normalizedUserId}`);
+      } catch (error) {
+        console.error(`❌ Error sending lock notification: ${error}`);
+        // Don't fail the lock operation if notification fails
+      }
+    }
+    
+    return user;
   }
 
   async unbanUser(userId: string) {
