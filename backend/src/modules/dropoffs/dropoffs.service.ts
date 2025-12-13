@@ -195,7 +195,7 @@ export class DropoffsService {
    * - Near expiring drops (70% time elapsed) - sends warning notification
    * - Expired drops - sends expiration notification and resets drop to PENDING
    * 
-   * Cron expression: '*/2 * * * *' = every 2 minutes
+   * Cron expression: every 2 minutes
    */
   @Cron('*/2 * * * *')
   async handleExpiredDropsCleanup() {
@@ -506,6 +506,17 @@ export class DropoffsService {
         timestamp: new Date(),
       });
       console.log(`📱 Drop accepted notification sent to user ${userId}`);
+      
+      // Send Live Activity update
+      const collector = await this.userModel.findById(collectorId).exec();
+      const collectorName = collector?.name || 'Collector';
+      
+      await this.sendLiveActivityUpdate(id, {
+        status: 'accepted',
+        statusText: 'Accepted',
+        collectorName: collectorName,
+        timeAgo: 'Just now',
+      });
     } catch (error) {
       console.error(`❌ Error sending drop accepted notification: ${error}`);
       console.error(`❌ Error details:`, error);
@@ -660,6 +671,10 @@ export class DropoffsService {
              timestamp: new Date(),
            });
          }
+         } catch (error) {
+           console.error('❌ Error awarding household points:', error);
+           // Don't fail the collection if household reward system fails
+         }
          
          // Send Live Activity update (end activity)
          await this.sendLiveActivityUpdate(id, {
@@ -667,10 +682,6 @@ export class DropoffsService {
            statusText: 'Collected',
            timeAgo: 'Just now',
          });
-         } catch (error) {
-           console.error('❌ Error awarding household points:', error);
-           // Don't fail the collection if household reward system fails
-         }
 
     // Drop creator notification is now sent with rewards below (combined notification)
 
