@@ -59,29 +59,111 @@ enum LiveActivityViewType {
     case standard
 }
 
-// MARK: - Collection Navigation Activity (Collector Mode)
+// MARK: - Unified Live Activities Attributes (Required by live_activities package)
 
+// IMPORTANT: Must be named EXACTLY "LiveActivitiesAppAttributes" for live_activities package to work
+struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
+    public typealias LiveDeliveryData = ContentState  // Required for package
+    
+    public struct ContentState: Codable, Hashable {
+        // Activity type: "collection" (collector navigation) or "dropTimeline" (household drop status)
+        var activityType: String
+        
+        // Collection mode fields (used when activityType == "collection")
+        var elapsedTime: String?
+        var distance: String?
+        var eta: String?
+        var progressPercentage: Int?
+        
+        // Drop timeline mode fields (used when activityType == "dropTimeline")
+        var status: String?
+        var statusText: String?
+        var collectorName: String?
+        var timeAgo: String?
+        
+        // Required initializer for live_activities package
+        // The package stores data in UserDefaults and ActivityKit manages the content state
+        // This initializer is called when creating the initial Activity content state
+        init(appGroupId: String) {
+            // Initialize with default values - ActivityKit will update via normal content state updates
+            // The package handles synchronization between UserDefaults and ActivityKit
+            self.activityType = "unknown"
+            self.elapsedTime = nil
+            self.distance = nil
+            self.eta = nil
+            self.progressPercentage = nil
+            self.status = nil
+            self.statusText = nil
+            self.collectorName = nil
+            self.timeAgo = nil
+        }
+        
+        // Codable initializer for normal decoding
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.activityType = try container.decode(String.self, forKey: .activityType)
+            self.elapsedTime = try container.decodeIfPresent(String.self, forKey: .elapsedTime)
+            self.distance = try container.decodeIfPresent(String.self, forKey: .distance)
+            self.eta = try container.decodeIfPresent(String.self, forKey: .eta)
+            self.progressPercentage = try container.decodeIfPresent(Int.self, forKey: .progressPercentage)
+            self.status = try container.decodeIfPresent(String.self, forKey: .status)
+            self.statusText = try container.decodeIfPresent(String.self, forKey: .statusText)
+            self.collectorName = try container.decodeIfPresent(String.self, forKey: .collectorName)
+            self.timeAgo = try container.decodeIfPresent(String.self, forKey: .timeAgo)
+        }
+        
+        // Custom CodingKeys for Codable conformance
+        enum CodingKeys: String, CodingKey {
+            case activityType
+            case elapsedTime
+            case distance
+            case eta
+            case progressPercentage
+            case status
+            case statusText
+            case collectorName
+            case timeAgo
+        }
+    }
+    
+    var id = UUID()
+    var dropId: String
+    var dropAddress: String
+    var estimatedValue: String
+    var transportMode: String?  // For collection mode
+    var createdAt: String?       // For drop timeline mode
+}
+
+// MARK: - Legacy Collection Navigation Activity (Deprecated - keeping for migration)
+// TODO: Remove after migration complete
 struct CollectionActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        var elapsedTime: String  // "12:48" (MM:SS countdown format)
-        var distance: String     // "2.5 km"
-        var eta: String          // "5 min"
-        var progressPercentage: Int  // 65 (0-100)
+        var elapsedTime: String
+        var distance: String
+        var eta: String
+        var progressPercentage: Int
     }
     
     var dropId: String
     var dropAddress: String
     var transportMode: String
-    var estimatedValue: String  // "2.50 TND"
+    var estimatedValue: String
 }
 
+// MARK: - Unified Live Activity Widget (Uses LiveActivitiesAppAttributes)
+
 @available(iOS 16.1, *)
-struct LiveActivityWidget: Widget {
+struct UnifiedLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: CollectionActivityAttributes.self) { context in
-            // MARK: - Lock Screen View
-            lockScreenView(context: context)
-                .activityBackgroundTint(Color(.systemBackground))
+        ActivityConfiguration(for: LiveActivitiesAppAttributes.self) { context in
+            // MARK: - Lock Screen View (Unified)
+            if context.state.activityType == "collection" {
+                unifiedCollectionLockScreenView(context: context)
+                    .activityBackgroundTint(Color(.systemBackground))
+            } else {
+                unifiedDropTimelineLockScreenView(context: context)
+                    .activityBackgroundTint(Color(.systemBackground))
+            }
         } dynamicIsland: { context in
             DynamicIsland {
                 // MARK: - Expanded Presentation
@@ -106,13 +188,15 @@ struct LiveActivityWidget: Widget {
                 // MARK: - Minimal Presentation
                 minimalView(context: context)
             }
-            .widgetURL(URL(string: "botleji://navigation?dropId=\(context.attributes.dropId)"))
+            .widgetURL(URL(string: context.state.activityType == "collection" 
+                ? "botleji://navigation?dropId=\(context.attributes.dropId)"
+                : "botleji://drop?dropId=\(context.attributes.dropId)"))
         }
     }
     
-    // MARK: - Lock Screen View
+    // MARK: - Unified Collection Lock Screen View
     @ViewBuilder
-    private func lockScreenView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func unifiedCollectionLockScreenView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header Row
             HStack(alignment: .center, spacing: 10) {
@@ -134,7 +218,7 @@ struct LiveActivityWidget: Widget {
                 
                 // Countdown Timer (Primary Metric)
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(context.state.elapsedTime)
+                    Text(context.state.elapsedTime ?? "00:00")
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(.appOrange)
                         .monospacedDigit()
@@ -159,7 +243,7 @@ struct LiveActivityWidget: Widget {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 4)
+                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage ?? 0) / 100, height: 4)
                 }
             }
             .frame(height: 4)
@@ -176,7 +260,7 @@ struct LiveActivityWidget: Widget {
                         Text("Distance")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        Text(context.state.distance)
+                        Text(context.state.distance ?? "0 km")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -207,7 +291,7 @@ struct LiveActivityWidget: Widget {
                     Text("Progress")
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                    Text("\(context.state.progressPercentage)%")
+                    Text("\(context.state.progressPercentage ?? 0)%")
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.appPrimary)
@@ -221,9 +305,18 @@ struct LiveActivityWidget: Widget {
     // MARK: - StandBy View (Same as Lock Screen)
     // Note: StandBy uses the same view as Lock Screen in ActivityKit
     
-    // MARK: - Expanded Presentation Views
+    // MARK: - Expanded Presentation Views (Unified)
     @ViewBuilder
-    private func expandedLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func expandedLeadingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        if context.state.activityType == "collection" {
+            unifiedCollectionExpandedLeadingView(context: context)
+        } else {
+            unifiedDropTimelineExpandedLeadingView(context: context)
+        }
+    }
+    
+    @ViewBuilder
+    private func unifiedCollectionExpandedLeadingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             // App Logo and Name - Horizontally aligned (smaller to free space)
             HStack(alignment: .center, spacing: 4) {
@@ -243,9 +336,18 @@ struct LiveActivityWidget: Widget {
     }
     
     @ViewBuilder
-    private func expandedTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func expandedTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        if context.state.activityType == "collection" {
+            unifiedCollectionExpandedTrailingView(context: context)
+        } else {
+            unifiedDropTimelineExpandedTrailingView(context: context)
+        }
+    }
+    
+    @ViewBuilder
+    private func unifiedCollectionExpandedTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         // Countdown Timer
-        Text(context.state.elapsedTime)
+        Text(context.state.elapsedTime ?? "00:00")
             .font(.system(size: 18, weight: .bold, design: .rounded))
             .foregroundColor(.appOrange)
             .monospacedDigit()
@@ -253,7 +355,16 @@ struct LiveActivityWidget: Widget {
     }
     
     @ViewBuilder
-    private func expandedBottomView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func expandedBottomView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        if context.state.activityType == "collection" {
+            unifiedCollectionExpandedBottomView(context: context)
+        } else {
+            unifiedDropTimelineExpandedBottomView(context: context)
+        }
+    }
+    
+    @ViewBuilder
+    private func unifiedCollectionExpandedBottomView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         VStack(spacing: 10) {
             // Status - Left aligned
             HStack {
@@ -273,7 +384,7 @@ struct LiveActivityWidget: Widget {
                     Image(systemName: "location.fill")
                         .font(.caption2)
                         .foregroundColor(.appSecondary)
-                    Text(context.state.distance)
+                    Text(context.state.distance ?? "0 km")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
@@ -298,7 +409,7 @@ struct LiveActivityWidget: Widget {
                     Circle()
                         .fill(Color.appPrimary.opacity(0.2))
                         .frame(width: 12, height: 12)
-                    Text("\(context.state.progressPercentage)%")
+                    Text("\(context.state.progressPercentage ?? 0)%")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -323,7 +434,7 @@ struct LiveActivityWidget: Widget {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage) / 100, height: 6)
+                        .frame(width: geometry.size.width * CGFloat(context.state.progressPercentage ?? 0) / 100, height: 6)
                 }
             }
             .frame(height: 6)
@@ -332,26 +443,213 @@ struct LiveActivityWidget: Widget {
         .padding(.vertical, 4)
     }
     
-    // MARK: - Compact Presentation Views
+    // MARK: - Compact Presentation Views (Unified)
     @ViewBuilder
-    private func compactLeadingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func compactLeadingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
     }
     
     @ViewBuilder
-    private func compactTrailingView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
-        Text(context.state.elapsedTime)
-            .font(.system(size: 14, weight: .bold, design: .rounded))
-            .foregroundColor(.appOrange)
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+    private func compactTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        if context.state.activityType == "collection" {
+            Text(context.state.elapsedTime ?? "00:00")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(.appOrange)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        } else {
+            Text(context.state.statusText ?? "Drop")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(statusColorForStatus(context.state.status ?? "pending"))
+                .lineLimit(1)
+        }
     }
     
-    // MARK: - Minimal Presentation View
+    // MARK: - Minimal Presentation View (Unified)
     @ViewBuilder
-    private func minimalView(context: ActivityViewContext<CollectionActivityAttributes>) -> some View {
+    private func minimalView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
+    }
+    
+    // MARK: - Unified Drop Timeline Views
+    @ViewBuilder
+    private func unifiedDropTimelineLockScreenView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(alignment: .center, spacing: 10) {
+                HStack(spacing: 8) {
+                    AppLogoView(size: 28, cornerRadius: 7, viewType: .standard)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bottleji")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        Text("Drop Status")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                Text(context.attributes.estimatedValue.isEmpty ? "0.00 TND" : context.attributes.estimatedValue)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.appPrimary)
+            }
+            
+            // Status
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(statusColorForStatus(context.state.status ?? "pending"))
+                    .frame(width: 10, height: 10)
+                Text(context.state.statusText ?? "Created")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(statusColorForStatus(context.state.status ?? "pending"))
+                
+                if let collectorName = context.state.collectorName, !collectorName.isEmpty {
+                    Text("• \(collectorName)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Timeline Progress
+            timelineProgressView(status: context.state.status ?? "pending")
+            
+            // Time Ago
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Text(context.state.timeAgo ?? "Just now")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color(.systemBackground))
+    }
+    
+    @ViewBuilder
+    private func unifiedDropTimelineExpandedLeadingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 6) {
+                AppLogoView(size: 22, cornerRadius: 5, viewType: .expanded)
+                Text("Bottleji")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+            
+            Text("Drop Status")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.leading, 4)
+    }
+    
+    @ViewBuilder
+    private func unifiedDropTimelineExpandedTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(context.attributes.estimatedValue.isEmpty ? "0.00 TND" : context.attributes.estimatedValue)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            
+            Text(context.state.statusText ?? "Created")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(statusColorForStatus(context.state.status ?? "pending"))
+                .lineLimit(1)
+        }
+    }
+    
+    @ViewBuilder
+    private func unifiedDropTimelineExpandedBottomView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        VStack(spacing: 6) {
+            timelineProgressView(status: context.state.status ?? "pending")
+            
+            if let collectorName = context.state.collectorName, !collectorName.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.fill")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(collectorName)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+    
+    // MARK: - Helper Functions
+    private func statusColorForStatus(_ status: String) -> Color {
+        switch status {
+        case "pending":
+            return .appSecondary
+        case "accepted", "on_way":
+            return .appOrange
+        case "collected":
+            return .appPrimary
+        case "expired", "cancelled":
+            return Color(.systemRed)
+        default:
+            return Color(.systemGray)
+        }
+    }
+    
+    @ViewBuilder
+    private func timelineProgressView(status: String) -> some View {
+        let stages = ["Created", "Accepted", "On his way", "Outcome"]
+        let statusColorValue = statusColorForStatus(status)
+        
+        HStack(spacing: 2) {
+            ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
+                let isActive = isStageActive(status: status, stageIndex: index)
+                let isCompleted = isStageCompleted(status: status, stageIndex: index)
+                
+                HStack(spacing: 2) {
+                    Circle()
+                        .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
+                        .frame(width: 5, height: 5)
+                    
+                    if index < stages.count - 1 {
+                        Rectangle()
+                            .fill(isCompleted ? statusColorValue : Color(.systemGray4))
+                            .frame(height: 2)
+                            .frame(minWidth: 6, maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func isStageActive(status: String, stageIndex: Int) -> Bool {
+        switch (status, stageIndex) {
+        case ("pending", 0): return true
+        case ("accepted", 1): return true
+        case ("on_way", 2): return true
+        case ("collected", 3), ("expired", 3), ("cancelled", 3): return true
+        default: return false
+        }
+    }
+    
+    private func isStageCompleted(status: String, stageIndex: Int) -> Bool {
+        switch (status, stageIndex) {
+        case ("accepted", 0), ("on_way", 0), ("collected", 0), ("expired", 0), ("cancelled", 0): return true
+        case ("on_way", 1), ("collected", 1), ("expired", 1), ("cancelled", 1): return true
+        case ("collected", 2), ("expired", 2), ("cancelled", 2): return true
+        default: return false
+        }
     }
 }
 
@@ -377,7 +675,6 @@ struct DropTimelineWidget: Widget {
         ActivityConfiguration(for: DropTimelineActivityAttributes.self) { context in
             // MARK: - Lock Screen View (Household)
             dropTimelineLockScreenView(context: context)
-                .activityBackgroundTint(Color(.systemBackground))
         } dynamicIsland: { context in
             DynamicIsland {
                 // MARK: - Expanded Presentation (Household)
@@ -397,15 +694,16 @@ struct DropTimelineWidget: Widget {
                 AppLogoView(size: 16, cornerRadius: 3, viewType: .compact)
             } compactTrailing: {
                 // MARK: - Compact Trailing (Household)
-                Text(context.state.statusText)
+                Text(context.state.statusText.isEmpty ? "Drop" : context.state.statusText)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(statusColor(context.state.status))
+                    .foregroundColor(DropTimelineWidget.statusColorForStatus(context.state.status))
                     .lineLimit(1)
             } minimal: {
                 // MARK: - Minimal Presentation (Household)
                 AppLogoView(size: 12, cornerRadius: 2, viewType: .minimal)
             }
+            .widgetURL(URL(string: "botleji://drop?dropId=\(context.attributes.dropId)"))
         }
     }
     
@@ -430,7 +728,7 @@ struct DropTimelineWidget: Widget {
                 
                 Spacer()
                 
-                Text(context.attributes.estimatedValue)
+                Text(context.attributes.estimatedValue.isEmpty ? "0.00 TND" : context.attributes.estimatedValue)
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.appPrimary)
@@ -439,14 +737,14 @@ struct DropTimelineWidget: Widget {
             // Status
             HStack(spacing: 8) {
                 Circle()
-                    .fill(statusColor(context.state.status))
+                    .fill(DropTimelineWidget.statusColorForStatus(context.state.status))
                     .frame(width: 10, height: 10)
-                Text(context.state.statusText)
+                Text(context.state.statusText.isEmpty ? "Created" : context.state.statusText)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(statusColor(context.state.status))
+                    .foregroundColor(DropTimelineWidget.statusColorForStatus(context.state.status))
                 
-                if let collectorName = context.state.collectorName {
+                if let collectorName = context.state.collectorName, !collectorName.isEmpty {
                     Text("• \(collectorName)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -461,13 +759,14 @@ struct DropTimelineWidget: Widget {
                 Image(systemName: "clock")
                     .font(.caption2)
                     .foregroundColor(.secondary)
-                Text(context.state.timeAgo)
+                Text(context.state.timeAgo.isEmpty ? "Just now" : context.state.timeAgo)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .background(Color(.systemBackground))
     }
     
     // MARK: - Drop Timeline Expanded Views
@@ -495,15 +794,15 @@ struct DropTimelineWidget: Widget {
     @ViewBuilder
     private func dropTimelineExpandedTrailingView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            Text(context.attributes.estimatedValue)
+            Text(context.attributes.estimatedValue.isEmpty ? "0.00 TND" : context.attributes.estimatedValue)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
             
-            Text(context.state.statusText)
+            Text(context.state.statusText.isEmpty ? "Created" : context.state.statusText)
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(statusColor(context.state.status))
+                .foregroundColor(DropTimelineWidget.statusColorForStatus(context.state.status))
                 .lineLimit(1)
         }
     }
@@ -525,10 +824,11 @@ struct DropTimelineWidget: Widget {
                 }
             }
         }
+        .padding(.horizontal, 8)
     }
     
     // MARK: - Helper Functions
-    private func statusColor(_ status: String) -> Color {
+    static func statusColorForStatus(_ status: String) -> Color {
         switch status {
         case "pending":
             return .appSecondary
@@ -546,22 +846,23 @@ struct DropTimelineWidget: Widget {
     @ViewBuilder
     private func timelineProgressView(status: String) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
+        let statusColorValue = DropTimelineWidget.statusColorForStatus(status)
         
-        HStack(spacing: 8) {
+        HStack(spacing: 2) {
             ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
                 let isActive = isStageActive(status: status, stageIndex: index)
                 let isCompleted = isStageCompleted(status: status, stageIndex: index)
                 
-                HStack(spacing: 4) {
+                HStack(spacing: 2) {
                     Circle()
-                        .fill(isCompleted ? statusColor(status) : (isActive ? statusColor(status) : Color(.systemGray4)))
-                        .frame(width: 8, height: 8)
+                        .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
+                        .frame(width: 5, height: 5)
                     
                     if index < stages.count - 1 {
                         Rectangle()
-                            .fill(isCompleted ? statusColor(status) : Color(.systemGray4))
+                            .fill(isCompleted ? statusColorValue : Color(.systemGray4))
                             .frame(height: 2)
-                            .frame(maxWidth: .infinity)
+                            .frame(minWidth: 6, maxWidth: .infinity)
                     }
                 }
             }
@@ -591,10 +892,15 @@ struct DropTimelineWidget: Widget {
 // MARK: - Widget Bundle
 @main
 struct LiveActivityWidgetExtension: WidgetBundle {
+    @WidgetBundleBuilder
     var body: some Widget {
         if #available(iOS 16.1, *) {
-            LiveActivityWidget()
-            DropTimelineWidget()
+            // Unified widget that handles both collection and drop timeline
+            UnifiedLiveActivityWidget()
+            
+            // Legacy widgets (keeping for migration period - can be removed later)
+            // LiveActivityWidget()
+            // DropTimelineWidget()
         }
     }
 }

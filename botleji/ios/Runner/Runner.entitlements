@@ -4,9 +4,9 @@
 <dict>
 	<key>aps-environment</key>
 	<string>development</string>
-	<!-- Temporarily removed Live Activities to fix provisioning profile issue -->
-	<!-- Will add back after APNS is working -->
-	<!-- <key>com.apple.developer.usernotifications.live-activities</key>
-	<true/> -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.example.botleji</string>
+	</array>
 </dict>
 </plist>

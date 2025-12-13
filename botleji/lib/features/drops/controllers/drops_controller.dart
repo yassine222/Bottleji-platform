@@ -4,7 +4,7 @@ import 'package:botleji/features/drops/domain/models/drop.dart';
 import 'package:botleji/features/drops/data/repositories/drop_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:botleji/features/auth/controllers/user_mode_controller.dart';
-import 'package:botleji/core/services/live_activity_service.dart';
+import 'package:botleji/core/services/live_activities_package_service.dart';
 import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 final dropsControllerProvider = StateNotifierProvider<DropsController, AsyncValue<List<Drop>>>((ref) {
@@ -246,6 +246,17 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
     try {
       await _repository.deleteDrop(dropId);
       
+      // End drop timeline Live Activity if active
+      try {
+        final liveActivityService = LiveActivitiesPackageService();
+        await liveActivityService.initialize();
+        await liveActivityService.endDropTimelineActivity(dropId: dropId);
+        debugPrint('✅ Drop Timeline Live Activity ended for deleted drop: $dropId');
+      } catch (e) {
+        debugPrint('⚠️ Error ending Drop Timeline Live Activity for deleted drop: $e');
+        // Don't fail the deletion if Live Activity cleanup fails
+      }
+      
       // Remove the drop from the current list
       state.whenData((drops) {
         final updatedDrops = drops.where((drop) => drop.id != dropId).toList();
@@ -270,6 +281,12 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
         }).toList();
         state = AsyncValue.data(updatedDrops);
       });
+      
+      // Update Live Activity when collector is assigned (status changes to accepted)
+      if (updatedDrop.status == DropStatus.accepted) {
+        debugPrint('🔄 assignCollector: Updating Live Activity for accepted drop $dropId');
+        await _updateDropTimelineActivity(updatedDrop, {'collectorId': collectorId});
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
@@ -290,6 +307,12 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
         }).toList();
         state = AsyncValue.data(updatedDrops);
       });
+      
+      // End Live Activity since drop is now collected (do this after state update)
+      if (updatedDrop.status == DropStatus.collected) {
+        debugPrint('🔄 confirmCollection: Ending Live Activity for collected drop $dropId');
+        await _updateDropTimelineActivity(updatedDrop, null);
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
@@ -298,17 +321,24 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
   Future<Map<String, dynamic>?> confirmCollectionWithRewards(String dropId) async {
     try {
       final response = await _repository.confirmCollection(dropId);
+      final updatedDrop = Drop.fromJson(response);
       
       // Update the drop in the current list
       state.whenData((drops) {
         final updatedDrops = drops.map<Drop>((drop) {
           if (drop.id == dropId) {
-            return Drop.fromJson(response); // Parse the response as a Drop
+            return updatedDrop;
           }
           return drop;
         }).toList();
         state = AsyncValue.data(updatedDrops);
       });
+      
+      // End Live Activity since drop is now collected (do this after state update)
+      if (updatedDrop.status == DropStatus.collected) {
+        debugPrint('🔄 confirmCollectionWithRewards: Ending Live Activity for collected drop $dropId');
+        await _updateDropTimelineActivity(updatedDrop, null);
+      }
 
       // Return the response which now contains rewardData from the backend
       return response;
@@ -322,7 +352,8 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
   void handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) {
     debugPrint('🔄 DropsController: Handling drop status update - $status for drop $dropId');
     
-    state.whenData((drops) async {
+    state.whenData((drops) {
+      Drop? updatedDrop;
       final updatedDrops = drops.map((drop) {
         if (drop.id == dropId) {
           // Update drop status based on notification
@@ -345,34 +376,41 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
           }
           
           // Create updated drop with new status
-          final updatedDrop = drop.copyWith(status: newStatus);
+          updatedDrop = drop.copyWith(status: newStatus);
           debugPrint('🔄 DropsController: Updated drop $dropId status to ${newStatus.name}');
           
-          // Update drop timeline Live Activity (household mode only)
-          _updateDropTimelineActivity(updatedDrop, data);
-          
-          return updatedDrop;
+          return updatedDrop!;
         }
         return drop;
       }).toList();
       
       state = AsyncValue.data(updatedDrops);
       debugPrint('🔄 DropsController: Drop list updated with new status');
+      
+      // Update drop timeline Live Activity (household mode only) - fire and forget async operation
+      if (updatedDrop != null) {
+        debugPrint('🔄 DropsController: Updating Live Activity for drop ${updatedDrop!.id} with status ${updatedDrop!.status.name}');
+        _updateDropTimelineActivity(updatedDrop!, data).catchError((e) {
+          debugPrint('❌ Error updating Live Activity from handleDropStatusUpdate: $e');
+        });
+      } else {
+        debugPrint('⚠️ DropsController: No updated drop found, skipping Live Activity update');
+      }
     });
   }
   
   /// Update drop timeline Live Activity
   Future<void> _updateDropTimelineActivity(Drop drop, Map<String, dynamic>? notificationData) async {
     try {
-      // Note: We can't access ref here, so we'll check user mode in the caller
-      // For now, we'll update the activity regardless and let the service handle platform checks
+      debugPrint('🔄 _updateDropTimelineActivity: Starting update for drop ${drop.id}, status: ${drop.status.name}');
       
-      final liveActivityService = LiveActivityService();
+      final liveActivityService = LiveActivitiesPackageService();
       await liveActivityService.initialize();
       
       // Determine status and status text
       String statusKey = drop.status.name;
-      String statusText = LiveActivityService.getStatusText(statusKey);
+      String statusText = LiveActivitiesPackageService.getStatusText(statusKey);
+      debugPrint('🔄 _updateDropTimelineActivity: Status key: $statusKey, Status text: $statusText');
       
       // Get collector name if available (for accepted/on_way status)
       String? collectorName;
@@ -380,10 +418,14 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
         // Try to get collector name from notification data or drop
         if (notificationData != null && notificationData['collectorName'] != null) {
           collectorName = notificationData['collectorName'] as String;
+          debugPrint('🔄 _updateDropTimelineActivity: Got collector name from notification: $collectorName');
         } else if (notificationData != null && notificationData['collectorId'] != null) {
           // Fetch collector name by ID
-          final collectorInfo = await getUserInfo(notificationData['collectorId'] as String);
+          final collectorId = notificationData['collectorId'] as String;
+          debugPrint('🔄 _updateDropTimelineActivity: Fetching collector name for ID: $collectorId');
+          final collectorInfo = await getUserInfo(collectorId);
           collectorName = collectorInfo?['name'] as String?;
+          debugPrint('🔄 _updateDropTimelineActivity: Fetched collector name: $collectorName');
         }
       }
       
@@ -392,18 +434,23 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
           drop.status == DropStatus.expired || 
           drop.status == DropStatus.cancelled) {
         // End activity for final states
+        debugPrint('🔄 _updateDropTimelineActivity: Ending Live Activity (final state: ${drop.status.name})');
         await liveActivityService.endDropTimelineActivity(dropId: drop.id);
       } else {
         // Update activity for intermediate states
+        debugPrint('🔄 _updateDropTimelineActivity: Updating Live Activity with status: $statusText, collector: $collectorName');
         await liveActivityService.updateDropTimelineActivity(
+          dropId: drop.id,
           status: statusKey,
           statusText: statusText,
           collectorName: collectorName,
-          timeAgo: LiveActivityService.formatTimeAgo(drop.modifiedAt),
+          timeAgo: LiveActivitiesPackageService.formatTimeAgo(drop.modifiedAt),
         );
+        debugPrint('✅ _updateDropTimelineActivity: Live Activity update completed');
       }
-    } catch (e) {
-      debugPrint('⚠️ Error updating drop timeline Live Activity: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error updating drop timeline Live Activity: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
     }
   }
 
@@ -412,15 +459,23 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
       await _repository.cancelAcceptedDrop(dropId, reason, cancelledByCollectorId);
       
       // Update the drop status in the current list
+      Drop? cancelledDrop;
       state.whenData((drops) {
         final updatedDrops = drops.map((drop) {
           if (drop.id == dropId) {
-            return drop.copyWith(status: DropStatus.cancelled);
+            cancelledDrop = drop.copyWith(status: DropStatus.cancelled);
+            return cancelledDrop!;
           }
           return drop;
         }).toList();
         state = AsyncValue.data(updatedDrops);
       });
+      
+      // End Live Activity since drop is now cancelled
+      if (cancelledDrop != null) {
+        debugPrint('🔄 cancelAcceptedDrop: Ending Live Activity for cancelled drop $dropId');
+        await _updateDropTimelineActivity(cancelledDrop!, null);
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }

@@ -51,7 +51,7 @@ import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/features/stats/presentation/widgets/session_value_card.dart';
 import 'package:botleji/features/auth/controllers/collector_subscription_controller.dart';
 import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
-import 'package:botleji/core/services/live_activity_service.dart';
+import 'package:botleji/core/services/live_activities_package_service.dart';
 
 
 // Navigation step model
@@ -1469,7 +1469,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final userMode = ref.read(userModeControllerProvider).value;
       if (userMode == UserMode.household && createdDrop != null) {
         try {
-          final liveActivityService = LiveActivityService();
+          final liveActivityService = LiveActivitiesPackageService();
           await liveActivityService.initialize();
           
           // Get address for the drop
@@ -1486,9 +1486,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             dropAddress: dropAddress,
             estimatedValue: estimatedValue,
             status: 'pending',
-            statusText: LiveActivityService.getStatusText('pending'),
+            statusText: LiveActivitiesPackageService.getStatusText('pending'),
             collectorName: null,
-            timeAgo: LiveActivityService.formatTimeAgo(createdDrop.createdAt),
+            timeAgo: LiveActivitiesPackageService.formatTimeAgo(createdDrop.createdAt),
             createdAt: createdDrop.createdAt.toIso8601String(),
           );
           debugPrint('✅ Drop Timeline Live Activity started');
@@ -2226,6 +2226,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               orElse: () => <Marker>{},
             );
 
+            // Get active drop location and status for household mode
+            final currentMode = userMode.value;
+            LatLng? activeDropLocation;
+            DropStatus? activeDropStatus;
+            if (currentMode == UserMode.household) {
+              final currentUserId = ref.read(authNotifierProvider).value?.id;
+              dropsState.maybeWhen(
+                data: (drops) {
+                  final activeDrop = drops.firstWhere(
+                    (drop) =>
+                        drop.userId == currentUserId &&
+                        (drop.status == DropStatus.pending || drop.status == DropStatus.accepted),
+                    orElse: () => Drop(
+                      id: '',
+                      userId: '',
+                      imageUrl: '',
+                      numberOfBottles: 0,
+                      numberOfCans: 0,
+                      bottleType: BottleType.plastic,
+                      notes: '',
+                      leaveOutside: false,
+                      location: const LatLng(0, 0),
+                      createdAt: DateTime.now(),
+                      modifiedAt: DateTime.now(),
+                    ),
+                  );
+                  if (activeDrop.id.isNotEmpty) {
+                    activeDropLocation = activeDrop.location;
+                    activeDropStatus = activeDrop.status;
+                  }
+                },
+                orElse: () {},
+              );
+            }
+            
+            // Determine overlay message based on drop status
+            String? overlayMessage;
+            IconData? overlayIcon;
+            if (currentMode == UserMode.household && activeDropStatus != null) {
+              if (activeDropStatus == DropStatus.pending) {
+                overlayMessage = 'Your drop is waiting for a collector';
+                overlayIcon = Icons.schedule;
+              } else if (activeDropStatus == DropStatus.accepted) {
+                overlayMessage = 'A collector is on the way to collect your drop';
+                overlayIcon = Icons.local_shipping;
+              }
+            }
+            
             return Stack(
               children: [
                 if (_currentLocation != null && !_isMapLoading)
@@ -2251,6 +2299,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   )
                 else
                   const Center(child: CircularProgressIndicator()),
+                // Add info overlay at top for household mode when there's an active drop
+                if (currentMode == UserMode.household && activeDropLocation != null && overlayMessage != null)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            overlayIcon ?? Icons.info_outline,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              overlayMessage!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             );
           },
@@ -2390,6 +2480,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               orElse: () => <Marker>{},
             );
 
+            // Get active drop location and status for household mode
+            final currentMode = userMode.value;
+            LatLng? activeDropLocation;
+            DropStatus? activeDropStatus;
+            if (currentMode == UserMode.household) {
+              final currentUserId = ref.read(authNotifierProvider).value?.id;
+              dropsState.maybeWhen(
+                data: (drops) {
+                  final activeDrop = drops.firstWhere(
+                    (drop) =>
+                        drop.userId == currentUserId &&
+                        (drop.status == DropStatus.pending || drop.status == DropStatus.accepted),
+                    orElse: () => Drop(
+                      id: '',
+                      userId: '',
+                      imageUrl: '',
+                      numberOfBottles: 0,
+                      numberOfCans: 0,
+                      bottleType: BottleType.plastic,
+                      notes: '',
+                      leaveOutside: false,
+                      location: const LatLng(0, 0),
+                      createdAt: DateTime.now(),
+                      modifiedAt: DateTime.now(),
+                    ),
+                  );
+                  if (activeDrop.id.isNotEmpty) {
+                    activeDropLocation = activeDrop.location;
+                    activeDropStatus = activeDrop.status;
+                  }
+                },
+                orElse: () {},
+              );
+            }
+            
+            // Determine overlay message based on drop status
+            String? overlayMessage;
+            IconData? overlayIcon;
+            if (currentMode == UserMode.household && activeDropStatus != null) {
+              if (activeDropStatus == DropStatus.pending) {
+                overlayMessage = 'Your drop is waiting for a collector';
+                overlayIcon = Icons.schedule;
+              } else if (activeDropStatus == DropStatus.accepted) {
+                overlayMessage = 'A collector is on the way to collect your drop';
+                overlayIcon = Icons.local_shipping;
+              }
+            }
+
             return Stack(
               children: [
                 if (!_isMapLoading)
@@ -2417,6 +2555,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const Center(child: CircularProgressIndicator()),
                 // Session value card overlay (top-left)
                 const SessionValueCard(),
+                // Add info overlay at top for household mode when there's an active drop
+                if (currentMode == UserMode.household && activeDropLocation != null && overlayMessage != null)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            overlayIcon ?? Icons.info_outline,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              overlayMessage!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             );
           },
@@ -3259,13 +3439,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               builder: (context, ref, child) {
                 final userMode = ref.watch(userModeControllerProvider);
                 return userMode.when(
-                  data: (mode) => mode == UserMode.household
-                      ? Positioned(
-                          bottom: 120, // Same padding as Set Collection Radius button
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: FloatingActionButton.extended(
+                  data: (mode) {
+                    if (mode != UserMode.household) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    // Check if user has an active drop
+                    final dropsState = ref.watch(dropsControllerProvider);
+                    final currentUserId = ref.read(authNotifierProvider).value?.id;
+                    bool hasActiveDrop = false;
+                    LatLng? activeDropLocation;
+                    
+                    dropsState.maybeWhen(
+                      data: (drops) {
+                        final activeDrop = drops.firstWhere(
+                          (drop) =>
+                              drop.userId == currentUserId &&
+                              (drop.status == DropStatus.pending || drop.status == DropStatus.accepted),
+                          orElse: () => Drop(
+                            id: '',
+                            userId: '',
+                            imageUrl: '',
+                            numberOfBottles: 0,
+                            numberOfCans: 0,
+                            bottleType: BottleType.plastic,
+                            notes: '',
+                            leaveOutside: false,
+                            location: const LatLng(0, 0),
+                            createdAt: DateTime.now(),
+                            modifiedAt: DateTime.now(),
+                          ),
+                        );
+                        if (activeDrop.id.isNotEmpty) {
+                          hasActiveDrop = true;
+                          activeDropLocation = activeDrop.location;
+                        }
+                      },
+                      orElse: () {},
+                    );
+                    
+                    return Positioned(
+                      bottom: 120, // Same padding as Set Collection Radius button
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: hasActiveDrop && activeDropLocation != null
+                          ? FloatingActionButton.extended(
+                              heroTag: 'show_my_drop_fab',
+                              onPressed: () {
+                                if (_mapController != null) {
+                                  _mapController!.animateCamera(
+                                    CameraUpdate.newLatLngZoom(activeDropLocation!, 16),
+                                  );
+                                }
+                              },
+                              label: const Text('Show My Drop'),
+                              icon: const Icon(Icons.location_on),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            )
+                          : FloatingActionButton.extended(
                               heroTag: 'create_drop_fab',
                               onPressed: () => _showCreateDropSheet(context),
                               label: Builder(
@@ -3275,24 +3508,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             ),
-                          ),
-                        )
-                      : Positioned(
-                          bottom:120, // Increased padding above nav bar
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: FloatingActionButton.extended(
-                              onPressed: () => _showAdvancedFeaturesSheet(context),
-                              label: Builder(
-                                builder: (context) => Text(AppLocalizations.of(context).advancedFeatures),
-                              ),
-                              icon: const Icon(Icons.tune),
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
+                      ),
+                    );
+                  },
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 );
@@ -3371,6 +3589,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showCreateDropSheet(BuildContext context) {
+    // Check if user already has an active drop
+    final dropsState = ref.read(dropsControllerProvider);
+    final currentUserId = ref.read(authNotifierProvider).value?.id;
+    
+    dropsState.maybeWhen(
+      data: (drops) {
+        final hasActiveDrop = drops.any((drop) =>
+          drop.userId == currentUserId &&
+          (drop.status == DropStatus.pending || drop.status == DropStatus.accepted)
+        );
+        
+        if (hasActiveDrop) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('You already have an active drop. Please wait until it is collected or cancel it before creating a new one.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+      },
+      orElse: () {},
+    );
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -4458,46 +4706,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return;
       }
       
-      final success = await _createDropWithUserId(userId);
-      
-      if (mounted) {
-        // Close the loading dialog
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
+      try {
+        final success = await _createDropWithUserId(userId);
         
-        if (success) {
-          // Close the bottom sheet
+        if (mounted) {
+          // Close the loading dialog
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }
           
-          _resetForm(); // Reset form after closing modal
-          
-          // Don't reload drops here - they should already be loaded for the current mode
-          AppLogger.log('🔍 Home: Drop created successfully, no need to reload drops');
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Drop created successfully!'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          if (success) {
+            // Close the bottom sheet
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            
+            _resetForm(); // Reset form after closing modal
+            
+            // Don't reload drops here - they should already be loaded for the current mode
+            AppLogger.log('🔍 Home: Drop created successfully, no need to reload drops');
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Drop created successfully!'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ),
-          );
-        } else {
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to create drop. Please try again.'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        // Handle error from createDrop
+        String errorMessage = 'Failed to create drop. Please try again.';
+        if (e.toString().contains('already have an active drop')) {
+          errorMessage = 'You already have an active drop. Please wait until it is collected or cancel it before creating a new one.';
+        } else if (e.toString().isNotEmpty) {
+          // Try to extract error message from exception
+          final match = RegExp(r'Failed to create drop: (.+)').firstMatch(e.toString());
+          if (match != null) {
+            errorMessage = match.group(1) ?? errorMessage;
+          }
+        }
+        
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Failed to create drop. Please try again.'),
+              content: Text(errorMessage),
               backgroundColor: Theme.of(context).colorScheme.error,
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }

@@ -6,7 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:botleji/features/navigation/controllers/navigation_controller.dart';
-import 'package:botleji/core/services/live_activity_service.dart';
+import 'package:botleji/core/services/live_activities_package_service.dart';
 import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 
 /// Global manager for Live Activity that monitors active collection state
@@ -17,7 +17,7 @@ class GlobalLiveActivityManager {
   factory GlobalLiveActivityManager() => _instance;
   GlobalLiveActivityManager._internal();
 
-  final LiveActivityService _liveActivityService = LiveActivityService();
+  final LiveActivitiesPackageService _liveActivityService = LiveActivitiesPackageService();
   Timer? _updateTimer;
   Ref? _ref;
   bool _isInitialized = false;
@@ -75,7 +75,8 @@ class GlobalLiveActivityManager {
 
   /// Start Live Activity for active collection
   Future<void> _startLiveActivity(ActiveCollection collection) async {
-    if (!_liveActivityService.isSupported()) {
+    final isSupported = await _liveActivityService.areActivitiesEnabled();
+    if (!isSupported) {
       debugPrint('⚠️ Live Activity not supported on this device');
       return;
     }
@@ -117,18 +118,23 @@ class GlobalLiveActivityManager {
       // Calculate progress percentage (based on distance traveled)
       final progressPercentage = _calculateProgressPercentage();
 
-      final data = CollectionActivityData(
+      // Format elapsed time as MM:SS
+      final elapsedTimeStr = LiveActivitiesPackageService.formatElapsedTime(remainingTime);
+      // Format distance as "X.X km" or "X m"
+      final distanceStr = _currentDistance >= 1000 
+          ? '${(_currentDistance / 1000).toStringAsFixed(1)} km'
+          : '${_currentDistance.round()} m';
+
+      await _liveActivityService.startCollectionActivity(
         dropId: collection.dropId,
         dropAddress: _currentDropAddress ?? 'Drop ${collection.dropId.substring(0, 8)}...',
-        elapsedTime: remainingTime, // Use remaining time for countdown timer
-        distanceToDestination: _currentDistance,
+        elapsedTime: elapsedTimeStr,
+        distance: distanceStr,
         eta: eta,
-        transportMode: 'driving', // Default, can be updated if stored
+        transportMode: 'driving',
         estimatedValue: estimatedValue,
         progressPercentage: progressPercentage,
       );
-
-      await _liveActivityService.startCollectionActivity(data);
       debugPrint('✅ Global Live Activity started for drop: ${collection.dropId}');
 
       // Start periodic updates
@@ -140,7 +146,8 @@ class GlobalLiveActivityManager {
 
   /// Update Live Activity with current data
   Future<void> _updateLiveActivity(ActiveCollection collection) async {
-    if (!_liveActivityService.isSupported() || _currentDropId == null) {
+    final isSupported = await _liveActivityService.areActivitiesEnabled();
+    if (!isSupported || _currentDropId == null) {
       return;
     }
 
@@ -175,18 +182,20 @@ class GlobalLiveActivityManager {
       debugPrint('   Estimated value: $estimatedValue');
       debugPrint('   Progress: $progressPercentage%');
 
-      final data = CollectionActivityData(
+      // Format elapsed time as MM:SS
+      final elapsedTimeStr = LiveActivitiesPackageService.formatElapsedTime(remainingTime);
+      // Format distance as "X.X km" or "X m"
+      final distanceStr = _currentDistance >= 1000 
+          ? '${(_currentDistance / 1000).toStringAsFixed(1)} km'
+          : '${_currentDistance.round()} m';
+
+      await _liveActivityService.updateCollectionActivity(
         dropId: collection.dropId,
-        dropAddress: _currentDropAddress ?? 'Drop ${collection.dropId.substring(0, 8)}...',
-        elapsedTime: remainingTime, // Use remaining time for countdown timer
-        distanceToDestination: _currentDistance,
+        elapsedTime: elapsedTimeStr,
+        distance: distanceStr,
         eta: eta,
-        transportMode: 'driving',
-        estimatedValue: estimatedValue,
         progressPercentage: progressPercentage,
       );
-
-      await _liveActivityService.updateCollectionActivity(data);
       debugPrint('✅ Live Activity updated successfully');
     } catch (e) {
       debugPrint('❌ Error updating global Live Activity: $e');
@@ -238,7 +247,7 @@ class GlobalLiveActivityManager {
     
     // End the Live Activity
     try {
-      await _liveActivityService.endCollectionActivity();
+      await _liveActivityService.endCollectionActivity(dropId: _currentDropId);
       debugPrint('✅ Live Activity stopped successfully for drop: $dropId');
     } catch (e) {
       debugPrint('❌ Error stopping Live Activity: $e');
