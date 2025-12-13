@@ -796,6 +796,19 @@ export class DropoffsService {
       cancelledByCollectorIds: updatedDropoff.cancelledByCollectorIds,
     });
 
+    // Send Live Activity update if status changed to CANCELLED
+    if (newStatus === DropoffStatus.CANCELLED) {
+      try {
+        await this.sendLiveActivityUpdate(id, {
+          status: 'cancelled',
+          statusText: 'Cancelled',
+          timeAgo: 'Just now',
+        });
+      } catch (error) {
+        console.error(`❌ Error sending Live Activity update for cancelled drop: ${error}`);
+      }
+    }
+
     // Create interaction for cancellation
     if (cancelledByCollectorId) {
       const interaction = await this.createInteraction({
@@ -1025,6 +1038,17 @@ export class DropoffsService {
 
         // Create interaction for expiration (penalty is now added automatically inside createInteraction)
         try {
+          // Send Live Activity update (end activity)
+          try {
+            await this.sendLiveActivityUpdate(dropoff._id.toString(), {
+              status: 'expired',
+              statusText: 'Expired',
+              timeAgo: 'Just now',
+            });
+          } catch (error) {
+            console.error(`❌ Error sending Live Activity update for expired drop: ${error}`);
+          }
+
           // Create EXPIRED interaction (this will automatically add the penalty)
           await this.createInteraction({
             collectorId: interaction.collectorId,
@@ -2679,6 +2703,7 @@ export class DropoffsService {
 
   /**
    * Send Live Activity push update
+   * Determines if this is an update or end event based on status
    */
   private async sendLiveActivityUpdate(
     dropoffId: string,
@@ -2690,22 +2715,68 @@ export class DropoffsService {
     }
   ) {
     try {
-      // Find all Live Activity tokens for this dropoff
-      const tokens = await this.liveActivityTokenModel.find({ dropoffId }).exec();
+      // Find all active Live Activity tokens for this dropoff
+      const tokens = await this.liveActivityTokenModel.find({ 
+        dropoffId,
+        isActive: { $ne: false } // Only active tokens
+      }).exec();
 
       if (tokens.length === 0) {
-        console.log(`⚠️ No Live Activity tokens found for dropoff ${dropoffId}`);
+        console.log(`⚠️ No active Live Activity tokens found for dropoff ${dropoffId}`);
         return;
       }
 
-      console.log(`📤 Sending Live Activity update to ${tokens.length} token(s) for dropoff ${dropoffId}`);
+      // Determine if this is an end event (collected, expired, cancelled)
+      const isEndEvent = 
+        contentState.status === 'collected' || 
+        contentState.status === 'expired' || 
+        contentState.status === 'cancelled';
 
-      // Send update to each Live Activity token
+      const event: 'update' | 'end' = isEndEvent ? 'end' : 'update';
+
+      console.log(`📤 Sending Live Activity ${event} to ${tokens.length} token(s) for dropoff ${dropoffId}`);
+
+      // Send update/end to each Live Activity token
       for (const token of tokens) {
         try {
-          await this.fcmService.sendLiveActivityUpdate(token.pushToken, contentState);
+          const success = await this.fcmService.sendLiveActivityUpdate(
+            token.pushToken, 
+            contentState,
+            event
+          );
+
+          // If it's an end event and successful, mark token as inactive
+          if (isEndEvent && success) {
+            await this.liveActivityTokenModel.findByIdAndUpdate(
+              token._id,
+              { isActive: false },
+              { new: true }
+            ).exec();
+            console.log(`✅ Marked Live Activity token as inactive: ${token.activityId}`);
+          }
+
+          // If token is invalid, mark as inactive
+          if (!success) {
+            // Check if it's an invalid token error (handled in FCMService)
+            // Mark as inactive to prevent future attempts
+            await this.liveActivityTokenModel.findByIdAndUpdate(
+              token._id,
+              { isActive: false },
+              { new: true }
+            ).exec();
+          }
         } catch (error) {
           console.error(`❌ Error sending Live Activity update to token ${token.pushToken.substring(0, 20)}...: ${error}`);
+          // Mark token as inactive on error
+          try {
+            await this.liveActivityTokenModel.findByIdAndUpdate(
+              token._id,
+              { isActive: false },
+              { new: true }
+            ).exec();
+          } catch (updateError) {
+            console.error(`❌ Error marking token as inactive: ${updateError}`);
+          }
         }
       }
     } catch (error) {

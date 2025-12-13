@@ -249,6 +249,21 @@ export class FCMService implements OnModuleInit {
   /**
    * Send Live Activity push update via APNs
    * This sends a push notification specifically for Live Activities with content-state updates
+   * 
+   * APNs Live Activity payload format:
+   * {
+   *   "aps": {
+   *     "timestamp": <unix_timestamp>,
+   *     "event": "update" | "end",
+   *     "content-state": {
+   *       "activityType": "dropTimeline",
+   *       "status": "...",
+   *       "statusText": "...",
+   *       "collectorName": "...",
+   *       "timeAgo": "..."
+   *     }
+   *   }
+   * }
    */
   async sendLiveActivityUpdate(
     pushToken: string,
@@ -257,7 +272,8 @@ export class FCMService implements OnModuleInit {
       statusText: string;
       collectorName?: string;
       timeAgo: string;
-    }
+    },
+    event: 'update' | 'end' = 'update'
   ): Promise<boolean> {
     if (!this.firebaseApp) {
       this.logger.warn('Firebase Admin SDK not initialized. Cannot send Live Activity update.');
@@ -265,33 +281,56 @@ export class FCMService implements OnModuleInit {
     }
 
     try {
-      // Convert push token from hex string to Buffer
-      const tokenBuffer = Buffer.from(pushToken, 'hex');
+      // Build the Live Activity content state payload
+      // The package expects activityType to be included
+      const liveActivityContentState = {
+        activityType: 'dropTimeline',
+        status: contentState.status,
+        statusText: contentState.statusText,
+        collectorName: contentState.collectorName || '',
+        timeAgo: contentState.timeAgo,
+      };
 
-      // For Live Activities, we need to send via APNs with specific payload format
-      // Note: Firebase Admin SDK doesn't directly support Live Activity push tokens
-      // We need to use APNs directly or through a specialized service
-      // For now, we'll log and indicate this needs APNs direct integration
+      // Build APNs payload for Live Activity
+      const apnsPayload = {
+        aps: {
+          timestamp: Math.floor(Date.now() / 1000), // Unix timestamp in seconds
+          event: event,
+          'content-state': liveActivityContentState,
+        },
+      };
+
+      // Create Firebase message with APNs-specific configuration
+      const message: admin.messaging.Message = {
+        token: pushToken, // APNs push token (hex string)
+        apns: {
+          headers: {
+            'apns-priority': '10', // High priority for Live Activity updates
+            'apns-push-type': 'liveactivity', // Required for Live Activities
+            'apns-topic': process.env.APNS_TOPIC || 'com.example.botleji.LiveActivityWidgetExtension', // Widget extension bundle ID
+          },
+          payload: apnsPayload,
+        },
+      };
+
+      // Send via Firebase Admin SDK (which handles APNs communication)
+      const response = await this.firebaseApp.messaging().send(message);
       
-      this.logger.log(`📱 Live Activity update needed for token ${pushToken.substring(0, 20)}...`);
-      this.logger.log(`📱 Content state:`, contentState);
+      this.logger.log(`✅ Live Activity ${event} sent successfully: ${response}`);
+      this.logger.log(`📱 Token: ${pushToken.substring(0, 20)}...`);
+      this.logger.log(`📱 Content state:`, liveActivityContentState);
       
-      // TODO: Implement direct APNs push for Live Activity
-      // This requires:
-      // 1. APNs key/certificate configuration
-      // 2. Using node-apn or similar library
-      // 3. Sending with payload format:
-      //    {
-      //      "aps": {
-      //        "timestamp": <unix_timestamp>,
-      //        "event": "update",
-      //        "content-state": contentState
-      //      }
-      //    }
+      return true;
+    } catch (error: any) {
+      this.logger.error(`❌ Error sending Live Activity update: ${error}`);
       
-      return false; // Not implemented yet - needs APNs direct integration
-    } catch (error) {
-      this.logger.error(`Error sending Live Activity update: ${error}`);
+      // Handle specific error cases
+      if (error.code === 'messaging/invalid-registration-token' || 
+          error.code === 'messaging/registration-token-not-registered') {
+        this.logger.warn(`⚠️ Invalid Live Activity push token: ${pushToken.substring(0, 20)}...`);
+        // Token should be marked as inactive in the database
+      }
+      
       return false;
     }
   }

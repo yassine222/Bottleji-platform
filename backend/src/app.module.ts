@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -24,6 +25,7 @@ import { EarningsModule } from './modules/earnings/earnings.module';
       isGlobal: true,
       validationSchema: require('./config/validation.schema').validationSchema,
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/eco_collect'),
     AuthModule,
     UsersModule,

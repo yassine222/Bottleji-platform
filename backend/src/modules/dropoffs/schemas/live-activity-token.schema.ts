@@ -17,6 +17,9 @@ export class LiveActivityToken {
   @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
   userId: Types.ObjectId; // User who owns the Live Activity (household user)
 
+  @Prop({ default: true })
+  isActive: boolean; // Whether the Live Activity is currently active
+
   @Prop({ default: Date.now })
   createdAt?: Date;
 
