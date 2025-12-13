@@ -6,6 +6,7 @@ import { Dropoff, DropoffSchema } from './schemas/dropoff.schema';
 import { CollectorInteraction, CollectorInteractionSchema } from './schemas/collector-interaction.schema';
 import { CollectionAttempt, CollectionAttemptSchema } from './schemas/collection-attempt.schema';
 import { DropReport, DropReportSchema } from './schemas/drop-report.schema';
+import { LiveActivityToken, LiveActivityTokenSchema } from './schemas/live-activity-token.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RewardsModule } from '../rewards/rewards.module';
@@ -18,6 +19,7 @@ import { EarningsModule } from '../earnings/earnings.module';
       { name: CollectorInteraction.name, schema: CollectorInteractionSchema },
       { name: CollectionAttempt.name, schema: CollectionAttemptSchema },
       { name: DropReport.name, schema: DropReportSchema },
+      { name: LiveActivityToken.name, schema: LiveActivityTokenSchema },
       { name: User.name, schema: UserSchema },
     ]),
     forwardRef(() => NotificationsModule),

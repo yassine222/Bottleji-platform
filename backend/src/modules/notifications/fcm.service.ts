@@ -41,7 +41,7 @@ export class FCMService implements OnModuleInit {
               this.logger.error(`❌ Has client_email: ${!!serviceAccount.client_email}`);
               serviceAccount = null; // Reset to try file
             } else {
-              this.logger.log('✅ Using FIREBASE_SERVICE_ACCOUNT_KEY from environment variable');
+            this.logger.log('✅ Using FIREBASE_SERVICE_ACCOUNT_KEY from environment variable');
               this.logger.log(`✅ Project ID: ${serviceAccount.project_id}`);
               this.logger.log(`✅ Client Email: ${serviceAccount.client_email}`);
             }
@@ -244,6 +244,56 @@ export class FCMService implements OnModuleInit {
     }
 
     return { success, failed };
+  }
+
+  /**
+   * Send Live Activity push update via APNs
+   * This sends a push notification specifically for Live Activities with content-state updates
+   */
+  async sendLiveActivityUpdate(
+    pushToken: string,
+    contentState: {
+      status: string;
+      statusText: string;
+      collectorName?: string;
+      timeAgo: string;
+    }
+  ): Promise<boolean> {
+    if (!this.firebaseApp) {
+      this.logger.warn('Firebase Admin SDK not initialized. Cannot send Live Activity update.');
+      return false;
+    }
+
+    try {
+      // Convert push token from hex string to Buffer
+      const tokenBuffer = Buffer.from(pushToken, 'hex');
+
+      // For Live Activities, we need to send via APNs with specific payload format
+      // Note: Firebase Admin SDK doesn't directly support Live Activity push tokens
+      // We need to use APNs directly or through a specialized service
+      // For now, we'll log and indicate this needs APNs direct integration
+      
+      this.logger.log(`📱 Live Activity update needed for token ${pushToken.substring(0, 20)}...`);
+      this.logger.log(`📱 Content state:`, contentState);
+      
+      // TODO: Implement direct APNs push for Live Activity
+      // This requires:
+      // 1. APNs key/certificate configuration
+      // 2. Using node-apn or similar library
+      // 3. Sending with payload format:
+      //    {
+      //      "aps": {
+      //        "timestamp": <unix_timestamp>,
+      //        "event": "update",
+      //        "content-state": contentState
+      //      }
+      //    }
+      
+      return false; // Not implemented yet - needs APNs direct integration
+    } catch (error) {
+      this.logger.error(`Error sending Live Activity update: ${error}`);
+      return false;
+    }
   }
 }
 

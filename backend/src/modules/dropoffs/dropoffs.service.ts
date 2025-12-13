@@ -1,16 +1,19 @@
 import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
 import { CollectorInteraction } from './schemas/collector-interaction.schema';
 import { CollectionAttempt } from './schemas/collection-attempt.schema';
 import { DropReport, ReportStatus } from './schemas/drop-report.schema';
+import { LiveActivityToken } from './schemas/live-activity-token.schema';
 import { CreateDropoffDto } from './dto/create-dropoff.dto';
 import { DropoffStatus, CancellationReason } from './schemas/dropoff.schema';
 import { InteractionType } from './schemas/collector-interaction.schema';
 import { User } from '../users/schemas/user.schema';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FCMService } from '../notifications/fcm.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { EarningsSessionService } from '../earnings/earnings-session.service';
 
@@ -21,15 +24,16 @@ export class DropoffsService {
     @InjectModel(CollectorInteraction.name) private interactionModel: Model<CollectorInteraction>,
     @InjectModel(CollectionAttempt.name) private collectionAttemptModel: Model<CollectionAttempt>,
     @InjectModel(DropReport.name) private dropReportModel: Model<DropReport>,
+    @InjectModel(LiveActivityToken.name) private liveActivityTokenModel: Model<LiveActivityToken>,
     @InjectModel(User.name) private userModel: Model<User>,
     @Inject(forwardRef(() => NotificationsGateway))
     private notificationsGateway: NotificationsGateway,
     private readonly notificationsService: NotificationsService,
+    private readonly fcmService: FCMService,
     private readonly rewardsService: RewardsService,
     @Inject(forwardRef(() => EarningsSessionService))
     private readonly earningsSessionService: EarningsSessionService,
   ) {
-    this.startCleanupTask();
     this.migrateOldCancellationFields();
     // Disabled interaction migration - using original dropoff data instead
     // this.migrateCollectorDataToInteractions();
@@ -185,20 +189,36 @@ export class DropoffsService {
     console.log('Migration completed');
   }
 
-  private startCleanupTask() {
-    console.log('🚫 Automatic cleanup task DISABLED - no longer running cleanup every minute');
-    
-    // DISABLED: Automatic cleanup was causing issues with collection process
-    // The cleanup was running every 1 minute and setting collected drops back to PENDING
-    // This interfered with the normal collection flow
-    // 
-    // If cleanup is needed, it can be run manually via the API endpoint:
-    // POST /dropoffs/cleanup-expired
-    
-    console.log('💡 Manual cleanup available via: POST /dropoffs/cleanup-expired');
+  /**
+   * Scheduled task to check for expiring and expired drops
+   * Runs every 2 minutes to check for:
+   * - Near expiring drops (70% time elapsed) - sends warning notification
+   * - Expired drops - sends expiration notification and resets drop to PENDING
+   * 
+   * Cron expression: '*/2 * * * *' = every 2 minutes
+   */
+  @Cron('*/2 * * * *')
+  async handleExpiredDropsCleanup() {
+    try {
+      await this.cleanupExpiredAcceptedDrops();
+    } catch (error) {
+      console.error('❌ Error in scheduled cleanup task:', error);
+    }
   }
 
   async create(createDropoffDto: CreateDropoffDto) {
+    // Check if user already has an active drop (pending or accepted)
+    const activeDrops = await this.dropoffModel.find({
+      userId: createDropoffDto.userId,
+      status: { $in: [DropoffStatus.PENDING, DropoffStatus.ACCEPTED] },
+    }).exec();
+
+    if (activeDrops.length > 0) {
+      throw new BadRequestException(
+        'You already have an active drop. Please wait until it is collected or cancel it before creating a new one.'
+      );
+    }
+
     const now = new Date();
     
     const dropoff = new this.dropoffModel({
@@ -640,6 +660,13 @@ export class DropoffsService {
              timestamp: new Date(),
            });
          }
+         
+         // Send Live Activity update (end activity)
+         await this.sendLiveActivityUpdate(id, {
+           status: 'collected',
+           statusText: 'Collected',
+           timeAgo: 'Just now',
+         });
          } catch (error) {
            console.error('❌ Error awarding household points:', error);
            // Don't fail the collection if household reward system fails
@@ -2611,5 +2638,67 @@ export class DropoffsService {
    */
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Store Live Activity push token
+   */
+  async storeLiveActivityToken(dropoffId: string, activityId: string, pushToken: string) {
+    const dropoff = await this.dropoffModel.findById(dropoffId).exec();
+    if (!dropoff) {
+      throw new NotFoundException('Dropoff not found');
+    }
+
+    // Upsert the token (update if exists, create if not)
+    const token = await this.liveActivityTokenModel.findOneAndUpdate(
+      { dropoffId, activityId },
+      {
+        dropoffId,
+        activityId,
+        pushToken,
+        userId: dropoff.userId,
+        updatedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    ).exec();
+
+    console.log(`✅ Live Activity push token stored: dropoffId=${dropoffId}, activityId=${activityId}`);
+    return token;
+  }
+
+  /**
+   * Send Live Activity push update
+   */
+  private async sendLiveActivityUpdate(
+    dropoffId: string,
+    contentState: {
+      status: string;
+      statusText: string;
+      collectorName?: string;
+      timeAgo: string;
+    }
+  ) {
+    try {
+      // Find all Live Activity tokens for this dropoff
+      const tokens = await this.liveActivityTokenModel.find({ dropoffId }).exec();
+
+      if (tokens.length === 0) {
+        console.log(`⚠️ No Live Activity tokens found for dropoff ${dropoffId}`);
+        return;
+      }
+
+      console.log(`📤 Sending Live Activity update to ${tokens.length} token(s) for dropoff ${dropoffId}`);
+
+      // Send update to each Live Activity token
+      for (const token of tokens) {
+        try {
+          await this.fcmService.sendLiveActivityUpdate(token.pushToken, contentState);
+        } catch (error) {
+          console.error(`❌ Error sending Live Activity update to token ${token.pushToken.substring(0, 20)}...: ${error}`);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error sending Live Activity update: ${error}`);
+    }
   }
 } 

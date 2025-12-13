@@ -63,6 +63,14 @@ export class DropoffsController {
     return this.dropoffsService.confirmCollection(id);
   }
 
+  @Post(':id/live-activity-token')
+  async storeLiveActivityToken(
+    @Param('id') id: string,
+    @Body() body: { activityId: string; pushToken: string }
+  ) {
+    return this.dropoffsService.storeLiveActivityToken(id, body.activityId, body.pushToken);
+  }
+
   @Patch(':id/cancel-accepted')
   async cancelAcceptedDrop(
     @Param('id') id: string,
