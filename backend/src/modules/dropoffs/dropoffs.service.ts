@@ -335,14 +335,14 @@ export class DropoffsService {
     // Get the dropoff IDs from these interactions
     // Handle both populated (document) and non-populated (ObjectId) cases
     const dropoffIds = acceptedInteractions.map(interaction => {
-      const dropoffId = interaction.dropoffId;
+      const dropoffId = interaction.dropoffId as any;
       // If populated, it's a document object - extract _id
       // If not populated, it's already an ObjectId
       if (dropoffId && typeof dropoffId === 'object' && '_id' in dropoffId) {
-        return dropoffId._id;
+        return (dropoffId as any)._id;
       }
       return dropoffId;
-    }).filter(id => id != null); // Filter out any null/undefined values
+    }).filter((id): id is any => id != null); // Filter out any null/undefined values
 
     if (dropoffIds.length === 0) {
       return [];
@@ -2661,12 +2661,12 @@ export class DropoffsService {
         const dropoffStatus = dropoff.status;
         console.log(`📤 [broadcastLocationToHousehold] Dropoff status: ${dropoffStatus}, checking if should send Live Activity update`);
         
-        if (dropoffStatus === 'ACCEPTED' || dropoffStatus === 'ON_WAY') {
+        if (dropoffStatus === DropoffStatus.ACCEPTED) {
           const collector = await this.userModel.findById((dropoff as any).currentCollectorId).exec();
           const collectorName = collector?.name || 'Collector';
           
-          const statusKey = dropoffStatus.toLowerCase().replace('_', '');
-          const statusText = dropoffStatus === 'ACCEPTED' ? 'Accepted' : 'On his way';
+          const statusKey = dropoffStatus.toLowerCase();
+          const statusText = 'Accepted';
           
           console.log(`📤 [broadcastLocationToHousehold] Sending Live Activity update for dropoff ${dropoffId}`);
           console.log(`📤 [broadcastLocationToHousehold] Status: ${statusKey}, Distance: ${distanceRemaining.toFixed(2)}m`);
