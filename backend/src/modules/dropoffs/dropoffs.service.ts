@@ -197,14 +197,15 @@ export class DropoffsService {
    * 
    * Cron expression: every 2 minutes
    */
-  @Cron('*/2 * * * *')
-  async handleExpiredDropsCleanup() {
-    try {
-      await this.cleanupExpiredAcceptedDrops();
-    } catch (error) {
-      console.error('❌ Error in scheduled cleanup task:', error);
-    }
-  }
+  // Cleanup task disabled - can be called manually via endpoint if needed
+  // @Cron('*/2 * * * *')
+  // async handleExpiredDropsCleanup() {
+  //   try {
+  //     await this.cleanupExpiredAcceptedDrops();
+  //   } catch (error) {
+  //     console.error('❌ Error in scheduled cleanup task:', error);
+  //   }
+  // }
 
   async create(createDropoffDto: CreateDropoffDto) {
     // Check if user already has an active drop (pending or accepted)
