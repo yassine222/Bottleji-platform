@@ -272,6 +272,7 @@ export class FCMService implements OnModuleInit {
       statusText: string;
       collectorName?: string;
       timeAgo: string;
+      distanceRemaining?: number; // Distance in meters for collector pin position
     },
     event: 'update' | 'end' = 'update'
   ): Promise<boolean> {
@@ -289,6 +290,7 @@ export class FCMService implements OnModuleInit {
         statusText: contentState.statusText,
         collectorName: contentState.collectorName || '',
         timeAgo: contentState.timeAgo,
+        distanceRemaining: contentState.distanceRemaining, // Include distance for collector pin
       };
 
       // Build APNs payload for Live Activity
@@ -313,22 +315,37 @@ export class FCMService implements OnModuleInit {
         },
       };
 
+      // Log the full message structure for debugging
+      this.logger.log(`📤 [sendLiveActivityUpdate] Sending push notification via Firebase Admin SDK`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] APNs Topic: ${process.env.APNS_TOPIC || 'com.example.botleji.LiveActivityWidgetExtension'}`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] Event: ${event}`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] Token (first 20 chars): ${pushToken.substring(0, 20)}...`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] Full payload:`, JSON.stringify(apnsPayload, null, 2));
+      
       // Send via Firebase Admin SDK (which handles APNs communication)
       const response = await this.firebaseApp.messaging().send(message);
       
-      this.logger.log(`✅ Live Activity ${event} sent successfully: ${response}`);
-      this.logger.log(`📱 Token: ${pushToken.substring(0, 20)}...`);
-      this.logger.log(`📱 Content state:`, liveActivityContentState);
+      this.logger.log(`✅ [sendLiveActivityUpdate] Live Activity ${event} sent successfully: ${response}`);
+      this.logger.log(`✅ [sendLiveActivityUpdate] Token: ${pushToken.substring(0, 20)}...`);
+      this.logger.log(`✅ [sendLiveActivityUpdate] Content state:`, JSON.stringify(liveActivityContentState, null, 2));
       
       return true;
     } catch (error: any) {
-      this.logger.error(`❌ Error sending Live Activity update: ${error}`);
+      this.logger.error(`❌ [sendLiveActivityUpdate] Error sending Live Activity update: ${error}`);
+      this.logger.error(`❌ [sendLiveActivityUpdate] Error code: ${error.code || 'unknown'}`);
+      this.logger.error(`❌ [sendLiveActivityUpdate] Error message: ${error.message || 'unknown'}`);
+      this.logger.error(`❌ [sendLiveActivityUpdate] Full error:`, JSON.stringify(error, null, 2));
       
       // Handle specific error cases
       if (error.code === 'messaging/invalid-registration-token' || 
           error.code === 'messaging/registration-token-not-registered') {
-        this.logger.warn(`⚠️ Invalid Live Activity push token: ${pushToken.substring(0, 20)}...`);
-        // Token should be marked as inactive in the database
+        this.logger.warn(`⚠️ [sendLiveActivityUpdate] Invalid Live Activity push token: ${pushToken.substring(0, 20)}...`);
+        this.logger.warn(`⚠️ [sendLiveActivityUpdate] Token should be marked as inactive in the database`);
+      }
+      
+      // Check for APNs-specific errors
+      if (error.code === 'messaging/invalid-argument') {
+        this.logger.error(`❌ [sendLiveActivityUpdate] Invalid argument - check APNs topic and payload structure`);
       }
       
       return false;

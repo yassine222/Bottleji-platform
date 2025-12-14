@@ -62,7 +62,7 @@ enum LiveActivityViewType {
 // MARK: - Unified Live Activities Attributes (Required by live_activities package)
 
 // IMPORTANT: Must be named EXACTLY "LiveActivitiesAppAttributes" for live_activities package to work
-struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
+struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable, Codable {
     public typealias LiveDeliveryData = ContentState  // Required for package
     
     public struct ContentState: Codable, Hashable {
@@ -80,13 +80,10 @@ struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
         var statusText: String?
         var collectorName: String?
         var timeAgo: String?
+        var distanceRemaining: Double? // Distance in meters - for collector pin position
         
-        // Required initializer for live_activities package
-        // The package stores data in UserDefaults and ActivityKit manages the content state
-        // This initializer is called when creating the initial Activity content state
-        init(appGroupId: String) {
-            // Initialize with default values - ActivityKit will update via normal content state updates
-            // The package handles synchronization between UserDefaults and ActivityKit
+        // Default initializer (required for ActivityKit)
+        init() {
             self.activityType = "unknown"
             self.elapsedTime = nil
             self.distance = nil
@@ -98,18 +95,144 @@ struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
             self.timeAgo = nil
         }
         
-        // Codable initializer for normal decoding
+        // Required initializer for live_activities package (for push updates)
+        // The package stores data in UserDefaults and ActivityKit manages the content state
+        // NOTE: This is called when the package needs to read initial state from UserDefaults
+        init(appGroupId: String) {
+            // Initialize with defaults first
+            self.activityType = "dropTimeline"
+            self.elapsedTime = nil
+            self.distance = nil
+            self.eta = nil
+            self.progressPercentage = nil
+            self.status = "pending"
+            self.statusText = "Created"
+            self.collectorName = nil
+            self.timeAgo = "Just now"
+            self.distanceRemaining = nil
+            
+            // Try to read from UserDefaults if available
+            // Use a more robust approach to avoid CFPrefs warnings
+            do {
+                guard let sharedDefaults = UserDefaults(suiteName: appGroupId) else {
+                    print("⚠️ Could not create UserDefaults with appGroupId: \(appGroupId)")
+                    return
+                }
+                
+                // Synchronize to ensure we have the latest data
+                sharedDefaults.synchronize()
+                
+                // Read activity type (required)
+                if let activityType = sharedDefaults.string(forKey: "activityType"), !activityType.isEmpty {
+                    self.activityType = activityType
+                }
+                
+                // Read collection mode fields
+                self.elapsedTime = sharedDefaults.string(forKey: "elapsedTime")
+                self.distance = sharedDefaults.string(forKey: "distance")
+                self.eta = sharedDefaults.string(forKey: "eta")
+                if let progress = sharedDefaults.object(forKey: "progressPercentage") as? Int {
+                    self.progressPercentage = progress
+                }
+                
+                // Read drop timeline mode fields
+                if let status = sharedDefaults.string(forKey: "status"), !status.isEmpty {
+                    self.status = status
+                }
+                if let statusText = sharedDefaults.string(forKey: "statusText"), !statusText.isEmpty {
+                    self.statusText = statusText
+                }
+                self.collectorName = sharedDefaults.string(forKey: "collectorName")
+                if let timeAgo = sharedDefaults.string(forKey: "timeAgo"), !timeAgo.isEmpty {
+                    self.timeAgo = timeAgo
+                }
+                if let distance = sharedDefaults.object(forKey: "distanceRemaining") as? Double {
+                    self.distanceRemaining = distance
+                }
+                
+                print("✅ ContentState init(appGroupId): Read from UserDefaults - activityType=\(self.activityType), status=\(self.status ?? "nil"), distanceRemaining=\(self.distanceRemaining.map { String(format: "%.2f", $0) } ?? "nil")")
+            } catch {
+                print("⚠️ Error reading from UserDefaults: \(error)")
+                // Keep default values
+            }
+        }
+        
+        // Codable initializer for normal decoding (used when ActivityKit decodes the state from createActivity data)
         init(from decoder: Decoder) throws {
+            print("🔍 [ContentState] Starting decode from push notification...")
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.activityType = try container.decode(String.self, forKey: .activityType)
-            self.elapsedTime = try container.decodeIfPresent(String.self, forKey: .elapsedTime)
-            self.distance = try container.decodeIfPresent(String.self, forKey: .distance)
-            self.eta = try container.decodeIfPresent(String.self, forKey: .eta)
-            self.progressPercentage = try container.decodeIfPresent(Int.self, forKey: .progressPercentage)
-            self.status = try container.decodeIfPresent(String.self, forKey: .status)
-            self.statusText = try container.decodeIfPresent(String.self, forKey: .statusText)
-            self.collectorName = try container.decodeIfPresent(String.self, forKey: .collectorName)
-            self.timeAgo = try container.decodeIfPresent(String.self, forKey: .timeAgo)
+            
+            // Log all available keys for debugging
+            let allKeys = container.allKeys
+            print("🔍 [ContentState] Available keys in payload: \(allKeys.map { $0.stringValue })")
+            
+            // activityType is required - decode it, default to "dropTimeline" if missing
+            do {
+                self.activityType = try container.decode(String.self, forKey: .activityType)
+                print("✅ [ContentState] Decoded activityType: \(self.activityType)")
+            } catch {
+                print("⚠️ [ContentState] Could not decode activityType, defaulting to 'dropTimeline': \(error)")
+                self.activityType = "dropTimeline"
+            }
+            
+            // Optional fields - decode with error handling
+            self.elapsedTime = try? container.decode(String.self, forKey: .elapsedTime)
+            self.distance = try? container.decode(String.self, forKey: .distance)
+            self.eta = try? container.decode(String.self, forKey: .eta)
+            self.progressPercentage = try? container.decode(Int.self, forKey: .progressPercentage)
+            
+            // Drop timeline fields
+            if let status = try? container.decode(String.self, forKey: .status) {
+                self.status = status
+                print("✅ [ContentState] Decoded status: \(status)")
+            } else {
+                print("⚠️ [ContentState] Could not decode status")
+            }
+            
+            if let statusText = try? container.decode(String.self, forKey: .statusText) {
+                self.statusText = statusText
+                print("✅ [ContentState] Decoded statusText: \(statusText)")
+            } else {
+                print("⚠️ [ContentState] Could not decode statusText")
+            }
+            
+            if let collectorName = try? container.decode(String.self, forKey: .collectorName) {
+                self.collectorName = collectorName
+                print("✅ [ContentState] Decoded collectorName: \(collectorName)")
+            } else {
+                print("⚠️ [ContentState] Could not decode collectorName")
+            }
+            
+            if let timeAgo = try? container.decode(String.self, forKey: .timeAgo) {
+                self.timeAgo = timeAgo
+                print("✅ [ContentState] Decoded timeAgo: \(timeAgo)")
+            } else {
+                print("⚠️ [ContentState] Could not decode timeAgo")
+            }
+            
+            if let distanceRemaining = try? container.decode(Double.self, forKey: .distanceRemaining) {
+                self.distanceRemaining = distanceRemaining
+                print("✅ [ContentState] Decoded distanceRemaining: \(distanceRemaining)")
+            } else {
+                print("⚠️ [ContentState] Could not decode distanceRemaining")
+            }
+            
+            print("✅ [ContentState] Decode complete - activityType=\(self.activityType), status=\(self.status ?? "nil"), statusText=\(self.statusText ?? "nil"), collectorName=\(self.collectorName ?? "nil"), timeAgo=\(self.timeAgo ?? "nil"), distanceRemaining=\(self.distanceRemaining.map { String(format: "%.2f", $0) } ?? "nil")")
+        }
+        
+        // Encoding for Codable
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(activityType, forKey: .activityType)
+            try container.encodeIfPresent(elapsedTime, forKey: .elapsedTime)
+            try container.encodeIfPresent(distance, forKey: .distance)
+            try container.encodeIfPresent(eta, forKey: .eta)
+            try container.encodeIfPresent(progressPercentage, forKey: .progressPercentage)
+            try container.encodeIfPresent(status, forKey: .status)
+            try container.encodeIfPresent(statusText, forKey: .statusText)
+            try container.encodeIfPresent(collectorName, forKey: .collectorName)
+            try container.encodeIfPresent(timeAgo, forKey: .timeAgo)
+            try container.encodeIfPresent(distanceRemaining, forKey: .distanceRemaining)
         }
         
         // Custom CodingKeys for Codable conformance
@@ -123,15 +246,80 @@ struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
             case statusText
             case collectorName
             case timeAgo
+            case distanceRemaining
         }
     }
     
-    var id = UUID()
+    var id: UUID
     var dropId: String
     var dropAddress: String
     var estimatedValue: String
     var transportMode: String?  // For collection mode
     var createdAt: String?       // For drop timeline mode
+    
+    // Default initializer
+    init() {
+        self.id = UUID()
+        self.dropId = ""
+        self.dropAddress = ""
+        self.estimatedValue = ""
+        self.transportMode = nil
+        self.createdAt = nil
+    }
+    
+    // Codable initializer
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Decode id, with fallback to new UUID (package might not provide this)
+        if let idString = try? container.decode(String.self, forKey: .id),
+           let uuid = UUID(uuidString: idString) {
+            self.id = uuid
+        } else {
+            // Generate new UUID if not provided (package generates its own activity ID)
+            self.id = UUID()
+        }
+        
+        // Decode required fields with error handling
+        do {
+            self.dropId = try container.decode(String.self, forKey: .dropId)
+            self.dropAddress = try container.decode(String.self, forKey: .dropAddress)
+            self.estimatedValue = try container.decode(String.self, forKey: .estimatedValue)
+        } catch {
+            print("❌ LiveActivitiesAppAttributes: Failed to decode required fields: \(error)")
+            // Provide defaults to prevent crash
+            self.dropId = try container.decodeIfPresent(String.self, forKey: .dropId) ?? ""
+            self.dropAddress = try container.decodeIfPresent(String.self, forKey: .dropAddress) ?? ""
+            self.estimatedValue = try container.decodeIfPresent(String.self, forKey: .estimatedValue) ?? "0.00 TND"
+        }
+        
+        // Optional fields
+        self.transportMode = try? container.decode(String.self, forKey: .transportMode)
+        self.createdAt = try? container.decode(String.self, forKey: .createdAt)
+        
+        print("✅ LiveActivitiesAppAttributes decoded: dropId=\(self.dropId), dropAddress=\(self.dropAddress), estimatedValue=\(self.estimatedValue)")
+    }
+    
+    // Encoding
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id.uuidString, forKey: .id)
+        try container.encode(dropId, forKey: .dropId)
+        try container.encode(dropAddress, forKey: .dropAddress)
+        try container.encode(estimatedValue, forKey: .estimatedValue)
+        try container.encodeIfPresent(transportMode, forKey: .transportMode)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
+    }
+    
+    // CodingKeys for attributes
+    enum CodingKeys: String, CodingKey {
+        case id
+        case dropId
+        case dropAddress
+        case estimatedValue
+        case transportMode
+        case createdAt
+    }
 }
 
 // MARK: - Legacy Collection Navigation Activity (Deprecated - keeping for migration)
@@ -157,7 +345,12 @@ struct UnifiedLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiveActivitiesAppAttributes.self) { context in
             // MARK: - Lock Screen View (Unified)
-            if context.state.activityType == "collection" {
+            // Determine activity type - default to dropTimeline if unknown
+            let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+                ? "dropTimeline" 
+                : context.state.activityType
+            
+            if activityType == "collection" {
                 unifiedCollectionLockScreenView(context: context)
                     .activityBackgroundTint(Color(.systemBackground))
             } else {
@@ -188,9 +381,14 @@ struct UnifiedLiveActivityWidget: Widget {
                 // MARK: - Minimal Presentation
                 minimalView(context: context)
             }
-            .widgetURL(URL(string: context.state.activityType == "collection" 
-                ? "botleji://navigation?dropId=\(context.attributes.dropId)"
-                : "botleji://drop?dropId=\(context.attributes.dropId)"))
+            .widgetURL(URL(string: {
+                let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+                    ? "dropTimeline" 
+                    : context.state.activityType
+                return activityType == "collection" 
+                    ? "botleji://navigation?dropId=\(context.attributes.dropId)"
+                    : "botleji://drop?dropId=\(context.attributes.dropId)"
+            }()))
         }
     }
     
@@ -308,7 +506,11 @@ struct UnifiedLiveActivityWidget: Widget {
     // MARK: - Expanded Presentation Views (Unified)
     @ViewBuilder
     private func expandedLeadingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
-        if context.state.activityType == "collection" {
+        let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+            ? "dropTimeline" 
+            : context.state.activityType
+        
+        if activityType == "collection" {
             unifiedCollectionExpandedLeadingView(context: context)
         } else {
             unifiedDropTimelineExpandedLeadingView(context: context)
@@ -337,7 +539,11 @@ struct UnifiedLiveActivityWidget: Widget {
     
     @ViewBuilder
     private func expandedTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
-        if context.state.activityType == "collection" {
+        let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+            ? "dropTimeline" 
+            : context.state.activityType
+        
+        if activityType == "collection" {
             unifiedCollectionExpandedTrailingView(context: context)
         } else {
             unifiedDropTimelineExpandedTrailingView(context: context)
@@ -356,7 +562,11 @@ struct UnifiedLiveActivityWidget: Widget {
     
     @ViewBuilder
     private func expandedBottomView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
-        if context.state.activityType == "collection" {
+        let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+            ? "dropTimeline" 
+            : context.state.activityType
+        
+        if activityType == "collection" {
             unifiedCollectionExpandedBottomView(context: context)
         } else {
             unifiedDropTimelineExpandedBottomView(context: context)
@@ -451,7 +661,11 @@ struct UnifiedLiveActivityWidget: Widget {
     
     @ViewBuilder
     private func compactTrailingView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
-        if context.state.activityType == "collection" {
+        let activityType = context.state.activityType.isEmpty || context.state.activityType == "unknown" 
+            ? "dropTimeline" 
+            : context.state.activityType
+        
+        if activityType == "collection" {
             Text(context.state.elapsedTime ?? "00:00")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundColor(.appOrange)
@@ -476,6 +690,14 @@ struct UnifiedLiveActivityWidget: Widget {
     // MARK: - Unified Drop Timeline Views
     @ViewBuilder
     private func unifiedDropTimelineLockScreenView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
+        let currentStatus = context.state.status ?? "pending"
+        let currentStatusText = context.state.statusText ?? "Created"
+        let currentCollectorName = context.state.collectorName
+        let currentTimeAgo = context.state.timeAgo ?? "Just now"
+        
+        // Debug: Log when widget re-renders with new state
+        let _ = print("🔄 Widget re-rendering: status=\(currentStatus), statusText=\(currentStatusText), collectorName=\(currentCollectorName ?? "nil"), timeAgo=\(currentTimeAgo), distanceRemaining=\(context.state.distanceRemaining.map { String(format: "%.2f", $0) } ?? "nil")")
+        
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack(alignment: .center, spacing: 10) {
@@ -503,14 +725,14 @@ struct UnifiedLiveActivityWidget: Widget {
             // Status
             HStack(spacing: 8) {
                 Circle()
-                    .fill(statusColorForStatus(context.state.status ?? "pending"))
+                    .fill(statusColorForStatus(currentStatus))
                     .frame(width: 10, height: 10)
-                Text(context.state.statusText ?? "Created")
+                Text(currentStatusText)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(statusColorForStatus(context.state.status ?? "pending"))
+                    .foregroundColor(statusColorForStatus(currentStatus))
                 
-                if let collectorName = context.state.collectorName, !collectorName.isEmpty {
+                if let collectorName = currentCollectorName, !collectorName.isEmpty {
                     Text("• \(collectorName)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -518,14 +740,14 @@ struct UnifiedLiveActivityWidget: Widget {
             }
             
             // Timeline Progress
-            timelineProgressView(status: context.state.status ?? "pending")
+            timelineProgressView(status: currentStatus, distanceRemaining: context.state.distanceRemaining)
             
             // Time Ago
             HStack(spacing: 4) {
                 Image(systemName: "clock")
                     .font(.caption2)
                     .foregroundColor(.secondary)
-                Text(context.state.timeAgo ?? "Just now")
+                Text(currentTimeAgo)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -574,7 +796,7 @@ struct UnifiedLiveActivityWidget: Widget {
     @ViewBuilder
     private func unifiedDropTimelineExpandedBottomView(context: ActivityViewContext<LiveActivitiesAppAttributes>) -> some View {
         VStack(spacing: 6) {
-            timelineProgressView(status: context.state.status ?? "pending")
+            timelineProgressView(status: context.state.status ?? "pending", distanceRemaining: context.state.distanceRemaining)
             
             if let collectorName = context.state.collectorName, !collectorName.isEmpty {
                 HStack(spacing: 4) {
@@ -608,29 +830,64 @@ struct UnifiedLiveActivityWidget: Widget {
     }
     
     @ViewBuilder
-    private func timelineProgressView(status: String) -> some View {
+    private func timelineProgressView(status: String, distanceRemaining: Double? = nil) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
         let statusColorValue = statusColorForStatus(status)
         
-        HStack(spacing: 2) {
-            ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
-                let isActive = isStageActive(status: status, stageIndex: index)
-                let isCompleted = isStageCompleted(status: status, stageIndex: index)
-                
-                HStack(spacing: 2) {
-                    Circle()
-                        .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
-                        .frame(width: 5, height: 5)
-                    
-                    if index < stages.count - 1 {
-                        Rectangle()
-                            .fill(isCompleted ? statusColorValue : Color(.systemGray4))
-                            .frame(height: 2)
-                            .frame(minWidth: 6, maxWidth: .infinity)
+        GeometryReader { geometry in
+            let totalWidth = geometry.size.width
+            let dotWidth: CGFloat = 5
+            let numberOfDots = CGFloat(stages.count)
+            let numberOfLines = numberOfDots - 1
+            let totalDotWidth = dotWidth * numberOfDots
+            let availableWidthForLines = totalWidth - totalDotWidth
+            let lineWidth = numberOfLines > 0 ? availableWidthForLines / numberOfLines : 0
+            
+            ZStack(alignment: .leading) {
+                // Timeline base (dots and lines)
+                HStack(spacing: 0) {
+                    ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
+                        let isActive = isStageActive(status: status, stageIndex: index)
+                        let isCompleted = isStageCompleted(status: status, stageIndex: index)
+                        
+                        // Dot
+                        Circle()
+                            .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
+                            .frame(width: dotWidth, height: dotWidth)
+                        
+                        // Connecting line with calculated equal width
+                        if index < stages.count - 1 {
+                            Rectangle()
+                                .fill(isCompleted ? statusColorValue : Color(.systemGray4))
+                                .frame(width: max(0, lineWidth), height: 2)
+                        }
                     }
+                }
+                
+                // Collector pin (only show between "Accepted" and "Outcome" when collector is on the way)
+                if let distance = distanceRemaining, (status == "accepted" || status == "on_way") {
+                    // Calculate pin position: 0% = at "Accepted" (index 1), 100% = at "Outcome" (index 3)
+                    // We'll use a simple progress calculation: assume max distance of 10km (10000m)
+                    // Progress = 1 - (distance / 10000), clamped between 0 and 1
+                    let maxDistance: Double = 10000.0 // 10km
+                    let progress = max(0, min(1, 1 - (distance / maxDistance)))
+                    
+                    // Position: between dot 1 (Accepted) and dot 3 (Outcome)
+                    // Dot 1 position: dotWidth + lineWidth
+                    // Dot 3 position: (dotWidth * 3) + (lineWidth * 2)
+                    // Pin position: dot1 + (progress * (dot3 - dot1))
+                    let dot1Position = dotWidth + lineWidth
+                    let dot3Position = (dotWidth * 3) + (lineWidth * 2)
+                    let pinPosition = dot1Position + (CGFloat(progress) * (dot3Position - dot1Position))
+                    
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appOrange)
+                        .offset(x: pinPosition - 6) // Center the pin (12/2 = 6)
                 }
             }
         }
+        .frame(height: 12) // Increased height to accommodate pin
     }
     
     private func isStageActive(status: String, stageIndex: Int) -> Bool {
@@ -752,7 +1009,7 @@ struct DropTimelineWidget: Widget {
             }
             
             // Timeline Progress
-            timelineProgressView(status: context.state.status)
+            timelineProgressView(status: context.state.status, distanceRemaining: nil) // DropTimelineWidget doesn't have distanceRemaining yet
             
             // Time Ago
             HStack(spacing: 4) {
@@ -810,7 +1067,7 @@ struct DropTimelineWidget: Widget {
     @ViewBuilder
     private func dropTimelineExpandedBottomView(context: ActivityViewContext<DropTimelineActivityAttributes>) -> some View {
         VStack(spacing: 6) {
-            timelineProgressView(status: context.state.status)
+            timelineProgressView(status: context.state.status, distanceRemaining: nil) // DropTimelineWidget doesn't have distanceRemaining yet
             
             if let collectorName = context.state.collectorName {
                 HStack(spacing: 4) {
@@ -844,29 +1101,64 @@ struct DropTimelineWidget: Widget {
     }
     
     @ViewBuilder
-    private func timelineProgressView(status: String) -> some View {
+    private func timelineProgressView(status: String, distanceRemaining: Double? = nil) -> some View {
         let stages = ["Created", "Accepted", "On his way", "Outcome"]
         let statusColorValue = DropTimelineWidget.statusColorForStatus(status)
         
-        HStack(spacing: 2) {
-            ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
-                let isActive = isStageActive(status: status, stageIndex: index)
-                let isCompleted = isStageCompleted(status: status, stageIndex: index)
-                
-                HStack(spacing: 2) {
-                    Circle()
-                        .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
-                        .frame(width: 5, height: 5)
-                    
-                    if index < stages.count - 1 {
-                        Rectangle()
-                            .fill(isCompleted ? statusColorValue : Color(.systemGray4))
-                            .frame(height: 2)
-                            .frame(minWidth: 6, maxWidth: .infinity)
+        GeometryReader { geometry in
+            let totalWidth = geometry.size.width
+            let dotWidth: CGFloat = 5
+            let numberOfDots = CGFloat(stages.count)
+            let numberOfLines = numberOfDots - 1
+            let totalDotWidth = dotWidth * numberOfDots
+            let availableWidthForLines = totalWidth - totalDotWidth
+            let lineWidth = numberOfLines > 0 ? availableWidthForLines / numberOfLines : 0
+            
+            ZStack(alignment: .leading) {
+                // Timeline base (dots and lines)
+                HStack(spacing: 0) {
+                    ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
+                        let isActive = isStageActive(status: status, stageIndex: index)
+                        let isCompleted = isStageCompleted(status: status, stageIndex: index)
+                        
+                        // Dot
+                        Circle()
+                            .fill(isCompleted ? statusColorValue : (isActive ? statusColorValue : Color(.systemGray4)))
+                            .frame(width: dotWidth, height: dotWidth)
+                        
+                        // Connecting line with calculated equal width
+                        if index < stages.count - 1 {
+                            Rectangle()
+                                .fill(isCompleted ? statusColorValue : Color(.systemGray4))
+                                .frame(width: max(0, lineWidth), height: 2)
+                        }
                     }
+                }
+                
+                // Collector pin (only show between "Accepted" and "Outcome" when collector is on the way)
+                if let distance = distanceRemaining, (status == "accepted" || status == "on_way") {
+                    // Calculate pin position: 0% = at "Accepted" (index 1), 100% = at "Outcome" (index 3)
+                    // We'll use a simple progress calculation: assume max distance of 10km (10000m)
+                    // Progress = 1 - (distance / 10000), clamped between 0 and 1
+                    let maxDistance: Double = 10000.0 // 10km
+                    let progress = max(0, min(1, 1 - (distance / maxDistance)))
+                    
+                    // Position: between dot 1 (Accepted) and dot 3 (Outcome)
+                    // Dot 1 position: dotWidth + lineWidth
+                    // Dot 3 position: (dotWidth * 3) + (lineWidth * 2)
+                    // Pin position: dot1 + (progress * (dot3 - dot1))
+                    let dot1Position = dotWidth + lineWidth
+                    let dot3Position = (dotWidth * 3) + (lineWidth * 2)
+                    let pinPosition = dot1Position + (CGFloat(progress) * (dot3Position - dot1Position))
+                    
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appOrange)
+                        .offset(x: pinPosition - 6) // Center the pin (12/2 = 6)
                 }
             }
         }
+        .frame(height: 12) // Increased height to accommodate pin
     }
     
     private func isStageActive(status: String, stageIndex: Int) -> Bool {

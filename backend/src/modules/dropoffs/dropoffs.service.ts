@@ -333,7 +333,20 @@ export class DropoffsService {
     }).sort({ interactionTime: -1 }).exec();
 
     // Get the dropoff IDs from these interactions
-    const dropoffIds = acceptedInteractions.map(interaction => interaction.dropoffId);
+    // Handle both populated (document) and non-populated (ObjectId) cases
+    const dropoffIds = acceptedInteractions.map(interaction => {
+      const dropoffId = interaction.dropoffId;
+      // If populated, it's a document object - extract _id
+      // If not populated, it's already an ObjectId
+      if (dropoffId && typeof dropoffId === 'object' && '_id' in dropoffId) {
+        return dropoffId._id;
+      }
+      return dropoffId;
+    }).filter(id => id != null); // Filter out any null/undefined values
+
+    if (dropoffIds.length === 0) {
+      return [];
+    }
 
     // Find the corresponding dropoffs that are still ACCEPTED
     const acceptedDropoffs = await this.dropoffModel.find({
@@ -511,12 +524,14 @@ export class DropoffsService {
       const collector = await this.userModel.findById(collectorId).exec();
       const collectorName = collector?.name || 'Collector';
       
+      console.log(`📤 [assignCollector] Preparing to send Live Activity update for dropoff ${id}`);
       await this.sendLiveActivityUpdate(id, {
         status: 'accepted',
         statusText: 'Accepted',
         collectorName: collectorName,
         timeAgo: 'Just now',
       });
+      console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id}`);
     } catch (error) {
       console.error(`❌ Error sending drop accepted notification: ${error}`);
       console.error(`❌ Error details:`, error);
@@ -2640,6 +2655,37 @@ export class DropoffsService {
         });
 
       console.log(`📡 Broadcasted collector location to household user: ${householdUserId}`);
+      
+      // Also send Live Activity update with distance remaining
+      try {
+        const dropoffStatus = dropoff.status;
+        console.log(`📤 [broadcastLocationToHousehold] Dropoff status: ${dropoffStatus}, checking if should send Live Activity update`);
+        
+        if (dropoffStatus === 'ACCEPTED' || dropoffStatus === 'ON_WAY') {
+          const collector = await this.userModel.findById((dropoff as any).currentCollectorId).exec();
+          const collectorName = collector?.name || 'Collector';
+          
+          const statusKey = dropoffStatus.toLowerCase().replace('_', '');
+          const statusText = dropoffStatus === 'ACCEPTED' ? 'Accepted' : 'On his way';
+          
+          console.log(`📤 [broadcastLocationToHousehold] Sending Live Activity update for dropoff ${dropoffId}`);
+          console.log(`📤 [broadcastLocationToHousehold] Status: ${statusKey}, Distance: ${distanceRemaining.toFixed(2)}m`);
+          
+          await this.sendLiveActivityUpdate(dropoffId, {
+            status: statusKey,
+            statusText: statusText,
+            collectorName: collectorName,
+            timeAgo: 'Just now',
+            distanceRemaining: distanceRemaining, // Include distance for pin position
+          });
+          console.log(`✅ [broadcastLocationToHousehold] Live Activity update sent with distance: ${distanceRemaining.toFixed(2)}m`);
+        } else {
+          console.log(`⏭️ [broadcastLocationToHousehold] Skipping Live Activity update - dropoff status is ${dropoffStatus}`);
+        }
+      } catch (error) {
+        console.error('❌ [broadcastLocationToHousehold] Error sending Live Activity update with distance:', error);
+        // Don't throw - this is a non-critical operation
+      }
     } catch (error) {
       console.error('❌ Error broadcasting location to household:', error);
       // Don't throw - this is a non-critical operation
@@ -2712,6 +2758,7 @@ export class DropoffsService {
       statusText: string;
       collectorName?: string;
       timeAgo: string;
+      distanceRemaining?: number; // Distance in meters
     }
   ) {
     try {
@@ -2722,7 +2769,11 @@ export class DropoffsService {
       }).exec();
 
       if (tokens.length === 0) {
-        console.log(`⚠️ No active Live Activity tokens found for dropoff ${dropoffId}`);
+        console.log(`⚠️ [sendLiveActivityUpdate] No active Live Activity tokens found for dropoff ${dropoffId}`);
+        console.log(`⚠️ [sendLiveActivityUpdate] This means either:`);
+        console.log(`   - No Live Activity was started for this dropoff`);
+        console.log(`   - Push token was not sent from Flutter app`);
+        console.log(`   - All tokens were marked as inactive`);
         return;
       }
 
@@ -2734,16 +2785,19 @@ export class DropoffsService {
 
       const event: 'update' | 'end' = isEndEvent ? 'end' : 'update';
 
-      console.log(`📤 Sending Live Activity ${event} to ${tokens.length} token(s) for dropoff ${dropoffId}`);
+      console.log(`📤 [sendLiveActivityUpdate] Sending Live Activity ${event} to ${tokens.length} token(s) for dropoff ${dropoffId}`);
+      console.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(contentState, null, 2));
 
       // Send update/end to each Live Activity token
       for (const token of tokens) {
         try {
+          console.log(`📤 [sendLiveActivityUpdate] Sending to token: ${token.pushToken.substring(0, 20)}... (activityId: ${token.activityId})`);
           const success = await this.fcmService.sendLiveActivityUpdate(
             token.pushToken, 
             contentState,
             event
           );
+          console.log(`✅ [sendLiveActivityUpdate] Push notification ${success ? 'sent successfully' : 'failed'} for token ${token.activityId}`);
 
           // If it's an end event and successful, mark token as inactive
           if (isEndEvent && success) {
