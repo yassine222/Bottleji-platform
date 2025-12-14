@@ -336,13 +336,62 @@ export class DropoffsService {
     // Handle both populated (document) and non-populated (ObjectId) cases
     const dropoffIds = acceptedInteractions.map(interaction => {
       const dropoffId = interaction.dropoffId as any;
-      // If populated, it's a document object - extract _id
-      // If not populated, it's already an ObjectId
-      if (dropoffId && typeof dropoffId === 'object' && '_id' in dropoffId) {
-        return (dropoffId as any)._id;
+      
+      if (!dropoffId) {
+        return null;
       }
-      return dropoffId;
-    }).filter((id): id is any => id != null); // Filter out any null/undefined values
+      
+      // Handle different cases:
+      // 1. Populated document object - extract _id
+      // 2. ObjectId instance - convert to string
+      // 3. ObjectId string (24 hex chars) - use directly
+      // 4. Invalid string (full document stringified) - skip with warning
+      
+      if (typeof dropoffId === 'object') {
+        // Check if it's a populated document (has _id property)
+        if ('_id' in dropoffId) {
+          const id = (dropoffId as any)._id;
+          // Extract the actual ObjectId value
+          if (id && typeof id === 'object' && id.toString) {
+            const idString = id.toString();
+            // Validate it's a proper ObjectId string (24 hex characters)
+            if (/^[0-9a-fA-F]{24}$/.test(idString)) {
+              return idString;
+            }
+          } else if (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)) {
+            return id;
+          }
+        } else {
+          // It's an ObjectId instance - convert to string
+          try {
+            const idString = dropoffId.toString();
+            if (/^[0-9a-fA-F]{24}$/.test(idString)) {
+              return idString;
+            }
+          } catch (e) {
+            console.error(`⚠️ Error converting dropoffId to string: ${e}`);
+          }
+        }
+      } else if (typeof dropoffId === 'string') {
+        // If it's a string, validate it's a proper ObjectId
+        // Check if it looks like a stringified document (contains newlines, etc.)
+        if (dropoffId.includes('\n') || dropoffId.includes('location:') || dropoffId.length > 50) {
+          console.error(`⚠️ Invalid dropoffId format (appears to be stringified document): ${dropoffId.substring(0, 100)}...`);
+          return null; // Skip invalid entries
+        }
+        // Validate it's a proper ObjectId string (24 hex characters)
+        if (/^[0-9a-fA-F]{24}$/.test(dropoffId)) {
+          return dropoffId;
+        } else {
+          console.error(`⚠️ Invalid dropoffId format (not a valid ObjectId): ${dropoffId}`);
+          return null;
+        }
+      }
+      
+      // If we get here, something is wrong
+      console.error(`⚠️ Unexpected dropoffId type: ${typeof dropoffId}, value: ${dropoffId}`);
+      return null;
+    }).filter((id): id is string => id != null && typeof id === 'string'); // Filter out null/undefined and ensure strings
 
     if (dropoffIds.length === 0) {
       return [];
