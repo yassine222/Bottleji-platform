@@ -27,18 +27,11 @@ export class APNsService implements OnModuleInit {
         return;
       }
 
-      // Configure APNs provider options
-      const options: apn.ProviderOptions = {
-        token: {
-          keyId: keyId,
-          teamId: teamId,
-        },
-        production: isProduction,
-      };
-
-      // Set key from file path or content
+      // Get key content first
+      let key: string | undefined;
+      
       if (keyContent) {
-        options.token.key = keyContent.replace(/\\n/g, '\n');
+        key = keyContent.replace(/\\n/g, '\n');
         this.logger.log('✅ Using APNs key from APNS_KEY_CONTENT environment variable');
       } else if (keyPath) {
         const fs = require('fs');
@@ -48,7 +41,7 @@ export class APNsService implements OnModuleInit {
           : path.join(process.cwd(), keyPath);
         
         if (fs.existsSync(fullKeyPath)) {
-          options.token.key = fs.readFileSync(fullKeyPath, 'utf8');
+          key = fs.readFileSync(fullKeyPath, 'utf8');
           this.logger.log(`✅ Using APNs key from file: ${fullKeyPath}`);
         } else {
           this.logger.error(`❌ APNs key file not found: ${fullKeyPath}`);
@@ -58,6 +51,21 @@ export class APNsService implements OnModuleInit {
         this.logger.error('❌ APNs key not provided. Set APNS_KEY_PATH or APNS_KEY_CONTENT');
         return;
       }
+
+      if (!key) {
+        this.logger.error('❌ APNs key is empty');
+        return;
+      }
+
+      // Configure APNs provider options
+      const options: apn.ProviderOptions = {
+        token: {
+          keyId: keyId,
+          teamId: teamId,
+          key: key, // Required property
+        },
+        production: isProduction,
+      };
 
       // Initialize APNs provider
       this.apnProvider = new apn.Provider(options);
@@ -105,7 +113,8 @@ export class APNsService implements OnModuleInit {
 
       // Set Live Activity specific properties
       notification.topic = bundleId; // Widget extension bundle ID
-      notification.pushType = 'liveactivity'; // Required for Live Activities
+      // Use type assertion for pushType (may not be in type definitions but required for Live Activities)
+      (notification as any).pushType = 'liveactivity'; // Required for Live Activities
       notification.priority = 10; // High priority
       notification.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
 
@@ -125,8 +134,8 @@ export class APNsService implements OnModuleInit {
         'content-state': liveActivityContentState,
       };
 
-      // Convert hex string token to Buffer
-      const tokenBuffer = Buffer.from(pushToken.replace(/\s/g, ''), 'hex');
+      // Convert hex string token to string (apn package expects string or string[])
+      const tokenString = pushToken.replace(/\s/g, '');
 
       this.logger.log(`📤 [sendLiveActivityUpdate] Sending via direct APNs`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Topic: ${bundleId}`);
@@ -134,8 +143,8 @@ export class APNsService implements OnModuleInit {
       this.logger.log(`📤 [sendLiveActivityUpdate] Token (first 20 chars): ${pushToken.substring(0, 20)}...`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(liveActivityContentState, null, 2));
 
-      // Send notification
-      const result = await this.apnProvider.send(notification, tokenBuffer);
+      // Send notification - apn package expects string or string[]
+      const result = await this.apnProvider.send(notification, tokenString);
 
       if (result.sent.length > 0) {
         this.logger.log(`✅ [sendLiveActivityUpdate] Live Activity ${event} sent successfully`);
@@ -146,11 +155,17 @@ export class APNsService implements OnModuleInit {
       if (result.failed.length > 0) {
         const failure = result.failed[0];
         this.logger.error(`❌ [sendLiveActivityUpdate] Failed to send Live Activity update`);
-        this.logger.error(`❌ [sendLiveActivityUpdate] Error: ${failure.response?.reason || 'Unknown error'}`);
-        this.logger.error(`❌ [sendLiveActivityUpdate] Status: ${failure.response?.status || 'Unknown'}`);
+        
+        // Access response properties safely
+        const response = failure.response as any;
+        const reason = response?.reason || 'Unknown error';
+        const status = response?.status || 'Unknown';
+        
+        this.logger.error(`❌ [sendLiveActivityUpdate] Error: ${reason}`);
+        this.logger.error(`❌ [sendLiveActivityUpdate] Status: ${status}`);
 
         // Handle invalid token errors
-        if (failure.response?.status === 400 && failure.response?.reason === 'BadDeviceToken') {
+        if (status === 400 && reason === 'BadDeviceToken') {
           this.logger.warn(`⚠️ [sendLiveActivityUpdate] Invalid Live Activity push token: ${pushToken.substring(0, 20)}...`);
           this.logger.warn(`⚠️ [sendLiveActivityUpdate] Token should be marked as inactive in the database`);
         }
