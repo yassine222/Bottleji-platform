@@ -227,6 +227,43 @@ class DropRepository {
     }
   }
 
+  // Get a single drop by ID
+  Future<Drop?> getDropById(String dropId) async {
+    try {
+      final response = await _dio.get('/dropoffs/$dropId');  // Updated endpoint path
+      if (response.data == null) {
+        return null;
+      }
+      return Drop.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 404) {
+        return null;
+      }
+      throw Exception('Failed to get drop by ID: $e');
+    }
+  }
+
+  // Get active collection attempt for a drop (to get collector ID)
+  Future<Map<String, dynamic>?> getActiveCollectionAttempt(String dropId) async {
+    try {
+      final response = await _dio.get('/dropoffs/$dropId/attempts');
+      if (response.data is! List) {
+        return null;
+      }
+      final attempts = response.data as List;
+      final activeAttempt = attempts.firstWhere(
+        (a) => a['status'] == 'active',
+        orElse: () => null,
+      );
+      return activeAttempt != null ? Map<String, dynamic>.from(activeAttempt) : null;
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 404) {
+        return null;
+      }
+      return null; // Return null on error, don't throw
+    }
+  }
+
   // Update drop status
   Future<Drop> updateDropStatus(String dropId, DropStatus status) async {
     try {

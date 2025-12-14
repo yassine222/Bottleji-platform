@@ -349,9 +349,48 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
   }
 
   /// Handle real-time drop status updates from WebSocket notifications
-  void handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) {
+  Future<void> handleDropStatusUpdate(String dropId, String status, Map<String, dynamic> data) async {
     debugPrint('🔄 DropsController: Handling drop status update - $status for drop $dropId');
     
+    // For critical status changes (especially drop_accepted), fetch the full drop from backend
+    // to ensure we have all the latest data (collector info, timestamps, etc.)
+    if (status == 'drop_accepted') {
+      debugPrint('🔄 DropsController: Fetching full drop data from backend for drop_accepted');
+      try {
+        // Fetch the updated drop from backend
+        final updatedDrop = await _repository.getDropById(dropId);
+        if (updatedDrop != null) {
+          debugPrint('✅ DropsController: Fetched updated drop from backend: ${updatedDrop.status.name}');
+          
+          // Update the drop in the list
+          state.whenData((drops) {
+            final updatedDrops = drops.map((drop) {
+              if (drop.id == dropId) {
+                return updatedDrop;
+              }
+              return drop;
+            }).toList();
+            
+            state = AsyncValue.data(updatedDrops);
+            debugPrint('🔄 DropsController: Drop list updated with full drop data from backend');
+            
+            // Update drop timeline Live Activity (household mode only)
+            debugPrint('🔄 DropsController: Updating Live Activity for drop ${updatedDrop.id} with status ${updatedDrop.status.name}');
+            _updateDropTimelineActivity(updatedDrop, data).catchError((e) {
+              debugPrint('❌ Error updating Live Activity from handleDropStatusUpdate: $e');
+            });
+          });
+          
+          return;
+        } else {
+          debugPrint('⚠️ DropsController: Could not fetch drop from backend, falling back to local update');
+        }
+      } catch (e) {
+        debugPrint('❌ DropsController: Error fetching drop from backend: $e, falling back to local update');
+      }
+    }
+    
+    // Fallback: Update status locally for other status changes or if backend fetch fails
     state.whenData((drops) {
       Drop? updatedDrop;
       final updatedDrops = drops.map((drop) {
@@ -376,8 +415,11 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
           }
           
           // Create updated drop with new status
-          updatedDrop = drop.copyWith(status: newStatus);
-          debugPrint('🔄 DropsController: Updated drop $dropId status to ${newStatus.name}');
+          updatedDrop = drop.copyWith(
+            status: newStatus,
+            modifiedAt: DateTime.now(), // Update modified timestamp
+          );
+          debugPrint('🔄 DropsController: Updated drop $dropId status to ${newStatus.name} (local update)');
           
           return updatedDrop!;
         }
@@ -387,15 +429,10 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
       state = AsyncValue.data(updatedDrops);
       debugPrint('🔄 DropsController: Drop list updated with new status');
       
-      // Update drop timeline Live Activity (household mode only) - fire and forget async operation
-      if (updatedDrop != null) {
-        debugPrint('🔄 DropsController: Updating Live Activity for drop ${updatedDrop!.id} with status ${updatedDrop!.status.name}');
-        _updateDropTimelineActivity(updatedDrop!, data).catchError((e) {
-          debugPrint('❌ Error updating Live Activity from handleDropStatusUpdate: $e');
-        });
-      } else {
-        debugPrint('⚠️ DropsController: No updated drop found, skipping Live Activity update');
-      }
+      // Note: Live Activity updates are handled via APNs push notifications from the backend
+      // The backend sends push notifications when drop status changes (drop_accepted, drop_collected, etc.)
+      // We don't need to update locally here - the push notification will update the widget
+      debugPrint('🔄 DropsController: Live Activity will be updated via push notification from backend');
     });
   }
   
@@ -419,13 +456,35 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
         if (notificationData != null && notificationData['collectorName'] != null) {
           collectorName = notificationData['collectorName'] as String;
           debugPrint('🔄 _updateDropTimelineActivity: Got collector name from notification: $collectorName');
-        } else if (notificationData != null && notificationData['collectorId'] != null) {
-          // Fetch collector name by ID
-          final collectorId = notificationData['collectorId'] as String;
-          debugPrint('🔄 _updateDropTimelineActivity: Fetching collector name for ID: $collectorId');
-          final collectorInfo = await getUserInfo(collectorId);
-          collectorName = collectorInfo?['name'] as String?;
-          debugPrint('🔄 _updateDropTimelineActivity: Fetched collector name: $collectorName');
+        } else {
+          // Try to get collector ID from notification data
+          String? collectorId;
+          if (notificationData != null && notificationData['collectorId'] != null) {
+            collectorId = notificationData['collectorId'] as String;
+            debugPrint('🔄 _updateDropTimelineActivity: Got collector ID from notification: $collectorId');
+          } else {
+            // Fetch collector ID from active CollectionAttempt
+            debugPrint('🔄 _updateDropTimelineActivity: No collector ID in notification, fetching from active CollectionAttempt');
+            try {
+              final activeAttempt = await _repository.getActiveCollectionAttempt(drop.id);
+              if (activeAttempt != null && activeAttempt['collectorId'] != null) {
+                collectorId = activeAttempt['collectorId'].toString();
+                debugPrint('🔄 _updateDropTimelineActivity: Got collector ID from active attempt: $collectorId');
+              }
+            } catch (e) {
+              debugPrint('⚠️ _updateDropTimelineActivity: Error fetching active attempt: $e');
+            }
+          }
+          
+          // Fetch collector name by ID if we have it
+          if (collectorId != null) {
+            debugPrint('🔄 _updateDropTimelineActivity: Fetching collector name for ID: $collectorId');
+            final collectorInfo = await getUserInfo(collectorId);
+            collectorName = collectorInfo?['name'] as String?;
+            debugPrint('🔄 _updateDropTimelineActivity: Fetched collector name: $collectorName');
+          } else {
+            debugPrint('⚠️ _updateDropTimelineActivity: No collector ID available, collector name will be empty');
+          }
         }
       }
       
@@ -439,12 +498,19 @@ class DropsController extends StateNotifier<AsyncValue<List<Drop>>> {
       } else {
         // Update activity for intermediate states
         debugPrint('🔄 _updateDropTimelineActivity: Updating Live Activity with status: $statusText, collector: $collectorName');
+        // Get distance remaining if available from notification data
+        double? distanceRemaining;
+        if (notificationData != null && notificationData['distanceRemaining'] != null) {
+          distanceRemaining = (notificationData['distanceRemaining'] as num).toDouble();
+        }
+        
         await liveActivityService.updateDropTimelineActivity(
           dropId: drop.id,
           status: statusKey,
           statusText: statusText,
           collectorName: collectorName,
           timeAgo: LiveActivitiesPackageService.formatTimeAgo(drop.modifiedAt),
+          distanceRemaining: distanceRemaining,
         );
         debugPrint('✅ _updateDropTimelineActivity: Live Activity update completed');
       }

@@ -644,7 +644,7 @@ export class DropoffsService {
         status: 'collected',
         statusText: 'Collected',
         timeAgo: 'Just now',
-      });
+      }, 'end'); // Explicitly pass 'end' event type
       console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
     } catch (error) {
       console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
@@ -724,7 +724,7 @@ export class DropoffsService {
             status: 'collected',
             statusText: 'Collected',
             timeAgo: 'Just now',
-          });
+          }, 'end'); // Explicitly pass 'end' event type
           console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
         } catch (error) {
           console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
@@ -894,7 +894,7 @@ export class DropoffsService {
           status: 'cancelled',
           statusText: 'Cancelled',
           timeAgo: 'Just now',
-        });
+        }, 'end'); // Explicitly pass 'end' event type
       } catch (error) {
         console.error(`❌ Error sending Live Activity update for cancelled drop: ${error}`);
       }
@@ -1135,7 +1135,7 @@ export class DropoffsService {
               status: 'expired',
               statusText: 'Expired',
               timeAgo: 'Just now',
-            });
+            }, 'end'); // Explicitly pass 'end' event type
           } catch (error) {
             console.error(`❌ Error sending Live Activity update for expired drop: ${error}`);
           }
@@ -2738,14 +2738,23 @@ export class DropoffsService {
         console.log(`📤 [broadcastLocationToHousehold] Dropoff status: ${dropoffStatus}, checking if should send Live Activity update`);
         
         if (dropoffStatus === DropoffStatus.ACCEPTED) {
-          const collector = await this.userModel.findById((dropoff as any).currentCollectorId).exec();
-          const collectorName = collector?.name || 'Collector';
+          // Get collector ID from the active CollectionAttempt
+          const activeAttempt = await this.collectionAttemptModel.findOne({
+            dropoffId: dropoffId,
+            status: 'active'
+          }).exec();
+          
+          let collectorName = 'Collector';
+          if (activeAttempt) {
+            const collector = await this.userModel.findById(activeAttempt.collectorId).exec();
+            collectorName = collector?.name || 'Collector';
+          }
           
           const statusKey = dropoffStatus.toLowerCase();
           const statusText = 'Accepted';
           
           console.log(`📤 [broadcastLocationToHousehold] Sending Live Activity update for dropoff ${dropoffId}`);
-          console.log(`📤 [broadcastLocationToHousehold] Status: ${statusKey}, Distance: ${distanceRemaining.toFixed(2)}m`);
+          console.log(`📤 [broadcastLocationToHousehold] Status: ${statusKey}, Distance: ${distanceRemaining.toFixed(2)}m, Collector: ${collectorName}`);
           
           await this.sendLiveActivityUpdate(dropoffId, {
             status: statusKey,
