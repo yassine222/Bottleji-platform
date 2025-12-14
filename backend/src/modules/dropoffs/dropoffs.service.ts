@@ -644,7 +644,7 @@ export class DropoffsService {
         status: 'collected',
         statusText: 'Collected',
         timeAgo: 'Just now',
-      }, 'end'); // Explicitly pass 'end' event type
+      }); // Event type is determined automatically from status
       console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
     } catch (error) {
       console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
@@ -724,7 +724,7 @@ export class DropoffsService {
             status: 'collected',
             statusText: 'Collected',
             timeAgo: 'Just now',
-          }, 'end'); // Explicitly pass 'end' event type
+          }); // Event type is determined automatically from status
           console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
         } catch (error) {
           console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
@@ -894,7 +894,7 @@ export class DropoffsService {
           status: 'cancelled',
           statusText: 'Cancelled',
           timeAgo: 'Just now',
-        }, 'end'); // Explicitly pass 'end' event type
+        }); // Event type is determined automatically from status
       } catch (error) {
         console.error(`❌ Error sending Live Activity update for cancelled drop: ${error}`);
       }
@@ -1135,7 +1135,7 @@ export class DropoffsService {
               status: 'expired',
               statusText: 'Expired',
               timeAgo: 'Just now',
-            }, 'end'); // Explicitly pass 'end' event type
+            }); // Event type is determined automatically from status
           } catch (error) {
             console.error(`❌ Error sending Live Activity update for expired drop: ${error}`);
           }
