@@ -2843,9 +2843,26 @@ export class DropoffsService {
     
     // After storing the token, check if there's a pending status update to send
     // This handles the case where assignCollector was called before the token was stored
+    // IMPORTANT: Only send update if status is ACCEPTED, not if it's already COLLECTED or other final states
     try {
       const currentDropoff = await this.dropoffModel.findById(dropoffId).exec();
-      if (currentDropoff && currentDropoff.status === DropoffStatus.ACCEPTED) {
+      if (!currentDropoff) {
+        console.log(`⚠️ [storeLiveActivityToken] Dropoff not found: ${dropoffId}`);
+        return token;
+      }
+      
+      // Only send update if status is ACCEPTED - never send if already in a final state
+      const isFinalState = 
+        currentDropoff.status === DropoffStatus.COLLECTED ||
+        currentDropoff.status === DropoffStatus.CANCELLED ||
+        currentDropoff.status === DropoffStatus.EXPIRED;
+      
+      if (isFinalState) {
+        console.log(`ℹ️ [storeLiveActivityToken] Dropoff status is ${currentDropoff.status} (final state), skipping update`);
+        return token;
+      }
+      
+      if (currentDropoff.status === DropoffStatus.ACCEPTED) {
         console.log(`🔄 [storeLiveActivityToken] Dropoff status is ${currentDropoff.status}, sending Live Activity update now that token is stored`);
         
         let collectorName = 'Collector';
@@ -2862,9 +2879,14 @@ export class DropoffsService {
             collectorName = attemptCollector.name;
           }
         } else {
-          // Fallback to collectedBy if available
-          if (currentDropoff.collectedBy) {
-            const collector = await this.userModel.findById(currentDropoff.collectedBy).exec();
+          // Try to get collector from accepted interaction
+          const acceptedInteraction = await this.interactionModel.findOne({
+            dropoffId: dropoffId,
+            interactionType: InteractionType.ACCEPTED,
+          }).sort({ interactionTime: -1 }).exec();
+          
+          if (acceptedInteraction) {
+            const collector = await this.userModel.findById(acceptedInteraction.collectorId).exec();
             if (collector?.name) {
               collectorName = collector.name;
             }
@@ -2872,12 +2894,14 @@ export class DropoffsService {
         }
         
         await this.sendLiveActivityUpdate(dropoffId, {
-          status: currentDropoff.status,
+          status: 'accepted',
           statusText: 'Accepted',
           collectorName: collectorName,
           timeAgo: 'Just now',
         });
-        console.log(`✅ [storeLiveActivityToken] Sent initial Live Activity update for ${currentDropoff.status} dropoff`);
+        console.log(`✅ [storeLiveActivityToken] Sent initial Live Activity update for accepted dropoff`);
+      } else {
+        console.log(`ℹ️ [storeLiveActivityToken] Dropoff status is ${currentDropoff.status}, skipping update (only send for ACCEPTED status)`);
       }
     } catch (error) {
       console.error(`❌ [storeLiveActivityToken] Error sending initial update: ${error}`);
@@ -2924,6 +2948,7 @@ export class DropoffsService {
         console.log(`   - No Live Activity was started for this dropoff`);
         console.log(`   - Push token was not sent from Flutter app`);
         console.log(`   - All tokens were marked as inactive`);
+        console.log(`ℹ️ [sendLiveActivityUpdate] Update will be sent automatically when token is stored`);
         return;
       }
 
