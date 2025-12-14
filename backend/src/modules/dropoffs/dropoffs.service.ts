@@ -587,6 +587,19 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
+    // Send Live Activity update (end event)
+    try {
+      console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
+      await this.sendLiveActivityUpdate(id, {
+        status: 'collected',
+        statusText: 'Collected',
+        timeAgo: 'Just now',
+      });
+      console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
+    } catch (error) {
+      console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
+    }
+
     // Award points to collector for successful collection
     let rewardResult: any = null;
     try {
@@ -654,9 +667,22 @@ export class DropoffsService {
              totalDropsCreated: householdRewardResult.totalDropsCreated
            });
 
-         // Send combined notification for drop collected + rewards
-         if (householdRewardResult.tierUpgraded) {
-           const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
+        // Send Live Activity update (end event) BEFORE sending notifications
+        try {
+          console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
+          await this.sendLiveActivityUpdate(id, {
+            status: 'collected',
+            statusText: 'Collected',
+            timeAgo: 'Just now',
+          });
+          console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
+        } catch (error) {
+          console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
+        }
+
+        // Send combined notification for drop collected + rewards
+        if (householdRewardResult.tierUpgraded) {
+          const householdUserId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
            this.notificationsGateway.sendNotificationToUser(householdUserId, {
              type: 'drop_collected_with_tier_upgrade',
              title: '🏠 Drop Collected & Tier Upgraded!',

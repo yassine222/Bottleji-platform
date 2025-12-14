@@ -294,12 +294,14 @@ export class FCMService implements OnModuleInit {
       };
 
       // Build APNs payload for Live Activity
-      const apnsPayload = {
+      // IMPORTANT: For Live Activities, 'content-state' must be at ROOT level, not nested in 'aps'
+      // Firebase Admin SDK will merge this with the aps object
+      const apnsPayload: any = {
         aps: {
           timestamp: Math.floor(Date.now() / 1000), // Unix timestamp in seconds
           event: event,
-          'content-state': liveActivityContentState,
         },
+        'content-state': liveActivityContentState, // At root level for ActivityKit
       };
 
       // Create Firebase message with APNs-specific configuration
