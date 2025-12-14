@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Dropoff } from './schemas/dropoff.schema';
 import { CollectorInteraction } from './schemas/collector-interaction.schema';
 import { CollectionAttempt } from './schemas/collection-attempt.schema';
@@ -14,6 +14,7 @@ import { User } from '../users/schemas/user.schema';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FCMService } from '../notifications/fcm.service';
+import { APNsService } from '../notifications/apns.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { EarningsSessionService } from '../earnings/earnings-session.service';
 
@@ -30,6 +31,7 @@ export class DropoffsService {
     private notificationsGateway: NotificationsGateway,
     private readonly notificationsService: NotificationsService,
     private readonly fcmService: FCMService,
+    private readonly apnsService: APNsService,
     private readonly rewardsService: RewardsService,
     @Inject(forwardRef(() => EarningsSessionService))
     private readonly earningsSessionService: EarningsSessionService,
@@ -2810,25 +2812,34 @@ export class DropoffsService {
    * Store Live Activity push token
    */
   async storeLiveActivityToken(dropoffId: string, activityId: string, pushToken: string) {
+    console.log(`📥 [storeLiveActivityToken] Received token for dropoffId=${dropoffId}, activityId=${activityId}`);
+    
     const dropoff = await this.dropoffModel.findById(dropoffId).exec();
     if (!dropoff) {
+      console.error(`❌ [storeLiveActivityToken] Dropoff not found: ${dropoffId}`);
       throw new NotFoundException('Dropoff not found');
     }
 
     // Upsert the token (update if exists, create if not)
+    // Convert string dropoffId to ObjectId if needed
+    const dropoffObjectId = typeof dropoffId === 'string' ? new Types.ObjectId(dropoffId) : dropoffId;
+    const userIdObjectId = typeof dropoff.userId === 'string' ? new Types.ObjectId(dropoff.userId) : dropoff.userId;
+    
     const token = await this.liveActivityTokenModel.findOneAndUpdate(
-      { dropoffId, activityId },
+      { dropoffId: dropoffObjectId, activityId },
       {
-        dropoffId,
+        dropoffId: dropoffObjectId,
         activityId,
         pushToken,
-        userId: dropoff.userId,
+        userId: userIdObjectId,
+        isActive: true, // Explicitly set to active
         updatedAt: new Date(),
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     ).exec();
 
-    console.log(`✅ Live Activity push token stored: dropoffId=${dropoffId}, activityId=${activityId}`);
+    console.log(`✅ [storeLiveActivityToken] Live Activity push token stored: dropoffId=${dropoffId}, activityId=${activityId}, isActive=${token.isActive}`);
+    console.log(`✅ [storeLiveActivityToken] Token saved with _id: ${token._id}`);
     return token;
   }
 
@@ -2848,10 +2859,20 @@ export class DropoffsService {
   ) {
     try {
       // Find all active Live Activity tokens for this dropoff
+      // Convert string dropoffId to ObjectId if needed (Mongoose can handle string, but explicit is safer)
+      const dropoffObjectId = typeof dropoffId === 'string' ? new Types.ObjectId(dropoffId) : dropoffId;
+      console.log(`🔍 [sendLiveActivityUpdate] Searching for tokens with dropoffId: ${dropoffId} (ObjectId: ${dropoffObjectId})`);
       const tokens = await this.liveActivityTokenModel.find({ 
-        dropoffId,
-        isActive: { $ne: false } // Only active tokens
+        dropoffId: dropoffObjectId,
+        isActive: { $ne: false } // Only active tokens (true or undefined/null)
       }).exec();
+      
+      console.log(`🔍 [sendLiveActivityUpdate] Found ${tokens.length} token(s) for dropoff ${dropoffId}`);
+      if (tokens.length > 0) {
+        tokens.forEach((token, index) => {
+          console.log(`   Token ${index + 1}: activityId=${token.activityId}, isActive=${token.isActive}, _id=${token._id}`);
+        });
+      }
 
       if (tokens.length === 0) {
         console.log(`⚠️ [sendLiveActivityUpdate] No active Live Activity tokens found for dropoff ${dropoffId}`);
@@ -2877,7 +2898,8 @@ export class DropoffsService {
       for (const token of tokens) {
         try {
           console.log(`📤 [sendLiveActivityUpdate] Sending to token: ${token.pushToken.substring(0, 20)}... (activityId: ${token.activityId})`);
-          const success = await this.fcmService.sendLiveActivityUpdate(
+          // Use direct APNs for Live Activity updates
+          const success = await this.apnsService.sendLiveActivityUpdate(
             token.pushToken, 
             contentState,
             event

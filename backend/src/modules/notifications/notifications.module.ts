@@ -4,6 +4,7 @@ import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { NotificationsGateway } from './notifications.gateway';
 import { FCMService } from './fcm.service';
+import { APNsService } from './apns.service';
 import { Notification, NotificationSchema } from './schemas/notification.schema';
 import { UsersModule } from '../users/users.module';
 import { DropoffsModule } from '../dropoffs/dropoffs.module';
@@ -27,7 +28,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsGateway, FCMService],
-  exports: [NotificationsService, NotificationsGateway, FCMService],
+  providers: [NotificationsService, NotificationsGateway, FCMService, APNsService],
+  exports: [NotificationsService, NotificationsGateway, FCMService, APNsService],
 })
 export class NotificationsModule {}
