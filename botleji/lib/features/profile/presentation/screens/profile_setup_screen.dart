@@ -561,6 +561,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // Phone-registered users can edit email (to correct it if wrong)
     // Email/password users cannot edit email (already verified during signup)
     
+    // Calculate email verification status once (check both isVerified and isEmailVerified)
+    final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+    
     // Primary check: registeredWithPhone flag
     // If user registered with phone, email is editable
     if (user?.registeredWithPhone == true) {
@@ -570,8 +573,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     
     // If email is verified AND user didn't register with phone, it's an email/password user
     // Email/password users cannot edit email (it was verified during signup)
-    // Check both isVerified (for old users) and isEmailVerified
-    final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
     if (emailIsVerified && user?.registeredWithPhone != true) {
       print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) and user did not register with phone - email/password user - read-only');
       return false;
@@ -592,7 +593,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
       
       // If email is verified, it's likely an email/password user (don't allow edit)
-      final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
       if (emailIsVerified) {
         print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) - email/password user - read-only');
         return false;
@@ -610,7 +610,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     // Default: if we can't determine, be conservative
     // If email is verified, don't allow edit (likely email/password user)
     // Otherwise, allow edit (might be phone user)
-    final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
     if (emailIsVerified) {
       print('📧 _canEditEmail: Email is verified (isVerified=${user?.isVerified}, isEmailVerified=${user?.isEmailVerified}) - defaulting to read-only');
       return false;
@@ -1778,6 +1777,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                             // For phone users, check isEmailVerified
                                             // Use isVerified first, fallback to isEmailVerified
                                             final isEmailVerified = (user!.isVerified ?? false) || (user!.isEmailVerified ?? false);
+                                            print('📧 Email verification check: isVerified=${user!.isVerified}, isEmailVerified=${user!.isEmailVerified}, result=$isEmailVerified');
                                             return Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                               decoration: BoxDecoration(
@@ -1901,11 +1901,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                     },
                                   ),
                                   // Show verification message for unverified email
-                                  // Show verification message for unverified email
                                   // Check both isVerified (for old users) and isEmailVerified
-                                  final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
-                                  if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_') && !emailIsVerified)
-                                    Padding(
+                                  Builder(
+                                    builder: (context) {
+                                      final emailIsVerified = (user?.isVerified ?? false) || (user?.isEmailVerified ?? false);
+                                      if (!widget.isNewUserSetup && user?.email != null && user!.email!.isNotEmpty && !user.email!.startsWith('phone_') && !emailIsVerified) {
+                                        return Padding(
                                           padding: const EdgeInsets.only(top: 8.0),
                                           child: Row(
                                             children: [
@@ -1917,7 +1918,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  'Please verify your email address to receive important notifications.',
+                                                  'Please verify your email address.',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.orange,
@@ -1940,10 +1941,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                               ),
                                             ],
                                           ),
-                                        ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
                               
                               // Phone Field - Only show if not already verified from phone sign-in
                               if (!(widget.isPhoneVerified && widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty))
@@ -2341,6 +2344,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               // Address Field
                               _buildAddressField(context, theme),
                             ],
+                          )],
+
                           ),
                         ),
                       ),
@@ -2538,80 +2543,97 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   
 
 
-  void _showEmailVerificationDialog(BuildContext context, UserData user) {
+  void _showEmailVerificationDialog(BuildContext context, UserData user) async {
     final otpController = TextEditingController();
     bool isVerifying = false;
     bool isResending = false;
+    
+    // Automatically send verification email when dialog opens
+    final authRepo = ref.read(authRepositoryProvider);
+    try {
+      await authRepo.resendEmailVerification();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification code sent to ${user.email}')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send code: $e')),
+        );
+      }
+    }
     
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          title: Text(
-            'Verify Email',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Enter the verification code sent to ${user.email}',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: otpController,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                decoration: InputDecoration(
-                  labelText: 'Verification Code',
-                  hintText: 'Enter 6-digit code',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: Text(
+              'Verify Email',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enter the verification code sent to ${user.email}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    fontSize: 14,
                   ),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surface,
                 ),
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-              ),
-              const SizedBox(height: 12),
-              if (isResending)
-                Center(
-                  child: CircularProgressIndicator(),
-                )
-              else
-                TextButton(
-                  onPressed: () async {
-                    setDialogState(() {
-                      isResending = true;
-                    });
-                  try {
-                    final authRepo = ref.read(authRepositoryProvider);
-                    await authRepo.resendEmailVerification();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Verification code resent!')),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to resend code: $e')),
-                        );
-                      }
-                    } finally {
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: InputDecoration(
+                    labelText: 'Verification Code',
+                    hintText: 'Enter 6-digit code',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                const SizedBox(height: 12),
+                if (isResending)
+                  Center(
+                    child: CircularProgressIndicator(),
+                  )
+                else
+                  TextButton(
+                    onPressed: () async {
                       setDialogState(() {
-                        isResending = false;
+                        isResending = true;
                       });
-                    }
-                  },
-                  child: Text('Resend Code'),
-                ),
+                    try {
+                      final authRepo = ref.read(authRepositoryProvider);
+                      await authRepo.resendEmailVerification();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Verification code resent!')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to resend code: $e')),
+                          );
+                        }
+                      } finally {
+                        setDialogState(() {
+                          isResending = false;
+                        });
+                      }
+                    },
+                    child: Text('Resend Code'),
+                  ),
             ],
           ),
           actions: [

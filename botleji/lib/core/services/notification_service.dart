@@ -73,6 +73,11 @@ class NotificationPayload {
 }
 
 class NotificationService extends ChangeNotifier {
+  // Singleton instance
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+  
   // Removed unused _namespace
   
   IO.Socket? _socket;

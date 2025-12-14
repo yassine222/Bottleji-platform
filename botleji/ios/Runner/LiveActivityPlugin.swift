@@ -1,10 +1,15 @@
+//
+//  LiveActivityPlugin.swift
+//  Runner
+//
+//  Flutter MethodChannel plugin for Live Activities
+//  Follows the article's implementation pattern
+//
+
 import Flutter
 import UIKit
 
-@available(iOS 16.1, *)
 public class LiveActivityPlugin: NSObject, FlutterPlugin {
-    private let liveActivityManager = LiveActivityManager.shared
-    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
             name: "com.botleji/live_activity",
@@ -15,183 +20,67 @@ public class LiveActivityPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        switch call.method {
-        case "isActivityKitAvailable":
-            if #available(iOS 16.1, *) {
-                result(liveActivityManager.isActivityKitAvailable())
-            } else {
-                result(false)
-            }
+        if #available(iOS 16.2, *) {
+            let manager = LiveActivityManager.shared
             
-        case "startActivity":
-            guard let args = call.arguments as? [String: Any],
-                  let dropId = args["dropId"] as? String,
-                  let dropAddress = args["dropAddress"] as? String,
-                  let elapsedTime = args["elapsedTime"] as? String,
-                  let distance = args["distance"] as? String,
-                  let eta = args["eta"] as? String,
-                  let transportMode = args["transportMode"] as? String,
-                  let estimatedValue = args["estimatedValue"] as? String,
-                  let progressPercentage = args["progressPercentage"] as? Int else {
-                result(FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Missing required arguments",
-                    details: nil
-                ))
-                return
-            }
-            
-            if #available(iOS 16.1, *) {
-                liveActivityManager.startActivity(
-                    dropId: dropId,
-                    dropAddress: dropAddress,
-                    elapsedTime: elapsedTime,
-                    distance: distance,
-                    eta: eta,
-                    transportMode: transportMode,
-                    estimatedValue: estimatedValue,
-                    progressPercentage: progressPercentage
-                )
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
-            }
-            
-        case "updateActivity":
-            guard let args = call.arguments as? [String: Any],
-                  let elapsedTime = args["elapsedTime"] as? String,
-                  let distance = args["distance"] as? String,
-                  let eta = args["eta"] as? String,
-                  let progressPercentage = args["progressPercentage"] as? Int else {
-                result(FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Missing required arguments",
-                    details: nil
-                ))
-                return
-            }
-            
-            if #available(iOS 16.1, *) {
-                liveActivityManager.updateActivity(
-                    elapsedTime: elapsedTime,
-                    distance: distance,
-                    eta: eta,
-                    progressPercentage: progressPercentage
-                )
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
-            }
-            
-        case "endActivity":
-            if #available(iOS 16.1, *) {
-                liveActivityManager.endActivity()
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
-            }
-            
-        // Drop Timeline Activity methods
-        case "startDropTimelineActivity":
-            guard let args = call.arguments as? [String: Any],
-                  let dropId = args["dropId"] as? String,
-                  let dropAddress = args["dropAddress"] as? String,
-                  let estimatedValue = args["estimatedValue"] as? String,
-                  let status = args["status"] as? String,
-                  let statusText = args["statusText"] as? String,
-                  let timeAgo = args["timeAgo"] as? String,
-                  let createdAt = args["createdAt"] as? String else {
-                result(FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Missing required arguments",
-                    details: nil
-                ))
-                return
-            }
-            
-            if #available(iOS 16.1, *) {
-                let collectorName = args["collectorName"] as? String
-                liveActivityManager.startDropTimelineActivity(
-                    dropId: dropId,
-                    dropAddress: dropAddress,
-                    estimatedValue: estimatedValue,
-                    status: status,
-                    statusText: statusText,
-                    collectorName: collectorName,
-                    timeAgo: timeAgo,
-                    createdAt: createdAt
-                )
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
-            }
-            
-        case "updateDropTimelineActivity":
-            guard let args = call.arguments as? [String: Any],
-                  let status = args["status"] as? String,
-                  let statusText = args["statusText"] as? String,
-                  let timeAgo = args["timeAgo"] as? String else {
-                result(FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Missing required arguments",
-                    details: nil
-                ))
-                return
-            }
-            
-            if #available(iOS 16.1, *) {
-                let collectorName = args["collectorName"] as? String
-                liveActivityManager.updateDropTimelineActivity(
-                    status: status,
-                    statusText: statusText,
-                    collectorName: collectorName,
-                    timeAgo: timeAgo
-                )
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
-            }
-            
-        case "endDropTimelineActivity":
-            if #available(iOS 16.1, *) {
+            switch call.method {
+            case "isActivityKitAvailable":
+                result(manager.isActivityKitAvailable())
+                
+            case "startDropTimelineActivity":
+                manager.startDropTimelineActivity(data: call.arguments as? [String: Any])
+                // Return dropId as identifier (actual activityId will be available later via getActivityId)
+                // This matches the article's pattern where startLiveActivity doesn't return a value
+                if let dropId = (call.arguments as? [String: Any])?["dropId"] as? String {
+                    result(dropId)
+                } else {
+                    result(nil)
+                }
+                
+            case "updateDropTimelineActivity":
+                manager.updateDropTimelineActivity(data: call.arguments as? [String: Any])
+                result("updated")
+                
+            case "endDropTimelineActivity":
                 if let args = call.arguments as? [String: Any],
                    let dropId = args["dropId"] as? String {
-                    liveActivityManager.endDropTimelineActivity(dropId: dropId)
+                    manager.endDropTimelineActivity(dropId: dropId)
+                    result("ended")
                 } else {
-                    liveActivityManager.endDropTimelineActivity()
+                    // End all activities
+                    manager.endDropTimelineActivity()
+                    result("ended_all")
                 }
-                result(nil)
-            } else {
-                result(FlutterError(
-                    code: "NOT_SUPPORTED",
-                    message: "iOS 16.1+ required",
-                    details: nil
-                ))
+                
+            case "getPushToken":
+                guard let args = call.arguments as? [String: Any],
+                      let activityId = args["activityId"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS", message: "activityId is required", details: nil))
+                    return
+                }
+                
+                // If activityId is actually a dropId, get the real activityId first
+                if let realActivityId = manager.getActivityId(dropId: activityId) {
+                    let pushToken = manager.getPushToken(activityId: realActivityId)
+                    result(pushToken)
+                } else {
+                    // Try as activityId directly
+                    let pushToken = manager.getPushToken(activityId: activityId)
+                    result(pushToken)
+                }
+                
+            case "getAllActivitiesIds":
+                let ids = manager.getAllActivitiesIds()
+                result(ids)
+                
+            default:
+                result(FlutterMethodNotImplemented)
             }
-            
-        default:
-            result(FlutterMethodNotImplemented)
+        } else {
+            // iOS < 16.1 - Live Activities not supported
+            result(FlutterError(code: "NOT_SUPPORTED", message: "Live Activities require iOS 16.1+", details: nil))
         }
     }
+    
 }
 

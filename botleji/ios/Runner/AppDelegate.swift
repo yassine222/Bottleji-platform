@@ -2,9 +2,15 @@ import Flutter
 import UIKit
 import GoogleMaps
 import FirebaseAuth
+import ActivityKit
+import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterStreamHandler {
+  // EventChannel for push tokens (for backend API usage)
+  var eventSink: FlutterEventSink?
+  let eventChannelName = "com.botleji/live_activity_events"
+  
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -12,17 +18,125 @@ import FirebaseAuth
     GMSServices.provideAPIKey("AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E")
     GeneratedPluginRegistrant.register(with: self)
     
-    // Register Live Activity plugin after launch
-    if #available(iOS 16.1, *) {
-      DispatchQueue.main.async {
-        if let controller = self.window?.rootViewController as? FlutterViewController,
-           let registrar = controller.engine.registrar(forPlugin: "LiveActivityPlugin") {
-          LiveActivityPlugin.register(with: registrar)
+    // Set up notification center delegate for push notifications
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self
+    }
+    
+    // Register Live Activity plugin with MethodChannel
+    if #available(iOS 16.2, *) {
+      if let controller = window?.rootViewController as? FlutterViewController {
+        // MethodChannel for Live Activity operations
+        let liveActivityChannel = FlutterMethodChannel(
+          name: "com.botleji/live_activity",
+          binaryMessenger: controller.binaryMessenger
+        )
+        let liveActivityPlugin = LiveActivityPlugin()
+        liveActivityChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
+          liveActivityPlugin.handle(call, result: result)
         }
+        print("✅ Live Activity MethodChannel registered successfully")
+        
+        // EventChannel for push tokens (for backend API)
+        let eventChannel = FlutterEventChannel(
+          name: eventChannelName,
+          binaryMessenger: controller.binaryMessenger
+        )
+        eventChannel.setStreamHandler(self)
+        print("✅ Live Activity EventChannel registered successfully")
+        
+        // Observe push tokens for backend API
+        observePushTokens()
       }
     }
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+  
+  // MARK: - FlutterStreamHandler (for EventChannel)
+  
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    self.eventSink = events
+    print("✅ Live Activity EventChannel listener started")
+    return nil
+  }
+  
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    self.eventSink = nil
+    print("✅ Live Activity EventChannel listener cancelled")
+    return nil
+  }
+  
+  private func sendEvent(value: [String: Any?]) {
+    guard let eventSink = self.eventSink else { return }
+    eventSink(value)
+  }
+  
+  // MARK: - Push Token Observation (for backend API)
+  
+  @available(iOS 16.2, *)
+  private func observePushTokens() {
+    // Observe pushToStartToken (iOS 17.2+) - token for starting activities
+    if #available(iOS 17.2, *) {
+      Task {
+        for await tokenData in Activity<BottlejiLiveActivityWidgetAttributes>.pushToStartTokenUpdates {
+          let token = tokenData.map { String(format: "%02x", $0) }.joined()
+          print("📱 pushToStartToken -> \(token)")
+          sendEvent(value: [
+            "eventType": "pushToStartToken",
+            "value": token,
+          ])
+        }
+      }
+    }
+    
+    // Observe pushToUpdateToken - tokens from each activity
+    Task {
+      for await activityData in Activity<BottlejiLiveActivityWidgetAttributes>.activityUpdates {
+        Task {
+          for await tokenData in activityData.pushTokenUpdates {
+            let token = tokenData.map { String(format: "%02x", $0) }.joined()
+            let activityId = activityData.id
+            let dropId = activityData.attributes.dropId // Get dropId from attributes
+            print("📱 pushToUpdateToken -> \(token) for activity: \(activityId), dropId: \(dropId)")
+            sendEvent(value: [
+              "eventType": "pushToUpdateToken",
+              "value": token,
+              "activityId": activityId,
+              "dropId": dropId, // Include dropId in the event
+            ])
+          }
+        }
+      }
+    }
+  }
+  
+  // MARK: - Push Notification Handling (for backend API)
+  
+  @available(iOS 10.0, *)
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    // Show notification even when app is in foreground
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .list, .sound, .badge])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
+  }
+  
+  @available(iOS 10.0, *)
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    // Handle notification tap
+    let userInfo = response.notification.request.content.userInfo
+    print("📱 Notification tapped: \(userInfo)")
+    completionHandler()
   }
   
   // Handle URL schemes (for deep linking from Live Activity and Firebase Auth reCAPTCHA)

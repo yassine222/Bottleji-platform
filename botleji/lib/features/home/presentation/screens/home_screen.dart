@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:botleji/core/services/live_activity_native_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +52,6 @@ import 'package:botleji/features/drops/domain/utils/drop_value_calculator.dart';
 import 'package:botleji/features/stats/presentation/widgets/session_value_card.dart';
 import 'package:botleji/features/auth/controllers/collector_subscription_controller.dart';
 import 'package:botleji/features/subscription/presentation/screens/upgrade_to_pro_screen.dart';
-import 'package:botleji/core/services/live_activities_package_service.dart';
 
 
 // Navigation step model
@@ -1044,6 +1044,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             });
             debugPrint('✅ Updated collector location state for drop $dropoffId');
             debugPrint('📍 Current collector locations map: $_collectorLocations');
+            
+            // Update Live Activity with collector location/distance
+            if (distanceRemaining != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                try {
+                  final dropsState = ref.read(dropsControllerProvider);
+                  dropsState.whenData((drops) async {
+                    final drop = drops.firstWhere(
+                      (d) => d.id == dropoffId,
+                      orElse: () => Drop.empty(),
+                    );
+                    
+                    if (drop.id.isNotEmpty && (drop.status == DropStatus.accepted || drop.status == DropStatus.pending)) {
+                      final liveActivityService = LiveActivityNativeService();
+                      await liveActivityService.initialize();
+                      
+                      // Get collector name if available
+                      String? collectorName;
+                      if (data['collectorId'] != null) {
+                        try {
+                          final collectorInfo = await ref.read(dropsControllerProvider.notifier).getUserInfo(data['collectorId'] as String);
+                          collectorName = collectorInfo?['name'] as String?;
+                        } catch (e) {
+                          debugPrint('⚠️ Could not fetch collector name: $e');
+                        }
+                      }
+                      
+                      await liveActivityService.updateDropTimelineActivity(
+                        dropId: dropoffId,
+                        status: drop.status.name,
+                        statusText: LiveActivityNativeService.getStatusText(drop.status.name),
+                        collectorName: collectorName,
+                        timeAgo: LiveActivityNativeService.formatTimeAgo(drop.modifiedAt),
+                        distanceRemaining: distanceRemaining,
+                      );
+                      debugPrint('✅ Updated Live Activity with collector location: ${distanceRemaining.toStringAsFixed(2)}m');
+                    }
+                  });
+                } catch (e) {
+                  debugPrint('❌ Error updating Live Activity with collector location: $e');
+                }
+              });
+            }
           } else {
             debugPrint('⚠️ Widget not mounted, cannot update state');
           }
@@ -1469,7 +1512,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final userMode = ref.read(userModeControllerProvider).value;
       if (userMode == UserMode.household && createdDrop != null) {
         try {
-          final liveActivityService = LiveActivitiesPackageService();
+          final liveActivityService = LiveActivityNativeService();
           await liveActivityService.initialize();
           
           // Get address for the drop
@@ -1480,15 +1523,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Format estimated value
           final estimatedValue = DropValueCalculator.formatEstimatedValue(createdDrop.estimatedValue);
           
+          debugPrint('🔄 Starting Live Activity with data:');
+          debugPrint('   dropId: ${createdDrop.id}');
+          debugPrint('   dropAddress: $dropAddress');
+          debugPrint('   estimatedValue: $estimatedValue');
+          debugPrint('   status: pending');
+          
           // Start drop timeline activity
           await liveActivityService.startDropTimelineActivity(
             dropId: createdDrop.id,
             dropAddress: dropAddress,
             estimatedValue: estimatedValue,
             status: 'pending',
-            statusText: LiveActivitiesPackageService.getStatusText('pending'),
+            statusText: LiveActivityNativeService.getStatusText('pending'),
             collectorName: null,
-            timeAgo: LiveActivitiesPackageService.formatTimeAgo(createdDrop.createdAt),
+            timeAgo: LiveActivityNativeService.formatTimeAgo(createdDrop.createdAt),
             createdAt: createdDrop.createdAt.toIso8601String(),
           );
           debugPrint('✅ Drop Timeline Live Activity started');
@@ -2052,34 +2101,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Consumer(
           builder: (context, ref, child) {
             final userModeAsync = ref.watch(userModeControllerProvider);
+            // Use post-frame callback to avoid setState during build
             userModeAsync.whenData((mode) {
               if (_lastUserMode != mode) {
-                setState(() {
-                  _lastUserMode = mode;
-                  _isMarkerTransitioning = true;
-                  _isMarkersLoading = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  setState(() {
+                    _lastUserMode = mode;
+                    _isMarkerTransitioning = true;
+                    _isMarkersLoading = true;
 
-                  if (mode == UserMode.household) {
-                    _polylines.clear();
-                    _showRoute = false;
-                    _routeDistance = null;
-                    _routeDuration = null;
+                    if (mode == UserMode.household) {
+                      _polylines.clear();
+                      _showRoute = false;
+                      _routeDistance = null;
+                      _routeDuration = null;
+                    }
+
+                    if (mode == UserMode.collector) {
+                      _updateCollectionRadius(_collectionRadius);
+                    }
+                  });
+
+                  if (mounted) {
+                    _debouncedMarkerUpdate();
                   }
 
-                  if (mode == UserMode.collector) {
-                    _updateCollectionRadius(_collectionRadius);
-                  }
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    if (mounted) _isMarkerTransitioning = false;
+                  });
+
+                  _debouncedLoadDropsForMap();
                 });
-
-                if (mounted) {
-                  _debouncedMarkerUpdate();
-                }
-
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) _isMarkerTransitioning = false;
-                });
-
-                _debouncedLoadDropsForMap();
               }
             });
 
@@ -2114,10 +2167,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ).toList();
                   
                   if (dropsToCleanup.isNotEmpty) {
-                    for (final drop in dropsToCleanup) {
-                      debugPrint('🧹 Drop ${drop.id} status changed to ${drop.status.name}, cleaning up collector tracking');
-                      _cleanupCollectorLocation(drop.id);
-                    }
+                    // Use post-frame callback to avoid setState during build
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      for (final drop in dropsToCleanup) {
+                        debugPrint('🧹 Drop ${drop.id} status changed to ${drop.status.name}, cleaning up collector tracking');
+                        _cleanupCollectorLocation(drop.id);
+                      }
+                    });
                   }
                 }
               },

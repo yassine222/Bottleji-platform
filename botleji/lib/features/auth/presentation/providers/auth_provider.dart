@@ -26,6 +26,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final notificationServiceProvider = ChangeNotifierProvider<NotificationService>((ref) {
+  // Use singleton instance so callbacks are shared across all parts of the app
   return NotificationService();
 });
 
@@ -722,9 +723,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Set up drop status update callback for real-time updates
       notificationService.onDropStatusUpdate = (dropId, status, data) {
         AppLogger.log('🔄 AuthProvider: Drop status update received - $status for drop $dropId');
-        // Update drops controller with the status change
+        // Update drops controller with the status change (now async)
         final dropsController = ref.read(dropsControllerProvider.notifier);
-        dropsController.handleDropStatusUpdate(dropId, status, data);
+        dropsController.handleDropStatusUpdate(dropId, status, data).catchError((e) {
+          AppLogger.log('❌ Error handling drop status update: $e');
+        });
         
         // Refresh user data when drop is collected to get latest reward history
         if (status == 'drop_collected') {
@@ -801,9 +804,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserData?>> {
       // Set up drop status update callback for real-time updates
       notificationService.onDropStatusUpdate = (dropId, status, data) {
         AppLogger.log('🔄 AuthProvider: Drop status update received on startup - $status for drop $dropId');
-        // Update drops controller with the status change
+        // Update drops controller with the status change (now async)
         final dropsController = _ref.read(dropsControllerProvider.notifier);
-        dropsController.handleDropStatusUpdate(dropId, status, data);
+        dropsController.handleDropStatusUpdate(dropId, status, data).catchError((e) {
+          AppLogger.log('❌ Error handling drop status update: $e');
+        });
         
         // Refresh user data when drop is collected to get latest reward history
         if (status == 'drop_collected') {

@@ -134,17 +134,36 @@ export class APNsService implements OnModuleInit {
         'content-state': liveActivityContentState,
       };
 
-      // Convert hex string token to string (apn package expects string or string[])
-      const tokenString = pushToken.replace(/\s/g, '');
+      // Clean and validate hex string token
+      // Live Activity push tokens are 64-byte hex strings (128 hex characters)
+      const cleanToken = pushToken.replace(/\s/g, '');
+      
+      // Validate token format (should be valid hex and 128 chars = 64 bytes)
+      if (!/^[0-9a-fA-F]+$/.test(cleanToken)) {
+        this.logger.error(`❌ [sendLiveActivityUpdate] Invalid token format: not a valid hex string`);
+        this.logger.error(`❌ [sendLiveActivityUpdate] Token (first 50 chars): ${pushToken.substring(0, 50)}...`);
+        return false;
+      }
+      
+      if (cleanToken.length !== 128) {
+        this.logger.error(`❌ [sendLiveActivityUpdate] Invalid token length: ${cleanToken.length} chars (expected 128 hex chars = 64 bytes)`);
+        this.logger.error(`❌ [sendLiveActivityUpdate] Token (first 50 chars): ${pushToken.substring(0, 50)}...`);
+        return false;
+      }
 
       this.logger.log(`📤 [sendLiveActivityUpdate] Sending via direct APNs`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Topic: ${bundleId}`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Event: ${event}`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Token (first 20 chars): ${pushToken.substring(0, 20)}...`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] Token length: ${cleanToken.length} hex chars (${cleanToken.length / 2} bytes)`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(liveActivityContentState, null, 2));
 
-      // Send notification - apn package expects string or string[]
-      const result = await this.apnProvider.send(notification, tokenString);
+      // Convert hex string to Buffer for apn package (it accepts Buffer, string, or string[])
+      // Buffer.from(hex, 'hex') creates the proper binary representation
+      const tokenBuffer = Buffer.from(cleanToken, 'hex');
+      
+      // Send notification - apn package accepts Buffer for hex tokens
+      const result = await this.apnProvider.send(notification, tokenBuffer as any);
 
       if (result.sent.length > 0) {
         this.logger.log(`✅ [sendLiveActivityUpdate] Live Activity ${event} sent successfully`);

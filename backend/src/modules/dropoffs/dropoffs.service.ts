@@ -2840,6 +2840,50 @@ export class DropoffsService {
 
     console.log(`✅ [storeLiveActivityToken] Live Activity push token stored: dropoffId=${dropoffId}, activityId=${activityId}, isActive=${token.isActive}`);
     console.log(`✅ [storeLiveActivityToken] Token saved with _id: ${token._id}`);
+    
+    // After storing the token, check if there's a pending status update to send
+    // This handles the case where assignCollector was called before the token was stored
+    try {
+      const currentDropoff = await this.dropoffModel.findById(dropoffId).exec();
+      if (currentDropoff && currentDropoff.status === DropoffStatus.ACCEPTED) {
+        console.log(`🔄 [storeLiveActivityToken] Dropoff status is ${currentDropoff.status}, sending Live Activity update now that token is stored`);
+        
+        let collectorName = 'Collector';
+        
+        // Get collector name from the latest collection attempt if available
+        const latestAttempt = await this.collectionAttemptModel.findOne({ 
+          dropoffId: dropoffObjectId,
+          status: 'active'
+        }).sort({ createdAt: -1 }).exec();
+        
+        if (latestAttempt) {
+          const attemptCollector = await this.userModel.findById(latestAttempt.collectorId).exec();
+          if (attemptCollector?.name) {
+            collectorName = attemptCollector.name;
+          }
+        } else {
+          // Fallback to collectedBy if available
+          if (currentDropoff.collectedBy) {
+            const collector = await this.userModel.findById(currentDropoff.collectedBy).exec();
+            if (collector?.name) {
+              collectorName = collector.name;
+            }
+          }
+        }
+        
+        await this.sendLiveActivityUpdate(dropoffId, {
+          status: currentDropoff.status,
+          statusText: 'Accepted',
+          collectorName: collectorName,
+          timeAgo: 'Just now',
+        });
+        console.log(`✅ [storeLiveActivityToken] Sent initial Live Activity update for ${currentDropoff.status} dropoff`);
+      }
+    } catch (error) {
+      console.error(`❌ [storeLiveActivityToken] Error sending initial update: ${error}`);
+      // Don't fail the token storage if update fails
+    }
+    
     return token;
   }
 

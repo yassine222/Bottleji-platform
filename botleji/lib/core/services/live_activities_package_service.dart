@@ -318,29 +318,66 @@ class LiveActivitiesPackageService {
     required String statusText,
     String? collectorName,
     required String timeAgo,
+    double? distanceRemaining, // Distance in meters for collector pin position
   }) async {
-    final activityId = _activityIdMap[dropId];
+    debugPrint('🔄 updateDropTimelineActivity called: dropId=$dropId, status=$status, statusText=$statusText');
+    debugPrint('🔄 Current activityIdMap: $_activityIdMap');
+    
+    // Try to find activityId in map first
+    var activityId = _activityIdMap[dropId];
+    
+    // If not found, try to get it from the package (in case app was restarted)
     if (activityId == null) {
-      debugPrint('⚠️ No activity found for dropId: $dropId');
-      return null;
+      debugPrint('⚠️ ActivityId not found in map for dropId: $dropId, trying to reload from package...');
+      try {
+        final allActivityIds = await getAllActivitiesIds();
+        debugPrint('🔄 Found ${allActivityIds.length} active activities from package');
+        
+        // Try to match by checking if any activity matches this dropId
+        // Note: The package doesn't store dropId, so we can't directly match
+        // For now, if we have exactly one activity, use it
+        if (allActivityIds.length == 1) {
+          activityId = allActivityIds.first;
+          _activityIdMap[dropId] = activityId;
+          debugPrint('✅ Reloaded activityId from package: $activityId');
+        } else {
+          debugPrint('⚠️ Cannot determine which activity to update (found ${allActivityIds.length} activities)');
+          debugPrint('⚠️ Available dropIds in map: ${_activityIdMap.keys.toList()}');
+          return null;
+        }
+      } catch (e) {
+        debugPrint('❌ Error reloading activities from package: $e');
+        debugPrint('⚠️ Available dropIds in map: ${_activityIdMap.keys.toList()}');
+        return null;
+      }
     }
+
+    debugPrint('✅ Found activityId: $activityId for dropId: $dropId');
 
     try {
       // Update only the dynamic content state
+      // Note: The package expects only ContentState fields for updates
       final data = {
         'activityType': 'dropTimeline',
         'status': status,
         'statusText': statusText,
         'collectorName': collectorName ?? '',
         'timeAgo': timeAgo,
+        if (distanceRemaining != null) 'distanceRemaining': distanceRemaining,
       };
 
-      await _liveActivities.updateActivity(activityId, data);
+      debugPrint('🔄 Updating activity with data: $data');
+      debugPrint('🔄 Calling _liveActivities.updateActivity with activityId: $activityId');
+      
+      final result = await _liveActivities.updateActivity(activityId, data);
+      
+      debugPrint('🔄 updateActivity returned: $result');
 
-      debugPrint('✅ Drop timeline activity updated: $activityId');
+      debugPrint('✅ Drop timeline activity updated successfully: $activityId');
       return activityId;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error updating drop timeline activity: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       return null;
     }
   }
