@@ -24,6 +24,10 @@ export class DeviceCapabilities {
   @Prop({ type: String })
   iosVersion?: string;
 
+  // Push tokens for remote Live Activity control
+  @Prop({ type: String })
+  pushToStartToken?: string; // Token for starting Live Activities remotely (iOS 17.2+)
+
   // Android-specific capabilities
   @Prop({ type: Boolean, default: false })
   supportsOngoingNotification?: boolean; // Android 8.0+

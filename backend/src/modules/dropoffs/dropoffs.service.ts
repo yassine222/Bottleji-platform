@@ -15,6 +15,8 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FCMService } from '../notifications/fcm.service';
 import { APNsService } from '../notifications/apns.service';
+import { UnifiedNotificationService } from '../notifications/unified-notification.service';
+import { DeviceCapabilitiesService } from '../users/device-capabilities.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { EarningsSessionService } from '../earnings/earnings-session.service';
 
@@ -32,6 +34,8 @@ export class DropoffsService {
     private readonly notificationsService: NotificationsService,
     private readonly fcmService: FCMService,
     private readonly apnsService: APNsService,
+    private readonly unifiedNotificationService: UnifiedNotificationService,
+    private readonly deviceCapabilitiesService: DeviceCapabilitiesService,
     private readonly rewardsService: RewardsService,
     @Inject(forwardRef(() => EarningsSessionService))
     private readonly earningsSessionService: EarningsSessionService,
@@ -552,49 +556,131 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
-    // Send notification to drop creator
+    // Send unified notification (Live Activity OR push notification, not both)
     try {
       // Normalize userId to ensure it matches the format stored in connectedUsers
       // Handle both ObjectId and string formats
       const userId = dropoff.userId?.toString ? dropoff.userId.toString() : String(dropoff.userId);
-      console.log(`📱 Preparing to send drop accepted notification to user: ${userId} (original: ${dropoff.userId}, type: ${typeof dropoff.userId})`);
+      console.log(`📱 [assignCollector] Preparing to send unified notification to user: ${userId}`);
       
-      await this.notificationsGateway.sendNotificationToUser(userId, {
-        type: 'drop_accepted',
-        title: 'Drop Accepted',
-        message: 'A collector has accepted your drop and is on their way',
-        data: { 
-          dropId: id, 
-          collectorId,
-          dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
-        },
-        timestamp: new Date(),
-      });
-      console.log(`📱 Drop accepted notification sent to user ${userId}`);
-      
-      // Send Live Activity update
-      const collector = await this.userModel.findById(collectorId).exec();
-      const collectorName = collector?.name || 'Collector';
-      
-      // Send Live Activity update only if tokens exist (conditional)
-      // FCM notification is sent above as fallback for devices without Live Activities
-      const updateStartTime = Date.now();
-      const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
-      if (hasLiveActivityTokens) {
-        console.log(`📤 [assignCollector] Preparing to send Live Activity update for dropoff ${id}`);
-        await this.sendLiveActivityUpdate(id, {
-          status: 'accepted',
-          statusText: 'Accepted',
-          collectorName: collectorName,
-          timeAgo: 'Just now',
-        });
-        const updateDuration = Date.now() - updateStartTime;
-        console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id} (took ${updateDuration}ms)`);
+      // Get user's FCM token for capability checking
+      const user = await this.userModel.findById(userId).exec();
+      if (!user || !user.fcmToken) {
+        console.log(`⚠️ [assignCollector] User ${userId} does not have FCM token, skipping notification`);
       } else {
-        console.log(`ℹ️ [assignCollector] No Live Activity tokens found, skipping update (FCM notification sent as fallback)`);
+        // Get collector name
+        const collector = await this.userModel.findById(collectorId).exec();
+        const collectorName = collector?.name || 'Collector';
+        
+        // Use unified notification service to decide: Live Activity OR push notification (not both)
+        const result = await this.unifiedNotificationService.sendDropStatusUpdate(
+          userId,
+          user.fcmToken,
+          id,
+          'accepted',
+          {
+            type: 'drop_accepted',
+            title: 'Drop Accepted',
+            message: 'A collector has accepted your drop and is on their way',
+            data: { 
+              dropId: id, 
+              collectorId,
+              dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+            },
+          },
+          {
+            status: 'accepted',
+            statusText: 'Accepted',
+            collectorName: collectorName,
+            timeAgo: 'Just now',
+          },
+          false, // Not a terminal event
+        );
+        
+        console.log(`✅ [assignCollector] Unified notification decision: ${result.sent} (reason: ${result.reason || 'N/A'})`);
+        
+        // If unified service decided to send Live Activity, actually send it
+        // (The service returns 'live_activity' but doesn't send it - we handle it here)
+        if (result.sent === 'live_activity') {
+          const updateStartTime = Date.now();
+          const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
+          if (hasLiveActivityTokens) {
+            console.log(`📤 [assignCollector] Sending Live Activity update for dropoff ${id}`);
+            await this.sendLiveActivityUpdate(id, {
+              status: 'accepted',
+              statusText: 'Accepted',
+              collectorName: collectorName,
+              timeAgo: 'Just now',
+            });
+            const updateDuration = Date.now() - updateStartTime;
+            console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id} (took ${updateDuration}ms)`);
+          } else {
+            // No existing Live Activity - try to start remotely using push-to-start token
+            console.log(`🔄 [assignCollector] No existing Live Activity found, attempting to start remotely...`);
+            const pushToStartToken = await this.deviceCapabilitiesService.getPushToStartToken(userId, user.fcmToken);
+            
+            if (pushToStartToken) {
+              console.log(`📤 [assignCollector] Starting Live Activity remotely using push-to-start token`);
+              const startSuccess = await this.apnsService.startLiveActivityRemotely(
+                pushToStartToken,
+                {
+                  dropId: id,
+                  dropAddress: dropoff.address || 'Address not available',
+                  estimatedValue: `TND ${(dropoff as any).estimatedValue?.toFixed(2) || '0.00'}`,
+                  createdAt: dropoff.createdAt?.toISOString(),
+                },
+                {
+                  status: 'accepted',
+                  statusText: 'Accepted',
+                  collectorName: collectorName,
+                  timeAgo: 'Just now',
+                },
+                undefined, // widgetExtensionBundleId (uses default)
+                {
+                  alert: {
+                    title: 'Drop Accepted',
+                    body: `${collectorName} is coming to collect your drop!`,
+                  },
+                }
+              );
+              
+              if (startSuccess) {
+                console.log(`✅ [assignCollector] Live Activity started remotely for dropoff ${id}`);
+              } else {
+                console.log(`⚠️ [assignCollector] Failed to start Live Activity remotely, falling back to notification`);
+                await this.notificationsGateway.sendNotificationToUser(userId, {
+                  type: 'drop_accepted',
+                  title: 'Drop Accepted',
+                  message: 'A collector has accepted your drop and is on their way',
+                  data: { 
+                    dropId: id, 
+                    collectorId,
+                    dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+                  },
+                  timestamp: new Date(),
+                });
+              }
+            } else {
+              console.log(`⚠️ [assignCollector] No push-to-start token found, falling back to notification`);
+              // Fallback: send notification if no push-to-start token
+              await this.notificationsGateway.sendNotificationToUser(userId, {
+                type: 'drop_accepted',
+                title: 'Drop Accepted',
+                message: 'A collector has accepted your drop and is on their way',
+                data: { 
+                  dropId: id, 
+                  collectorId,
+                  dropTitle: `Drop with ${dropoff.numberOfBottles + dropoff.numberOfCans} items`
+                },
+                timestamp: new Date(),
+              });
+            }
+          }
+        }
+        // If unified service decided to send notification, it's already sent by the service (no action needed)
       }
     } catch (error) {
-      console.error(`❌ Error sending drop accepted notification: ${error}`);
+      console.error(`❌ Error sending unified notification: ${error}`);
       console.error(`❌ Error details:`, error);
     }
 
@@ -2850,6 +2936,28 @@ export class DropoffsService {
    */
   async storeLiveActivityToken(dropoffId: string, activityId: string, pushToken: string) {
     console.log(`📥 [storeLiveActivityToken] Received token for dropoffId=${dropoffId}, activityId=${activityId}`);
+    console.log(`📥 [storeLiveActivityToken] Token length: ${pushToken.length} chars, first 50: ${pushToken.substring(0, 50)}...`);
+    
+    // Validate and clean the push token
+    // ActivityKit push tokens are 64 bytes = 128 hex characters
+    const cleanToken = pushToken.replace(/\s/g, '').trim();
+    
+    // Validate token format (should be valid hex and 128 chars = 64 bytes)
+    if (!/^[0-9a-fA-F]+$/.test(cleanToken)) {
+      console.error(`❌ [storeLiveActivityToken] Invalid token format: not a valid hex string`);
+      console.error(`❌ [storeLiveActivityToken] Token (first 50 chars): ${pushToken.substring(0, 50)}...`);
+      throw new BadRequestException('Invalid push token format: must be a hexadecimal string');
+    }
+    
+    if (cleanToken.length !== 128) {
+      console.error(`❌ [storeLiveActivityToken] Invalid token length: ${cleanToken.length} chars (expected 128 hex chars = 64 bytes)`);
+      console.error(`❌ [storeLiveActivityToken] Token (first 50 chars): ${pushToken.substring(0, 50)}...`);
+      console.error(`❌ [storeLiveActivityToken] Token (last 50 chars): ${pushToken.substring(pushToken.length - 50)}...`);
+      console.error(`❌ [storeLiveActivityToken] Full token: ${pushToken}`);
+      throw new BadRequestException(`Invalid push token length: ${cleanToken.length} chars (expected 128 hex chars = 64 bytes)`);
+    }
+    
+    console.log(`✅ [storeLiveActivityToken] Token validated: ${cleanToken.length} hex characters`);
     
     const dropoff = await this.dropoffModel.findById(dropoffId).exec();
     if (!dropoff) {
@@ -2867,7 +2975,7 @@ export class DropoffsService {
       {
         dropoffId: dropoffObjectId,
         activityId,
-        pushToken,
+        pushToken: cleanToken, // Store cleaned token
         userId: userIdObjectId,
         isActive: true, // Explicitly set to active
         updatedAt: new Date(),

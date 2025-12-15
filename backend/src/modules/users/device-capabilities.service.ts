@@ -141,5 +141,43 @@ export class DeviceCapabilitiesService {
 
     this.logger.log(`✅ All devices deactivated for user ${userId}`);
   }
+
+  /**
+   * Update push-to-start token for a device
+   * This token allows the backend to start Live Activities remotely
+   */
+  async updatePushToStartToken(userId: string, fcmToken: string, pushToStartToken: string): Promise<DeviceCapabilities> {
+    const userIdObjectId = typeof userId === 'string' ? new Types.ObjectId(userId) : userId;
+    
+    // Validate token format (should be 128 hex characters = 64 bytes)
+    const cleanToken = pushToStartToken.replace(/\s/g, '').trim();
+    if (cleanToken.length !== 128 || !/^[0-9a-fA-F]+$/.test(cleanToken)) {
+      throw new Error('Invalid push-to-start token format: must be 128 hex characters');
+    }
+
+    const capabilities = await this.deviceCapabilitiesModel.findOneAndUpdate(
+      { userId: userIdObjectId, fcmToken },
+      {
+        pushToStartToken: cleanToken,
+        lastUpdatedAt: new Date(),
+      },
+      { upsert: false, new: true },
+    ).exec();
+
+    if (!capabilities) {
+      throw new Error(`Device capabilities not found for user ${userId} with FCM token ${fcmToken.substring(0, 20)}...`);
+    }
+
+    this.logger.log(`✅ Push-to-start token updated for user ${userId}, token ${fcmToken.substring(0, 20)}...`);
+    return capabilities;
+  }
+
+  /**
+   * Get push-to-start token for a user/device
+   */
+  async getPushToStartToken(userId: string, fcmToken: string): Promise<string | null> {
+    const capabilities = await this.getCapabilitiesByToken(userId, fcmToken);
+    return capabilities?.pushToStartToken || null;
+  }
 }
 

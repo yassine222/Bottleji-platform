@@ -251,6 +251,120 @@ export class APNsService implements OnModuleInit {
     }
   }
 
+  /**
+   * Start a Live Activity remotely using push-to-start token
+   * This allows starting Live Activities even when the app is closed
+   */
+  async startLiveActivityRemotely(
+    pushToStartToken: string,
+    attributes: {
+      dropId: string;
+      dropAddress: string;
+      estimatedValue: string;
+      createdAt?: string;
+    },
+    contentState: {
+      status: string;
+      statusText: string;
+      collectorName?: string;
+      timeAgo: string;
+      distanceRemaining?: number;
+    },
+    widgetExtensionBundleId?: string,
+    options?: {
+      alert?: {
+        title: string;
+        body: string;
+        sound?: string;
+      };
+    }
+  ): Promise<boolean> {
+    if (!this.apnProvider) {
+      this.logger.warn('⚠️ APNs provider not initialized. Cannot start Live Activity remotely.');
+      return false;
+    }
+
+    try {
+      const bundleId = widgetExtensionBundleId || process.env.APNS_TOPIC || process.env.APNS_BUNDLE_ID || 'com.example.botleji.LiveActivityWidgetExtension';
+
+      // Validate token
+      const cleanToken = pushToStartToken.replace(/\s/g, '').trim();
+      if (!/^[0-9a-fA-F]+$/.test(cleanToken) || cleanToken.length !== 128) {
+        this.logger.error(`❌ [startLiveActivityRemotely] Invalid push-to-start token format`);
+        return false;
+      }
+
+      // Create APNs notification for starting Live Activity
+      const notification = new apn.Notification();
+      notification.topic = bundleId;
+      (notification as any).pushType = 'liveactivity';
+      notification.priority = 10; // High priority for starting
+      notification.expiry = Math.floor(Date.now() / 1000) + 3600;
+
+      const timestamp = Math.floor(Date.now() / 1000);
+
+      // Build payload for starting Live Activity
+      // According to Apple docs, for starting we need:
+      // - event: "start"
+      // - attributes-type: "BottlejiLiveActivityWidgetAttributes"
+      // - attributes: static attributes
+      // - content-state: initial content state
+      // - alert: required for starting (to notify user)
+      const apsData: any = {
+        timestamp: timestamp,
+        event: 'start',
+        'attributes-type': 'BottlejiLiveActivityWidgetAttributes',
+        attributes: {
+          dropId: attributes.dropId,
+          dropAddress: attributes.dropAddress,
+          estimatedValue: attributes.estimatedValue,
+          createdAt: attributes.createdAt || new Date().toISOString(),
+        },
+        'content-state': {
+          status: contentState.status,
+          statusText: contentState.statusText,
+          collectorName: contentState.collectorName || null,
+          timeAgo: contentState.timeAgo,
+          distanceRemaining: contentState.distanceRemaining || null,
+        },
+        alert: {
+          title: options?.alert?.title || 'Drop Accepted',
+          body: options?.alert?.body || 'A collector is coming to collect your drop!',
+        },
+      };
+
+      if (options?.alert?.sound) {
+        apsData.alert.sound = options.alert.sound;
+      }
+
+      (notification as any).aps = apsData;
+
+      this.logger.log(`📤 [startLiveActivityRemotely] Starting Live Activity remotely`);
+      this.logger.log(`📤 [startLiveActivityRemotely] Topic: ${bundleId}`);
+      this.logger.log(`📤 [startLiveActivityRemotely] Drop ID: ${attributes.dropId}`);
+
+      const result = await this.apnProvider.send(notification, cleanToken);
+
+      if (result.sent.length > 0) {
+        this.logger.log(`✅ [startLiveActivityRemotely] Live Activity started successfully`);
+        return true;
+      } else if (result.failed.length > 0) {
+        const failure = result.failed[0];
+        const reason = (failure.response as any)?.reason || 'Unknown error';
+        const status = (failure.response as any)?.status || 'Unknown status';
+        this.logger.error(`❌ [startLiveActivityRemotely] Failed to start Live Activity`);
+        this.logger.error(`❌ [startLiveActivityRemotely] Error: ${reason}`);
+        this.logger.error(`❌ [startLiveActivityRemotely] Status: ${status}`);
+        return false;
+      }
+
+      return false;
+    } catch (error) {
+      this.logger.error(`❌ [startLiveActivityRemotely] Error starting Live Activity remotely: ${error}`);
+      return false;
+    }
+  }
+
   async shutdown() {
     if (this.apnProvider) {
       this.apnProvider.shutdown();

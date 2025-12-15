@@ -9,6 +9,7 @@ import { DropReport, DropReportSchema } from './schemas/drop-report.schema';
 import { LiveActivityToken, LiveActivityTokenSchema } from './schemas/live-activity-token.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 import { RewardsModule } from '../rewards/rewards.module';
 import { EarningsModule } from '../earnings/earnings.module';
 
@@ -23,6 +24,7 @@ import { EarningsModule } from '../earnings/earnings.module';
       { name: User.name, schema: UserSchema },
     ]),
     forwardRef(() => NotificationsModule),
+    UsersModule, // For DeviceCapabilitiesService
     RewardsModule,
     forwardRef(() => EarningsModule),
   ],
