@@ -19,6 +19,22 @@ public struct BottlejiLiveActivityWidgetAttributes: ActivityAttributes {
         public var timeAgo: String?             // "Just now", "1 min ago", "5 min ago"
         public var distanceRemaining: Double?   // Distance in meters for collector pin position (optional)
         
+        // Relevance score to trigger Dynamic Island expansion on updates
+        // Higher scores = more likely to expand
+        public var relevanceScore: Double {
+            // Status changes trigger expansion (especially accepted, on_way, collected)
+            switch status {
+            case "accepted", "on_way":
+                return 0.8  // High relevance - collector is coming
+            case "collected":
+                return 1.0  // Maximum relevance - important completion event
+            case "cancelled", "expired":
+                return 0.7  // Medium-high relevance - user should know
+            default:
+                return 0.5  // Default relevance
+            }
+        }
+        
         public init(
             status: String? = nil,
             statusText: String? = nil,

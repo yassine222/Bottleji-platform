@@ -576,16 +576,23 @@ export class DropoffsService {
       const collector = await this.userModel.findById(collectorId).exec();
       const collectorName = collector?.name || 'Collector';
       
-      console.log(`📤 [assignCollector] Preparing to send Live Activity update for dropoff ${id}`);
+      // Send Live Activity update only if tokens exist (conditional)
+      // FCM notification is sent above as fallback for devices without Live Activities
       const updateStartTime = Date.now();
-      await this.sendLiveActivityUpdate(id, {
-        status: 'accepted',
-        statusText: 'Accepted',
-        collectorName: collectorName,
-        timeAgo: 'Just now',
-      });
-      const updateDuration = Date.now() - updateStartTime;
-      console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id} (took ${updateDuration}ms)`);
+      const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
+      if (hasLiveActivityTokens) {
+        console.log(`📤 [assignCollector] Preparing to send Live Activity update for dropoff ${id}`);
+        await this.sendLiveActivityUpdate(id, {
+          status: 'accepted',
+          statusText: 'Accepted',
+          collectorName: collectorName,
+          timeAgo: 'Just now',
+        });
+        const updateDuration = Date.now() - updateStartTime;
+        console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id} (took ${updateDuration}ms)`);
+      } else {
+        console.log(`ℹ️ [assignCollector] No Live Activity tokens found, skipping update (FCM notification sent as fallback)`);
+      }
     } catch (error) {
       console.error(`❌ Error sending drop accepted notification: ${error}`);
       console.error(`❌ Error details:`, error);
@@ -643,14 +650,20 @@ export class DropoffsService {
 
     // Send Live Activity update (end event) immediately after status update
     // This will dismiss the Live Activity
+    // Only send if tokens exist (conditional)
     try {
-      console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
-      await this.sendLiveActivityUpdate(id, {
-        status: 'collected',
-        statusText: 'Collected',
-        timeAgo: 'Just now',
-      }); // Event type is determined automatically from status (will be 'end')
-      console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
+      const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
+      if (hasLiveActivityTokens) {
+        console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
+        await this.sendLiveActivityUpdate(id, {
+          status: 'collected',
+          statusText: 'Collected',
+          timeAgo: 'Just now',
+        }); // Event type is determined automatically from status (will be 'end')
+        console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
+      } else {
+        console.log(`ℹ️ [confirmCollection] No Live Activity tokens found, skipping update (FCM notification will be sent as fallback)`);
+      }
     } catch (error) {
       console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
     }
@@ -885,11 +898,17 @@ export class DropoffsService {
     // Send Live Activity update if status changed to CANCELLED
     if (newStatus === DropoffStatus.CANCELLED) {
       try {
-        await this.sendLiveActivityUpdate(id, {
-          status: 'cancelled',
-          statusText: 'Cancelled',
-          timeAgo: 'Just now',
-        }); // Event type is determined automatically from status
+        // Only send Live Activity update if tokens exist (conditional)
+        const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
+        if (hasLiveActivityTokens) {
+          await this.sendLiveActivityUpdate(id, {
+            status: 'cancelled',
+            statusText: 'Cancelled',
+            timeAgo: 'Just now',
+          }); // Event type is determined automatically from status
+        } else {
+          console.log(`ℹ️ [update] No Live Activity tokens found for cancelled drop, skipping update (FCM notification will be sent)`);
+        }
       } catch (error) {
         console.error(`❌ Error sending Live Activity update for cancelled drop: ${error}`);
       }
@@ -2732,7 +2751,10 @@ export class DropoffsService {
         const dropoffStatus = dropoff.status;
         console.log(`📤 [broadcastLocationToHousehold] Dropoff status: ${dropoffStatus}, checking if should send Live Activity update`);
         
-        if (dropoffStatus === DropoffStatus.ACCEPTED) {
+        // Only send Live Activity update if tokens exist (conditional)
+        const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(dropoffId);
+        
+        if (dropoffStatus === DropoffStatus.ACCEPTED && hasLiveActivityTokens) {
           // Get collector ID from the active CollectionAttempt
           const activeAttempt = await this.collectionAttemptModel.findOne({
             dropoffId: dropoffId,
@@ -2799,6 +2821,23 @@ export class DropoffsService {
    */
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Check if dropoff has active Live Activity tokens
+   */
+  private async hasActiveLiveActivityTokens(dropoffId: string): Promise<boolean> {
+    try {
+      const dropoffObjectId = typeof dropoffId === 'string' ? new Types.ObjectId(dropoffId) : dropoffId;
+      const tokenCount = await this.liveActivityTokenModel.countDocuments({
+        dropoffId: dropoffObjectId,
+        isActive: { $ne: false }
+      }).exec();
+      return tokenCount > 0;
+    } catch (error) {
+      console.error(`❌ [hasActiveLiveActivityTokens] Error checking tokens: ${error}`);
+      return false;
+    }
   }
 
   /**
