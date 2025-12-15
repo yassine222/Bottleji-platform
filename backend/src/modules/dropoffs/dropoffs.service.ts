@@ -617,7 +617,26 @@ export class DropoffsService {
           } else {
             // No existing Live Activity - try to start remotely using push-to-start token
             console.log(`🔄 [assignCollector] No existing Live Activity found, attempting to start remotely...`);
-            const pushToStartToken = await this.deviceCapabilitiesService.getPushToStartToken(userId, user.fcmToken);
+            
+            // Try to get push-to-start token from device capabilities
+            let pushToStartToken: string | null = null;
+            try {
+              pushToStartToken = await this.deviceCapabilitiesService.getPushToStartToken(userId, user.fcmToken);
+              if (pushToStartToken) {
+                console.log(`✅ [assignCollector] Found push-to-start token (length: ${pushToStartToken.length} chars)`);
+              } else {
+                console.log(`⚠️ [assignCollector] No push-to-start token found for user ${userId}, FCM token ${user.fcmToken.substring(0, 20)}...`);
+                // Try to get from any active device capability for this user
+                const allCapabilities = await this.deviceCapabilitiesService.getUserCapabilities(userId);
+                const activeCapability = allCapabilities.find(c => c.isActive && c.pushToStartToken);
+                if (activeCapability?.pushToStartToken) {
+                  pushToStartToken = activeCapability.pushToStartToken;
+                  console.log(`✅ [assignCollector] Found push-to-start token from alternative device capability`);
+                }
+              }
+            } catch (error) {
+              console.error(`❌ [assignCollector] Error retrieving push-to-start token: ${error}`);
+            }
             
             if (pushToStartToken) {
               console.log(`📤 [assignCollector] Starting Live Activity remotely using push-to-start token`);
@@ -661,7 +680,8 @@ export class DropoffsService {
                 });
               }
             } else {
-              console.log(`⚠️ [assignCollector] No push-to-start token found, falling back to notification`);
+              console.log(`⚠️ [assignCollector] No push-to-start token found for user ${userId}, falling back to notification`);
+              console.log(`ℹ️ [assignCollector] Note: Push-to-start token should be sent from app when ActivityKit is available`);
               // Fallback: send notification if no push-to-start token
               await this.notificationsGateway.sendNotificationToUser(userId, {
                 type: 'drop_accepted',

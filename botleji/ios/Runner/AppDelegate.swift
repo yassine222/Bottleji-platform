@@ -96,8 +96,16 @@ import UserNotifications
     if #available(iOS 17.2, *) {
       Task {
         for await tokenData in Activity<BottlejiLiveActivityWidgetAttributes>.pushToStartTokenUpdates {
+          // Validate token size: push-to-start tokens should be exactly 64 bytes (128 hex chars)
+          guard tokenData.count == 64 else {
+            print("❌ [AppDelegate] Invalid push-to-start token size: \(tokenData.count) bytes (expected 64 bytes)")
+            print("❌ [AppDelegate] Token data: \(tokenData.map { String(format: "%02x", $0) }.joined())")
+            continue // Skip invalid tokens
+          }
+          
           let token = tokenData.map { String(format: "%02x", $0) }.joined()
           print("📱 pushToStartToken -> \(token)")
+          print("📱 Token length: \(token.count) hex chars (\(tokenData.count) bytes)")
           sendEvent(value: [
             "eventType": "pushToStartToken",
             "value": token,
@@ -111,10 +119,18 @@ import UserNotifications
       for await activityData in Activity<BottlejiLiveActivityWidgetAttributes>.activityUpdates {
         Task {
           for await tokenData in activityData.pushTokenUpdates {
+            // Validate token size: Live Activity push tokens should be exactly 64 bytes (128 hex chars)
+            guard tokenData.count == 64 else {
+              print("❌ [AppDelegate] Invalid token size: \(tokenData.count) bytes (expected 64 bytes for Live Activity push token)")
+              print("❌ [AppDelegate] Token data: \(tokenData.map { String(format: "%02x", $0) }.joined())")
+              continue // Skip invalid tokens
+            }
+            
             let token = tokenData.map { String(format: "%02x", $0) }.joined()
             let activityId = activityData.id
             let dropId = activityData.attributes.dropId // Get dropId from attributes
             print("📱 pushToUpdateToken -> \(token) for activity: \(activityId), dropId: \(dropId)")
+            print("📱 Token length: \(token.count) hex chars (\(tokenData.count) bytes)")
             sendEvent(value: [
               "eventType": "pushToUpdateToken",
               "value": token,

@@ -219,11 +219,19 @@ class LiveActivityManager {
         // Observe pushTokenUpdates - this async sequence will emit the first token when available
         // and any subsequent token updates
         for await tokenData in activity.pushTokenUpdates {
+            // Validate token size: Live Activity push tokens should be exactly 64 bytes (128 hex chars)
+            guard tokenData.count == 64 else {
+                print("❌ [LiveActivityManager] Invalid token size: \(tokenData.count) bytes (expected 64 bytes for Live Activity push token)")
+                print("❌ [LiveActivityManager] Token data: \(tokenData.hexString)")
+                continue // Skip invalid tokens
+            }
+            
             // Convert Data to hex string
             let tokenString = tokenData.hexString
             activityTokens[activityId] = tokenString
             print("📱 [LiveActivityManager] Push token received for activity \(activityId), dropId: \(dropId)")
-            print("📱 [LiveActivityManager] Token: \(tokenString)")
+            print("📱 [LiveActivityManager] Token length: \(tokenString.count) hex chars (\(tokenData.count) bytes)")
+            print("📱 [LiveActivityManager] Token (first 50 chars): \(String(tokenString.prefix(50)))...")
             
             // Send token to Flutter immediately via callback (handled by AppDelegate)
             pushTokenCallback?(activityId, tokenString, dropId)
