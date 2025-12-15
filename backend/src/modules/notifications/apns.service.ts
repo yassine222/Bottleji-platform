@@ -123,11 +123,19 @@ export class APNsService implements OnModuleInit {
       // The apn package merges payload with aps, so we need to structure it carefully
       const timestamp = Math.floor(Date.now() / 1000);
       
-      // Set aps properties directly on notification
-      (notification as any).aps = {
+      // Build aps object with event
+      const apsData: any = {
         timestamp: timestamp,
         event: event,
       };
+      
+      // For end events, add dismissal-date to dismiss immediately (past timestamp)
+      if (event === 'end') {
+        apsData['dismissal-date'] = timestamp; // Use current timestamp (past) to dismiss immediately
+      }
+      
+      // Set aps properties directly on notification
+      (notification as any).aps = apsData;
       
       // Set content-state at root level (custom payload property)
       notification.payload = {

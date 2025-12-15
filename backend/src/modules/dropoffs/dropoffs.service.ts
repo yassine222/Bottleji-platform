@@ -577,13 +577,15 @@ export class DropoffsService {
       const collectorName = collector?.name || 'Collector';
       
       console.log(`📤 [assignCollector] Preparing to send Live Activity update for dropoff ${id}`);
+      const updateStartTime = Date.now();
       await this.sendLiveActivityUpdate(id, {
         status: 'accepted',
         statusText: 'Accepted',
         collectorName: collectorName,
         timeAgo: 'Just now',
       });
-      console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id}`);
+      const updateDuration = Date.now() - updateStartTime;
+      console.log(`✅ [assignCollector] Live Activity update sent for dropoff ${id} (took ${updateDuration}ms)`);
     } catch (error) {
       console.error(`❌ Error sending drop accepted notification: ${error}`);
       console.error(`❌ Error details:`, error);
@@ -639,14 +641,15 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
-    // Send Live Activity update (end event)
+    // Send Live Activity update (end event) immediately after status update
+    // This will dismiss the Live Activity
     try {
       console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
       await this.sendLiveActivityUpdate(id, {
         status: 'collected',
         statusText: 'Collected',
         timeAgo: 'Just now',
-      }); // Event type is determined automatically from status
+      }); // Event type is determined automatically from status (will be 'end')
       console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
     } catch (error) {
       console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
@@ -719,18 +722,8 @@ export class DropoffsService {
              totalDropsCreated: householdRewardResult.totalDropsCreated
            });
 
-        // Send Live Activity update (end event) BEFORE sending notifications
-        try {
-          console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
-          await this.sendLiveActivityUpdate(id, {
-            status: 'collected',
-            statusText: 'Collected',
-            timeAgo: 'Just now',
-          }); // Event type is determined automatically from status
-          console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
-        } catch (error) {
-          console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
-        }
+        // Note: Live Activity end event was already sent above after status update
+        // No need to send it again here
 
         // Send combined notification for drop collected + rewards
         if (householdRewardResult.tierUpgraded) {
