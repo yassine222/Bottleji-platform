@@ -2949,6 +2949,74 @@ export class DropoffsService {
   }
 
   /**
+   * Determine priority based on status
+   * Priority 10 = high (critical updates, counts toward budget)
+   * Priority 5 = low (non-critical updates, doesn't count toward budget)
+   */
+  private getLiveActivityPriority(status: string): 5 | 10 {
+    // Critical updates that need immediate attention
+    if (status === 'accepted' || status === 'collected' || status === 'cancelled' || status === 'expired') {
+      return 10;
+    }
+    // Non-critical updates (location updates, distance changes)
+    return 5;
+  }
+
+  /**
+   * Determine relevance score for Dynamic Island
+   * Higher scores = more likely to appear in Dynamic Island
+   * Range: 0-100 (relative values)
+   */
+  private getLiveActivityRelevanceScore(status: string): number {
+    switch (status) {
+      case 'collected':
+        return 100; // Maximum - important completion event
+      case 'accepted':
+        return 90; // Very high - collector assigned
+      case 'on_way':
+        return 75; // High - collector heading to drop
+      case 'cancelled':
+      case 'expired':
+        return 60; // Medium-high - user should know
+      case 'pending':
+        return 25; // Low - just created
+      default:
+        return 50; // Default
+    }
+  }
+
+  /**
+   * Determine if update should include alert
+   * Alerts wake device and show expanded Dynamic Island
+   */
+  private shouldIncludeAlert(status: string): boolean {
+    // Only alert for critical status changes
+    return status === 'accepted' || status === 'collected';
+  }
+
+  /**
+   * Get alert content for status
+   */
+  private getAlertForStatus(status: string, statusText: string, collectorName?: string): { title: string; body: string } | null {
+    switch (status) {
+      case 'accepted':
+        return {
+          title: 'Collector Assigned',
+          body: collectorName 
+            ? `${collectorName} is coming to collect your drop!`
+            : 'A collector is coming to collect your drop!',
+        };
+      case 'collected':
+        return {
+          title: 'Drop Collected',
+          body: 'Your drop has been successfully collected!',
+        };
+      default:
+        return null;
+    }
+  }
+
+  /**
    * Send Live Activity push update
    * Determines if this is an update or end event based on status
    */
@@ -3003,17 +3071,41 @@ export class DropoffsService {
       console.log(`📤 [sendLiveActivityUpdate] Sending Live Activity ${event} to ${tokens.length} token(s) for dropoff ${dropoffId}`);
       console.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(contentState, null, 2));
 
+      // Determine priority, relevance score, and alert based on status
+      const priority = this.getLiveActivityPriority(contentState.status);
+      const relevanceScore = this.getLiveActivityRelevanceScore(contentState.status);
+      const shouldAlert = this.shouldIncludeAlert(contentState.status);
+      const alert = shouldAlert ? this.getAlertForStatus(contentState.status, contentState.statusText, contentState.collectorName) : undefined;
+      
+      // For location updates, set stale date (5 minutes from now) to handle offline scenarios
+      const staleDate = contentState.distanceRemaining !== undefined 
+        ? Math.floor(Date.now() / 1000) + 300 // 5 minutes from now
+        : undefined;
+
+      console.log(`📊 [sendLiveActivityUpdate] Update options - Priority: ${priority}, Relevance: ${relevanceScore}, Alert: ${shouldAlert ? 'Yes' : 'No'}`);
+
       // Send update/end to each Live Activity token
       // Send all updates in parallel for faster delivery
       const sendPromises = tokens.map(async (token) => {
         try {
           const sendStartTime = Date.now();
           console.log(`📤 [sendLiveActivityUpdate] Sending to token: ${token.pushToken.substring(0, 20)}... (activityId: ${token.activityId})`);
-          // Use direct APNs for Live Activity updates
+          // Use direct APNs for Live Activity updates with enhanced options
           const success = await this.apnsService.sendLiveActivityUpdate(
             token.pushToken, 
             contentState,
-            event
+            event,
+            undefined, // widgetExtensionBundleId (uses default)
+            {
+              priority,
+              relevanceScore,
+              alert: alert ? {
+                title: alert.title,
+                body: alert.body,
+                sound: 'default', // Use default system sound
+              } : undefined,
+              staleDate,
+            }
           );
           const sendTime = Date.now() - sendStartTime;
           console.log(`✅ [sendLiveActivityUpdate] Push notification ${success ? 'sent successfully' : 'failed'} for token ${token.activityId} (took ${sendTime}ms)`);

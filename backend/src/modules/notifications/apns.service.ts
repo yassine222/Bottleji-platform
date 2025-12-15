@@ -89,7 +89,17 @@ export class APNsService implements OnModuleInit {
       distanceRemaining?: number;
     },
     event: 'update' | 'end' = 'update',
-    widgetExtensionBundleId?: string
+    widgetExtensionBundleId?: string,
+    options?: {
+      priority?: 5 | 10; // APNs priority (5 = low, 10 = high)
+      relevanceScore?: number; // Relevance score for Dynamic Island (0-100)
+      alert?: {
+        title: string;
+        body: string;
+        sound?: string;
+      };
+      staleDate?: number; // Unix timestamp when Live Activity becomes stale
+    }
   ): Promise<boolean> {
     if (!this.apnProvider) {
       this.logger.warn('⚠️ APNs provider not initialized. Cannot send Live Activity update.');
@@ -112,22 +122,39 @@ export class APNsService implements OnModuleInit {
       const notification = new apn.Notification();
 
       // Set Live Activity specific properties
+      // Topic format: <bundleID>.push-type.liveactivity (Apple's format)
+      // But we use widget extension bundle ID directly
       notification.topic = bundleId; // Widget extension bundle ID
       // Use type assertion for pushType (may not be in type definitions but required for Live Activities)
       (notification as any).pushType = 'liveactivity'; // Required for Live Activities
-      notification.priority = 10; // High priority
+      
+      // Priority: 5 (low, doesn't count toward budget) or 10 (high, counts toward budget)
+      // Default to 10 for critical updates, but allow override
+      notification.priority = options?.priority ?? 10;
       notification.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
 
       // Build payload for Live Activities
-      // IMPORTANT: For Live Activities, 'content-state' must be at ROOT level, not inside 'aps'
-      // The apn package merges payload with aps, so we need to structure it carefully
+      // According to Apple docs, content-state should be INSIDE aps dictionary
       const timestamp = Math.floor(Date.now() / 1000);
       
-      // Build aps object with event
+      // Build aps object with event and content-state
       const apsData: any = {
         timestamp: timestamp,
         event: event,
+        'content-state': liveActivityContentState, // Inside aps as per Apple docs
       };
+      
+      // Add relevance score for Dynamic Island priority (0-100)
+      if (options?.relevanceScore !== undefined) {
+        apsData['relevance-score'] = options.relevanceScore;
+        this.logger.log(`📤 [sendLiveActivityUpdate] Setting relevance-score to ${options.relevanceScore}`);
+      }
+      
+      // Add stale date if provided (for offline scenarios)
+      if (options?.staleDate !== undefined) {
+        apsData['stale-date'] = options.staleDate;
+        this.logger.log(`📤 [sendLiveActivityUpdate] Setting stale-date to ${options.staleDate}`);
+      }
       
       // For end events, add dismissal-date to dismiss immediately
       // Use a timestamp in the past (1 second ago) to ensure immediate dismissal
@@ -136,13 +163,22 @@ export class APNsService implements OnModuleInit {
         this.logger.log(`📤 [sendLiveActivityUpdate] Setting dismissal-date to ${apsData['dismissal-date']} (${timestamp - 1} seconds ago) for immediate dismissal`);
       }
       
+      // Add alert for important updates (wakes device, shows expanded Dynamic Island)
+      if (options?.alert) {
+        apsData.alert = {
+          title: options.alert.title,
+          body: options.alert.body,
+        };
+        if (options.alert.sound) {
+          apsData.alert.sound = options.alert.sound;
+        }
+        this.logger.log(`📤 [sendLiveActivityUpdate] Adding alert: ${options.alert.title} - ${options.alert.body}`);
+      }
+      
       // Set aps properties directly on notification
       (notification as any).aps = apsData;
       
-      // Set content-state at root level (custom payload property)
-      notification.payload = {
-        'content-state': liveActivityContentState,
-      };
+      // No need for separate payload - everything is in aps
 
       // Clean and validate hex string token
       // Live Activity push tokens are 64-byte hex strings (128 hex characters)
@@ -164,6 +200,10 @@ export class APNsService implements OnModuleInit {
       this.logger.log(`📤 [sendLiveActivityUpdate] Sending via direct APNs`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Topic: ${bundleId}`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Event: ${event}`);
+      this.logger.log(`📤 [sendLiveActivityUpdate] Priority: ${notification.priority}`);
+      if (options?.relevanceScore !== undefined) {
+        this.logger.log(`📤 [sendLiveActivityUpdate] Relevance Score: ${options.relevanceScore}`);
+      }
       this.logger.log(`📤 [sendLiveActivityUpdate] Token (first 20 chars): ${pushToken.substring(0, 20)}...`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Token length: ${cleanToken.length} hex chars (${cleanToken.length / 2} bytes)`);
       this.logger.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(liveActivityContentState, null, 2));
