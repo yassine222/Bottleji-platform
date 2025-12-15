@@ -23,32 +23,37 @@ import UserNotifications
       UNUserNotificationCenter.current().delegate = self
     }
     
-    // Register Live Activity plugin with MethodChannel
-    if #available(iOS 16.2, *) {
-      if let controller = window?.rootViewController as? FlutterViewController {
-        // MethodChannel for Live Activity operations
-        let liveActivityChannel = FlutterMethodChannel(
-          name: "com.botleji/live_activity",
-          binaryMessenger: controller.binaryMessenger
-        )
-        let liveActivityPlugin = LiveActivityPlugin()
-        liveActivityChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
-          liveActivityPlugin.handle(call, result: result)
+        // Register Live Activity plugin with MethodChannel
+        if #available(iOS 16.2, *) {
+          if let controller = window?.rootViewController as? FlutterViewController {
+            // MethodChannel for Live Activity operations
+            let liveActivityChannel = FlutterMethodChannel(
+              name: "com.botleji/live_activity",
+              binaryMessenger: controller.binaryMessenger
+            )
+            let liveActivityPlugin = LiveActivityPlugin()
+            liveActivityChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
+              liveActivityPlugin.handle(call, result: result)
+            }
+            print("✅ Live Activity MethodChannel registered successfully")
+            
+            // EventChannel for push tokens (for backend API)
+            let eventChannel = FlutterEventChannel(
+              name: eventChannelName,
+              binaryMessenger: controller.binaryMessenger
+            )
+            eventChannel.setStreamHandler(self)
+            print("✅ Live Activity EventChannel registered successfully")
+            
+            // Set callback in LiveActivityManager to send tokens to Flutter
+            LiveActivityManager.shared.pushTokenCallback = { [weak self] (activityId, token, dropId) in
+              self?.sendPushTokenToFlutter(activityId: activityId, token: token, dropId: dropId)
+            }
+            
+            // Observe push tokens for backend API (backup observation mechanism)
+            observePushTokens()
+          }
         }
-        print("✅ Live Activity MethodChannel registered successfully")
-        
-        // EventChannel for push tokens (for backend API)
-        let eventChannel = FlutterEventChannel(
-          name: eventChannelName,
-          binaryMessenger: controller.binaryMessenger
-        )
-        eventChannel.setStreamHandler(self)
-        print("✅ Live Activity EventChannel registered successfully")
-        
-        // Observe push tokens for backend API
-        observePushTokens()
-      }
-    }
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -70,6 +75,17 @@ import UserNotifications
   private func sendEvent(value: [String: Any?]) {
     guard let eventSink = self.eventSink else { return }
     eventSink(value)
+  }
+  
+  // Send push token to Flutter via EventChannel
+  private func sendPushTokenToFlutter(activityId: String, token: String, dropId: String) {
+    print("📤 [AppDelegate] Sending push token to Flutter: activityId=\(activityId), dropId=\(dropId)")
+    sendEvent(value: [
+      "eventType": "pushToUpdateToken",
+      "value": token,
+      "activityId": activityId,
+      "dropId": dropId,
+    ])
   }
   
   // MARK: - Push Token Observation (for backend API)

@@ -77,9 +77,12 @@ class LiveActivityManager {
                 
                 print("✅ Live Activity started: \(activityId) for drop: \(dropId)")
                 
-                // Get push token asynchronously
+                // IMPORTANT: Observe pushTokenUpdates immediately after creating the activity
+                // This ensures we capture the token as soon as it's available (asynchronously)
+                // The pushTokenUpdates async sequence will emit the first token when ready,
+                // and any subsequent token updates
                 Task {
-                    await updatePushToken(for: activityId, activity: activity)
+                    await updatePushToken(for: activityId, activity: activity, dropId: dropId)
                 }
             } catch {
                 print("❌ Error starting Live Activity: \(error.localizedDescription)")
@@ -171,12 +174,21 @@ class LiveActivityManager {
     
     // MARK: - Private Helpers
     
-    private func updatePushToken(for activityId: String, activity: Activity<BottlejiLiveActivityWidgetAttributes>) async {
+    // Callback to send push tokens to Flutter (set by AppDelegate)
+    var pushTokenCallback: ((String, String, String) -> Void)? // (activityId, token, dropId)
+    
+    private func updatePushToken(for activityId: String, activity: Activity<BottlejiLiveActivityWidgetAttributes>, dropId: String) async {
+        // Observe pushTokenUpdates - this async sequence will emit the first token when available
+        // and any subsequent token updates
         for await tokenData in activity.pushTokenUpdates {
             // Convert Data to hex string
             let tokenString = tokenData.hexString
             activityTokens[activityId] = tokenString
-            print("📱 Push token for activity \(activityId): \(tokenString)")
+            print("📱 [LiveActivityManager] Push token received for activity \(activityId), dropId: \(dropId)")
+            print("📱 [LiveActivityManager] Token: \(tokenString)")
+            
+            // Send token to Flutter immediately via callback (handled by AppDelegate)
+            pushTokenCallback?(activityId, tokenString, dropId)
         }
     }
 }
