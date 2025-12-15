@@ -80,7 +80,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
   static int _instanceCount = 0;
   late int _instanceId;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -755,6 +755,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     
+    // Register app lifecycle observer
+    WidgetsBinding.instance.addObserver(this);
+    
     // Track HomeScreen instances for debugging
     _instanceCount++;
     _instanceId = _instanceCount;
@@ -775,6 +778,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e, stackTrace) {
       AppLogger.log('❌ Home: Error in initState: $e');
       AppLogger.log('❌ Home: Stack trace: $stackTrace');
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🔄 HomeScreen: App resumed - refreshing drops and re-subscribing to collector locations');
+      
+      // Refresh drops when app comes to foreground
+      // This ensures UI is updated if drop status changed while app was in background
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _refreshDropsOnResume();
+        }
+      });
+    }
+  }
+
+  /// Refresh drops and re-subscribe to collector locations when app resumes
+  /// This ensures UI is updated even if drop status changed while app was in background
+  Future<void> _refreshDropsOnResume() async {
+    try {
+      debugPrint('🔄 HomeScreen: Refreshing drops on app resume...');
+      
+      // Refresh drops from backend
+      final dropsController = ref.read(dropsControllerProvider.notifier);
+      await dropsController.loadDrops();
+      
+      // Wait a bit for drops to load
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get updated drops
+      final dropsState = ref.read(dropsControllerProvider);
+      final userMode = ref.read(userModeControllerProvider);
+      
+      await userMode.whenData((mode) async {
+        if (mode == UserMode.household) {
+          dropsState.maybeWhen(
+            data: (drops) {
+              // Find all accepted drops that we should be tracking
+              final acceptedDrops = drops.where((drop) => 
+                drop.status == DropStatus.accepted
+              ).toList();
+              
+              if (acceptedDrops.isNotEmpty) {
+                debugPrint('🔄 HomeScreen: Re-subscribing to ${acceptedDrops.length} accepted drop(s) on app resume');
+                
+                // Re-subscribe to collector locations for all accepted drops
+                // This will update the UI with collector tracking pins
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _subscribeToCollectorLocations(acceptedDrops);
+                  }
+                });
+              } else {
+                debugPrint('🔄 HomeScreen: No accepted drops to track on app resume');
+              }
+            },
+            orElse: () {
+              debugPrint('⚠️ HomeScreen: Drops not loaded yet, will retry...');
+              // Retry after a delay if drops aren't loaded yet
+              Future.delayed(const Duration(seconds: 1), () {
+                if (mounted) {
+                  _refreshDropsOnResume();
+                }
+              });
+            },
+          );
+        }
+      });
+      
+      debugPrint('✅ HomeScreen: Drops refresh on app resume completed');
+    } catch (e) {
+      debugPrint('❌ HomeScreen: Error refreshing drops on app resume: $e');
     }
   }
 
@@ -1509,41 +1588,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       debugPrint('Drop created successfully');
       
       // Start drop timeline Live Activity (household mode only)
+      // NOTE: Live Activity will be started remotely from the backend
+      // when a collector accepts the drop, not when the drop is created.
+      // This ensures the Live Activity only appears when there's actual activity.
+      // The push-to-start token is already sent to the backend on app initialization.
       final userMode = ref.read(userModeControllerProvider).value;
       if (userMode == UserMode.household && createdDrop != null) {
-        try {
-          final liveActivityService = LiveActivityNativeService();
-          await liveActivityService.initialize();
-          
-          // Get address for the drop
-          final dropAddress = _selectedLocationAddress ?? 
-              await _getAddressFromCoordinates(dropLocation) ?? 
-              '${dropLocation.latitude.toStringAsFixed(6)}, ${dropLocation.longitude.toStringAsFixed(6)}';
-          
-          // Format estimated value
-          final estimatedValue = DropValueCalculator.formatEstimatedValue(createdDrop.estimatedValue);
-          
-          debugPrint('🔄 Starting Live Activity with data:');
-          debugPrint('   dropId: ${createdDrop.id}');
-          debugPrint('   dropAddress: $dropAddress');
-          debugPrint('   estimatedValue: $estimatedValue');
-          debugPrint('   status: pending');
-          
-          // Start drop timeline activity
-          await liveActivityService.startDropTimelineActivity(
-            dropId: createdDrop.id,
-            dropAddress: dropAddress,
-            estimatedValue: estimatedValue,
-            status: 'pending',
-            statusText: LiveActivityNativeService.getStatusText('pending'),
-            collectorName: null,
-            timeAgo: LiveActivityNativeService.formatTimeAgo(createdDrop.createdAt),
-            createdAt: createdDrop.createdAt.toIso8601String(),
-          );
-          debugPrint('✅ Drop Timeline Live Activity started');
-        } catch (e) {
-          debugPrint('⚠️ Error starting Drop Timeline Live Activity: $e');
-        }
+        debugPrint('📱 Drop created - Live Activity will start remotely when collector accepts');
+        debugPrint('   dropId: ${createdDrop.id}');
       }
       
       return true; // Return success
@@ -1562,6 +1614,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void dispose() {
     AppLogger.log('🗑️ HomeScreen Instance #$_instanceId disposed at ${DateTime.now()}');
     
+    // Unregister app lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    
     _mapRebuildTimer?.cancel();
     _markerUpdateTimer?.cancel();
     _dropsLoadDebounceTimer?.cancel(); // Cancel debounce timer
@@ -1571,6 +1626,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _bottlesController.dispose();
     _cansController.dispose();
     _notesController.dispose();
+    
+    // Dispose map controller
+    _mapController?.dispose();
+    
     super.dispose();
   }
 

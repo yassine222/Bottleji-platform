@@ -22,7 +22,12 @@ export class DeviceCapabilitiesController {
     // Common
     appVersion: string;
   }) {
-    const userId = req.user.userId;
+    // Extract userId from user object (JWT strategy returns user with id/_id)
+    const userId = req.user.id || req.user._id?.toString() || req.user.userId;
+    
+    if (!userId) {
+      throw new Error('User ID not found in request. User must be authenticated.');
+    }
 
     return this.deviceCapabilitiesService.storeCapabilities({
       userId,
