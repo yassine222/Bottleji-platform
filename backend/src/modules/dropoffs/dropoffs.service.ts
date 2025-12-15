@@ -648,24 +648,35 @@ export class DropoffsService {
       notes: interaction.notes,
     });
 
-    // Send Live Activity update (end event) immediately after status update
+    // Send Live Activity update (end event) IMMEDIATELY after status update
     // This will dismiss the Live Activity
     // Only send if tokens exist (conditional)
+    // IMPORTANT: Do this BEFORE any other async operations to minimize delay
     try {
+      const startTime = Date.now();
       const hasLiveActivityTokens = await this.hasActiveLiveActivityTokens(id);
+      const tokenCheckTime = Date.now() - startTime;
+      
       if (hasLiveActivityTokens) {
-        console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id}`);
-        await this.sendLiveActivityUpdate(id, {
+        console.log(`📤 [confirmCollection] Sending Live Activity end event for dropoff ${id} (token check took ${tokenCheckTime}ms)`);
+        const updateStartTime = Date.now();
+        // Send immediately - don't await other operations to minimize delay
+        this.sendLiveActivityUpdate(id, {
           status: 'collected',
           statusText: 'Collected',
           timeAgo: 'Just now',
-        }); // Event type is determined automatically from status (will be 'end')
-        console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id}`);
+        }).then(() => {
+          const updateTime = Date.now() - updateStartTime;
+          console.log(`✅ [confirmCollection] Live Activity end event sent for dropoff ${id} (took ${updateTime}ms total)`);
+        }).catch((error) => {
+          console.error(`❌ [confirmCollection] Error sending Live Activity update: ${error}`);
+        });
+        // Don't await - fire and forget to minimize delay
       } else {
-        console.log(`ℹ️ [confirmCollection] No Live Activity tokens found, skipping update (FCM notification will be sent as fallback)`);
+        console.log(`ℹ️ [confirmCollection] No Live Activity tokens found, skipping update (FCM notification will be sent as fallback) (token check took ${tokenCheckTime}ms)`);
       }
     } catch (error) {
-      console.error(`❌ [confirmCollection] Error sending Live Activity update for collected drop: ${error}`);
+      console.error(`❌ [confirmCollection] Error checking/sending Live Activity update: ${error}`);
     }
 
     // Award points to collector for successful collection
@@ -774,15 +785,9 @@ export class DropoffsService {
            console.error('❌ Error awarding household points:', error);
            // Don't fail the collection if household reward system fails
          }
-         
-         // Send Live Activity update (end activity)
-         await this.sendLiveActivityUpdate(id, {
-           status: 'collected',
-           statusText: 'Collected',
-           timeAgo: 'Just now',
-         });
 
     // Drop creator notification is now sent with rewards below (combined notification)
+    // Note: Live Activity end event was already sent above (line 658) - no need to send again
 
     console.log(`📱 Drop collected notification sent to user ${dropoff.userId}`);
 
@@ -2961,11 +2966,14 @@ export class DropoffsService {
       // Find all active Live Activity tokens for this dropoff
       // Convert string dropoffId to ObjectId if needed (Mongoose can handle string, but explicit is safer)
       const dropoffObjectId = typeof dropoffId === 'string' ? new Types.ObjectId(dropoffId) : dropoffId;
+      const queryStartTime = Date.now();
       console.log(`🔍 [sendLiveActivityUpdate] Searching for tokens with dropoffId: ${dropoffId} (ObjectId: ${dropoffObjectId})`);
       const tokens = await this.liveActivityTokenModel.find({ 
         dropoffId: dropoffObjectId,
         isActive: { $ne: false } // Only active tokens (true or undefined/null)
-      }).exec();
+      }).lean().exec(); // Use lean() for faster queries
+      const queryTime = Date.now() - queryStartTime;
+      console.log(`🔍 [sendLiveActivityUpdate] Token query took ${queryTime}ms`);
       
       console.log(`🔍 [sendLiveActivityUpdate] Found ${tokens.length} token(s) for dropoff ${dropoffId}`);
       if (tokens.length > 0) {
@@ -2996,8 +3004,10 @@ export class DropoffsService {
       console.log(`📤 [sendLiveActivityUpdate] Content state:`, JSON.stringify(contentState, null, 2));
 
       // Send update/end to each Live Activity token
-      for (const token of tokens) {
+      // Send all updates in parallel for faster delivery
+      const sendPromises = tokens.map(async (token) => {
         try {
+          const sendStartTime = Date.now();
           console.log(`📤 [sendLiveActivityUpdate] Sending to token: ${token.pushToken.substring(0, 20)}... (activityId: ${token.activityId})`);
           // Use direct APNs for Live Activity updates
           const success = await this.apnsService.sendLiveActivityUpdate(
@@ -3005,41 +3015,37 @@ export class DropoffsService {
             contentState,
             event
           );
-          console.log(`✅ [sendLiveActivityUpdate] Push notification ${success ? 'sent successfully' : 'failed'} for token ${token.activityId}`);
-
-          // If it's an end event and successful, mark token as inactive
-          if (isEndEvent && success) {
-            await this.liveActivityTokenModel.findByIdAndUpdate(
-              token._id,
-              { isActive: false },
-              { new: true }
-            ).exec();
-            console.log(`✅ Marked Live Activity token as inactive: ${token.activityId}`);
-          }
-
-          // If token is invalid, mark as inactive
-          if (!success) {
-            // Check if it's an invalid token error (handled in FCMService)
-            // Mark as inactive to prevent future attempts
-            await this.liveActivityTokenModel.findByIdAndUpdate(
-              token._id,
-              { isActive: false },
-              { new: true }
-            ).exec();
-          }
+          const sendTime = Date.now() - sendStartTime;
+          console.log(`✅ [sendLiveActivityUpdate] Push notification ${success ? 'sent successfully' : 'failed'} for token ${token.activityId} (took ${sendTime}ms)`);
+          return success;
         } catch (error) {
-          console.error(`❌ Error sending Live Activity update to token ${token.pushToken.substring(0, 20)}...: ${error}`);
-          // Mark token as inactive on error
-          try {
-            await this.liveActivityTokenModel.findByIdAndUpdate(
-              token._id,
-              { isActive: false },
-              { new: true }
-            ).exec();
-          } catch (updateError) {
-            console.error(`❌ Error marking token as inactive: ${updateError}`);
-          }
+          console.error(`❌ [sendLiveActivityUpdate] Error sending to token ${token.activityId}: ${error}`);
+          return false;
         }
+      });
+      
+      // Wait for all sends to complete
+      const results = await Promise.all(sendPromises);
+      const successCount = results.filter(r => r).length;
+      console.log(`✅ [sendLiveActivityUpdate] Completed: ${successCount}/${tokens.length} updates sent successfully`);
+      
+      // Mark tokens as inactive if this was an end event and send was successful
+      if (isEndEvent) {
+        const deactivationPromises = tokens.map(async (token, index) => {
+          if (results[index]) { // Only deactivate if send was successful
+            try {
+              await this.liveActivityTokenModel.findByIdAndUpdate(
+                token._id,
+                { isActive: false },
+                { new: true }
+              ).exec();
+              console.log(`✅ Marked Live Activity token as inactive: ${token.activityId}`);
+            } catch (error) {
+              console.error(`❌ Error marking token ${token.activityId} as inactive: ${error}`);
+            }
+          }
+        });
+        await Promise.all(deactivationPromises);
       }
     } catch (error) {
       console.error(`❌ Error sending Live Activity update: ${error}`);

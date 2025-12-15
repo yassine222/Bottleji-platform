@@ -129,9 +129,11 @@ export class APNsService implements OnModuleInit {
         event: event,
       };
       
-      // For end events, add dismissal-date to dismiss immediately (past timestamp)
+      // For end events, add dismissal-date to dismiss immediately
+      // Use a timestamp in the past (1 second ago) to ensure immediate dismissal
       if (event === 'end') {
-        apsData['dismissal-date'] = timestamp; // Use current timestamp (past) to dismiss immediately
+        apsData['dismissal-date'] = timestamp - 1; // Past timestamp ensures immediate dismissal
+        this.logger.log(`📤 [sendLiveActivityUpdate] Setting dismissal-date to ${apsData['dismissal-date']} (${timestamp - 1} seconds ago) for immediate dismissal`);
       }
       
       // Set aps properties directly on notification
