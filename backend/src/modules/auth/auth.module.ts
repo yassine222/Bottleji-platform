@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { DeviceCapabilitiesController } from './device-capabilities.controller';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 import { TemporarySignup, TemporarySignupSchema } from './schemas/temporary-signup.schema';
@@ -25,7 +26,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, DeviceCapabilitiesController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
