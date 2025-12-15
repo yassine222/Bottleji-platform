@@ -112,6 +112,10 @@ class LiveActivityManager {
         let timeAgo = info["timeAgo"] as? String ?? ""
         let distanceRemaining = info["distanceRemaining"] as? Double
         
+        // Check if Flutter explicitly requested alert, or determine from status
+        let shouldAlert = info["shouldAlert"] as? Bool
+        let isImportantUpdate = shouldAlert ?? isImportantStatus(status)
+        
         let updatedState = BottlejiLiveActivityWidgetAttributes.ContentState(
             status: status,
             statusText: statusText,
@@ -121,9 +125,43 @@ class LiveActivityManager {
         )
         
         Task {
+            // Use ActivityContent for updates (supports relevanceScore and AlertConfiguration)
+            // Relevance score helps prioritize which Live Activity appears in Dynamic Island
+            // Higher scores (up to 1.0) make the activity more likely to expand
+            let relevanceScore: Double = isImportantUpdate ? 1.0 : 0.5
+            
+            // Update Live Activity using ContentState
+            // IMPORTANT: relevanceScore and alerts are handled via APNs push notifications (backend)
+            // The Swift ActivityKit API doesn't support setting relevanceScore on updates directly.
+            // For Dynamic Island expansion:
+            //   - relevanceScore is sent in APNs payload (backend handles this - see apns.service.ts)
+            //   - alerts are sent in APNs payload (backend handles this for important milestones)
+            //   - System decides whether to expand based on relevance score, user interaction, and device state
+            //   - Expansion cannot be forced - we can only request it via APNs payload
+            
             await activity.update(using: updatedState)
-            print("✅ Live Activity updated for drop: \(dropId)")
+            
+            // Log importance for debugging (actual relevance score is in APNs payload from backend)
+            if isImportantUpdate {
+                print("✅ Live Activity updated for important milestone (relevance/alert handled via APNs) for drop: \(dropId)")
+                print("   Status: \(status ?? "nil"), Relevance will be high (90-100) via APNs")
+            } else {
+                print("✅ Live Activity updated silently (relevance will be lower via APNs) for drop: \(dropId)")
+                print("   Status: \(status ?? "nil"), Relevance will be medium/low (25-75) via APNs")
+            }
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Determine if status represents an important milestone that should trigger alert
+    /// Important milestones: accepted (collector assigned), collected (completed)
+    /// This is used for logging - actual alerts/relevance are handled via APNs from backend
+    private func isImportantStatus(_ status: String?) -> Bool {
+        guard let status = status else { return false }
+        // Only major milestones should request Dynamic Island expansion
+        // Backend sends high relevance score (90-100) and alerts via APNs for these
+        return status == "accepted" || status == "collected"
     }
     
     // MARK: - End Drop Timeline Activity
