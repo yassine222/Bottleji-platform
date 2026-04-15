@@ -181,6 +181,7 @@ logs
 .Trashes
 ehthumbs.db
 Thumbs.db
+.archive-docs/
 
 # Backend specific
 backend/dist/
