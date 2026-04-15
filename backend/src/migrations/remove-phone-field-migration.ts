@@ -1,6 +1,6 @@
 import { connect, disconnect, model, Schema } from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://yassineromd789:GOj2qBAwhlsY4j0K@cluster0.ailekkg.mongodb.net/bottleji';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // Define the User schema for migration
 const UserSchema = new Schema({
@@ -49,6 +49,10 @@ const UserSchema = new Schema({
 // Migration to remove the old 'phone' field from user collection
 async function removePhoneField() {
   try {
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI is not set. Add it to your environment before running this migration.');
+    }
+
     console.log('🔗 Connecting to MongoDB...');
     const connection = await connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
