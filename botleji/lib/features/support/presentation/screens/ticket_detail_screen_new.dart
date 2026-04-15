@@ -891,7 +891,7 @@ class _TicketDetailScreenNewState extends ConsumerState<TicketDetailScreenNew> {
   // Compact static map with pin using Google Static Maps
   Widget _buildCompactMapPreview(Map<String, dynamic>? location) {
     String _staticMapUrl(double lat, double lng) {
-      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+      const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
       final baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
       final params = {
         'center': '$lat,$lng',

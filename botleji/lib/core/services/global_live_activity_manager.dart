@@ -293,7 +293,7 @@ class GlobalLiveActivityManager {
   /// Get address from coordinates using Google Maps Geocoding API
   Future<String?> _getAddressFromCoordinates(LatLng position) async {
     try {
-      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+      const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
       final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$apiKey';
       
       final response = await http.get(Uri.parse(url));

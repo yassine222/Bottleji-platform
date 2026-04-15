@@ -23,7 +23,7 @@ import '../../../../core/services/phone_verification_service.dart';
 import 'package:botleji/l10n/app_localizations.dart';
 
 
-const kGoogleApiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+const kGoogleApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
 const appGreenColor = Color(0xFF00695C);
 
 final GoogleMapsPlaces _globalPlaces = GoogleMapsPlaces(apiKey: kGoogleApiKey);

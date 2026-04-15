@@ -1799,21 +1799,23 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
       debugPrint('📡 CACHE MISS - No valid cache found, making API call #$_apiCallCount...');
       debugPrint('📊 API Calls: $_apiCallCount | Cache Hits: $_cacheHitCount');
       
+      const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/directions/json?'
         'origin=${origin.latitude},${origin.longitude}'
         '&destination=${destination.latitude},${destination.longitude}'
         '&mode=${_transportationMode.apiValue}'
         '&units=metric'
-        '&key=AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E'
+        '&key=$apiKey'
       );
 
-      debugPrint('Directions API URL: ${url.toString().replaceAll('AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E', 'API_KEY_HIDDEN')}');
-      debugPrint('Using API key: AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E');
+      debugPrint('Directions API URL: ${url.toString().replaceAll(apiKey, 'API_KEY_HIDDEN')}');
+      debugPrint('Using API key from runtime configuration');
 
       final dio = ApiClientConfig.createDio();
       debugPrint('🌐 ========== MAKING API CALL #$_apiCallCount ==========');
-      debugPrint('🌐 API URL: ${url.toString().replaceAll('AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E', 'API_KEY_HIDDEN')}');
+      debugPrint('🌐 API URL: ${url.toString().replaceAll(apiKey, 'API_KEY_HIDDEN')}');
       debugPrint('🌐 Origin: ${origin.latitude}, ${origin.longitude}');
       debugPrint('🌐 Destination: ${destination.latitude}, ${destination.longitude}');
       debugPrint('🌐 Mode: ${_transportationMode.name}');
@@ -2021,7 +2023,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> with Ticker
           debugPrint('❌ Please check your Google Cloud Console settings:');
           debugPrint('❌ 1. Go to Google Cloud Console');
           debugPrint('❌ 2. Navigate to APIs & Services > Credentials');
-          debugPrint('❌ 3. Find your API key: AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E');
+          debugPrint('❌ 3. Verify the configured API key in your app environment');
           debugPrint('❌ 4. Make sure it has the following APIs enabled:');
           debugPrint('❌    - Directions API');
           debugPrint('❌    - Maps JavaScript API');

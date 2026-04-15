@@ -2697,7 +2697,7 @@ Widget _buildDropTimeline(List<CollectorInteraction> interactions) {
 
   String _getStaticMapUrl(LatLng location) {
     // Use the same API key that works in the drops tab
-    const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+    const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
     const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
     
     // Use the same format as the drops tab

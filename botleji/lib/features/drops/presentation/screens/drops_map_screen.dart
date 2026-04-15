@@ -1517,7 +1517,7 @@ class _DropsMapScreenState extends ConsumerState<DropsMapScreen> {
   // Calculate route between two points using Google Directions API
   Future<void> _calculateRoute(LatLng origin, LatLng destination) async {
     try {
-      const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+      const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
       final url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=$apiKey';
       
       final response = await http.get(Uri.parse(url));

@@ -3773,7 +3773,7 @@ function DropsContent() {
                             height="100%"
                             frameBorder="0"
                             style={{ border: 0 }}
-                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${selectedDrop.drop?.location?.coordinates?.[1]},${selectedDrop.drop?.location?.coordinates?.[0]}&zoom=15`}
+                            src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY ?? ""}&q=${selectedDrop.drop?.location?.coordinates?.[1]},${selectedDrop.drop?.location?.coordinates?.[0]}&zoom=15`}
                             allowFullScreen
                           />
                         </div>
@@ -7153,7 +7153,7 @@ function SupportContent() {
                                           height="100%"
                                           style={{ border: 0 }}
                                           loading="lazy"
-                                          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${lat},${lng}&zoom=15`}
+                                          src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY ?? ""}&q=${lat},${lng}&zoom=15`}
                                         ></iframe>
                                       </div>
                                       <div className="p-4 bg-white">

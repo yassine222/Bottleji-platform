@@ -999,7 +999,7 @@ class DropCard extends StatelessWidget {
   }
 
   String _getStaticMapUrl(LatLng location) {
-    const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+    const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
     final baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
     final parameters = {
       'center': '${location.latitude},${location.longitude}',

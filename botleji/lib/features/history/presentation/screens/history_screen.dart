@@ -3894,7 +3894,7 @@ Widget _buildOverviewStat(String label, double amount, IconData icon, Color colo
 
   String _getStaticMapUrl(LatLng location, {bool isDark = false}) {
     // Use the same API key that works in the drops tab
-    const apiKey = "AIzaSyCwq4Iy4ieyeEX-i7HVsBS_PfbdJnA300E";
+    const apiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
     const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
     
     // Build base query parameters
